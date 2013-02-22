@@ -111,11 +111,11 @@ SUBROUTINE tl_calc_K(Kx,Ky,xtemp,ytemp,density,temperature,heat_capacity,celldx,
     ENDDO
   ENDDO
 
-  !DO k=y_min-1,y_max+1
-  !  DO j=x_min-1,x_max+1
-  !    xtemp(j,k) = (temperature(j,k)+temperature(j+1,k))*0.5
-  !  ENDDO
-  !ENDDO
+  DO k=y_min-1,y_max+1
+    DO j=x_min-1,x_max+1
+      xtemp(j,k) = (temperature(j,k)+temperature(j+1,k))*0.5
+    ENDDO
+  ENDDO
 
   !DO k=y_min-1,y_max+1
   !  DO j=x_min-1,x_max+1
