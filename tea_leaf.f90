@@ -111,43 +111,43 @@ SUBROUTINE tl_calc_K(Kx,Ky,xtemp,ytemp,density,temperature,heat_capacity,celldx,
     ENDDO
   ENDDO
 
-  DO k=y_min-1,y_max+1
-    DO j=x_min-1,x_max+1
-      xtemp(j,k) = (temperature(j,k)+temperature(j+1,k))*0.5
-    ENDDO
-  ENDDO
+  !DO k=y_min-1,y_max+1
+  !  DO j=x_min-1,x_max+1
+  !    xtemp(j,k) = (temperature(j,k)+temperature(j+1,k))*0.5
+  !  ENDDO
+  !ENDDO
 
-  DO k=y_min-1,y_max+1
-    DO j=x_min-1,x_max+1
-      ytemp(j,k) = (temperature(j,k)+temperature(j,k+1))*0.5
-    ENDDO
-  ENDDO
+  !DO k=y_min-1,y_max+1
+  !  DO j=x_min-1,x_max+1
+  !    ytemp(j,k) = (temperature(j,k)+temperature(j,k+1))*0.5
+  !  ENDDO
+  !ENDDO
 
-  DO k=y_min-1,y_max+1
-    DO j=x_min-1,x_max+1
-       Kx(j  ,k  )=xtemp(j  ,k  )*density(j  ,k  )
-       Kx(j+1,k  )=xtemp(j+1,k  )*density(j+1,k  )
-       Ky(j  ,k  )=ytemp(j  ,k  )*density(j  ,k  )
-       Ky(j  ,k+1)=ytemp(j  ,k+1)*density(j  ,k+1)
-    ENDDO
-  ENDDO
+  !DO k=y_min-1,y_max+1
+  !  DO j=x_min-1,x_max+1
+  !     Kx(j  ,k  )=xtemp(j  ,k  )*density(j  ,k  )
+  !     Kx(j+1,k  )=xtemp(j+1,k  )*density(j+1,k  )
+  !     Ky(j  ,k  )=ytemp(j  ,k  )*density(j  ,k  )
+  !     Ky(j  ,k+1)=ytemp(j  ,k+1)*density(j  ,k+1)
+  !  ENDDO
+  !ENDDO
 
-  DO k=y_min-1,y_max+1
-    DO j=x_min-1,x_max+1
-         Kx(j,k)=(Kx(j  ,k  )+Kx(j+1,k  ))/(2.0*Kx(j  ,k  )*Kx(j+1,k  ))
-         Ky(j,k)=(Ky(j  ,k  )+Ky(j  ,k+1))/(2.0*Ky(j  ,k  )*Ky(j  ,k+1))
-    ENDDO
-  ENDDO
+  !DO k=y_min-1,y_max+1
+  !  DO j=x_min-1,x_max+1
+  !       Kx(j,k)=(Kx(j  ,k  )+Kx(j+1,k  ))/(2.0*Kx(j  ,k  )*Kx(j+1,k  ))
+  !       Ky(j,k)=(Ky(j  ,k  )+Ky(j  ,k+1))/(2.0*Ky(j  ,k  )*Ky(j  ,k+1))
+  !  ENDDO
+  !ENDDO
 
-  DO k=y_min-1,y_max+1
-    DO j=x_min-1,x_max+1
-      dx=celldx(j)
-      dy=celldy(k+1)
+  !DO k=y_min-1,y_max+1
+  !  DO j=x_min-1,x_max+1
+  !    dx=celldx(j)
+  !    dy=celldy(k+1)
 
-      IF(j.NE.jmx+1)Kx(j,k) = xarea(j+1,k)/(dx*Kx(j,k))
-      IF(k.NE.kmx+1)Ky(j,k) = yarea(j,k+1)/(dy*Ky(j,k))
-    ENDDO
-  ENDDO
+  !    IF(j.NE.jmx+1)Kx(j,k) = xarea(j+1,k)/(dx*Kx(j,k))
+  !    IF(k.NE.kmx+1)Ky(j,k) = yarea(j,k+1)/(dy*Ky(j,k))
+  !  ENDDO
+  !ENDDO
 
 END SUBROUTINE tl_calc_k
 
