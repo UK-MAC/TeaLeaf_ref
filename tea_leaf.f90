@@ -46,6 +46,8 @@ SUBROUTINE tea_leaf_kernel_init(x_min,             &
 
 
   ! CALC DIFFUSION COEFFICIENT
+!$OMP PARALLEL
+!$OMP DO PRIVATE(Kx,Ky,density)
   DO k=y_min-1,y_max+1
     DO j=x_min-1,x_max+1
        Kx(j  ,k  )=density(j  ,k  )
@@ -54,6 +56,26 @@ SUBROUTINE tea_leaf_kernel_init(x_min,             &
        Ky(j  ,k+1)=density(j  ,k+1)
     ENDDO
   ENDDO
+!$OMP END DO
+
+  ! TEMPERATURE FROM ENERGY
+!$OMP DO PRIVATE(u0,energy,density)
+  DO k=y_min-1, y_max+1
+    DO j=x_min-1, x_max+1
+      u0(j,k) =  energy(j,k) * density(j,k)
+    ENDDO
+  ENDDO
+!$OMP END DO
+
+  ! INITIAL GUESS
+!$OMP DO PRIVATE(u1,u0)
+  DO k=y_min-1, y_max+1
+    DO j=x_min-1, x_max+1
+      u1(j,k) = u0(j,k)
+    ENDDO
+  ENDDO
+!$OMP END DO
+!$OMP END PARALLEL
 
   DO k=y_min-1,y_max+1
     DO j=x_min-1,x_max+1
@@ -62,19 +84,6 @@ SUBROUTINE tea_leaf_kernel_init(x_min,             &
     ENDDO
   ENDDO
 
-  ! TEMPERATURE FROM ENERGY
-  DO k=y_min-1, y_max+1
-    DO j=x_min-1, x_max+1
-      u0(j,k) =  energy(j,k) * density(j,k)
-    ENDDO
-  ENDDO
-
-  ! INITIAL GUESS
-  DO k=y_min-1, y_max+1
-    DO j=x_min-1, x_max+1
-      u1(j,k) = u0(j,k)
-    ENDDO
-  ENDDO
 
 END SUBROUTINE tea_leaf_kernel_init
 
@@ -100,17 +109,25 @@ SUBROUTINE tea_leaf_kernel_solve(x_min,       &
 
   INTEGER(KIND=4) :: j,k
 
+  error = 0.0_8
+
+!$OMP PARALLEL
+!$OMP DO PRIVATE(un,u1)
     DO k=y_min-1, y_max+1
       DO j=x_min-1, x_max+1
         un(j,k) = u1(j,k)
       ENDDO
     ENDDO
+!$OMP END DO
 
+!$OMP DO PRIVATE(u1,u0,un,rx,ry)
     DO k=y_min, y_max
       DO j=x_min, x_max
         u1(j,k) = (u0(j,k) + rx*un(j+1,k) + rx*un(j-1,k) + ry*un(j,k+1) + rx*un(j,k-1))/(1+2*rx+2*ry)
       ENDDO
     ENDDO
+!$OMP END DO
+!$OMP END PARALLEL
 
     error = MAXVAL(ABS(u1(x_min:x_max,y_min:y_max) - u0(x_min:x_max,y_min:y_max)))
 
@@ -133,11 +150,13 @@ SUBROUTINE tea_leaf_kernel_finalise(x_min,    &
 
   INTEGER(KIND=4) :: j,k
 
+!$OMP PARALLEL DO PRIVATE(energy,u,density)
   DO k=y_min, y_max
     DO j=x_min, x_max
       energy(j,k) = u(j,k) / density(j,k)
     ENDDO
   ENDDO
+!$OMP END PARALLEL DO
 
 END SUBROUTINE tea_leaf_kernel_finalise
 
