@@ -93,7 +93,7 @@ SUBROUTINE visit
       WRITE(u,'(a)')'Z_COORDINATES 1 double'
       WRITE(u,'(a)')'0'
       WRITE(u,'(a,i20)')'CELL_DATA ',nxc*nyc
-      WRITE(u,'(a)')'FIELD FieldData 4'
+      WRITE(u,'(a)')'FIELD FieldData 5'
       WRITE(u,'(a,i20,a)')'density 1 ',nxc*nyc,' double'
       DO k=chunks(c)%field%y_min,chunks(c)%field%y_max
         WRITE(u,'(e12.4)')(chunks(c)%field%density0(j,k),j=chunks(c)%field%x_min,chunks(c)%field%x_max)
@@ -113,6 +113,10 @@ SUBROUTINE visit
           IF(chunks(c)%field%viscosity(j,k).GT.0.00000001) temp_var=chunks(c)%field%viscosity(j,k)
           WRITE(u,'(e12.4)') temp_var
         ENDDO
+      ENDDO
+      WRITE(u,'(a,i20,a)')'temperature 1 ',nxc*nyc,' double'
+      DO k=chunks(c)%field%y_min,chunks(c)%field%y_max
+        WRITE(u,'(e12.4)')(chunks(c)%field%u(j,k),j=chunks(c)%field%x_min,chunks(c)%field%x_max)
       ENDDO
       WRITE(u,'(a,i20)')'POINT_DATA ',nxv*nyv
       WRITE(u,'(a)')'FIELD FieldData 2'
