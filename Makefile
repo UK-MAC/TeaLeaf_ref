@@ -42,7 +42,7 @@ ifndef COMPILER
   MESSAGE=select a compiler to compile in OpenMP, e.g. make COMPILER=INTEL
 endif
 
-OMP_INTEL     = -openmp
+OMP_INTEL     = #-openmp
 OMP_SUN       = -xopenmp=parallel -vpara
 OMP_GNU       = -fopenmp
 OMP_CRAY      =
@@ -139,6 +139,8 @@ clover_leaf: c_lover *.f90 Makefile
 	advection.f90			\
 	reset_field_kernel.f90		\
 	reset_field.f90			\
+	set_field_kernel.f90    \
+	set_field.f90           \
         tea_leaf.f90                    \
 	hydro.f90			\
 	visit.f90			\

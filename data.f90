@@ -35,7 +35,8 @@ MODULE data_module
                                 ,FIELD_VOL_FLUX_Y =13         &
                                 ,FIELD_MASS_FLUX_X=14         &
                                 ,FIELD_MASS_FLUX_Y=15         &
-                                ,NUM_FIELDS       =15
+                                ,FIELD_U          =16         &
+                                ,NUM_FIELDS       =16
 
    INTEGER,         PARAMETER :: CELL_DATA     = 1,        &
                                  VERTEX_DATA   = 3,        &

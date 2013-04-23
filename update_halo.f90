@@ -45,6 +45,7 @@ SUBROUTINE update_halo(fields,depth)
                               chunks(c)%field%vol_flux_y,     &
                               chunks(c)%field%mass_flux_x,    &
                               chunks(c)%field%mass_flux_y,    &
+                              chunks(c)%field%u,              &
                               fields,                         &
                               depth                           )
 

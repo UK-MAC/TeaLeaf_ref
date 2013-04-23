@@ -44,6 +44,9 @@ MODULE definitions_module
    LOGICAL      :: use_C_kernels
    LOGICAL      :: use_OA_kernels
    LOGICAL      :: use_Tealeaf
+   LOGICAL      :: use_Hydro
+   INTEGER      :: max_iters
+   REAL(KIND=8) :: eps
 
    LOGICAL      :: use_vector_loops ! Some loops work better in serial depending on the hardware
 
@@ -82,6 +85,7 @@ MODULE definitions_module
      REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: yvel0,yvel1
      REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: vol_flux_x,mass_flux_x
      REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: vol_flux_y,mass_flux_y
+     REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: u
      REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: work_array1 !node_flux, stepbymass, volume_change, pre_vol
      REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: work_array2 !node_mass_post, post_vol
      REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: work_array3 !node_mass_pre,pre_mass
@@ -89,6 +93,7 @@ MODULE definitions_module
      REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: work_array5 !mom_flux, advec_vol
      REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: work_array6 !pre_vol, post_ener
      REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: work_array7 !post_vol, ener_flux
+     REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: work_array8 !post_vol, ener_flux
 
      INTEGER         :: left            &
                        ,right           &

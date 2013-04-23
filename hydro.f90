@@ -9,6 +9,7 @@ SUBROUTINE hydro
   USE advection_module
   USE tea_leaf_module
   USE reset_field_module
+  USE set_field_module
 
   IMPLICIT NONE
 
@@ -28,6 +29,7 @@ SUBROUTINE hydro
 
     CALL timestep()
 
+    IF (use_Hydro) THEN
     CALL PdV(.TRUE.)
 
     CALL accelerate()
@@ -37,9 +39,17 @@ SUBROUTINE hydro
     CALL flux_calc()
 
     CALL advection()
+    ENDIF
 
-    IF(use_TeaLeaf) CALL tea_leaf()
-
+    IF(use_TeaLeaf) THEN
+        IF(.NOT. use_Hydro) THEN
+        ! copy tl0 to tl1
+        CALL set_field()
+        ENDIF
+        
+        CALL tea_leaf()
+    ENDIF
+    
     CALL reset_field()
 
     advect_x = .NOT. advect_x

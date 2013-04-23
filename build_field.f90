@@ -45,6 +45,9 @@ SUBROUTINE build_field(chunk,x_cells,y_cells)
    ALLOCATE(chunks(chunk)%field%mass_flux_y(chunks(chunk)%field%x_min-2:chunks(chunk)%field%x_max+2, &
                                             chunks(chunk)%field%y_min-2:chunks(chunk)%field%y_max+3))
 
+   ALLOCATE(chunks(chunk)%field%u         (chunks(chunk)%field%x_min-2:chunks(chunk)%field%x_max+2, &
+                   chunks(chunk)%field%y_min-2:chunks(chunk)%field%y_max+2))
+
    ALLOCATE(chunks(chunk)%field%work_array1(chunks(chunk)%field%x_min-2:chunks(chunk)%field%x_max+3, &
                                             chunks(chunk)%field%y_min-2:chunks(chunk)%field%y_max+3))
    ALLOCATE(chunks(chunk)%field%work_array2(chunks(chunk)%field%x_min-2:chunks(chunk)%field%x_max+3, &
@@ -58,6 +61,8 @@ SUBROUTINE build_field(chunk,x_cells,y_cells)
    ALLOCATE(chunks(chunk)%field%work_array6(chunks(chunk)%field%x_min-2:chunks(chunk)%field%x_max+3, &
                                             chunks(chunk)%field%y_min-2:chunks(chunk)%field%y_max+3))
    ALLOCATE(chunks(chunk)%field%work_array7(chunks(chunk)%field%x_min-2:chunks(chunk)%field%x_max+3, &
+                                            chunks(chunk)%field%y_min-2:chunks(chunk)%field%y_max+3))
+   ALLOCATE(chunks(chunk)%field%work_array8(chunks(chunk)%field%x_min-2:chunks(chunk)%field%x_max+3, &
                                             chunks(chunk)%field%y_min-2:chunks(chunk)%field%y_max+3))
 
    ALLOCATE(chunks(chunk)%field%cellx   (chunks(chunk)%field%x_min-2:chunks(chunk)%field%x_max+2))

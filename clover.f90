@@ -400,6 +400,19 @@ SUBROUTINE clover_exchange(fields,depth)
                                  depth,Y_FACE_DATA)
   ENDIF
 
+  IF(fields(FIELD_U).EQ.1) THEN
+    CALL clover_exchange_message(parallel%task+1,chunks(parallel%task+1)%field%u,              &
+                                 chunks(parallel%task+1)%left_snd_buffer,                      &
+                                 chunks(parallel%task+1)%left_rcv_buffer,                      &
+                                 chunks(parallel%task+1)%right_snd_buffer,                     &
+                                 chunks(parallel%task+1)%right_rcv_buffer,                     &
+                                 chunks(parallel%task+1)%bottom_snd_buffer,                    &
+                                 chunks(parallel%task+1)%bottom_rcv_buffer,                    &
+                                 chunks(parallel%task+1)%top_snd_buffer,                       &
+                                 chunks(parallel%task+1)%top_rcv_buffer,                       &
+                                 depth,CELL_DATA)
+  ENDIF
+
 
 END SUBROUTINE clover_exchange
 
@@ -634,6 +647,24 @@ SUBROUTINE clover_min(value)
   value=minimum
 
 END SUBROUTINE clover_min
+
+SUBROUTINE clover_max(value)
+
+  IMPLICIT NONE
+
+  REAL(KIND=8) :: value
+
+  REAL(KIND=8) :: maximum
+
+  INTEGER :: err
+
+  maximum=value
+
+  CALL MPI_ALLREDUCE(value,maximum,1,MPI_DOUBLE_PRECISION,MPI_MAX,MPI_COMM_WORLD,err)
+
+  value=maximum
+
+END SUBROUTINE clover_max
 
 SUBROUTINE clover_check_error(error)
 

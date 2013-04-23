@@ -42,6 +42,9 @@ SUBROUTINE read_input()
   use_OA_kernels=.FALSE.
   use_vector_loops=.FALSE.
   use_TeaLeaf=.FALSE.
+  max_iters = 1000
+  eps = 10e-8
+  use_Hydro = .TRUE.
 
   IF(parallel%boss)WRITE(g_out,*) 'Reading input file'
   IF(parallel%boss)WRITE(g_out,*)
@@ -139,6 +142,12 @@ SUBROUTINE read_input()
         use_vector_loops=.TRUE.
       CASE('use_tea_leaf')
         use_Tealeaf=.TRUE.
+      CASE('tl_max_iters')
+        max_iters = parse_getival(parse_getword(.TRUE.))
+      CASE('tl_eps')
+        eps = parse_getrval(parse_getword(.TRUE.))
+      CASE('no_hydro')
+        use_Hydro = .FALSE.
       CASE('state')
 
         state=parse_getival(parse_getword(.TRUE.))
