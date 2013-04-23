@@ -48,10 +48,10 @@ SUBROUTINE tea_leaf_kernel_init(x_min,             &
   ! CALC DIFFUSION COEFFICIENT
   DO k=y_min-1,y_max+1
     DO j=x_min-1,x_max+1
-       Kx(j  ,k  )=density(j  ,k  )
-       Kx(j+1,k  )=density(j+1,k  )
-       Ky(j  ,k  )=density(j  ,k  )
-       Ky(j  ,k+1)=density(j  ,k+1)
+       Kx(j  ,k  )=1/density(j  ,k  )
+       Kx(j+1,k  )=1/density(j+1,k  )
+       Ky(j  ,k  )=1/density(j  ,k  )
+       Ky(j  ,k+1)=1/density(j  ,k+1)
     ENDDO
   ENDDO
 
@@ -84,6 +84,8 @@ SUBROUTINE tea_leaf_kernel_solve(x_min,       &
                            y_max,             &
                            rx,                &
                            ry,                &
+                           Kx,                &
+                           Ky,                &
                            error,             &
                            u0,                &
                            u1,                &
@@ -95,6 +97,8 @@ SUBROUTINE tea_leaf_kernel_solve(x_min,       &
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max
   REAL(KIND=8), DIMENSION(x_min-2:x_max+3,y_min-2:y_max+3) :: u0, un
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: u1
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+3,y_min-2:y_max+3) :: Kx
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+3,y_min-2:y_max+3) :: Ky
 
   REAL(KIND=8) :: ry,rx, error
 
@@ -108,7 +112,7 @@ SUBROUTINE tea_leaf_kernel_solve(x_min,       &
 
     DO k=y_min, y_max
       DO j=x_min, x_max
-        u1(j,k) = (u0(j,k) + rx*un(j+1,k) + rx*un(j-1,k) + ry*un(j,k+1) + rx*un(j,k-1))/(1+2*rx+2*ry)
+        u1(j,k) = (u0(j,k) + Kx(j+1,k)*rx*un(j+1,k) + Kx(j,k)*rx*un(j-1,k) + Ky(j,k+1)*ry*un(j,k+1) + Ky(j,k)*ry*un(j,k-1))/(1+2*rx+2*ry)
       ENDDO
     ENDDO
 
@@ -206,6 +210,8 @@ SUBROUTINE tea_leaf()
                 chunks(c)%field%y_max,                       &
                 rx,                                          &
                 ry,                                          &
+                chunks(c)%field%work_array7,                 &
+                chunks(c)%field%work_array8,                 &
                 error,                                       &
                 chunks(c)%field%work_array1,                 &
                 chunks(c)%field%u,                           &
