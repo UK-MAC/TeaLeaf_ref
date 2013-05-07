@@ -45,6 +45,7 @@ SUBROUTINE read_input()
   max_iters = 1000
   eps = 10e-8
   use_Hydro = .TRUE.
+  coefficient = CONDUCTIVITY
 
   IF(parallel%boss)WRITE(g_out,*) 'Reading input file'
   IF(parallel%boss)WRITE(g_out,*)
@@ -148,6 +149,9 @@ SUBROUTINE read_input()
         eps = parse_getrval(parse_getword(.TRUE.))
       CASE('no_hydro')
         use_Hydro = .FALSE.
+      CASE('tl_coefficient')
+        coefficient = parse_getival(parse_getword(.TRUE.))
+        IF(parallel%boss)WRITE(g_out,"(1x,a25,i12)")'diffusion coefficient',coefficient
       CASE('state')
 
         state=parse_getival(parse_getword(.TRUE.))
