@@ -15,8 +15,8 @@ SUBROUTINE tea_leaf_kernel_init(x_min,             &
                            u1,                &
                            un,                &
                            heat_capacity,     &
-                           xtemp,             &
-                           ytemp,             &
+                           Kx_tmp,             &
+                           Ky_tmp,             &
                            Kx,                &
                            Ky)
 
@@ -33,8 +33,8 @@ SUBROUTINE tea_leaf_kernel_init(x_min,             &
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: energy
   REAL(KIND=8), DIMENSION(x_min-2:x_max+3,y_min-2:y_max+3) :: u0
   REAL(KIND=8), DIMENSION(x_min-2:x_max+3,y_min-2:y_max+3) :: heat_capacity
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+3,y_min-2:y_max+3) :: xtemp
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+3,y_min-2:y_max+3) :: ytemp
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+3,y_min-2:y_max+3) :: Kx_tmp
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+3,y_min-2:y_max+3) :: Ky_tmp
   REAL(KIND=8), DIMENSION(x_min-2:x_max+3,y_min-2:y_max+3) :: Kx
   REAL(KIND=8), DIMENSION(x_min-2:x_max+3,y_min-2:y_max+3) :: Ky
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: u1
@@ -45,49 +45,61 @@ SUBROUTINE tea_leaf_kernel_init(x_min,             &
   INTEGER(KIND=4) :: j,k,n
 
 
-  ! CALC DIFFUSION COEFFICIENT
+! CALC DIFFUSION COEFFICIENT
+!$OMP PARALLEL
   IF(coefficient .EQ. RECIP_CONDUCTIVITY) THEN
+!$OMP DO 
     DO k=y_min-1,y_max+1
       DO j=x_min-1,x_max+1
-         Kx(j  ,k  )=1.0_8/density(j  ,k  )
-         Kx(j+1,k  )=1.0_8/density(j+1,k  )
-         Ky(j  ,k  )=1.0_8/density(j  ,k  )
-         Ky(j  ,k+1)=1.0_8/density(j  ,k+1)
+         Kx_tmp(j  ,k  )=1.0_8/density(j  ,k  )
+         Kx_tmp(j+1,k  )=1.0_8/density(j+1,k  )
+         Ky_tmp(j  ,k  )=1.0_8/density(j  ,k  )
+         Ky_tmp(j  ,k+1)=1.0_8/density(j  ,k+1)
       ENDDO
     ENDDO
+!$OMP END DO
   ELSE IF(coefficient .EQ. CONDUCTIVITY) THEN
+!$OMP DO
     DO k=y_min-1,y_max+1
       DO j=x_min-1,x_max+1
-         Kx(j  ,k  )=density(j  ,k  )
-         Kx(j+1,k  )=density(j+1,k  )
-         Ky(j  ,k  )=density(j  ,k  )
-         Ky(j  ,k+1)=density(j  ,k+1)
+         Kx_tmp(j  ,k  )=density(j  ,k  )
+         Kx_tmp(j+1,k  )=density(j+1,k  )
+         Ky_tmp(j  ,k  )=density(j  ,k  )
+         Ky_tmp(j  ,k+1)=density(j  ,k+1)
       ENDDO
     ENDDO
+!$OMP END DO
   ELSE
     CALL report_error('tea_leaf', 'unknown coefficient option')
   ENDIF
 
+!$OMP DO
   DO k=y_min-1,y_max+1
     DO j=x_min-1,x_max+1
-         Kx(j,k)=(Kx(j  ,k  )+Kx(j+1,k  ))/(2.0*Kx(j  ,k  )*Kx(j+1,k  ))
-         Ky(j,k)=(Ky(j  ,k  )+Ky(j  ,k+1))/(2.0*Ky(j  ,k  )*Ky(j  ,k+1))
+         Kx(j,k)=(Kx_tmp(j  ,k  )+Kx_tmp(j+1,k  ))/(2.0*Kx_tmp(j  ,k  )*Kx_tmp(j+1,k  ))
+         Ky(j,k)=(Ky_tmp(j  ,k  )+Ky_tmp(j  ,k+1))/(2.0*Ky_tmp(j  ,k  )*Ky_tmp(j  ,k+1))
     ENDDO
   ENDDO
+!$OMP END DO
 
-  ! TEMPERATURE FROM ENERGY
+!$OMP DO 
   DO k=y_min-1, y_max+1
     DO j=x_min-1, x_max+1
       u0(j,k) =  energy(j,k) * density(j,k)
     ENDDO
   ENDDO
+!$OMP END DO
 
   ! INITIAL GUESS
+!$OMP DO
   DO k=y_min-1, y_max+1
     DO j=x_min-1, x_max+1
       u1(j,k) = u0(j,k)
     ENDDO
   ENDDO
+!$OMP END DO
+!$OMP END PARALLEL
+
 
 END SUBROUTINE tea_leaf_kernel_init
 
@@ -117,19 +129,29 @@ SUBROUTINE tea_leaf_kernel_solve(x_min,       &
 
   INTEGER(KIND=4) :: j,k
 
+  error = 0.0_8
+
+!$OMP PARALLEL
+!$OMP DO
     DO k=y_min-1, y_max+1
       DO j=x_min-1, x_max+1
         un(j,k) = u1(j,k)
       ENDDO
     ENDDO
+!$OMP END DO
 
+!$OMP DO REDUCTION(MAX:error)
     DO k=y_min, y_max
       DO j=x_min, x_max
-        u1(j,k) = (u0(j,k) + Kx(j+1,k)*rx*un(j+1,k) + Kx(j,k)*rx*un(j-1,k) + Ky(j,k+1)*ry*un(j,k+1) + Ky(j,k)*ry*un(j,k-1))/(1+2.0_8*rx+2.0_8*ry)
+        u1(j,k) = (u0(j,k) + Kx(j+1,k)*rx*un(j+1,k) + Kx(j,k)*rx*un(j-1,k) &
+                           + Ky(j,k+1)*ry*un(j,k+1) + Ky(j,k)*ry*un(j,k-1)) &
+                             /(1+2.0_8*rx+2.0_8*ry)
+
+        error = MAX(error, ABS(u1(j,k)-u0(j,k)))
       ENDDO
     ENDDO
-
-    error = MAXVAL(ABS(u1(x_min:x_max,y_min:y_max) - u0(x_min:x_max,y_min:y_max)))
+!$OMP END DO
+!$OMP END PARALLEL
 
 END SUBROUTINE tea_leaf_kernel_solve
 
@@ -150,11 +172,13 @@ SUBROUTINE tea_leaf_kernel_finalise(x_min,    &
 
   INTEGER(KIND=4) :: j,k
 
+!$OMP PARALLEL DO 
   DO k=y_min, y_max
     DO j=x_min, x_max
       energy(j,k) = u(j,k) / density(j,k)
     ENDDO
   ENDDO
+!$OMP END PARALLEL DO
 
 END SUBROUTINE tea_leaf_kernel_finalise
 
