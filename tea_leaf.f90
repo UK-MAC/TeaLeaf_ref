@@ -15,8 +15,8 @@ SUBROUTINE tea_leaf_kernel_init(x_min,             &
                            u1,                &
                            un,                &
                            heat_capacity,     &
-                           xtemp,             &
-                           ytemp,             &
+                           Kx_tmp,             &
+                           Ky_tmp,             &
                            Kx,                &
                            Ky)
 
@@ -33,8 +33,8 @@ SUBROUTINE tea_leaf_kernel_init(x_min,             &
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: energy
   REAL(KIND=8), DIMENSION(x_min-2:x_max+3,y_min-2:y_max+3) :: u0
   REAL(KIND=8), DIMENSION(x_min-2:x_max+3,y_min-2:y_max+3) :: heat_capacity
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+3,y_min-2:y_max+3) :: xtemp
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+3,y_min-2:y_max+3) :: ytemp
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+3,y_min-2:y_max+3) :: Kx_tmp
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+3,y_min-2:y_max+3) :: Ky_tmp
   REAL(KIND=8), DIMENSION(x_min-2:x_max+3,y_min-2:y_max+3) :: Kx
   REAL(KIND=8), DIMENSION(x_min-2:x_max+3,y_min-2:y_max+3) :: Ky
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: u1
@@ -51,10 +51,10 @@ SUBROUTINE tea_leaf_kernel_init(x_min,             &
 !$OMP DO 
     DO k=y_min-1,y_max+1
       DO j=x_min-1,x_max+1
-         Kx(j  ,k  )=1.0_8/density(j  ,k  )
-         Kx(j+1,k  )=1.0_8/density(j+1,k  )
-         Ky(j  ,k  )=1.0_8/density(j  ,k  )
-         Ky(j  ,k+1)=1.0_8/density(j  ,k+1)
+         Kx_tmp(j  ,k  )=1.0_8/density(j  ,k  )
+         Kx_tmp(j+1,k  )=1.0_8/density(j+1,k  )
+         Ky_tmp(j  ,k  )=1.0_8/density(j  ,k  )
+         Ky_tmp(j  ,k+1)=1.0_8/density(j  ,k+1)
       ENDDO
     ENDDO
 !$OMP END DO
@@ -62,16 +62,25 @@ SUBROUTINE tea_leaf_kernel_init(x_min,             &
 !$OMP DO
     DO k=y_min-1,y_max+1
       DO j=x_min-1,x_max+1
-         Kx(j  ,k  )=density(j  ,k  )
-         Kx(j+1,k  )=density(j+1,k  )
-         Ky(j  ,k  )=density(j  ,k  )
-         Ky(j  ,k+1)=density(j  ,k+1)
+         Kx_tmp(j  ,k  )=density(j  ,k  )
+         Kx_tmp(j+1,k  )=density(j+1,k  )
+         Ky_tmp(j  ,k  )=density(j  ,k  )
+         Ky_tmp(j  ,k+1)=density(j  ,k+1)
       ENDDO
     ENDDO
 !$OMP END DO
   ELSE
     CALL report_error('tea_leaf', 'unknown coefficient option')
   ENDIF
+
+!$OMP DO
+  DO k=y_min-1,y_max+1
+    DO j=x_min-1,x_max+1
+         Kx(j,k)=(Kx_tmp(j  ,k  )+Kx_tmp(j+1,k  ))/(2.0*Kx_tmp(j  ,k  )*Kx_tmp(j+1,k  ))
+         Ky(j,k)=(Ky_tmp(j  ,k  )+Ky_tmp(j  ,k+1))/(2.0*Ky_tmp(j  ,k  )*Ky_tmp(j  ,k+1))
+    ENDDO
+  ENDDO
+!$OMP END DO
 
 !$OMP DO 
   DO k=y_min-1, y_max+1
@@ -91,12 +100,6 @@ SUBROUTINE tea_leaf_kernel_init(x_min,             &
 !$OMP END DO
 !$OMP END PARALLEL
 
-  DO k=y_min-1,y_max+1
-    DO j=x_min-1,x_max+1
-         Kx(j,k)=(Kx(j  ,k  )+Kx(j+1,k  ))/(2.0*Kx(j  ,k  )*Kx(j+1,k  ))
-         Ky(j,k)=(Ky(j  ,k  )+Ky(j  ,k+1))/(2.0*Ky(j  ,k  )*Ky(j  ,k+1))
-    ENDDO
-  ENDDO
 
 END SUBROUTINE tea_leaf_kernel_init
 
