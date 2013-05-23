@@ -109,10 +109,12 @@ SUBROUTINE tea_leaf()
 
         CALL clover_max(error)
 
-        !PRINT *, 'ERR: ', error
         IF (error .LT. eps) EXIT
 
       ENDDO
+
+      PRINT *, 'ERR: ', error
+      PRINT *, 'ITER: ', (n-1)
 
       ! RESET
       IF(use_fortran_kernels) THEN
