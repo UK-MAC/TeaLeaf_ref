@@ -38,12 +38,12 @@ SUBROUTINE tea_leaf()
               chunks(c)%field%energy1,                     &
               chunks(c)%field%work_array1,                 &
               chunks(c)%field%u,                           &
+              chunks(c)%field%work_array2,                 &
               chunks(c)%field%work_array3,                 &
               chunks(c)%field%work_array4,                 &
               chunks(c)%field%work_array5,                 &
               chunks(c)%field%work_array6,                 &
               chunks(c)%field%work_array7,                 &
-              chunks(c)%field%work_array8,                 &
               coefficient)
       ELSEIF(use_C_kernels) THEN
           CALL tea_leaf_kernel_init_c(chunks(c)%field%x_min, &
@@ -57,12 +57,12 @@ SUBROUTINE tea_leaf()
               chunks(c)%field%energy1,                     &
               chunks(c)%field%work_array1,                 &
               chunks(c)%field%u,                           &
+              chunks(c)%field%work_array2,                 &
               chunks(c)%field%work_array3,                 &
               chunks(c)%field%work_array4,                 &
               chunks(c)%field%work_array5,                 &
               chunks(c)%field%work_array6,                 &
               chunks(c)%field%work_array7,                 &
-              chunks(c)%field%work_array8,                 &
               coefficient)
       ENDIF
 
@@ -81,12 +81,12 @@ SUBROUTINE tea_leaf()
                 chunks(c)%field%y_max,                       &
                 rx,                                          &
                 ry,                                          &
+                chunks(c)%field%work_array6,                 &
                 chunks(c)%field%work_array7,                 &
-                chunks(c)%field%work_array8,                 &
                 error,                                       &
                 chunks(c)%field%work_array1,                 &
                 chunks(c)%field%u,                           &
-                chunks(c)%field%work_array3)
+                chunks(c)%field%work_array2)
         ELSEIF(use_C_kernels) THEN
             CALL tea_leaf_kernel_solve_c(chunks(c)%field%x_min,&
                 chunks(c)%field%x_max,                       &
@@ -94,12 +94,12 @@ SUBROUTINE tea_leaf()
                 chunks(c)%field%y_max,                       &
                 rx,                                          &
                 ry,                                          &
+                chunks(c)%field%work_array6,                 &
                 chunks(c)%field%work_array7,                 &
-                chunks(c)%field%work_array8,                 &
                 error,                                       &
                 chunks(c)%field%work_array1,                 &
                 chunks(c)%field%u,                           &
-                chunks(c)%field%work_array3)
+                chunks(c)%field%work_array2)
         ENDIF
 
         ! CALL update_halo

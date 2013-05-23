@@ -62,8 +62,6 @@ SUBROUTINE build_field(chunk,x_cells,y_cells)
                                             chunks(chunk)%field%y_min-2:chunks(chunk)%field%y_max+3))
    ALLOCATE(chunks(chunk)%field%work_array7(chunks(chunk)%field%x_min-2:chunks(chunk)%field%x_max+3, &
                                             chunks(chunk)%field%y_min-2:chunks(chunk)%field%y_max+3))
-   ALLOCATE(chunks(chunk)%field%work_array8(chunks(chunk)%field%x_min-2:chunks(chunk)%field%x_max+3, &
-                                            chunks(chunk)%field%y_min-2:chunks(chunk)%field%y_max+3))
 
    ALLOCATE(chunks(chunk)%field%cellx   (chunks(chunk)%field%x_min-2:chunks(chunk)%field%x_max+2))
    ALLOCATE(chunks(chunk)%field%celly   (chunks(chunk)%field%y_min-2:chunks(chunk)%field%y_max+2))
