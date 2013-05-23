@@ -141,8 +141,9 @@ clover_leaf: c_lover *.f90 Makefile
 	reset_field.f90			\
 	set_field_kernel.f90    \
 	set_field.f90           \
-        tea_leaf.f90                    \
-	hydro.f90			\
+	tea_leaf_kernel.f90             \
+	tea_leaf.f90                    \
+	hydro.f90			            \
 	visit.f90			\
 	clover_leaf.f90			\
 	accelerate_kernel_c.o           \
@@ -154,6 +155,7 @@ clover_leaf: c_lover *.f90 Makefile
 	viscosity_kernel_c.o            \
 	advec_mom_kernel_c.o            \
 	advec_cell_kernel_c.o           \
+	tea_leaf_kernel_c.o             \
 	-o clover_leaf; echo $(MESSAGE)
 
 c_lover: *.c Makefile
@@ -166,7 +168,8 @@ c_lover: *.c Makefile
 	ideal_gas_kernel_c.c            \
 	viscosity_kernel_c.c            \
 	advec_mom_kernel_c.c            \
-	advec_cell_kernel_c.c
+	advec_cell_kernel_c.c           \
+	tea_leaf_kernel_c.c
 
 
 clean:
