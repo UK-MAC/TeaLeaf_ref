@@ -97,7 +97,7 @@ CFLAGS=$(CFLAGS_$(COMPILER)) $(OMP) $(I3E) $(C_OPTIONS) -c
 MPI_COMPILER=mpif90
 C_MPI_COMPILER=mpicc
 
-clover_leaf: c_lover *.f90 Makefile
+tea_leaf: c_lover *.f90 Makefile
 	$(MPI_COMPILER) $(FLAGS)	\
 	data.f90			\
 	definitions.f90			\
@@ -156,7 +156,7 @@ clover_leaf: c_lover *.f90 Makefile
 	advec_mom_kernel_c.o            \
 	advec_cell_kernel_c.o           \
 	tea_leaf_kernel_c.o             \
-	-o clover_leaf; echo $(MESSAGE)
+	-o tea_leaf; echo $(MESSAGE)
 
 c_lover: *.c Makefile
 	$(C_MPI_COMPILER) $(CFLAGS)     \
@@ -173,4 +173,4 @@ c_lover: *.c Makefile
 
 
 clean:
-	rm -f *.o *.mod *genmod* clover_leaf
+	rm -f *.o *.mod *genmod* tea_leaf
