@@ -37,6 +37,7 @@ SUBROUTINE generate_chunk(chunk)
                              chunks(chunk)%field%energy0,           &
                              chunks(chunk)%field%xvel0,             &
                              chunks(chunk)%field%yvel0,             &
+                             chunks(chunk)%field%u,                 &
                              number_of_states,                      &
                              state_density,                         &
                              state_energy,                          &

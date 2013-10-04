@@ -11,6 +11,7 @@ SUBROUTINE generate_chunk_kernel(x_min,x_max,y_min,y_max, &
                                  energy0,                 &
                                  xvel0,                   &
                                  yvel0,                   &
+                                 u0,                      &
                                  number_of_states,        &
                                  state_density,           &
                                  state_energy,            &
@@ -35,6 +36,7 @@ SUBROUTINE generate_chunk_kernel(x_min,x_max,y_min,y_max, &
   REAL(KIND=8), DIMENSION(y_min-2:y_max+2) :: celly
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: density0,energy0
   REAL(KIND=8), DIMENSION(x_min-2:x_max+3,y_min-2:y_max+3) :: xvel0,yvel0
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: u0
   INTEGER      :: number_of_states
   REAL(KIND=8), DIMENSION(number_of_states) :: state_density
   REAL(KIND=8), DIMENSION(number_of_states) :: state_energy
@@ -124,6 +126,14 @@ SUBROUTINE generate_chunk_kernel(x_min,x_max,y_min,y_max, &
 !$OMP END DO
 
   ENDDO
+
+!$OMP DO 
+  DO k=y_min-1, y_max+1
+    DO j=x_min-1, x_max+1
+      u0(j,k) =  energy0(j,k) * density0(j,k)
+    ENDDO
+  ENDDO
+!$OMP END DO
 
 !$OMP END PARALLEL
 
