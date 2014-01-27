@@ -76,10 +76,10 @@ SUBROUTINE tea_leaf_kernel_init(x_min,             &
   ENDIF
 
 !$OMP DO
-  DO k=y_min-1,y_max+1
-    DO j=x_min-1,x_max+1
-         Kx(j,k)=(Kx_tmp(j  ,k  )+Kx_tmp(j+1,k  ))/(2.0*Kx_tmp(j  ,k  )*Kx_tmp(j+1,k  ))
-         Ky(j,k)=(Ky_tmp(j  ,k  )+Ky_tmp(j  ,k+1))/(2.0*Ky_tmp(j  ,k  )*Ky_tmp(j  ,k+1))
+  DO k=y_min,y_max+1
+    DO j=x_min,x_max+1
+         Kx(j,k)=(Kx_tmp(j-1,k  )+Kx_tmp(j,k  ))/(2.0_8*Kx_tmp(j-1,k)*Kx_tmp(j,k))
+         Ky(j,k)=(Ky_tmp(j,k-1)+Ky_tmp(j,k))/(2.0_8*Ky_tmp(j,k-1)*Ky_tmp(j,k))
     ENDDO
   ENDDO
 !$OMP END DO
@@ -147,7 +147,8 @@ SUBROUTINE tea_leaf_kernel_solve(x_min,       &
       DO j=x_min, x_max
         u1(j,k) = (u0(j,k) + Kx(j+1,k)*rx*un(j+1,k) + Kx(j,k)*rx*un(j-1,k) &
                            + Ky(j,k+1)*ry*un(j,k+1) + Ky(j,k)*ry*un(j,k-1)) &
-                             /(1+2.0_8*rx+2.0_8*ry)
+                             /(1.0_8+2.0_8*(0.5_8*(Kx(j,k)+Kx(j+1,k)))*rx &
+                                +2.0_8*(0.5_8*(Ky(j,k)+Ky(j+1,k)))*ry)
 
         error = MAX(error, ABS(u1(j,k)-u0(j,k)))
       ENDDO
