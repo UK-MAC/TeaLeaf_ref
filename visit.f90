@@ -31,9 +31,9 @@ SUBROUTINE visit
 
   IMPLICIT NONE
 
-  INTEGER :: i,j,k,c,l,err,get_unit,u,dummy
+  INTEGER :: j,k,c,err,get_unit,u,dummy
   INTEGER :: nxc,nyc,nxv,nyv,nblocks
-  REAL(KIND=8)    :: t0,vx,vy,temp_var
+  REAL(KIND=8)    :: temp_var
 
   CHARACTER(len=80)           :: name
   CHARACTER(len=10)           :: chunk_name,step_name
@@ -43,7 +43,9 @@ SUBROUTINE visit
 
   INTEGER :: fields(NUM_FIELDS)
 
-  name = 'tea'
+  REAL(KIND=8) :: kernel_time,timer
+
+  name = 'clover'
 
   IF(first_call) THEN
 
@@ -58,17 +60,23 @@ SUBROUTINE visit
 
   ENDIF
 
+  IF(profiler_on) kernel_time=timer()
   DO c=1,number_of_chunks
     CALL ideal_gas(c,.FALSE.)
   ENDDO
+  IF(profiler_on) profiler%ideal_gas=profiler%ideal_gas+(timer()-kernel_time)
 
   fields=0
   fields(FIELD_PRESSURE)=1
   fields(FIELD_XVEL0)=1
   fields(FIELD_YVEL0)=1
+  IF(profiler_on) kernel_time=timer()
   CALL update_halo(fields,1)
+  IF(profiler_on) profiler%halo_exchange=profiler%halo_exchange+(timer()-kernel_time)
 
+  IF(profiler_on) kernel_time=timer()
   CALL viscosity()
+  IF(profiler_on) profiler%viscosity=profiler%viscosity+(timer()-kernel_time)
 
   IF ( parallel%boss ) THEN
 
@@ -88,6 +96,7 @@ SUBROUTINE visit
 
   ENDIF
 
+  IF(profiler_on) kernel_time=timer()
   DO c = 1, number_of_chunks
     IF(chunks(c)%task.EQ.parallel%task) THEN
       nxc=chunks(c)%field%x_max-chunks(c)%field%x_min+1
@@ -163,5 +172,6 @@ SUBROUTINE visit
       CLOSE(u)
     ENDIF
   ENDDO
+  IF(profiler_on) profiler%visit=profiler%visit+(timer()-kernel_time)
 
 END SUBROUTINE visit

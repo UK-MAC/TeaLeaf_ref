@@ -79,6 +79,27 @@ MODULE definitions_module
 
    LOGICAL      :: use_vector_loops ! Some loops work better in serial depending on the hardware
 
+   LOGICAL      :: profiler_on ! Internal code profiler to make comparisons across systems easier
+
+   TYPE profiler_type
+     REAL(KIND=8)       :: timestep        &
+                          ,acceleration    &
+                          ,PdV             &
+                          ,cell_advection  &
+                          ,mom_advection   &
+                          ,viscosity       &
+                          ,ideal_gas       &
+                          ,visit           &
+                          ,summary         &
+                          ,reset           &
+                          ,revert          &
+                          ,flux            &
+                          ,tea             &
+                          ,halo_exchange
+                     
+   END TYPE profiler_type
+   TYPE(profiler_type)  :: profiler
+
    REAL(KIND=8) :: end_time
 
    INTEGER      :: end_step

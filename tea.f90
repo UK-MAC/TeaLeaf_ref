@@ -36,6 +36,7 @@ SUBROUTINE tea_leaf()
 
   INTEGER :: fields(NUM_FIELDS)
 
+  REAL(KIND=8) :: kernel_time,timer
 
   DO c=1,number_of_chunks
 
@@ -47,6 +48,7 @@ SUBROUTINE tea_leaf()
       CALL update_halo(fields,2)
 
       ! INIT
+      IF(profiler_on) kernel_time=timer()
       IF(use_fortran_kernels) THEN
           CALL tea_leaf_kernel_init(chunks(c)%field%x_min, &
               chunks(c)%field%x_max,                       &
@@ -163,6 +165,7 @@ SUBROUTINE tea_leaf()
     ENDIF
 
   ENDDO
+  IF(profiler_on) profiler%PdV=profiler%tea+(timer()-kernel_time)
 
 END SUBROUTINE tea_leaf
 

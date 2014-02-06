@@ -32,6 +32,9 @@ SUBROUTINE reset_field()
 
   INTEGER :: c
 
+  REAL(KIND=8) :: kernel_time,timer
+
+  IF(profiler_on) kernel_time=timer()
   DO c=1,number_of_chunks
 
     IF(chunks(c)%task.EQ.parallel%task) THEN
@@ -67,6 +70,7 @@ SUBROUTINE reset_field()
     ENDIF
 
   ENDDO
+  IF(profiler_on) profiler%reset=profiler%reset+(timer()-kernel_time)
 
 END SUBROUTINE reset_field
 

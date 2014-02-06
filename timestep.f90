@@ -33,6 +33,7 @@ SUBROUTINE timestep()
   USE viscosity_module
   USE calc_dt_module
   USE ideal_gas_module
+  USE definitions_module
 
   IMPLICIT NONE
 
@@ -41,6 +42,8 @@ SUBROUTINE timestep()
 
   REAL(KIND=8)    :: dtlp
   REAL(KIND=8)    :: x_pos,y_pos,xl_pos,yl_pos
+
+  REAL(KIND=8)    :: kernel_time,timer
 
   CHARACTER(LEN=8) :: dt_control,dtl_control
 
@@ -53,9 +56,11 @@ SUBROUTINE timestep()
   dt    = g_big
   small=0
 
+  IF(profiler_on) kernel_time=timer()
   DO c = 1, number_of_chunks
     CALL ideal_gas(c,.FALSE.)
   END DO
+  IF(profiler_on) profiler%ideal_gas=profiler%ideal_gas+(timer()-kernel_time)
 
   fields=0
   fields(FIELD_PRESSURE)=1
@@ -63,14 +68,21 @@ SUBROUTINE timestep()
   fields(FIELD_DENSITY0)=1
   fields(FIELD_XVEL0)=1
   fields(FIELD_YVEL0)=1
+  IF(profiler_on) kernel_time=timer()
   CALL update_halo(fields,1)
+  IF(profiler_on) profiler%halo_exchange=profiler%halo_exchange+(timer()-kernel_time)
 
+  IF(profiler_on) kernel_time=timer()
   CALL viscosity()
+  IF(profiler_on) profiler%viscosity=profiler%viscosity+(timer()-kernel_time)
 
   fields=0
   fields(FIELD_VISCOSITY)=1
+  IF(profiler_on) kernel_time=timer()
   CALL update_halo(fields,1)
+  IF(profiler_on) profiler%halo_exchange=profiler%halo_exchange+(timer()-kernel_time)
 
+  IF(profiler_on) kernel_time=timer()
   DO c = 1, number_of_chunks
     CALL calc_dt(c,dtlp,dtl_control,xl_pos,yl_pos,jldt,kldt)
 
@@ -87,6 +99,7 @@ SUBROUTINE timestep()
   dt = MIN(dt, (dtold * dtrise), dtmax)
 
   CALL clover_min(dt)
+  IF(profiler_on) profiler%timestep=profiler%timestep+(timer()-kernel_time)
 
   IF(dt.LT.dtmin) small=1
 

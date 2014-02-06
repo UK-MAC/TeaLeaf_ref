@@ -32,6 +32,9 @@ SUBROUTINE accelerate()
 
   INTEGER :: c
 
+  REAL(KIND=8) :: kernel_time,timer
+
+  IF(profiler_on) kernel_time=timer()
   DO c=1,number_of_chunks
 
     IF(chunks(c)%task.EQ.parallel%task) THEN
@@ -75,6 +78,7 @@ SUBROUTINE accelerate()
     ENDIF
 
   ENDDO
+  IF(profiler_on) profiler%acceleration=profiler%acceleration+(timer()-kernel_time)
 
 END SUBROUTINE accelerate
 

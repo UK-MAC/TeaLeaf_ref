@@ -27,24 +27,36 @@
 #include "ftocmacros.h"
 #include <math.h>
 
-void field_summary_kernel(x_min,x_max,y_min,y_max,
-                                volume,
-                                density0,
-                                energy0,
-                                pressure,
-                                xvel0,
-                                yvel0,
-                                vol,mass,ie,ke,press)
+void field_summary_kernel_c_(int *xmin,
+                          int *xmax,
+                          int *ymin,
+                          int *ymax,
+                          double *volume,
+                          double *density0,
+                          double *energy0,
+                          double *pressure,
+                          double *xvel0,
+                          double *yvel0,
+                          double *vl,
+                          double *mss,
+                          double *ien,
+                          double *ken,
+                          double *prss)
 {
-  int x_min,x_max,y_min,y_max;
-  double volume;
-  double density0,energy0;
-  double pressure;
-  double xvel0,yvel0;
-  double vol,mass,ie,ke,press;
+
+  int x_min=*xmin;
+  int x_max=*xmax;
+  int y_min=*ymin;
+  int y_max=*ymax;
+  double vol=*vl;
+  double mass=*mss;
+  double ie=*ien;
+  double ke=*ken;
+  double press=*prss;
 
   int j,k,jv,kv;
   double vsqrd,cell_vol,cell_mass;
+
 
   vol=0.0;
   mass=0.0;
@@ -52,26 +64,35 @@ void field_summary_kernel(x_min,x_max,y_min,y_max,
   ke=0.0;;
   press=0.0;
 
-!$OMP PARALLEL
-!$OMP DO PRIVATE(vsqrd,cell_vol,cell_mass) REDUCTION(+ : vol,mass,press,ie,ke)
-  DO k=y_min,y_max
-    DO j=x_min,x_max
-      vsqrd=0.0
-      DO kv=k,k+1
-        DO jv=j,j+1
-          vsqrd=vsqrd+0.25*(xvel0(jv,kv)**2+yvel0(jv,kv)**2)
-        ENDDO
-      ENDDO
-      cell_vol=volume(j,k)
-      cell_mass=cell_vol*density0(j,k)
-      vol=vol+cell_vol
-      mass=mass+cell_mass
-      ie=ie+cell_mass*energy0(j,k)
-      ke=ke+cell_mass*0.5*vsqrd
-      press=press+cell_vol*pressure(j,k)
-    ENDDO
-  ENDDO
-!$OMP END DO
-!$OMP END PARALLEL
+#pragma omp parallel
+ {
+#pragma omp for private(vsqrd,cell_vol,cell_mass) reduction(+ : vol,mass,press,ie,ke,j,jv,kv)
+  for (k=y_min;k<=y_max;k++) {
+#pragma ivdep
+    for (j=x_min;j<=x_max;j++) {
+      vsqrd=0.0;
+      for (kv=k;kv<=k+1;kv++) {
+        for (jv=j;jv<=j+1;jv++) {
+          vsqrd=vsqrd+0.25*(xvel0[FTNREF2D(jv ,kv ,x_max+5,x_min-2,y_min-2)]*xvel0[FTNREF2D(jv ,kv ,x_max+5,x_min-2,y_min-2)]
+                           +yvel0[FTNREF2D(jv ,kv ,x_max+5,x_min-2,y_min-2)]*yvel0[FTNREF2D(jv ,kv ,x_max+5,x_min-2,y_min-2)]);
+        }
+      }
+      cell_vol=volume[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)];
+      cell_mass=cell_vol*density0[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)];
+      vol=vol+cell_vol;
+      mass=mass+cell_mass;
+      ie=ie+cell_mass*energy0[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)];
+      ke=ke+cell_mass*0.5*vsqrd;
+      press=press+cell_vol*pressure[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)];
+    }
+  }
+
+ }
+
+ *vl=vol;
+ *mss=mass;
+ *ien=ie;
+ *ken=ke;
+ *prss=press;
 
 }

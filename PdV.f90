@@ -41,8 +41,11 @@ SUBROUTINE PdV(predict)
   INTEGER :: c
   INTEGER :: fields(NUM_FIELDS)
 
+  REAL(KIND=8) :: kernel_time,timer
+
   error_condition=0 ! Not used yet due to issue with OpenA reduction
 
+  IF(profiler_on) kernel_time=timer()
   DO c=1,number_of_chunks
 
     IF(chunks(c)%task.EQ.parallel%task) THEN
@@ -102,22 +105,29 @@ SUBROUTINE PdV(predict)
   ENDDO
 
   CALL clover_check_error(error_condition)
+  IF(profiler_on) profiler%PdV=profiler%PdV+(timer()-kernel_time)
 
   IF(error_condition.EQ.1) THEN
     CALL report_error('PdV','error in PdV')
   ENDIF
 
   IF(predict)THEN
+    IF(profiler_on) kernel_time=timer()
     DO c=1,number_of_chunks
       CALL ideal_gas(c,.TRUE.)
     ENDDO
+    IF(profiler_on) profiler%ideal_gas=profiler%ideal_gas+(timer()-kernel_time)
     fields=0
     fields(FIELD_PRESSURE)=1
+    IF(profiler_on) kernel_time=timer()
     CALL update_halo(fields,1)
+    IF(profiler_on) profiler%halo_exchange=profiler%halo_exchange+(timer()-kernel_time)
   ENDIF
 
   IF ( predict ) THEN
+    IF(profiler_on) kernel_time=timer()
     CALL revert()
+    IF(profiler_on) profiler%revert=profiler%revert+(timer()-kernel_time)
   ENDIF
 
 END SUBROUTINE PdV

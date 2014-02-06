@@ -188,6 +188,7 @@ c_lover: *.c Makefile
 	reset_field_kernel_c.c          \
 	ideal_gas_kernel_c.c            \
 	viscosity_kernel_c.c            \
+	field_summary_kernel_c.c        \
 	advec_mom_kernel_c.c            \
 	advec_cell_kernel_c.c           \
 	tea_leaf_kernel_c.c

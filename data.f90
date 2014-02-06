@@ -60,7 +60,7 @@ MODULE data_module
                                 ,NUM_FIELDS       =16
 
    INTEGER,         PARAMETER :: CELL_DATA     = 1,        &
-                                 VERTEX_DATA   = 3,        &
+                                 VERTEX_DATA   = 2,        &
                                  X_FACE_DATA   = 3,        &
                                  y_FACE_DATA   = 4
 
@@ -72,7 +72,8 @@ MODULE data_module
                                 ,DIVERG= 4
 
    INTEGER,                      PARAMETER :: g_rect=1 &
-                                ,g_circ=2
+                                ,g_circ=2 &
+                                ,g_point=3
 
    INTEGER         ::            g_in           & ! File for input data.
                                 ,g_out
