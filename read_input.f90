@@ -41,7 +41,7 @@ SUBROUTINE read_input()
   use_C_kernels=.FALSE.
   use_OA_kernels=.FALSE.
   use_vector_loops=.FALSE.
-  use_TeaLeaf=.FALSE.
+  use_TeaLeaf=.TRUE.
   max_iters = 1000
   eps = 10e-8
   use_Hydro = .FALSE.
@@ -143,17 +143,26 @@ SUBROUTINE read_input()
         use_vector_loops=.TRUE.
       CASE('use_tea_leaf')
         use_Tealeaf=.TRUE.
+        IF(parallel%boss)WRITE(g_out,"(1x,a16)")'conduction is on'
+      CASE('no_tea_leaf')
+        use_Tealeaf=.FALSE.
+        IF(parallel%boss)WRITE(g_out,"(1x,a17)")'conduction is off'
       CASE('tl_max_iters')
         max_iters = parse_getival(parse_getword(.TRUE.))
       CASE('tl_eps')
         eps = parse_getrval(parse_getword(.TRUE.))
       CASE('no_hydro')
         use_Hydro = .FALSE.
+        IF(parallel%boss)WRITE(g_out,"(1x,a12)")'Hydro is off'
       CASE('hydro_on')
         use_Hydro = .TRUE.
-      CASE('tl_coefficient')
-        coefficient = parse_getival(parse_getword(.TRUE.))
-        IF(parallel%boss)WRITE(g_out,"(1x,a25,i12)")'diffusion coefficient',coefficient
+        IF(parallel%boss)WRITE(g_out,"(1x,a11)")'Hydro is on'
+      CASE('tl_coefficient_density')
+        coefficient = CONDUCTIVITY
+        IF(parallel%boss)WRITE(g_out,"(1x,a29)")'Diffusion coefficient density'
+      CASE('tl_coefficient_inverrse_density')
+        coefficient = RECIP_CONDUCTIVITY
+        IF(parallel%boss)WRITE(g_out,"(1x,a40)")'Diffusion coefficient reciprocal density'
       CASE('state')
 
         state=parse_getival(parse_getword(.TRUE.))

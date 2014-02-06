@@ -6,19 +6,21 @@ SUBROUTINE field_summary_kernel(x_min,x_max,y_min,y_max, &
                                 volume,                  &
                                 density0,                &
                                 energy0,                 &
+                                u,                       &
                                 pressure,                &
                                 xvel0,                   &
                                 yvel0,                   &
-                                vol,mass,ie,ke,press     )
+                                vol,mass,ie,ke,press,temp)
 
   IMPLICIT NONE
 
   INTEGER      :: x_min,x_max,y_min,y_max
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: volume
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: density0,energy0
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+3,y_min-2:y_max+3) :: u
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: pressure
   REAL(KIND=8), DIMENSION(x_min-2:x_max+3,y_min-2:y_max+3) :: xvel0,yvel0
-  REAL(KIND=8) :: vol,mass,ie,ke,press
+  REAL(KIND=8) :: vol,mass,ie,ke,press,temp
 
   INTEGER      :: j,k,jv,kv
   REAL(KIND=8) :: vsqrd,cell_vol,cell_mass
@@ -28,9 +30,10 @@ SUBROUTINE field_summary_kernel(x_min,x_max,y_min,y_max, &
   ie=0.0
   ke=0.0
   press=0.0
+  temp=0.0
 
 !$OMP PARALLEL
-!$OMP DO PRIVATE(vsqrd,cell_vol,cell_mass) REDUCTION(+ : vol,mass,press,ie,ke)
+!$OMP DO PRIVATE(vsqrd,cell_vol,cell_mass) REDUCTION(+ : vol,mass,press,ie,ke,temp)
   DO k=y_min,y_max
     DO j=x_min,x_max
       vsqrd=0.0
@@ -46,6 +49,7 @@ SUBROUTINE field_summary_kernel(x_min,x_max,y_min,y_max, &
       ie=ie+cell_mass*energy0(j,k)
       ke=ke+cell_mass*0.5*vsqrd
       press=press+cell_vol*pressure(j,k)
+      temp=temp+cell_vol*u(j,k)
     ENDDO
   ENDDO
 !$OMP END DO

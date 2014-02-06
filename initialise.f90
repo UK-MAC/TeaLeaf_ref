@@ -25,7 +25,7 @@ SUBROUTINE initialise
   IF(parallel%boss)THEN
 !$  IF(OMP_GET_THREAD_NUM().EQ.0) THEN
       WRITE(g_out,*)
-      WRITE(g_out,'(a15,f8.3)') 'Clover Version ',g_version
+      WRITE(g_out,'(a15,f8.3)') 'Tea Version ',g_version
       WRITE(g_out,'(a18)') 'MPI Version'
 !$    WRITE(g_out,'(a18)') 'OpenMP Version'
       WRITE(g_out,'(a14,i6)') 'Task Count ',parallel%max_task !MPI
@@ -39,7 +39,7 @@ SUBROUTINE initialise
   CALL clover_barrier
 
   IF(parallel%boss)THEN
-    WRITE(g_out,*) 'Clover will run from the following input:-'
+    WRITE(g_out,*) 'Tea will run from the following input:-'
     WRITE(g_out,*)
   ENDIF
 

@@ -6,7 +6,7 @@ SUBROUTINE field_summary()
 
   IMPLICIT NONE
 
-  REAL(KIND=8) :: vol,mass,ie,ke,press
+  REAL(KIND=8) :: vol,mass,ie,ke,press,temp
 
 !$ INTEGER :: OMP_GET_THREAD_NUM
 
@@ -15,7 +15,7 @@ SUBROUTINE field_summary()
   IF(parallel%boss)THEN
     WRITE(g_out,*)
     WRITE(g_out,*) 'Time ',time
-    WRITE(g_out,'(a13,7a16)')'           ','Volume','Mass','Density','Pressure','Internal Energy','Kinetic Energy','Total Energy'
+    WRITE(g_out,'(a13,8a16)')'           ','Volume','Mass','Density','Pressure','Internal Energy','Kinetic Energy','Total Energy','U'
   ENDIF
 
   DO c=1,number_of_chunks
@@ -31,10 +31,11 @@ SUBROUTINE field_summary()
                                 chunks(c)%field%volume,                  &
                                 chunks(c)%field%density0,                &
                                 chunks(c)%field%energy0,                 &
+                                chunks(c)%field%u,                       &
                                 chunks(c)%field%pressure,                &
                                 chunks(c)%field%xvel0,                   &
                                 chunks(c)%field%yvel0,                   &
-                                vol,mass,ie,ke,press                     )
+                                vol,mass,ie,ke,press,temp                )
     ENDIF
   ENDDO
 
@@ -44,10 +45,11 @@ SUBROUTINE field_summary()
   CALL clover_sum(press)
   CALL clover_sum(ie)
   CALL clover_sum(ke)
+  CALL clover_sum(temp)
 
   IF(parallel%boss) THEN
 !$  IF(OMP_GET_THREAD_NUM().EQ.0) THEN
-      WRITE(g_out,'(a6,i7,7e16.4)')' step:',step,vol,mass,mass/vol,press/vol,ie,ke,ie+ke
+      WRITE(g_out,'(a6,i7,8e16.4)')' step:',step,vol,mass,mass/vol,press/vol,ie,ke,ie+ke,temp
       WRITE(g_out,*)
 !$  ENDIF
    ENDIF

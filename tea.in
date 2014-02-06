@@ -20,11 +20,6 @@
  end_time=1.0
  end_step=87
 
- use_tea_leaf
- no_hydro
  tl_max_iters=10000
- tl_coefficient=1
-
- visit_frequency=10
 
 *endtea

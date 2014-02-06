@@ -19,12 +19,12 @@ SUBROUTINE visit
 
   INTEGER :: fields(NUM_FIELDS)
 
-  name = 'clover'
+  name = 'tea'
 
   IF(first_call) THEN
 
     nblocks=number_of_chunks
-    filename = "clover.visit"
+    filename = "tea.visit"
     u=get_unit(dummy)
     OPEN(UNIT=u,FILE=filename,STATUS='UNKNOWN',IOSTAT=err)
     WRITE(u,'(a,i5)')'!NBLOCKS ',nblocks
@@ -48,7 +48,7 @@ SUBROUTINE visit
 
   IF ( parallel%boss ) THEN
 
-    filename = "clover.visit"
+    filename = "tea.visit"
     u=get_unit(dummy)
     OPEN(UNIT=u,FILE=filename,STATUS='UNKNOWN',POSITION='APPEND',IOSTAT=err)
 

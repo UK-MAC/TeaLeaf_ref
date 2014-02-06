@@ -71,7 +71,7 @@ SUBROUTINE hydro
       IF ( parallel%boss ) THEN
         WRITE(g_out,*)
         WRITE(g_out,*) 'Calculation complete'
-        WRITE(g_out,*) 'Clover is finishing'
+        WRITE(g_out,*) 'Tea is finishing'
         WRITE(g_out,*) 'Wall clock ', timer() - timerstart
         WRITE(    0,*) 'Wall clock ', timer() - timerstart
       ENDIF

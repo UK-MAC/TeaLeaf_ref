@@ -173,4 +173,4 @@ c_lover: *.c Makefile
 
 
 clean:
-	rm -f *.o *.mod *genmod* tea_leaf
+	rm -f *.o *.mod *genmod* tea_leaf tea.in.tmp tea.out
