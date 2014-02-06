@@ -1,3 +1,26 @@
+!Crown Copyright 2014 AWE.
+!
+! This file is part of TeaLeaf.
+!
+! TeaLeaf is free software: you can redistribute it and/or modify it under 
+! the terms of the GNU General Public License as published by the 
+! Free Software Foundation, either version 3 of the License, or (at your option) 
+! any later version.
+!
+! TeaLeaf is distributed in the hope that it will be useful, but 
+! WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
+! FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more 
+! details.
+!
+! You should have received a copy of the GNU General Public License along with 
+! TeaLeaf. If not, see http://www.gnu.org/licenses/.
+
+!>  @brief Reads the user input
+!>  @author David Beckingsale, Wayne Gaudin
+!>  @details Reads and parses the user input from the processed file and sets
+!>  the variables used in the generation phase. Default values are also set
+!>  here.
+
 SUBROUTINE read_input()
 
   USE clover_module
@@ -12,6 +35,8 @@ SUBROUTINE read_input()
 
   CHARACTER(LEN=500) :: string
 
+  test_problem=0
+
   state_max=0
 
   grid%xmin=  0.0
@@ -24,6 +49,7 @@ SUBROUTINE read_input()
 
   end_time=10.0
   end_step=g_ibig
+  complete=.FALSE.
 
   visit_frequency=0
   summary_frequency=10
@@ -163,6 +189,9 @@ SUBROUTINE read_input()
       CASE('tl_coefficient_inverrse_density')
         coefficient = RECIP_CONDUCTIVITY
         IF(parallel%boss)WRITE(g_out,"(1x,a40)")'Diffusion coefficient reciprocal density'
+      CASE('test_problem')
+        test_problem=parse_getival(parse_getword(.TRUE.))
+        IF(parallel%boss)WRITE(g_out,"(1x,a25,i12)")'test_problem',test_problem
       CASE('state')
 
         state=parse_getival(parse_getword(.TRUE.))

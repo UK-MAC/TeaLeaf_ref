@@ -1,3 +1,29 @@
+!Crown Copyright 2014 AWE.
+!
+! This file is part of TeaLeaf.
+!
+! TeaLeaf is free software: you can redistribute it and/or modify it under 
+! the terms of the GNU General Public License as published by the 
+! Free Software Foundation, either version 3 of the License, or (at your option) 
+! any later version.
+!
+! TeaLeaf is distributed in the hope that it will be useful, but 
+! WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
+! FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more 
+! details.
+!
+! You should have received a copy of the GNU General Public License along with 
+! CloverLeaf. If not, see http://www.gnu.org/licenses/.
+
+!>  @brief Driver for the field summary kernels
+!>  @author David Beckingsale, Wayne Gaudin
+!>  @details The user specified field summary kernel is invoked here. A summation
+!>  across all mesh chunks is then performed and the information outputed.
+!>  If the run is a test problem, the final result is compared with the expected
+!>  result and the difference output.
+!>  Note the reference solution is the value returned from an Intel compiler with
+!>  ieee options set on a single core run.
+
 SUBROUTINE field_summary()
 
   USE clover_module
@@ -7,6 +33,7 @@ SUBROUTINE field_summary()
   IMPLICIT NONE
 
   REAL(KIND=8) :: vol,mass,ie,ke,press,temp
+  REAL(KIND=8) :: qa_diff
 
 !$ INTEGER :: OMP_GET_THREAD_NUM
 
@@ -52,6 +79,26 @@ SUBROUTINE field_summary()
       WRITE(g_out,'(a6,i7,8e16.4)')' step:',step,vol,mass,mass/vol,press/vol,ie,ke,ie+ke,temp
       WRITE(g_out,*)
 !$  ENDIF
-   ENDIF
+  ENDIF
+
+  !Check if this is the final call and if it is a test problem, check the result.
+  IF(complete) THEN
+    IF(parallel%boss) THEN
+!$    IF(OMP_GET_THREAD_NUM().EQ.0) THEN
+        IF(test_problem.EQ.1) THEN
+          qa_diff=ABS((100.0_8*(temp/126.762419408430_8))-100.0_8)
+          WRITE(*,*)"Test problem 1 is within",qa_diff,"% of the expected solution"
+          WRITE(g_out,*)"Test problem 1 is within",qa_diff,"% of the expected solution"
+          IF(qa_diff.LT.0.001) THEN
+            WRITE(*,*)"This test is considered PASSED"
+            WRITE(g_out,*)"This test is considered PASSED"
+          ELSE
+            WRITE(*,*)"This test is considered NOT PASSED"
+            WRITE(g_out,*)"This is test is considered NOT PASSED"
+          ENDIF
+        ENDIF
+!$    ENDIF
+    ENDIF
+  ENDIF
 
 END SUBROUTINE field_summary

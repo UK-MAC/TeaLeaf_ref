@@ -92,6 +92,7 @@ SUBROUTINE initialise
       WRITE(out_unit,'(A)')'end_time=1.0'
       WRITE(out_unit,'(A)')'end_step=87'
       WRITE(out_unit,'(A)')'tl_max_iters=10000'
+      WRITE(out_unit,'(A)')' test_problem 1'
       WRITE(out_unit,'(A)')'*endtea'
       CLOSE(out_unit)
       uin=get_unit(dummy)
