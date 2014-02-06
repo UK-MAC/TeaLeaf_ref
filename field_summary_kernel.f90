@@ -49,7 +49,7 @@ SUBROUTINE field_summary_kernel(x_min,x_max,y_min,y_max, &
       ie=ie+cell_mass*energy0(j,k)
       ke=ke+cell_mass*0.5*vsqrd
       press=press+cell_vol*pressure(j,k)
-      temp=temp+cell_vol*u(j,k)
+      temp=temp+cell_mass*u(j,k)
     ENDDO
   ENDDO
 !$OMP END DO
