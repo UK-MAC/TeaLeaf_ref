@@ -1,2 +1,4 @@
 *.mod
-clover_leaf
+*.o
+*.vtk
+tea_leaf

@@ -139,13 +139,13 @@ tea_leaf: c_lover *.f90 Makefile
 	advection.f90			\
 	reset_field_kernel.f90		\
 	reset_field.f90			\
-	set_field_kernel.f90    \
-	set_field.f90           \
+	set_field_kernel.f90            \
+	set_field.f90                   \
 	tea_leaf_kernel.f90             \
-	tea_leaf.f90                    \
-	hydro.f90			            \
+	tea.f90                         \
+	hydro.f90		        \
 	visit.f90			\
-	clover_leaf.f90			\
+	tea_leaf.f90			\
 	accelerate_kernel_c.o           \
 	PdV_kernel_c.o                  \
 	flux_calc_kernel_c.o            \

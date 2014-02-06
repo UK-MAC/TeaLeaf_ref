@@ -44,13 +44,13 @@ SUBROUTINE read_input()
   use_TeaLeaf=.FALSE.
   max_iters = 1000
   eps = 10e-8
-  use_Hydro = .TRUE.
+  use_Hydro = .FALSE.
   coefficient = CONDUCTIVITY
 
   IF(parallel%boss)WRITE(g_out,*) 'Reading input file'
   IF(parallel%boss)WRITE(g_out,*)
 
-  stat=parse_init(g_in,'*clover')
+  stat=parse_init(g_in,'*tea')
 
   DO
     stat=parse_getline(dummy)
@@ -69,7 +69,7 @@ SUBROUTINE read_input()
 
   IF(number_of_states.LT.1) CALL report_error('read_input','No states defined.')
 
-  stat=parse_init(g_in,'*clover')
+  stat=parse_init(g_in,'*tea')
 
   ALLOCATE(states(number_of_states))
   states(:)%defined=.FALSE.
@@ -149,6 +149,8 @@ SUBROUTINE read_input()
         eps = parse_getrval(parse_getword(.TRUE.))
       CASE('no_hydro')
         use_Hydro = .FALSE.
+      CASE('hydro_on')
+        use_Hydro = .TRUE.
       CASE('tl_coefficient')
         coefficient = parse_getival(parse_getword(.TRUE.))
         IF(parallel%boss)WRITE(g_out,"(1x,a25,i12)")'diffusion coefficient',coefficient
