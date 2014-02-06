@@ -1,3 +1,27 @@
+!Crown Copyright 2014 AWE.
+!
+! This file is part of TeaLeaf.
+!
+! TeaLeaf is free software: you can redistribute it and/or modify it under 
+! the terms of the GNU General Public License as published by the 
+! Free Software Foundation, either version 3 of the License, or (at your option) 
+! any later version.
+!
+! TeaLeaf is distributed in the hope that it will be useful, but 
+! WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
+! FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more 
+! details.
+!
+! You should have received a copy of the GNU General Public License along with 
+! TeaLeaf. If not, see http://www.gnu.org/licenses/.
+
+!>  @brief Fortran PdV kernel.
+!>  @author David Beckingsale, Wayne Gaudin
+!>  @details Calculates the change in energy and density in a cell using the
+!>  change on cell volume due to the velocity gradients in a cell. The time
+!>  level of the velocity data depends on whether it is invoked as the
+!>  predictor or corrector.
+
 MODULE PdV_kernel_module
 
 CONTAINS

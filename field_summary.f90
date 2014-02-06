@@ -13,7 +13,7 @@
 ! details.
 !
 ! You should have received a copy of the GNU General Public License along with 
-! CloverLeaf. If not, see http://www.gnu.org/licenses/.
+! TeaLeaf. If not, see http://www.gnu.org/licenses/.
 
 !>  @brief Driver for the field summary kernels
 !>  @author David Beckingsale, Wayne Gaudin

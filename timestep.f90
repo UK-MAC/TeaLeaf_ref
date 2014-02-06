@@ -1,3 +1,26 @@
+!Crown Copyright 2014 AWE.
+!
+! This file is part of TeaLeaf.
+!
+! TeaLeaf is free software: you can redistribute it and/or modify it under 
+! the terms of the GNU General Public License as published by the 
+! Free Software Foundation, either version 3 of the License, or (at your option) 
+! any later version.
+!
+! TeaLeaf is distributed in the hope that it will be useful, but 
+! WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
+! FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more 
+! details.
+!
+! You should have received a copy of the GNU General Public License along with 
+! TeaLeaf. If not, see http://www.gnu.org/licenses/.
+
+!>  @brief Calculate the minimum timestep for all mesh chunks.
+!>  @author David Beckingsale, Wayne Gaudin
+!>  @details Invokes the kernels needed to calculate the timestep and finds
+!>  the minimum across all chunks. Checks if the timestep falls below the
+!>  user specified limitand outputs the timestep information.
+
 MODULE timestep_module
 
 CONTAINS

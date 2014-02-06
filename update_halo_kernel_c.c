@@ -1,3 +1,29 @@
+/*Crown Copyright 2014 AWE.
+*
+* This file is part of TeaLeaf.
+*
+* TeaLeaf is free software: you can redistribute it and/or modify it under
+* the terms of the GNU General Public License as published by the
+* Free Software Foundation, either version 3 of the License, or (at your option)
+* any later version.
+*
+* TeaLeaf is distributed in the hope that it will be useful, but
+* WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+* FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+* details.
+*
+* You should have received a copy of the GNU General Public License along with
+* TeaLeaf. If not, see http://www.gnu.org/licenses/. */
+
+/**
+ *  @brief C kernel to update the external halo cells in a chunk.
+ *  @author David Beckingsale, Wayne Gaudin
+ *  @details Updates halo cells for the required fields at the required depth
+ *  for any halo cells that lie on an external boundary. The location and type
+ *  of data governs how this is carried out. External boundaries are always
+ *  reflective.
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include "ftocmacros.h"

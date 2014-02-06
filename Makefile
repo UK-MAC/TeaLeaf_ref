@@ -1,4 +1,25 @@
-# Agnostic, platform independent makefile for the Clover Leaf benchmark code.
+#Crown Copyright 2014 AWE.
+#
+# This file is part of TeaLeaf.
+#
+# TeaLeaf is free software: you can redistribute it and/or modify it under 
+# the terms of the GNU General Public License as published by the 
+# Free Software Foundation, either version 3 of the License, or (at your option) 
+# any later version.
+#
+# TeaLeaf is distributed in the hope that it will be useful, but 
+# WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
+# FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more 
+# details.
+#
+# You should have received a copy of the GNU General Public License along with 
+# TeaLeaf. If not, see http://www.gnu.org/licenses/.
+
+#  @brief Makefile for CloverLeaf
+#  @author David Beckingsale, Wayne Gaudin
+#  @details Agnostic, platform independent makefile for the TeaLeaf benchmark code.
+
+# Agnostic, platform independent makefile for the TeaLeaf benchmark code.
 # It is not meant to be clever in anyway, just a simple build out of the box script.
 # Just make sure mpif90 is in your path. It uses mpif90 even for all builds because this abstracts the base
 #  name of the compiler. If you are on a system that doesn't use mpif90, just replace mpif90 with the compiler name
