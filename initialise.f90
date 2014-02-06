@@ -1,3 +1,27 @@
+!Crown Copyright 2014 AWE.
+!
+! This file is part of TeaLeaf.
+!
+! CloverLeaf is free software: you can redistribute it and/or modify it under 
+! the terms of the GNU General Public License as published by the 
+! Free Software Foundation, either version 3 of the License, or (at your option) 
+! any later version.
+!
+! TeaLeaf is distributed in the hope that it will be useful, but 
+! WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
+! FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more 
+! details.
+!
+! You should have received a copy of the GNU General Public License along with 
+! TeaLeaf. If not, see http://www.gnu.org/licenses/.
+
+!>  @brief Top level initialisation routine
+!>  @author David Beckingsale, Wayne Gaudin
+!>  @details Checks for the user input and either invokes the input reader or
+!>  switches to the internal test problem. It processes the input and strips
+!>  comments before writing a final input file.
+!>  It then calls the start routine.
+
 SUBROUTINE initialise
 
   USE clover_module
@@ -47,6 +71,32 @@ SUBROUTINE initialise
     uin=get_unit(dummy)
 
     OPEN(FILE='tea.in',ACTION='READ',STATUS='OLD',UNIT=uin,IOSTAT=ios)
+    IF(ios.NE.0) THEN
+      out_unit=get_unit(dummy)
+      OPEN(FILE='tea.in',UNIT=out_unit,STATUS='REPLACE',ACTION='WRITE',IOSTAT=ios)
+      WRITE(out_unit,'(A)')'*tea'
+      WRITE(out_unit,'(A)')'state 1 density=100.0 energy=0.0001'
+      WRITE(out_unit,'(A)')'state 2 density=0.1 energy=25.0 geometry=rectangle xmin=0.0 xmax=1.0 ymin=1.0 ymax=2.0'
+      WRITE(out_unit,'(A)')'state 3 density=0.1 energy=0.1 geometry=rectangle xmin=1.0 xmax=6.0 ymin=1.0 ymax=2.0'
+      WRITE(out_unit,'(A)')'state 4 density=0.1 energy=0.1 geometry=rectangle xmin=5.0 xmax=6.0 ymin=1.0 ymax=8.0'
+      WRITE(out_unit,'(A)')'state 5 density=0.1 energy=0.1 geometry=rectangle xmin=5.0 xmax=10.0 ymin=7.0 ymax=8.0'
+      WRITE(out_unit,'(A)')'x_cells=10'
+      WRITE(out_unit,'(A)')'y_cells=10'
+      WRITE(out_unit,'(A)')'xmin=0.0'
+      WRITE(out_unit,'(A)')'ymin=0.0'
+      WRITE(out_unit,'(A)')'xmax=10.0'
+      WRITE(out_unit,'(A)')'ymax=10.0'
+      WRITE(out_unit,'(A)')'initial_timestep=0.004'
+      WRITE(out_unit,'(A)')'timestep_rise=1.5'
+      WRITE(out_unit,'(A)')'max_timestep=0.004'
+      WRITE(out_unit,'(A)')'end_time=1.0'
+      WRITE(out_unit,'(A)')'end_step=87'
+      WRITE(out_unit,'(A)')'tl_max_iters=10000'
+      WRITE(out_unit,'(A)')'*endtea'
+      CLOSE(out_unit)
+      uin=get_unit(dummy)
+      OPEN(FILE='tea.in',ACTION='READ',STATUS='OLD',UNIT=uin,IOSTAT=ios)
+    ENDIF
     IF(ios.NE.0) CALL report_error('initialise','Error opening tea.in')
 
     out_unit=get_unit(dummy)
