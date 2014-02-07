@@ -176,6 +176,7 @@ tea_leaf: c_lover *.f90 Makefile
 	viscosity_kernel_c.o            \
 	advec_mom_kernel_c.o            \
 	advec_cell_kernel_c.o           \
+	field_summary_kernel_c.o        \
 	tea_leaf_kernel_c.o             \
 	-o tea_leaf; echo $(MESSAGE)
 
