@@ -46,7 +46,36 @@ SUBROUTINE generate_chunk(chunk)
    state_geometry(state)=states(state)%geometry
   ENDDO
 
-  CALL generate_chunk_kernel(chunks(chunk)%field%x_min,             &
+  IF(use_fortran_kernels) THEN
+    CALL generate_chunk_kernel(chunks(chunk)%field%x_min,             &
+                               chunks(chunk)%field%x_max,             &
+                               chunks(chunk)%field%y_min,             &
+                               chunks(chunk)%field%y_max,             &
+                               chunks(chunk)%field%vertexx,           &
+                               chunks(chunk)%field%vertexy,           &
+                               chunks(chunk)%field%cellx,             &
+                               chunks(chunk)%field%celly,             &
+                               chunks(chunk)%field%density0,          &
+                               chunks(chunk)%field%energy0,           &
+                               chunks(chunk)%field%xvel0,             &
+                               chunks(chunk)%field%yvel0,             &
+                               chunks(chunk)%field%u,                 &
+                               number_of_states,                      &
+                               state_density,                         &
+                               state_energy,                          &
+                               state_xvel,                            &
+                               state_yvel,                            &
+                               state_xmin,                            &
+                               state_xmax,                            &
+                               state_ymin,                            &
+                               state_ymax,                            &
+                               state_radius,                          &
+                               state_geometry,                        &
+                               g_rect,                                &
+                               g_circ,                                &
+                               g_point)
+      ELSEIF(use_C_kernels)THEN
+        CALL generate_chunk_kernel_c(chunks(chunk)%field%x_min,         &
                              chunks(chunk)%field%x_max,             &
                              chunks(chunk)%field%y_min,             &
                              chunks(chunk)%field%y_max,             &
@@ -71,6 +100,8 @@ SUBROUTINE generate_chunk(chunk)
                              state_radius,                          &
                              state_geometry,                        &
                              g_rect,                                &
-                             g_circ                                 )
+                             g_circ,                                &
+                             g_point)
+      ENDIF
 
 END SUBROUTINE generate_chunk

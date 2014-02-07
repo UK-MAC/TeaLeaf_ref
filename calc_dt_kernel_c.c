@@ -28,142 +28,152 @@
 #include "ftocmacros.h"
 #include <math.h>
 
-void calc_dt_kernel(x_min,x_max,y_min,y_max,
-                    g_small,g_big,dtmin,
-                    dtc_safe,
-                    dtu_safe,
-                    dtv_safe,
-                    dtdiv_safe,
-                    xarea,
-                    yarea,
-                    cellx,
-                    celly,
-                    celldx,
-                    celldy,
-                    volume,
-                    density0,
-                    energy0,
-                    pressure,
-                    viscosity,
-                    soundspeed,
-                    xvel0,yvel0,
-                    dt_min,
-                    dt_min_val,
-                    dtl_control,
-                    xl_pos,
-                    yl_pos,
-                    jldt,
-                    kldt,
-                    small)
+void calc_dt_kernel_c_(int *xmin,int *xmax,int *ymin,int *ymax,
+                    double *gsmall,double *gbig,double *mindt,
+                    double *dtcsafe,
+                    double *dtusafe,
+                    double *dtvsafe,
+                    double *dtdivsafe,
+                    double *xarea,
+                    double *yarea,
+                    double *cellx,
+                    double *celly,
+                    double *celldx,
+                    double *celldy,
+                    double *volume,
+                    double *density0,
+                    double *energy0,
+                    double *pressure,
+                    double *viscosity,
+                    double *soundspeed,
+                    double *xvel0,
+		    double *yvel0,
+                    double *dt_min,
+                    double *dtminval,
+                    int *dtlcontrol,
+                    double *xlpos,
+                    double *ylpos,
+                    int *jldt,
+                    int *kldt,
+                    int *smll)
 {
 
-  int  x_min,x_max,y_min,y_max;
-  double g_small,g_big,dtmin,dt_min_val;
-  double dtc_safe,dtu_safe,dtv_safe,dtdiv_safe;
-  double xarea;
-  double yarea;
-  double celly;
-  double celldy;
-  double volume;
-  double density0;
-  double energy0;
-  double pressure;
-  double viscosity;
-  double soundspeed;
-  double xvel0,yvel0;
-  double dt_min;
+  int  x_min=*xmin;
+  int  x_max=*xmax;
+  int  y_min=*ymin;
+  int  y_max=*ymax;
 
-  int dtl_control;
-  double xl_pos,yl_pos;
-  int jldt,kldt;
-  int small;
+  double g_small=*gsmall;
+  double g_big=*gbig;
+  double dt_min_val=*dtminval;
+  double dtc_safe=*dtcsafe;
+  double dtu_safe=*dtusafe;
+  double dtv_safe=*dtvsafe;
+  double dtdiv_safe=*dtdivsafe;
+  double min_dt=*mindt;
+
+  int dtl_control=*dtlcontrol;
+  double xl_pos=*xlpos;
+  double yl_pos=*ylpos;
+  int j_ldt=*jldt;
+  int k_ldt=*kldt;
+  int small=*smll;
 
   int j,k;
 
   double div,dsx,dsy,dtut,dtvt,dtct,dtdivt,cc,dv1,dv2,jk_control;
 
-!$OMP PARALLEL
+  small=0;
 
-  small=0
+  dt_min_val = g_big;
+  jk_control=1.1;
 
-  dt_min_val = g_big
-  jk_control=1.1
+#pragma omp parallel
+ {
 
-!$OMP DO PRIVATE(dsx,dsy,cc,dv1,dv2,div,dtct,dtut,dtvt,dtdivt)
-  DO k=y_min,y_max
-    DO j=x_min,x_max
+#pragma omp for private(dsx,dsy,cc,dv1,dv2,div,dtct,dtut,dtvt,dtdivt,j,k)
+  for (k=y_min;k<=y_max;k++) {
+#pragma ivdep
+    for (j=x_min;j<=x_max;j++) {
 
-       dsx=celldx(j)
-       dsy=celldy(k)
+       dsx=celldx[FTNREF1D(j,x_min-2)];
+       dsy=celldy[FTNREF1D(k,y_min-2)];
 
-       cc=soundspeed(j,k)**2
-       cc=cc+2.0*viscosity(j,k)/density0(j,k)
-       cc=MAX(SQRT(cc),g_small)
+       cc=soundspeed[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)]*soundspeed[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)];
+       cc=cc+2.0*viscosity[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)]/density0[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)];
+       cc=MAX(sqrt(cc),g_small);
 
-       dtct=dtc_safe*MIN(dsx,dsy)/cc
+       dtct=dtc_safe*MIN(dsx,dsy)/cc;
 
-       div=0.0
+       div=0.0;
 
-       dv1=(xvel0(j  ,k)+xvel0(j  ,k+1))*xarea(j  ,k)
-       dv2=(xvel0(j+1,k)+xvel0(j+1,k+1))*xarea(j+1,k)
+       dv1=(xvel0[FTNREF2D(j  ,k  ,x_max+5,x_min-2,y_min-2)]+xvel0[FTNREF2D(j  ,k+1,x_max+5,x_min-2,y_min-2)])*xarea[FTNREF2D(j  ,k  ,x_max+5,x_min-2,y_min-2)];
+       dv2=(xvel0[FTNREF2D(j+1,k  ,x_max+5,x_min-2,y_min-2)]+xvel0[FTNREF2D(j+1,k+1,x_max+5,x_min-2,y_min-2)])*xarea[FTNREF2D(j+1,k  ,x_max+5,x_min-2,y_min-2)];
 
-       div=div+dv2-dv1
+       div=div+dv2-dv1;
 
-       dtut=dtu_safe*2.0*volume(j,k)/MAX(ABS(dv1),ABS(dv2),g_small*volume(j,k))
+       dtut=dtu_safe*2.0*volume[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)]/MAX(fabs(dv1),MAX(fabs(dv2),g_small*volume[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)]));
 
-       dv1=(yvel0(j,k  )+yvel0(j+1,k  ))*yarea(j,k  )
-       dv2=(yvel0(j,k+1)+yvel0(j+1,k+1))*yarea(j,k+1)
+       dv1=(yvel0[FTNREF2D(j,k,x_max+5,x_min-2,y_min-2)]+yvel0[FTNREF2D(j+1,k,x_max+5,x_min-2,y_min-2)])*yarea[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)];
+       dv2=(yvel0[FTNREF2D(j,k+1,x_max+5,x_min-2,y_min-2)]+yvel0[FTNREF2D(j+1,k+1,x_max+5,x_min-2,y_min-2)])*yarea[FTNREF2D(j,k+1,x_max+4,x_min-2,y_min-2)];
 
-       div=div+dv2-dv1
+       div=div+dv2-dv1;
 
-       dtvt=dtv_safe*2.0*volume(j,k)/MAX(ABS(dv1),ABS(dv2),g_small*volume(j,k))
+       dtvt=dtv_safe*2.0*volume[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)]/MAX(fabs(dv1),MAX(fabs(dv2),g_small*volume[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)]));
 
-       div=div/(2.0*volume(j,k))
+       div=div/(2.0*volume[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)]);
 
-       IF(div.LT.-g_small)THEN
-         dtdivt=dtdiv_safe*(-1.0/div)
-       ELSE
-         dtdivt=g_big
-       ENDIF
+       if(div < -g_small) {
+         dtdivt=dtdiv_safe*(-1.0/div);
+       }
+       else {
+         dtdivt=g_big;
+       }
 
-       dt_min(j,k)=MIN(dtct,dtut,dtvt,dtdivt)
+       dt_min[FTNREF2D(j,k,x_max+5,x_min-2,y_min-2)]=MIN(dtct,MIN(dtut,MIN(dtvt,dtdivt)));
 
-    ENDDO
-  ENDDO
-!$OMP END DO
+    }
+  }
 
-!$OMP DO REDUCTION(MIN : dt_min_val)
-  DO k=y_min,y_max
-    DO j=x_min,x_max
-      IF(dt_min(j,k).LT.dt_min_val) dt_min_val=dt_min(j,k)
-    ENDDO
-  ENDDO
-!$OMP END DO
+#pragma omp for private(j) reduction(min:dt_min_val)
+  for (k=y_min;k<=y_max;k++) {
+#pragma ivdep
+    for (j=x_min;j<=x_max;j++) {
+      if(dt_min[FTNREF2D(j,k,x_max+5,x_min-2,y_min-2)] < dt_min_val) dt_min_val=dt_min[FTNREF2D(j,k,x_max+5,x_min-2,y_min-2)];
+    }
+  }
 
-!$OMP END PARALLEL
+ }
 
-  ! Extract the mimimum timestep information
-  dtl_control=10.01*(jk_control-INT(jk_control))
-  jk_control=jk_control-(jk_control-INT(jk_control))
-  jldt=MOD(INT(jk_control),x_max)
-  kldt=1+(jk_control/x_max)
-  xl_pos=cellx(jldt)
-  yl_pos=celly(kldt)
+  // Extract the mimimum timestep information
+  dtl_control=10.01*(jk_control-(int)(jk_control));
+  jk_control=jk_control-(jk_control-(int)(jk_control));
+  j_ldt=1; //MOD(INT(jk_control),x_max)
+  k_ldt=1; //1+(jk_control/x_max)
+  //xl_pos=cellx[FTNREF1D(j_ldt,xmin-2)];
+  //yl_pos=celly[FTNREF1D(j_ldt,ymin-2)];
 
-  IF(dt_min_val.LT.dtmin) small=1
+  if(dt_min_val < min_dt) small=1;
 
-  IF(small.NE.0)THEN
-    WRITE(0,*) 'Timestep information:'
-    WRITE(0,*) 'j, k                 : ',jldt,kldt
-    WRITE(0,*) 'x, y                 : ',cellx(jldt),celly(kldt)
-    WRITE(0,*) 'timestep : ',dt_min_val
-    WRITE(0,*) 'Cell velocities;'
-    WRITE(0,*) xvel0(jldt  ,kldt  ),yvel0(jldt  ,kldt  )
-    WRITE(0,*) xvel0(jldt+1,kldt  ),yvel0(jldt+1,kldt  )
-    WRITE(0,*) xvel0(jldt+1,kldt+1),yvel0(jldt+1,kldt+1)
-    WRITE(0,*) xvel0(jldt  ,kldt+1),yvel0(jldt  ,kldt+1)
-    WRITE(0,*) 'density, energy, pressure, soundspeed '
-    WRITE(0,*) density0(jldt,kldt),energy0(jldt,kldt),pressure(jldt,kldt),soundspeed(jldt,kldt)
-  ENDIF
+  *dtminval=dt_min_val;
+  *dtlcontrol=1;
+  *xlpos=xl_pos;
+  *ylpos=yl_pos;
+  *jldt=j_ldt;
+  *kldt=k_ldt;
+
+  if(small != 0) {
+    printf("Timestep information:\n");
+    printf("j, k                 :%i %i \n",j_ldt,k_ldt);
+    printf("x, y                 :%f %f \n",xl_pos,yl_pos);
+    printf("timestep : %f\n",dt_min_val);
+    printf("Cell velocities;\n");
+    printf("%f %f \n",xvel0[FTNREF2D(j_ldt  ,k_ldt  ,x_max+5,x_min-2,y_min-2)],yvel0[FTNREF2D(j_ldt  ,k_ldt  ,x_max+5,x_min-2,y_min-2)]);
+    printf("%f %f \n",xvel0[FTNREF2D(j_ldt+1,k_ldt  ,x_max+5,x_min-2,y_min-2)],yvel0[FTNREF2D(j_ldt+1,k_ldt  ,x_max+5,x_min-2,y_min-2)]);
+    printf("%f %f \n",xvel0[FTNREF2D(j_ldt+1,k_ldt+1,x_max+5,x_min-2,y_min-2)],yvel0[FTNREF2D(j_ldt+1,k_ldt+1,x_max+5,x_min-2,y_min-2)]);
+    printf("%f %f \n",xvel0[FTNREF2D(j_ldt  ,k_ldt+1,x_max+5,x_min-2,y_min-2)],yvel0[FTNREF2D(j_ldt  ,k_ldt+1,x_max+5,x_min-2,y_min-2)]);
+    printf("density, energy, pressure, soundspeed \n");
+    printf("%f %f %f %f \n",density0[FTNREF2D(j_ldt,k_ldt,x_max+4,x_min-2,y_min-2)],energy0[FTNREF2D(j_ldt,k_ldt,x_max+4,x_min-2,y_min-2)],pressure[FTNREF2D(j_ldt,k_ldt,x_max+4,x_min-2,y_min-2)],soundspeed[FTNREF2D(j_ldt,k_ldt,x_max+4,x_min-2,y_min-2)]);
+  }
 
 }

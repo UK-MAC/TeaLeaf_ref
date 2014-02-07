@@ -62,7 +62,7 @@ void pdv_kernel_c_(int *prdct,
 
   if(predict==0) {
     
-#pragma omp for private(right_flux,left_flux,top_flux,bottom_flux,total_flux,min_cell_volume,energy_change,recip_volume)
+#pragma omp for private(right_flux,left_flux,top_flux,bottom_flux,total_flux,min_cell_volume,energy_change,recip_volume,j)
     for (k=y_min;k<=y_max;k++) {
 #pragma ivdep
       for (j=x_min;j<=x_max;j++) {
@@ -93,7 +93,7 @@ void pdv_kernel_c_(int *prdct,
 
         total_flux=right_flux-left_flux+top_flux-bottom_flux;
 
-        volume_change[FTNREF2D(j  ,k  ,x_max,x_min,y_min)]=volume[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)]
+        volume_change[FTNREF2D(j  ,k  ,x_max+5,x_min-2,y_min-2)]=volume[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)]
                                                          /(volume[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)]+total_flux);
 
         min_cell_volume=MIN(volume[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)]+right_flux-left_flux+top_flux-bottom_flux
@@ -109,13 +109,13 @@ void pdv_kernel_c_(int *prdct,
         energy1[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)]=energy0[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)]-energy_change;
 
         density1[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)]=density0[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)]
-                                                           *volume_change[FTNREF2D(j  ,k  ,x_max,x_min,y_min)];
+                                                           *volume_change[FTNREF2D(j  ,k  ,x_max+5,x_min-2,y_min-2)];
 
       }
     }
   }
   else{
-#pragma omp for private(right_flux,left_flux,top_flux,bottom_flux,total_flux,min_cell_volume,energy_change,recip_volume)
+#pragma omp for private(right_flux,left_flux,top_flux,bottom_flux,total_flux,min_cell_volume,energy_change,recip_volume,j)
     for (k=y_min;k<=y_max;k++) {
 #pragma ivdep
       for (j=x_min;j<=x_max;j++) {
@@ -146,7 +146,7 @@ void pdv_kernel_c_(int *prdct,
 
         total_flux=right_flux-left_flux+top_flux-bottom_flux;
 
-        volume_change[FTNREF2D(j  ,k  ,x_max,x_min,y_min)]=volume[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)]
+        volume_change[FTNREF2D(j  ,k  ,x_max+5,x_min-2,y_min-2)]=volume[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)]
                                                          /(volume[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)]+total_flux);
 
         min_cell_volume=MIN(volume[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)]+right_flux-left_flux+top_flux-bottom_flux
@@ -162,7 +162,7 @@ void pdv_kernel_c_(int *prdct,
         energy1[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)]=energy0[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)]-energy_change;
 
         density1[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)]=density0[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)]
-                                                           *volume_change[FTNREF2D(j  ,k  ,x_max,x_min,y_min)];
+                                                           *volume_change[FTNREF2D(j  ,k  ,x_max+5,x_min-2,y_min-2)];
 
       }
     }

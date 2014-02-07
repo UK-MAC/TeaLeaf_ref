@@ -54,24 +54,24 @@ SUBROUTINE hydro
     CALL timestep()
 
     IF (use_Hydro) THEN
-    CALL PdV(.TRUE.)
+      CALL PdV(.TRUE.)
 
-    CALL accelerate()
+      CALL accelerate()
 
-    CALL PdV(.FALSE.)
+      CALL PdV(.FALSE.)
 
-    CALL flux_calc()
+      CALL flux_calc()
 
-    CALL advection()
+      CALL advection()
     ENDIF
 
     IF(use_TeaLeaf) THEN
-        IF(.NOT. use_Hydro) THEN
-        ! copy tl0 to tl1
-        CALL set_field()
-        ENDIF
+      IF(.NOT. use_Hydro) THEN
+      ! copy tl0 to tl1
+      CALL set_field()
+      ENDIF
         
-        CALL tea_leaf()
+      CALL tea_leaf()
     ENDIF
     
     CALL reset_field()
@@ -100,6 +100,7 @@ SUBROUTINE hydro
       CALL field_summary()
       IF(visit_frequency.NE.0) CALL visit()
 
+      wall_clock=timer() - timerstart
       IF ( parallel%boss ) THEN
         WRITE(g_out,*)
         WRITE(g_out,*) 'Calculation complete'
@@ -119,7 +120,7 @@ SUBROUTINE hydro
         kernel_total=profiler%timestep+profiler%ideal_gas+profiler%viscosity+profiler%PdV          &
                     +profiler%revert+profiler%acceleration+profiler%flux+profiler%cell_advection   &
                     +profiler%mom_advection+profiler%reset+profiler%halo_exchange+profiler%summary &
-                    +profiler%visit+profiler%tea
+                    +profiler%visit+profiler%tea+profiler%set_field
         CALL clover_allgather(kernel_total,totals)
         ! So then what I do is use the individual kernel times for the
         ! maximum kernel time task for the profile print
@@ -153,6 +154,8 @@ SUBROUTINE hydro
         profiler%visit=totals(loc(1))
         CALL clover_allgather(profiler%tea,totals)
         profiler%tea=totals(loc(1))
+        CALL clover_allgather(profiler%set_field,totals)
+        profiler%set_field=totals(loc(1))
 
         IF ( parallel%boss ) THEN
           WRITE(g_out,*)
@@ -171,6 +174,7 @@ SUBROUTINE hydro
           WRITE(g_out,'(a23,2f16.4)')"Summary               :",profiler%summary,100.0*(profiler%summary/wall_clock)
           WRITE(g_out,'(a23,2f16.4)')"Visit                 :",profiler%visit,100.0*(profiler%visit/wall_clock)
           WRITE(g_out,'(a23,2f16.4)')"Tea                   :",profiler%tea,100.0*(profiler%tea/wall_clock)
+          WRITE(g_out,'(a23,2f16.4)')"Set Field             :",profiler%set_field,100.0*(profiler%set_field/wall_clock)
           WRITE(g_out,'(a23,2f16.4)')"Total                 :",kernel_total,100.0*(kernel_total/wall_clock)
           WRITE(g_out,'(a23,2f16.4)')"The Rest              :",wall_clock-kernel_total,100.0*(wall_clock-kernel_total)/wall_clock
         ENDIF

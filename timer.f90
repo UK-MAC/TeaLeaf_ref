@@ -19,15 +19,16 @@
 !>  @author David Beckingsale, Wayne Gaudin & Oliver Perks
 !>  @details Uses time of day through a c function currently as a portable timer.
 
+
+
 FUNCTION timer()
 
-  USE mpi
 
   IMPLICIT none
 
   REAL(KIND=8) :: timer
-
-  timer=mpi_WTIME()
+  
+  CALL timer_c(timer)
 
 END FUNCTION
 

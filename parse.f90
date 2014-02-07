@@ -72,7 +72,6 @@ CONTAINS
 FUNCTION isitanint(instring) RESULT(isitanint_result)
 
   IMPLICIT NONE
-  CHARACTER(LEN=*), PARAMETER :: SUBR='isitanint'
 
   CHARACTER(LEN=*), INTENT(IN) :: instring
   LOGICAL :: isitanint_result
@@ -127,7 +126,7 @@ FUNCTION parse_init(iunit,cmask)
   INTEGER         :: iunit
   CHARACTER(LEN=*)  :: cmask
 
-  INTEGER :: ios,stat
+  INTEGER :: ios
 
   iu=iunit
   mask=cmask ! Set mask for which part of the file we are interested in.

@@ -31,7 +31,7 @@ SUBROUTINE initialise
   IMPLICIT NONE
 
   INTEGER :: ios
-  INTEGER :: get_unit,stat,n,uin,out_unit
+  INTEGER :: get_unit,stat,uin,out_unit
 !$ INTEGER :: OMP_GET_THREAD_NUM,OMP_GET_NUM_THREADS
   CHARACTER(LEN=g_len_max) :: ltmp
 

@@ -95,6 +95,7 @@ MODULE definitions_module
                           ,revert          &
                           ,flux            &
                           ,tea             &
+                          ,set_field       &
                           ,halo_exchange
                      
    END TYPE profiler_type

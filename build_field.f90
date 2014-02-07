@@ -100,4 +100,48 @@ SUBROUTINE build_field(chunk,x_cells,y_cells)
    ALLOCATE(chunks(chunk)%field%yarea   (chunks(chunk)%field%x_min-2:chunks(chunk)%field%x_max+2, &
                                          chunks(chunk)%field%y_min-2:chunks(chunk)%field%y_max+3))
 
+   ! Zeroing isn't strictly neccessary but it ensures physical pages
+   ! are allocated. This prevents first touch overheads in the main code
+   ! cycle which can skew timings in the first step
+!$OMP PARALLEL
+   chunks(chunk)%field%work_array1=0.0
+   chunks(chunk)%field%work_array2=0.0
+   chunks(chunk)%field%work_array3=0.0
+   chunks(chunk)%field%work_array4=0.0
+   chunks(chunk)%field%work_array5=0.0
+   chunks(chunk)%field%work_array6=0.0
+   chunks(chunk)%field%work_array7=0.0
+
+   chunks(chunk)%field%density0=0.0
+   chunks(chunk)%field%density1=0.0
+   chunks(chunk)%field%energy0=0.0
+   chunks(chunk)%field%energy1=0.0
+   chunks(chunk)%field%pressure=0.0
+   chunks(chunk)%field%viscosity=0.0
+   chunks(chunk)%field%soundspeed=0.0
+   chunks(chunk)%field%u=0.0
+   
+   chunks(chunk)%field%xvel0=0.0
+   chunks(chunk)%field%xvel1=0.0
+   chunks(chunk)%field%yvel0=0.0
+   chunks(chunk)%field%yvel1=0.0
+   
+   chunks(chunk)%field%vol_flux_x=0.0
+   chunks(chunk)%field%mass_flux_x=0.0
+   chunks(chunk)%field%vol_flux_y=0.0
+   chunks(chunk)%field%mass_flux_y=0.0
+
+   chunks(chunk)%field%cellx=0.0
+   chunks(chunk)%field%celly=0.0
+   chunks(chunk)%field%vertexx=0.0
+   chunks(chunk)%field%vertexy=0.0
+   chunks(chunk)%field%celldx=0.0
+   chunks(chunk)%field%celldy=0.0
+   chunks(chunk)%field%vertexdx=0.0
+   chunks(chunk)%field%vertexdy=0.0
+   chunks(chunk)%field%volume=0.0
+   chunks(chunk)%field%xarea=0.0
+   chunks(chunk)%field%yarea=0.0
+!$OMP END PARALLEL
+  
 END SUBROUTINE build_field

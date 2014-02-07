@@ -104,7 +104,7 @@ SUBROUTINE initialise_chunk_kernel(x_min,x_max,y_min,y_max,       &
   ENDDO
 !$OMP END DO
 
-!$OMP DO
+!$OMP DO PRIVATE(j)
   DO k=y_min-2,y_max+2
     DO j=x_min-2,x_max+2
         volume(j,k)=dx*dy
@@ -112,7 +112,7 @@ SUBROUTINE initialise_chunk_kernel(x_min,x_max,y_min,y_max,       &
   ENDDO
 !$OMP END DO
 
-!$OMP DO
+!$OMP DO PRIVATE(j)
   DO k=y_min-2,y_max+2
     DO j=x_min-2,x_max+2
         xarea(j,k)=celldy(k)
@@ -120,7 +120,7 @@ SUBROUTINE initialise_chunk_kernel(x_min,x_max,y_min,y_max,       &
   ENDDO
 !$OMP END DO
 
-!$OMP DO
+!$OMP DO PRIVATE(j)
   DO k=y_min-2,y_max+2
     DO j=x_min-2,x_max+2
         yarea(j,k)=celldx(j)

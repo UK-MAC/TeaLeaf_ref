@@ -29,617 +29,701 @@
 #include "ftocmacros.h"
 #include <math.h>
 
-void update_halo_kernel(x_min,x_max,y_min,y_max,
-                        left,bottom,right,top,
-                        left_boundary,bottom_boundary,right_boundary,top_boundary,
-                        chunk_neighbours,
-                        density0,
-                        energy0,
-                        pressure,
-                        viscosity,
-                        soundspeed,
-                        density1,
-                        energy1,
-                        xvel0,
-                        yvel0,
-                        xvel1,
-                        yvel1,
-                        vol_flux_x,
-                        vol_flux_y,
-                        mass_flux_x,
-                        mass_flux_y,
-                        fields,
-                        depth)
+void update_halo_kernel_c_(int *xmin,int *xmax,int *ymin,int *ymax,
+                        int *lft,int *bttm,int *rght,int *tp,
+                        int *lft_bndry,int *bttm_bndry,int *rght_bndry,int *tp_bndry,
+                        int *chunk_neighbours,
+                        double *density0,
+                        double *energy0,
+                        double *pressure,
+                        double *viscosity,
+                        double *soundspeed,
+                        double *density1,
+                        double *energy1,
+                        double *xvel0,
+                        double *yvel0,
+                        double *xvel1,
+                        double *yvel1,
+                        double *vol_flux_x,
+                        double *vol_flux_y,
+                        double *mass_flux_x,
+                        double *mass_flux_y,
+                        double *u,
+                        int *fields,
+                        int *dpth)
 {
 
-  int x_min,x_max,y_min,y_max;
-  int left,bottom,right,top;
-  int left_boundary,bottom_boundary,right_boundary,top_boundary;
-  int chunk_neighbours;
-  double density0,energy0;
-  double pressure,viscosity,soundspeed;
-  double density1,energy1;
-  double xvel0,yvel0;
-  double xvel1,yvel1;
-  double vol_flux_x,mass_flux_x;
-  double vol_flux_y,mass_flux_y;
-  int fields(:),depth;
+  int x_min=*xmin;
+  int x_max=*xmax;
+  int y_min=*ymin;
+  int y_max=*ymax;
+  int left=*lft;
+  int bottom=*bttm;
+  int right=*rght;
+  int top=*tp;
+  int left_boundary=*lft_bndry;
+  int bottom_boundary=*bttm_bndry;
+  int right_boundary=*rght_bndry;
+  int top_boundary=*tp_bndry;
+  int depth=*dpth;
 
-  ! These need to be kept consistent with the data module to avoid use statement
-  INTEGER,      PARAMETER :: CHUNK_LEFT   =1    &
-                            ,CHUNK_RIGHT  =2    &
-                            ,CHUNK_BOTTOM =3    &
-                            ,CHUNK_TOP    =4    &
-                            ,EXTERNAL_FACE=-1
+  /* These need to be kept consistent with the data module to avoid use statement */
+  int CHUNK_LEFT=1,CHUNK_RIGHT=2,CHUNK_BOTTOM=3,CHUNK_TOP=4,EXTERNAL_FACE=-1;
 
-  INTEGER,      PARAMETER :: FIELD_DENSITY0   = 1         &
-                            ,FIELD_DENSITY1   = 2         &
-                            ,FIELD_ENERGY0    = 3         &
-                            ,FIELD_ENERGY1    = 4         &
-                            ,FIELD_PRESSURE   = 5         &
-                            ,FIELD_VISCOSITY  = 6         &
-                            ,FIELD_SOUNDSPEED = 7         &
-                            ,FIELD_XVEL0      = 8         &
-                            ,FIELD_XVEL1      = 9         &
-                            ,FIELD_YVEL0      =10         &
-                            ,FIELD_YVEL1      =11         &
-                            ,FIELD_VOL_FLUX_X =12         &
-                            ,FIELD_VOL_FLUX_Y =13         &
-                            ,FIELD_MASS_FLUX_X=14         &
-                            ,FIELD_MASS_FLUX_Y=15         &
-                            ,NUM_FIELDS       =15
+  int FIELD_DENSITY0   = 1;
+  int FIELD_DENSITY1   = 2;
+  int FIELD_ENERGY0    = 3;
+  int FIELD_ENERGY1    = 4;
+  int FIELD_PRESSURE   = 5;
+  int FIELD_VISCOSITY  = 6;
+  int FIELD_SOUNDSPEED = 7;
+  int FIELD_XVEL0      = 8;
+  int FIELD_XVEL1      = 9;
+  int FIELD_YVEL0      =10;
+  int FIELD_YVEL1      =11;
+  int FIELD_VOL_FLUX_X =12;
+  int FIELD_VOL_FLUX_Y =13;
+  int FIELD_MASS_FLUX_X=14;
+  int FIELD_MASS_FLUX_Y=15;
+  int FIELD_U          =16;
+  int NUM_FIELDS       =16;
 
-  INTEGER :: j,k
+  int j,k;
 
-!$OMP PARALLEL
+  /* Update values in external halo cells based on depth and fields requested */
 
-  ! Update values in external halo cells based on depth and fields requested
-  IF(fields(FIELD_DENSITY0).EQ.1) THEN
-    IF(chunk_neighbours(CHUNK_BOTTOM).EQ.EXTERNAL_FACE) THEN
-      DO k=1,depth
-!$OMP DO
-        DO j=x_min-depth,x_max+depth
-          density0(j,1-k)=density0(j,0+k)
-        ENDDO
-!$OMP END DO
-      ENDDO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_TOP).EQ.EXTERNAL_FACE) THEN
-      DO k=1,depth
-!$OMP DO
-        DO j=x_min-depth,x_max+depth
-          density0(j,y_max+k)=density0(j,y_max+1-k)
-        ENDDO
-!$OMP END DO
-      ENDDO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_LEFT).EQ.EXTERNAL_FACE) THEN
-!$OMP DO
-      DO k=y_min-depth,y_max+depth
-        DO j=1,depth
-          density0(1-j,k)=density0(0+j,k)
-        ENDDO
-      ENDDO
-!$OMP END DO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_RIGHT).EQ.EXTERNAL_FACE) THEN
-!$OMP DO
-      DO k=y_min-depth,y_max+depth
-        DO j=1,depth
-          density0(x_max+j,k)=density0(x_max+1-j,k)
-        ENDDO
-      ENDDO
-!$OMP END DO
-    ENDIF
-  ENDIF
+#pragma omp parallel
+ {
+  if(fields[FTNREF1D(FIELD_DENSITY0,1)]==1) {
+    if(chunk_neighbours[FTNREF1D(CHUNK_BOTTOM,1)]==EXTERNAL_FACE) {
+#pragma omp for private(j,k)
+      for (j=x_min-depth;j<=x_max+depth;j++) {
+#pragma ivdep
+        for (k=1;k<=depth;k++) {
+          density0[FTNREF2D(j  ,1-k,x_max+4,x_min-2,y_min-2)]=density0[FTNREF2D(j  ,0+k,x_max+4,x_min-2,y_min-2)];
+	}
+      }
+    }
 
-  IF(fields(FIELD_DENSITY1).EQ.1) THEN
-    IF(chunk_neighbours(CHUNK_BOTTOM).EQ.EXTERNAL_FACE) THEN
-      DO k=1,depth
-!$OMP DO
-        DO j=x_min-depth,x_max+depth
-          density1(j,1-k)=density1(j,0+k)
-        ENDDO
-!$OMP END DO
-      ENDDO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_TOP).EQ.EXTERNAL_FACE) THEN
-      DO k=1,depth
-!$OMP DO
-        DO j=x_min-depth,x_max+depth
-          density1(j,y_max+k)=density1(j,y_max+1-k)
-        ENDDO
-!$OMP END DO
-      ENDDO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_LEFT).EQ.EXTERNAL_FACE) THEN
-!$OMP DO
-      DO k=y_min-depth,y_max+depth
-        DO j=1,depth
-          density1(1-j,k)=density1(0+j,k)
-        ENDDO
-      ENDDO
-!$OMP END DO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_RIGHT).EQ.EXTERNAL_FACE) THEN
-!$OMP DO
-      DO k=y_min-depth,y_max+depth
-        DO j=1,depth
-          density1(x_max+j,k)=density1(x_max+1-j,k)
-        ENDDO
-      ENDDO
-!$OMP END DO
-    ENDIF
-  ENDIF
+    if(chunk_neighbours[FTNREF1D(CHUNK_TOP,1)]==EXTERNAL_FACE) {
+#pragma omp for private(j,k)
+      for (j=x_min-depth;j<=x_max+depth;j++) {
+#pragma ivdep
+        for (k=1;k<=depth;k++) {
+          density0[FTNREF2D(j  ,y_max+k,x_max+4,x_min-2,y_min-2)]=density0[FTNREF2D(j  ,y_max+1-k,x_max+4,x_min-2,y_min-2)];
+	}
+      }
+    }
 
-  IF(fields(FIELD_ENERGY0).EQ.1) THEN
-    IF(chunk_neighbours(CHUNK_BOTTOM).EQ.EXTERNAL_FACE) THEN
-      DO k=1,depth
-!$OMP DO
-        DO j=x_min-depth,x_max+depth
-          energy0(j,1-k)=energy0(j,0+k)
-        ENDDO
-!$OMP END DO
-      ENDDO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_TOP).EQ.EXTERNAL_FACE) THEN
-      DO k=1,depth
-!$OMP DO
-        DO j=x_min-depth,x_max+depth
-          energy0(j,y_max+k)=energy0(j,y_max+1-k)
-        ENDDO
-!$OMP END DO
-      ENDDO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_LEFT).EQ.EXTERNAL_FACE) THEN
-!$OMP DO
-      DO k=y_min-depth,y_max+depth
-        DO j=1,depth
-          energy0(1-j,k)=energy0(0+j,k)
-        ENDDO
-      ENDDO
-!$OMP END DO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_RIGHT).EQ.EXTERNAL_FACE) THEN
-!$OMP DO
-      DO k=y_min-depth,y_max+depth
-        DO j=1,depth
-          energy0(x_max+j,k)=energy0(x_max+1-j,k)
-        ENDDO
-      ENDDO
-!$OMP END DO
-    ENDIF
-  ENDIF
+    if(chunk_neighbours[FTNREF1D(CHUNK_LEFT,1)]==EXTERNAL_FACE) {
+#pragma omp for private(j,k)
+      for (k=y_min-depth;k<=y_max+depth;k++) {
+#pragma ivdep
+        for (j=1;j<=depth;j++) {
+          density0[FTNREF2D(1-j,k,x_max+4,x_min-2,y_min-2)]=density0[FTNREF2D(0+j,k,x_max+4,x_min-2,y_min-2)];
+        }
+      }
+    }
 
-  IF(fields(FIELD_ENERGY1).EQ.1) THEN
-    IF(chunk_neighbours(CHUNK_BOTTOM).EQ.EXTERNAL_FACE) THEN
-      DO k=1,depth
-!$OMP DO
-        DO j=x_min-depth,x_max+depth
-          energy1(j,1-k)=energy1(j,0+k)
-        ENDDO
-!$OMP END DO
-      ENDDO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_TOP).EQ.EXTERNAL_FACE) THEN
-      DO k=1,depth
-!$OMP DO
-        DO j=x_min-depth,x_max+depth
-          energy1(j,y_max+k)=energy1(j,y_max+1-k)
-        ENDDO
-!$OMP END DO
-      ENDDO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_LEFT).EQ.EXTERNAL_FACE) THEN
-!$OMP DO
-      DO k=y_min-depth,y_max+depth
-        DO j=1,depth
-          energy1(1-j,k)=energy1(0+j,k)
-        ENDDO
-      ENDDO
-!$OMP END DO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_RIGHT).EQ.EXTERNAL_FACE) THEN
-!$OMP DO
-      DO k=y_min-depth,y_max+depth
-        DO j=1,depth
-          energy1(x_max+j,k)=energy1(x_max+1-j,k)
-        ENDDO
-      ENDDO
-!$OMP END DO
-    ENDIF
-  ENDIF
+    if(chunk_neighbours[FTNREF1D(CHUNK_RIGHT,1)]==EXTERNAL_FACE) {
+#pragma omp for private(j,k)
+      for (k=y_min-depth;k<=y_max+depth;k++) {
+#pragma ivdep
+        for (j=1;j<=depth;j++) {
+          density0[FTNREF2D(x_max+j,k,x_max+4,x_min-2,y_min-2)]=density0[FTNREF2D(x_max+1-j,k,x_max+4,x_min-2,y_min-2)];
+	}
+      }
+    }
+  }
 
-  IF(fields(FIELD_PRESSURE).EQ.1) THEN
-    IF(chunk_neighbours(CHUNK_BOTTOM).EQ.EXTERNAL_FACE) THEN
-      DO k=1,depth
-!$OMP DO
-        DO j=x_min-depth,x_max+depth
-          pressure(j,1-k)=pressure(j,0+k)
-        ENDDO
-!$OMP END DO
-      ENDDO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_TOP).EQ.EXTERNAL_FACE) THEN
-      DO k=1,depth
-!$OMP DO
-        DO j=x_min-depth,x_max+depth
-          pressure(j,y_max+k)=pressure(j,y_max+1-k)
-        ENDDO
-!$OMP END DO
-      ENDDO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_LEFT).EQ.EXTERNAL_FACE) THEN
-!$OMP DO
-      DO k=y_min-depth,y_max+depth
-        DO j=1,depth
-          pressure(1-j,k)=pressure(0+j,k)
-        ENDDO
-      ENDDO
-!$OMP END DO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_RIGHT).EQ.EXTERNAL_FACE) THEN
-!$OMP DO
-      DO k=y_min-depth,y_max+depth
-        DO j=1,depth
-          pressure(x_max+j,k)=pressure(x_max+1-j,k)
-        ENDDO
-      ENDDO
-!$OMP END DO
-    ENDIF
-  ENDIF
+  if(fields[FTNREF1D(FIELD_DENSITY1,1)]==1) {
+    if(chunk_neighbours[FTNREF1D(CHUNK_BOTTOM,1)]==EXTERNAL_FACE) {
+#pragma omp for private(j,k)
+      for (j=x_min-depth;j<=x_max+depth;j++) {
+#pragma ivdep
+        for (k=1;k<=depth;k++) {
+          density1[FTNREF2D(j  ,1-k,x_max+4,x_min-2,y_min-2)]=density1[FTNREF2D(j  ,0+k,x_max+4,x_min-2,y_min-2)];
+	}
+      }
+    }
 
-  IF(fields(FIELD_VISCOSITY).EQ.1) THEN
-    IF(chunk_neighbours(CHUNK_BOTTOM).EQ.EXTERNAL_FACE) THEN
-      DO k=1,depth
-!$OMP DO
-        DO j=x_min-depth,x_max+depth
-          viscosity(j,1-k)=viscosity(j,0+k)
-        ENDDO
-!$OMP END DO
-      ENDDO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_TOP).EQ.EXTERNAL_FACE) THEN
-      DO k=1,depth
-!$OMP DO
-        DO j=x_min-depth,x_max+depth
-          viscosity(j,y_max+k)=viscosity(j,y_max+1-k)
-        ENDDO
-!$OMP END DO
-      ENDDO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_LEFT).EQ.EXTERNAL_FACE) THEN
-!$OMP DO
-      DO k=y_min-depth,y_max+depth
-        DO j=1,depth
-          viscosity(1-j,k)=viscosity(0+j,k)
-        ENDDO
-      ENDDO
-!$OMP END DO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_RIGHT).EQ.EXTERNAL_FACE) THEN
-!$OMP DO
-      DO k=y_min-depth,y_max+depth
-        DO j=1,depth
-          viscosity(x_max+j,k)=viscosity(x_max+1-j,k)
-        ENDDO
-      ENDDO
-!$OMP END DO
-    ENDIF
-  ENDIF
+    if(chunk_neighbours[FTNREF1D(CHUNK_TOP,1)]==EXTERNAL_FACE) {
+#pragma omp for private(j,k)
+      for (j=x_min-depth;j<=x_max+depth;j++) {
+#pragma ivdep
+        for (k=1;k<=depth;k++) {
+          density1[FTNREF2D(j  ,y_max+k,x_max+4,x_min-2,y_min-2)]=density1[FTNREF2D(j  ,y_max+1-k,x_max+4,x_min-2,y_min-2)];
+	}
+      }
+    }
 
-  IF(fields(FIELD_XVEL0).EQ.1) THEN
-    IF(chunk_neighbours(CHUNK_BOTTOM).EQ.EXTERNAL_FACE) THEN
-      DO k=1,depth
-!$OMP DO
-        DO j=x_min-depth,x_max+1+depth
-          xvel0(j,1-k)=xvel0(j,1+k)
-        ENDDO
-!$OMP END DO
-      ENDDO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_TOP).EQ.EXTERNAL_FACE) THEN
-      DO k=1,depth
-!$OMP DO
-        DO j=x_min-depth,x_max+1+depth
-          xvel0(j,y_max+1+k)=xvel0(j,y_max+1-k)
-        ENDDO
-!$OMP END DO
-      ENDDO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_LEFT).EQ.EXTERNAL_FACE) THEN
-!$OMP DO
-      DO k=y_min-depth,y_max+1+depth
-        DO j=1,depth
-          xvel0(1-j,k)=-xvel0(1+j,k)
-        ENDDO
-      ENDDO
-!$OMP END DO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_RIGHT).EQ.EXTERNAL_FACE) THEN
-!$OMP DO
-      DO k=y_min-depth,y_max+1+depth
-        DO j=1,depth
-          xvel0(x_max+1+j,k)=-xvel0(x_max+1-j,k)
-        ENDDO
-      ENDDO
-!$OMP END DO
-    ENDIF
-  ENDIF
+    if(chunk_neighbours[FTNREF1D(CHUNK_LEFT,1)]==EXTERNAL_FACE) {
+#pragma omp for private(j,k)
+      for (k=y_min-depth;k<=y_max+depth;k++) {
+#pragma ivdep
+        for (j=1;j<=depth;j++) {
+          density1[FTNREF2D(1-j,k,x_max+4,x_min-2,y_min-2)]=density1[FTNREF2D(0+j,k,x_max+4,x_min-2,y_min-2)];
+        }
+      }
+    }
 
-  IF(fields(FIELD_XVEL1).EQ.1) THEN
-    IF(chunk_neighbours(CHUNK_BOTTOM).EQ.EXTERNAL_FACE) THEN
-      DO k=1,depth
-!$OMP DO
-        DO j=x_min-depth,x_max+1+depth
-          xvel1(j,1-k)=xvel1(j,1+k)
-        ENDDO
-!$OMP END DO
-      ENDDO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_TOP).EQ.EXTERNAL_FACE) THEN
-      DO k=1,depth
-!$OMP DO
-        DO j=x_min-depth,x_max+1+depth
-          xvel1(j,y_max+1+k)=xvel1(j,y_max+1-k)
-        ENDDO
-!$OMP END DO
-      ENDDO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_LEFT).EQ.EXTERNAL_FACE) THEN
-!$OMP DO
-      DO k=y_min-depth,y_max+1+depth
-        DO j=1,depth
-          xvel1(1-j,k)=-xvel1(1+j,k)
-        ENDDO
-      ENDDO
-!$OMP END DO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_RIGHT).EQ.EXTERNAL_FACE) THEN
-!$OMP DO
-      DO k=y_min-depth,y_max+1+depth
-        DO j=1,depth
-          xvel1(x_max+1+j,k)=-xvel1(x_max+1-j,k)
-        ENDDO
-      ENDDO
-!$OMP END DO
-    ENDIF
-  ENDIF
+    if(chunk_neighbours[FTNREF1D(CHUNK_RIGHT,1)]==EXTERNAL_FACE) {
+#pragma omp for private(j,k)
+      for (k=y_min-depth;k<=y_max+depth;k++) {
+#pragma ivdep
+        for (j=1;j<=depth;j++) {
+          density1[FTNREF2D(x_max+j,k,x_max+4,x_min-2,y_min-2)]=density1[FTNREF2D(x_max+1-j,k,x_max+4,x_min-2,y_min-2)];
+	}
+      }
+    }
+  }
 
-  IF(fields(FIELD_YVEL0).EQ.1) THEN
-    IF(chunk_neighbours(CHUNK_BOTTOM).EQ.EXTERNAL_FACE) THEN
-      DO k=1,depth
-!$OMP DO
-        DO j=x_min-depth,x_max+1+depth
-          yvel0(j,1-k)=-yvel0(j,1+k)
-        ENDDO
-!$OMP END DO
-      ENDDO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_TOP).EQ.EXTERNAL_FACE) THEN
-      DO k=1,depth
-!$OMP DO
-        DO j=x_min-depth,x_max+1+depth
-          yvel0(j,y_max+1+k)=-yvel0(j,y_max+1-k)
-        ENDDO
-!$OMP END DO
-      ENDDO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_LEFT).EQ.EXTERNAL_FACE) THEN
-!$OMP DO
-      DO k=y_min-depth,y_max+1+depth
-        DO j=1,depth
-          yvel0(1-j,k)=yvel0(1+j,k)
-        ENDDO
-      ENDDO
-!$OMP END DO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_RIGHT).EQ.EXTERNAL_FACE) THEN
-!$OMP DO
-      DO k=y_min-depth,y_max+1+depth
-        DO j=1,depth
-          yvel0(x_max+1+j,k)=yvel0(x_max+1-j,k)
-        ENDDO
-      ENDDO
-!$OMP END DO
-    ENDIF
-  ENDIF
+  if(fields[FTNREF1D(FIELD_ENERGY0,1)]==1) {
+    if(chunk_neighbours[FTNREF1D(CHUNK_BOTTOM,1)]==EXTERNAL_FACE) {
+#pragma omp for private(j,k)
+      for (j=x_min-depth;j<=x_max+depth;j++) {
+#pragma ivdep
+        for (k=1;k<=depth;k++) {
+          energy0[FTNREF2D(j  ,1-k,x_max+4,x_min-2,y_min-2)]=energy0[FTNREF2D(j  ,0+k,x_max+4,x_min-2,y_min-2)];
+	}
+      }
+    }
 
-  IF(fields(FIELD_YVEL1).EQ.1) THEN
-    IF(chunk_neighbours(CHUNK_BOTTOM).EQ.EXTERNAL_FACE) THEN
-      DO k=1,depth
-!$OMP DO
-        DO j=x_min-depth,x_max+1+depth
-          yvel1(j,1-k)=-yvel1(j,1+k)
-        ENDDO
-!$OMP END DO
-      ENDDO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_TOP).EQ.EXTERNAL_FACE) THEN
-      DO k=1,depth
-!$OMP DO
-        DO j=x_min-depth,x_max+1+depth
-          yvel1(j,y_max+1+k)=-yvel1(j,y_max+1-k)
-        ENDDO
-!$OMP END DO
-      ENDDO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_LEFT).EQ.EXTERNAL_FACE) THEN
-!$OMP DO
-      DO k=y_min-depth,y_max+1+depth
-        DO j=1,depth
-          yvel1(1-j,k)=yvel1(1+j,k)
-        ENDDO
-      ENDDO
-!$OMP END DO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_RIGHT).EQ.EXTERNAL_FACE) THEN
-!$OMP DO
-      DO k=y_min-depth,y_max+1+depth
-        DO j=1,depth
-          yvel1(x_max+1+j,k)=yvel1(x_max+1-j,k)
-        ENDDO
-      ENDDO
-!$OMP END DO
-    ENDIF
-  ENDIF
+    if(chunk_neighbours[FTNREF1D(CHUNK_TOP,1)]==EXTERNAL_FACE) {
+#pragma omp for private(j,k)
+      for (j=x_min-depth;j<=x_max+depth;j++) {
+#pragma ivdep
+        for (k=1;k<=depth;k++) {
+          energy0[FTNREF2D(j  ,y_max+k,x_max+4,x_min-2,y_min-2)]=energy0[FTNREF2D(j  ,y_max+1-k,x_max+4,x_min-2,y_min-2)];
+	}
+      }
+    }
 
-  IF(fields(FIELD_VOL_FLUX_X).EQ.1) THEN
-    IF(chunk_neighbours(CHUNK_BOTTOM).EQ.EXTERNAL_FACE) THEN
-      DO k=1,depth
-!$OMP DO
-        DO j=x_min-depth,x_max+1+depth
-          vol_flux_x(j,1-k)=vol_flux_x(j,1+k)
-        ENDDO
-!$OMP END DO
-      ENDDO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_TOP).EQ.EXTERNAL_FACE) THEN
-      DO k=1,depth
-!$OMP DO
-        DO j=x_min-depth,x_max+1+depth
-          vol_flux_x(j,y_max+k)=vol_flux_x(j,y_max-k)
-        ENDDO
-!$OMP END DO
-      ENDDO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_LEFT).EQ.EXTERNAL_FACE) THEN
-!$OMP DO
-      DO k=y_min-depth,y_max+depth
-        DO j=1,depth
-          vol_flux_x(1-j,k)=-vol_flux_x(1+j,k)
-        ENDDO
-      ENDDO
-!$OMP END DO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_RIGHT).EQ.EXTERNAL_FACE) THEN
-!$OMP DO
-      DO k=y_min-depth,y_max+depth
-        DO j=1,depth
-          vol_flux_x(x_max+j+1,k)=-vol_flux_x(x_max+1-j,k)
-        ENDDO
-      ENDDO
-!$OMP END DO
-    ENDIF
-  ENDIF
+    if(chunk_neighbours[FTNREF1D(CHUNK_LEFT,1)]==EXTERNAL_FACE) {
+#pragma omp for private(j,k)
+      for (k=y_min-depth;k<=y_max+depth;k++) {
+#pragma ivdep
+        for (j=1;j<=depth;j++) {
+          energy0[FTNREF2D(1-j,k,x_max+4,x_min-2,y_min-2)]=energy0[FTNREF2D(0+j,k,x_max+4,x_min-2,y_min-2)];
+        }
+      }
+    }
 
-  IF(fields(FIELD_MASS_FLUX_X).EQ.1) THEN
-    IF(chunk_neighbours(CHUNK_BOTTOM).EQ.EXTERNAL_FACE) THEN
-      DO k=1,depth
-!$OMP DO
-        DO j=x_min-depth,x_max+1+depth
-          mass_flux_x(j,1-k)=mass_flux_x(j,1+k)
-        ENDDO
-!$OMP END DO
-      ENDDO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_TOP).EQ.EXTERNAL_FACE) THEN
-      DO k=1,depth
-!$OMP DO
-        DO j=x_min-depth,x_max+1+depth
-          mass_flux_x(j,y_max+k)=mass_flux_x(j,y_max-k)
-        ENDDO
-!$OMP END DO
-      ENDDO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_LEFT).EQ.EXTERNAL_FACE) THEN
-!$OMP DO
-      DO k=y_min-depth,y_max+depth
-        DO j=1,depth
-          mass_flux_x(1-j,k)=-mass_flux_x(1+j,k)
-        ENDDO
-      ENDDO
-!$OMP END DO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_RIGHT).EQ.EXTERNAL_FACE) THEN
-!$OMP DO
-      DO k=y_min-depth,y_max+depth
-        DO j=1,depth
-          mass_flux_x(x_max+j+1,k)=-mass_flux_x(x_max+1-j,k)
-        ENDDO
-      ENDDO
-!$OMP END DO
-    ENDIF
-  ENDIF
+    if(chunk_neighbours[FTNREF1D(CHUNK_RIGHT,1)]==EXTERNAL_FACE) {
+#pragma omp for private(j,k)
+      for (k=y_min-depth;k<=y_max+depth;k++) {
+#pragma ivdep
+        for (j=1;j<=depth;j++) {
+          energy0[FTNREF2D(x_max+j,k,x_max+4,x_min-2,y_min-2)]=energy0[FTNREF2D(x_max+1-j,k,x_max+4,x_min-2,y_min-2)];
+	}
+      }
+    }
+  }
 
-  IF(fields(FIELD_VOL_FLUX_Y).EQ.1) THEN
-    IF(chunk_neighbours(CHUNK_BOTTOM).EQ.EXTERNAL_FACE) THEN
-      DO k=1,depth
-!$OMP DO
-        DO j=x_min-depth,x_max+depth
-          vol_flux_y(j,1-k)=-vol_flux_y(j,1+k)
-        ENDDO
-!$OMP END DO
-      ENDDO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_TOP).EQ.EXTERNAL_FACE) THEN
-      DO k=1,depth
-!$OMP DO
-        DO j=x_min-depth,x_max+depth
-          vol_flux_y(j,y_max+k+1)=-vol_flux_y(j,y_max+1-k)
-        ENDDO
-!$OMP END DO
-      ENDDO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_LEFT).EQ.EXTERNAL_FACE) THEN
-!$OMP DO
-      DO k=y_min-depth,y_max+1+depth
-        DO j=1,depth
-          vol_flux_y(1-j,k)=vol_flux_y(1+j,k)
-        ENDDO
-      ENDDO
-!$OMP END DO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_RIGHT).EQ.EXTERNAL_FACE) THEN
-!$OMP DO
-      DO k=y_min-depth,y_max+1+depth
-        DO j=1,depth
-          vol_flux_y(x_max+j,k)=vol_flux_y(x_max-j,k)
-        ENDDO
-      ENDDO
-!$OMP END DO
-    ENDIF
-  ENDIF
+  if(fields[FTNREF1D(FIELD_ENERGY1,1)]==1) {
+    if(chunk_neighbours[FTNREF1D(CHUNK_BOTTOM,1)]==EXTERNAL_FACE) {
+#pragma omp for private(j,k)
+      for (j=x_min-depth;j<=x_max+depth;j++) {
+#pragma ivdep
+        for (k=1;k<=depth;k++) {
+          energy1[FTNREF2D(j  ,1-k,x_max+4,x_min-2,y_min-2)]=energy1[FTNREF2D(j  ,0+k,x_max+4,x_min-2,y_min-2)];
+	}
+      }
+    }
 
-  IF(fields(FIELD_MASS_FLUX_Y).EQ.1) THEN
-    IF(chunk_neighbours(CHUNK_BOTTOM).EQ.EXTERNAL_FACE) THEN
-      DO k=1,depth
-!$OMP DO
-        DO j=x_min-depth,x_max+depth
-          mass_flux_y(j,1-k)=-mass_flux_y(j,1+k)
-        ENDDO
-!$OMP END DO
-      ENDDO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_TOP).EQ.EXTERNAL_FACE) THEN
-      DO k=1,depth
-!$OMP DO
-        DO j=x_min-depth,x_max+depth
-          mass_flux_y(j,y_max+k+1)=-mass_flux_y(j,y_max+1-k)
-        ENDDO
-!$OMP END DO
-      ENDDO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_LEFT).EQ.EXTERNAL_FACE) THEN
-!$OMP DO
-      DO k=y_min-depth,y_max+1+depth
-        DO j=1,depth
-          mass_flux_y(1-j,k)=mass_flux_y(1+j,k)
-        ENDDO
-      ENDDO
-!$OMP END DO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_RIGHT).EQ.EXTERNAL_FACE) THEN
-!$OMP DO
-      DO k=y_min-depth,y_max+1+depth
-        DO j=1,depth
-          mass_flux_y(x_max+j,k)=mass_flux_y(x_max-j,k)
-        ENDDO
-      ENDDO
-!$OMP END DO
-    ENDIF
-  ENDIF
+    if(chunk_neighbours[FTNREF1D(CHUNK_TOP,1)]==EXTERNAL_FACE) {
+#pragma omp for private(j,k)
+      for (j=x_min-depth;j<=x_max+depth;j++) {
+#pragma ivdep
+        for (k=1;k<=depth;k++) {
+          energy1[FTNREF2D(j  ,y_max+k,x_max+4,x_min-2,y_min-2)]=energy1[FTNREF2D(j  ,y_max+1-k,x_max+4,x_min-2,y_min-2)];
+	}
+      }
+    }
 
-!$OMP END PARALLEL
+    if(chunk_neighbours[FTNREF1D(CHUNK_LEFT,1)]==EXTERNAL_FACE) {
+#pragma omp for private(j,k)
+      for (k=y_min-depth;k<=y_max+depth;k++) {
+#pragma ivdep
+        for (j=1;j<=depth;j++) {
+          energy1[FTNREF2D(1-j,k,x_max+4,x_min-2,y_min-2)]=energy1[FTNREF2D(0+j,k,x_max+4,x_min-2,y_min-2)];
+        }
+      }
+    }
+
+    if(chunk_neighbours[FTNREF1D(CHUNK_RIGHT,1)]==EXTERNAL_FACE) {
+#pragma omp for private(j,k)
+      for (k=y_min-depth;k<=y_max+depth;k++) {
+#pragma ivdep
+        for (j=1;j<=depth;j++) {
+          energy1[FTNREF2D(x_max+j,k,x_max+4,x_min-2,y_min-2)]=energy1[FTNREF2D(x_max+1-j,k,x_max+4,x_min-2,y_min-2)];
+	}
+      }
+    }
+  }
+
+  if(fields[FTNREF1D(FIELD_PRESSURE,1)]==1) {
+    if(chunk_neighbours[FTNREF1D(CHUNK_BOTTOM,1)]==EXTERNAL_FACE) {
+#pragma omp for private(j,k)
+      for (j=x_min-depth;j<=x_max+depth;j++) {
+#pragma ivdep
+        for (k=1;k<=depth;k++) {
+          pressure[FTNREF2D(j  ,1-k,x_max+4,x_min-2,y_min-2)]=pressure[FTNREF2D(j  ,0+k,x_max+4,x_min-2,y_min-2)];
+	}
+      }
+    }
+
+    if(chunk_neighbours[FTNREF1D(CHUNK_TOP,1)]==EXTERNAL_FACE) {
+#pragma omp for private(j,k)
+      for (j=x_min-depth;j<=x_max+depth;j++) {
+#pragma ivdep
+        for (k=1;k<=depth;k++) {
+          pressure[FTNREF2D(j  ,y_max+k,x_max+4,x_min-2,y_min-2)]=pressure[FTNREF2D(j  ,y_max+1-k,x_max+4,x_min-2,y_min-2)];
+	}
+      }
+    }
+
+    if(chunk_neighbours[FTNREF1D(CHUNK_LEFT,1)]==EXTERNAL_FACE) {
+#pragma omp for private(j,k)
+      for (k=y_min-depth;k<=y_max+depth;k++) {
+#pragma ivdep
+        for (j=1;j<=depth;j++) {
+          pressure[FTNREF2D(1-j,k,x_max+4,x_min-2,y_min-2)]=pressure[FTNREF2D(0+j,k,x_max+4,x_min-2,y_min-2)];
+        }
+      }
+    }
+
+    if(chunk_neighbours[FTNREF1D(CHUNK_RIGHT,1)]==EXTERNAL_FACE) {
+#pragma omp for private(j,k)
+      for (k=y_min-depth;k<=y_max+depth;k++) {
+#pragma ivdep
+        for (j=1;j<=depth;j++) {
+          pressure[FTNREF2D(x_max+j,k,x_max+4,x_min-2,y_min-2)]=pressure[FTNREF2D(x_max+1-j,k,x_max+4,x_min-2,y_min-2)];
+	}
+      }
+    }
+  }
+
+  if(fields[FTNREF1D(FIELD_VISCOSITY,1)]==1) {
+    if(chunk_neighbours[FTNREF1D(CHUNK_BOTTOM,1)]==EXTERNAL_FACE) {
+#pragma omp for private(j,k)
+      for (j=x_min-depth;j<=x_max+depth;j++) {
+#pragma ivdep
+        for (k=1;k<=depth;k++) {
+          viscosity[FTNREF2D(j  ,1-k,x_max+4,x_min-2,y_min-2)]=viscosity[FTNREF2D(j  ,0+k,x_max+4,x_min-2,y_min-2)];
+	}
+      }
+    }
+
+    if(chunk_neighbours[FTNREF1D(CHUNK_TOP,1)]==EXTERNAL_FACE) {
+#pragma omp for private(j,k)
+      for (j=x_min-depth;j<=x_max+depth;j++) {
+#pragma ivdep
+        for (k=1;k<=depth;k++) {
+          viscosity[FTNREF2D(j  ,y_max+k,x_max+4,x_min-2,y_min-2)]=viscosity[FTNREF2D(j  ,y_max+1-k,x_max+4,x_min-2,y_min-2)];
+	}
+      }
+    }
+
+    if(chunk_neighbours[FTNREF1D(CHUNK_LEFT,1)]==EXTERNAL_FACE) {
+#pragma omp for private(j,k)
+      for (k=y_min-depth;k<=y_max+depth;k++) {
+#pragma ivdep
+        for (j=1;j<=depth;j++) {
+          viscosity[FTNREF2D(1-j,k,x_max+4,x_min-2,y_min-2)]=viscosity[FTNREF2D(0+j,k,x_max+4,x_min-2,y_min-2)];
+        }
+      }
+    }
+
+    if(chunk_neighbours[FTNREF1D(CHUNK_RIGHT,1)]==EXTERNAL_FACE) {
+#pragma omp for private(j,k)
+      for (k=y_min-depth;k<=y_max+depth;k++) {
+#pragma ivdep
+        for (j=1;j<=depth;j++) {
+          viscosity[FTNREF2D(x_max+j,k,x_max+4,x_min-2,y_min-2)]=viscosity[FTNREF2D(x_max+1-j,k,x_max+4,x_min-2,y_min-2)];
+	}
+      }
+    }
+  }
+
+  if(fields[FTNREF1D(FIELD_XVEL0,1)]==1) {
+    if(chunk_neighbours[FTNREF1D(CHUNK_BOTTOM,1)]==EXTERNAL_FACE) {
+#pragma omp for private(j,k)
+      for (j=x_min-depth;j<=x_max+1+depth;j++) {
+#pragma ivdep
+        for (k=1;k<=depth;k++) {
+          xvel0[FTNREF2D(j  ,1-k,x_max+5,x_min-2,y_min-2)]=xvel0[FTNREF2D(j  ,1+k,x_max+5,x_min-2,y_min-2)];
+	}
+      }
+    }
+
+    if(chunk_neighbours[FTNREF1D(CHUNK_TOP,1)]==EXTERNAL_FACE) {
+#pragma omp for private(j,k)
+      for (j=x_min-depth;j<=x_max+1+depth;j++) {
+#pragma ivdep
+        for (k=1;k<=depth;k++) {
+          xvel0[FTNREF2D(j  ,y_max+1+k,x_max+5,x_min-2,y_min-2)]=xvel0[FTNREF2D(j  ,y_max+1-k,x_max+5,x_min-2,y_min-2)];
+	}
+      }
+    }
+
+    if(chunk_neighbours[FTNREF1D(CHUNK_LEFT,1)]==EXTERNAL_FACE) {
+#pragma omp for private(j,k)
+      for (k=y_min-depth;k<=y_max+1+depth;k++) {
+#pragma ivdep
+        for (j=1;j<=depth;j++) {
+          xvel0[FTNREF2D(1-j,k,x_max+5,x_min-2,y_min-2)]=-xvel0[FTNREF2D(1+j,k,x_max+5,x_min-2,y_min-2)];
+        }
+      }
+    }
+
+    if(chunk_neighbours[FTNREF1D(CHUNK_RIGHT,1)]==EXTERNAL_FACE) {
+#pragma omp for private(j,k)
+      for (k=y_min-depth;k<=y_max+1+depth;k++) {
+#pragma ivdep
+        for (j=1;j<=depth;j++) {
+          xvel0[FTNREF2D(x_max+1+j,k,x_max+5,x_min-2,y_min-2)]=-xvel0[FTNREF2D(x_max+1-j,k,x_max+5,x_min-2,y_min-2)];
+	}
+      }
+    }
+  }
+
+  if(fields[FTNREF1D(FIELD_XVEL1,1)]==1) {
+    if(chunk_neighbours[FTNREF1D(CHUNK_BOTTOM,1)]==EXTERNAL_FACE) {
+#pragma omp for private(j,k)
+      for (j=x_min-depth;j<=x_max+1+depth;j++) {
+#pragma ivdep
+        for (k=1;k<=depth;k++) {
+          xvel1[FTNREF2D(j  ,1-k,x_max+5,x_min-2,y_min-2)]=xvel1[FTNREF2D(j  ,1+k,x_max+5,x_min-2,y_min-2)];
+	}
+      }
+    }
+
+    if(chunk_neighbours[FTNREF1D(CHUNK_TOP,1)]==EXTERNAL_FACE) {
+#pragma omp for private(j,k)
+      for (j=x_min-depth;j<=x_max+1+depth;j++) {
+#pragma ivdep
+        for (k=1;k<=depth;k++) {
+          xvel1[FTNREF2D(j  ,y_max+1+k,x_max+5,x_min-2,y_min-2)]=xvel1[FTNREF2D(j  ,y_max+1-k,x_max+5,x_min-2,y_min-2)];
+	}
+      }
+    }
+
+    if(chunk_neighbours[FTNREF1D(CHUNK_LEFT,1)]==EXTERNAL_FACE) {
+#pragma omp for private(j,k)
+      for (k=y_min-depth;k<=y_max+1+depth;k++) {
+#pragma ivdep
+        for (j=1;j<=depth;j++) {
+          xvel1[FTNREF2D(1-j,k,x_max+5,x_min-2,y_min-2)]=-xvel1[FTNREF2D(1+j,k,x_max+5,x_min-2,y_min-2)];
+        }
+      }
+    }
+
+    if(chunk_neighbours[FTNREF1D(CHUNK_RIGHT,1)]==EXTERNAL_FACE) {
+#pragma omp for private(j,k)
+      for (k=y_min-depth;k<=y_max+1+depth;k++) {
+#pragma ivdep
+        for (j=1;j<=depth;j++) {
+          xvel1[FTNREF2D(x_max+1+j,k,x_max+5,x_min-2,y_min-2)]=-xvel1[FTNREF2D(x_max+1-j,k,x_max+5,x_min-2,y_min-2)];
+	}
+      }
+    }
+  }
+
+  if(fields[FTNREF1D(FIELD_YVEL0,1)]==1) {
+    if(chunk_neighbours[FTNREF1D(CHUNK_BOTTOM,1)]==EXTERNAL_FACE) {
+#pragma omp for private(j,k)
+      for (j=x_min-depth;j<=x_max+1+depth;j++) {
+#pragma ivdep
+        for (k=1;k<=depth;k++) {
+          yvel0[FTNREF2D(j  ,1-k,x_max+5,x_min-2,y_min-2)]=-yvel0[FTNREF2D(j  ,1+k,x_max+5,x_min-2,y_min-2)];
+	}
+      }
+    }
+
+    if(chunk_neighbours[FTNREF1D(CHUNK_TOP,1)]==EXTERNAL_FACE) {
+#pragma omp for private(j,k)
+      for (j=x_min-depth;j<=x_max+1+depth;j++) {
+#pragma ivdep
+        for (k=1;k<=depth;k++) {
+          yvel0[FTNREF2D(j  ,y_max+1+k,x_max+5,x_min-2,y_min-2)]=-yvel0[FTNREF2D(j  ,y_max+1-k,x_max+5,x_min-2,y_min-2)];
+	}
+      }
+    }
+
+    if(chunk_neighbours[FTNREF1D(CHUNK_LEFT,1)]==EXTERNAL_FACE) {
+#pragma omp for private(j,k)
+      for (k=y_min-depth;k<=y_max+1+depth;k++) {
+#pragma ivdep
+        for (j=1;j<=depth;j++) {
+          yvel0[FTNREF2D(1-j,k,x_max+5,x_min-2,y_min-2)]=yvel0[FTNREF2D(1+j,k,x_max+5,x_min-2,y_min-2)];
+        }
+      }
+    }
+
+    if(chunk_neighbours[FTNREF1D(CHUNK_RIGHT,1)]==EXTERNAL_FACE) {
+#pragma omp for private(j,k)
+      for (k=y_min-depth;k<=y_max+1+depth;k++) {
+#pragma ivdep
+        for (j=1;j<=depth;j++) {
+          yvel0[FTNREF2D(x_max+1+j,k,x_max+5,x_min-2,y_min-2)]=yvel0[FTNREF2D(x_max+1-j,k,x_max+5,x_min-2,y_min-2)];
+	}
+      }
+    }
+  }
+
+  if(fields[FTNREF1D(FIELD_YVEL1,1)]==1) {
+    if(chunk_neighbours[FTNREF1D(CHUNK_BOTTOM,1)]==EXTERNAL_FACE) {
+#pragma omp for private(j,k)
+      for (j=x_min-depth;j<=x_max+1+depth;j++) {
+#pragma ivdep
+        for (k=1;k<=depth;k++) {
+          yvel1[FTNREF2D(j  ,1-k,x_max+5,x_min-2,y_min-2)]=-yvel1[FTNREF2D(j  ,1+k,x_max+5,x_min-2,y_min-2)];
+	}
+      }
+    }
+
+    if(chunk_neighbours[FTNREF1D(CHUNK_TOP,1)]==EXTERNAL_FACE) {
+#pragma omp for private(j,k)
+      for (j=x_min-depth;j<=x_max+1+depth;j++) {
+#pragma ivdep
+        for (k=1;k<=depth;k++) {
+          yvel1[FTNREF2D(j  ,y_max+1+k,x_max+5,x_min-2,y_min-2)]=-yvel1[FTNREF2D(j  ,y_max+1-k,x_max+5,x_min-2,y_min-2)];
+	}
+      }
+    }
+
+    if(chunk_neighbours[FTNREF1D(CHUNK_LEFT,1)]==EXTERNAL_FACE) {
+#pragma omp for private(j,k)
+      for (k=y_min-depth;k<=y_max+1+depth;k++) {
+#pragma ivdep
+        for (j=1;j<=depth;j++) {
+          yvel1[FTNREF2D(1-j,k,x_max+5,x_min-2,y_min-2)]=yvel1[FTNREF2D(1+j,k,x_max+5,x_min-2,y_min-2)];
+        }
+      }
+    }
+
+    if(chunk_neighbours[FTNREF1D(CHUNK_RIGHT,1)]==EXTERNAL_FACE) {
+#pragma omp for private(j,k)
+      for (k=y_min-depth;k<=y_max+1+depth;k++) {
+#pragma ivdep
+        for (j=1;j<=depth;j++) {
+          yvel1[FTNREF2D(x_max+1+j,k,x_max+5,x_min-2,y_min-2)]=yvel1[FTNREF2D(x_max+1-j,k,x_max+5,x_min-2,y_min-2)];
+	}
+      }
+    }
+  }
+
+  if(fields[FTNREF1D(FIELD_VOL_FLUX_X,1)]==1) {
+    if(chunk_neighbours[FTNREF1D(CHUNK_BOTTOM,1)]==EXTERNAL_FACE) {
+#pragma omp for private(j,k)
+      for (j=x_min-depth;j<=x_max+1+depth;j++) {
+#pragma ivdep
+        for (k=1;k<=depth;k++) {
+          vol_flux_x[FTNREF2D(j  ,1-k,x_max+5,x_min-2,y_min-2)]=vol_flux_x[FTNREF2D(j  ,1+k,x_max+5,x_min-2,y_min-2)];
+	}
+      }
+    }
+
+    if(chunk_neighbours[FTNREF1D(CHUNK_TOP,1)]==EXTERNAL_FACE) {
+#pragma omp for private(j,k)
+      for (j=x_min-depth;j<=x_max+1+depth;j++) {
+#pragma ivdep
+        for (k=1;k<=depth;k++) {
+          vol_flux_x[FTNREF2D(j  ,y_max+k,x_max+5,x_min-2,y_min-2)]=vol_flux_x[FTNREF2D(j  ,y_max-k,x_max+5,x_min-2,y_min-2)];
+	}
+      }
+    }
+
+    if(chunk_neighbours[FTNREF1D(CHUNK_LEFT,1)]==EXTERNAL_FACE) {
+#pragma omp for private(j,k)
+      for (k=y_min-depth;k<=y_max+depth;k++) {
+#pragma ivdep
+        for (j=1;j<=depth;j++) {
+          vol_flux_x[FTNREF2D(1-j,k,x_max+5,x_min-2,y_min-2)]=-vol_flux_x[FTNREF2D(1+j,k,x_max+5,x_min-2,y_min-2)];
+        }
+      }
+    }
+    if(chunk_neighbours[FTNREF1D(CHUNK_RIGHT,1)]==EXTERNAL_FACE) {
+#pragma omp for private(j,k)
+      for (k=y_min-depth;k<=y_max+depth;k++) {
+#pragma ivdep
+        for (j=1;j<=depth;j++) {
+          vol_flux_x[FTNREF2D(x_max+1+j,k,x_max+5,x_min-2,y_min-2)]=-vol_flux_x[FTNREF2D(x_max+1-j,k,x_max+5,x_min-2,y_min-2)];
+	}
+      }
+    }
+  }
+
+  if(fields[FTNREF1D(FIELD_MASS_FLUX_X,1)]==1) {
+    if(chunk_neighbours[FTNREF1D(CHUNK_BOTTOM,1)]==EXTERNAL_FACE) {
+#pragma omp for private(j,k)
+      for (j=x_min-depth;j<=x_max+1+depth;j++) {
+#pragma ivdep
+        for (k=1;k<=depth;k++) {
+          mass_flux_x[FTNREF2D(j  ,1-k,x_max+5,x_min-2,y_min-2)]=mass_flux_x[FTNREF2D(j  ,1+k,x_max+5,x_min-2,y_min-2)];
+	}
+      }
+    }
+
+    if(chunk_neighbours[FTNREF1D(CHUNK_TOP,1)]==EXTERNAL_FACE) {
+#pragma omp for private(j,k)
+      for (j=x_min-depth;j<=x_max+1+depth;j++) {
+#pragma ivdep
+        for (k=1;k<=depth;k++) {
+          mass_flux_x[FTNREF2D(j  ,y_max+k,x_max+5,x_min-2,y_min-2)]=mass_flux_x[FTNREF2D(j  ,y_max-k,x_max+5,x_min-2,y_min-2)];
+	}
+      }
+    }
+
+    if(chunk_neighbours[FTNREF1D(CHUNK_LEFT,1)]==EXTERNAL_FACE) {
+#pragma omp for private(j,k)
+      for (k=y_min-depth;k<=y_max+depth;k++) {
+#pragma ivdep
+        for (j=1;j<=depth;j++) {
+          mass_flux_x[FTNREF2D(1-j,k,x_max+5,x_min-2,y_min-2)]=-mass_flux_x[FTNREF2D(1+j,k,x_max+5,x_min-2,y_min-2)];
+        }
+      }
+    }
+
+    if(chunk_neighbours[FTNREF1D(CHUNK_RIGHT,1)]==EXTERNAL_FACE) {
+#pragma omp for private(j,k)
+      for (k=y_min-depth;k<=y_max+depth;k++) {
+#pragma ivdep
+        for (j=1;j<=depth;j++) {
+          mass_flux_x[FTNREF2D(x_max+1+j,k,x_max+5,x_min-2,y_min-2)]=-mass_flux_x[FTNREF2D(x_max+1-j,k,x_max+5,x_min-2,y_min-2)];
+	}
+      }
+    }
+  }
+
+  if(fields[FTNREF1D(FIELD_VOL_FLUX_Y,1)]==1) {
+    if(chunk_neighbours[FTNREF1D(CHUNK_BOTTOM,1)]==EXTERNAL_FACE) {
+#pragma omp for private(j,k)
+      for (j=x_min-depth;j<=x_max+depth;j++) {
+#pragma ivdep
+        for (k=1;k<=depth;k++) {
+          vol_flux_y[FTNREF2D(j  ,1-k,x_max+4,x_min-2,y_min-2)]=-vol_flux_y[FTNREF2D(j  ,1+k,x_max+4,x_min-2,y_min-2)];
+	}
+      }
+    }
+
+    if(chunk_neighbours[FTNREF1D(CHUNK_TOP,1)]==EXTERNAL_FACE) {
+#pragma omp for private(j,k)
+      for (j=x_min-depth;j<=x_max+depth;j++) {
+#pragma ivdep
+        for (k=1;k<=depth;k++) {
+          vol_flux_y[FTNREF2D(j  ,y_max+k+1,x_max+4,x_min-2,y_min-2)]=-vol_flux_y[FTNREF2D(j  ,y_max+1-k,x_max+4,x_min-2,y_min-2)];
+	}
+      }
+    }
+
+    if(chunk_neighbours[FTNREF1D(CHUNK_LEFT,1)]==EXTERNAL_FACE) {
+#pragma omp for private(j,k)
+      for (k=y_min-depth;k<=y_max+1+depth;k++) {
+#pragma ivdep
+        for (j=1;j<=depth;j++) {
+          vol_flux_y[FTNREF2D(1-j,k,x_max+4,x_min-2,y_min-2)]=vol_flux_y[FTNREF2D(1+j,k,x_max+4,x_min-2,y_min-2)];
+        }
+      }
+    }
+
+    if(chunk_neighbours[FTNREF1D(CHUNK_RIGHT,1)]==EXTERNAL_FACE) {
+#pragma omp for private(j,k)
+      for (k=y_min-depth;k<=y_max+1+depth;k++) {
+#pragma ivdep
+        for (j=1;j<=depth;j++) {
+          vol_flux_y[FTNREF2D(x_max+j,k,x_max+4,x_min-2,y_min-2)]=vol_flux_y[FTNREF2D(x_max-j,k,x_max+4,x_min-2,y_min-2)];
+	}
+      }
+    }
+  }
+
+  if(fields[FTNREF1D(FIELD_MASS_FLUX_Y,1)]==1) {
+    if(chunk_neighbours[FTNREF1D(CHUNK_BOTTOM,1)]==EXTERNAL_FACE) {
+#pragma omp for private(j,k)
+      for (j=x_min-depth;j<=x_max+depth;j++) {
+#pragma ivdep
+        for (k=1;k<=depth;k++) {
+          mass_flux_y[FTNREF2D(j  ,1-k,x_max+4,x_min-2,y_min-2)]=-mass_flux_y[FTNREF2D(j  ,1+k,x_max+4,x_min-2,y_min-2)];
+	}
+      }
+    }
+
+    if(chunk_neighbours[FTNREF1D(CHUNK_TOP,1)]==EXTERNAL_FACE) {
+#pragma omp for private(j,k)
+      for (j=x_min-depth;j<=x_max+depth;j++) {
+#pragma ivdep
+        for (k=1;k<=depth;k++) {
+          mass_flux_y[FTNREF2D(j  ,y_max+k+1,x_max+4,x_min-2,y_min-2)]=-mass_flux_y[FTNREF2D(j  ,y_max+1-k,x_max+4,x_min-2,y_min-2)];
+	}
+      }
+    }
+
+    if(chunk_neighbours[FTNREF1D(CHUNK_LEFT,1)]==EXTERNAL_FACE) {
+#pragma omp for private(j,k)
+      for (k=y_min-depth;k<=y_max+1+depth;k++) {
+#pragma ivdep
+        for (j=1;j<=depth;j++) {
+          mass_flux_y[FTNREF2D(1-j,k,x_max+4,x_min-2,y_min-2)]=mass_flux_y[FTNREF2D(1+j,k,x_max+4,x_min-2,y_min-2)];
+        }
+      }
+    }
+
+    if(chunk_neighbours[FTNREF1D(CHUNK_RIGHT,1)]==EXTERNAL_FACE) {
+#pragma omp for private(j,k)
+      for (k=y_min-depth;k<=y_max+1+depth;k++) {
+#pragma ivdep
+        for (j=1;j<=depth;j++) {
+          mass_flux_y[FTNREF2D(x_max+j,k,x_max+4,x_min-2,y_min-2)]=mass_flux_y[FTNREF2D(x_max-j,k,x_max+4,x_min-2,y_min-2)];
+	}
+      }
+    }
+  }
+
+  if(fields[FTNREF1D(FIELD_U,1)]==1) {
+    if(chunk_neighbours[FTNREF1D(CHUNK_BOTTOM,1)]==EXTERNAL_FACE) {
+#pragma omp for private(j,k)
+      for (j=x_min-depth;j<=x_max+1+depth;j++) {
+#pragma ivdep
+        for (k=1;k<=depth;k++) {
+          u[FTNREF2D(j  ,1-k,x_max+5,x_min-2,y_min-2)]=u[FTNREF2D(j  ,1+k,x_max+5,x_min-2,y_min-2)];
+	}
+      }
+    }
+
+    if(chunk_neighbours[FTNREF1D(CHUNK_TOP,1)]==EXTERNAL_FACE) {
+#pragma omp for private(j,k)
+      for (j=x_min-depth;j<=x_max+1+depth;j++) {
+#pragma ivdep
+        for (k=1;k<=depth;k++) {
+          u[FTNREF2D(j  ,y_max+1+k,x_max+5,x_min-2,y_min-2)]=u[FTNREF2D(j  ,y_max+1-k,x_max+5,x_min-2,y_min-2)];
+	}
+      }
+    }
+
+    if(chunk_neighbours[FTNREF1D(CHUNK_LEFT,1)]==EXTERNAL_FACE) {
+#pragma omp for private(j,k)
+      for (k=y_min-depth;k<=y_max+1+depth;k++) {
+#pragma ivdep
+        for (j=1;j<=depth;j++) {
+          u[FTNREF2D(1-j,k,x_max+5,x_min-2,y_min-2)]=u[FTNREF2D(1+j,k,x_max+5,x_min-2,y_min-2)];
+        }
+      }
+    }
+
+    if(chunk_neighbours[FTNREF1D(CHUNK_RIGHT,1)]==EXTERNAL_FACE) {
+#pragma omp for private(j,k)
+      for (k=y_min-depth;k<=y_max+1+depth;k++) {
+#pragma ivdep
+        for (j=1;j<=depth;j++) {
+          u[FTNREF2D(x_max+1+j,k,x_max+5,x_min-2,y_min-2)]=u[FTNREF2D(x_max+1-j,k,x_max+5,x_min-2,y_min-2)];
+	}
+      }
+    }
+  }
+
+
+ }
 
 }

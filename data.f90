@@ -23,7 +23,7 @@ MODULE data_module
 
    IMPLICIT NONE
 
-   REAL(KIND=8), PARAMETER :: g_version=0.0
+   REAL(KIND=8), PARAMETER :: g_version=1.0
 
    INTEGER,      PARAMETER :: g_ibig=640000
 
@@ -79,7 +79,7 @@ MODULE data_module
                                 ,g_out
 
    INTEGER         ::            CONDUCTIVITY        = 1 &
-                                , RECIP_CONDUCTIVITY = 2
+                                ,RECIP_CONDUCTIVITY  = 2
 
 
    TYPE parallel_type

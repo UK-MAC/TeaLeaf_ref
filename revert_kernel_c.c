@@ -43,9 +43,9 @@ void revert_kernel_c_(int *xmin,int *xmax,int *ymin,int *ymax,
 
   int j,k;
   
-#pragma omp parallel  
+#pragma omp parallel
  {
-#pragma omp for
+#pragma omp for private(j)
   for (k=y_min;k<=y_max;k++) {
 #pragma ivdep
     for (j=x_min;j<=x_max;j++) {
@@ -53,7 +53,7 @@ void revert_kernel_c_(int *xmin,int *xmax,int *ymin,int *ymax,
     }
   }
   
-#pragma omp for
+#pragma omp for private(j)
   for (k=y_min;k<=y_max;k++) {
 #pragma ivdep
     for (j=x_min;j<=x_max;j++) {
