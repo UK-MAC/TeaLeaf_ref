@@ -31,6 +31,7 @@ SUBROUTINE tea_leaf()
 
   IMPLICIT NONE
 
+!$ INTEGER :: OMP_GET_THREAD_NUM
   INTEGER :: c, n, j,k
   REAL(KIND=8) :: ry,rx, error
 
@@ -136,8 +137,14 @@ SUBROUTINE tea_leaf()
 
       ENDDO
 
-      PRINT *, 'ERR: ', error
-      PRINT *, 'ITER: ', (n-1)
+      IF (parallel%boss) THEN
+!$      IF(OMP_GET_THREAD_NUM().EQ.0) THEN
+          WRITE(g_out,"('Conduction error ',e14.7)") error
+          WRITE(g_out,"('Iteration count ',i8)") n-1
+          WRITE(0,"('Conduction error ',e14.7)") error
+          WRITE(0,"('Iteration count ', i8)") n-1
+!$      ENDIF
+      ENDIF
 
       ! RESET
       IF(use_fortran_kernels) THEN
