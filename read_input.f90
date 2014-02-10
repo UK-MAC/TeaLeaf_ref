@@ -63,6 +63,9 @@ SUBROUTINE read_input()
   dtv_safe=0.5
   dtdiv_safe=0.7
 
+  max_iters=1000
+  eps=1.0e-6
+
   use_fortran_kernels=.TRUE.
   use_C_kernels=.FALSE.
   use_OA_kernels=.FALSE.
