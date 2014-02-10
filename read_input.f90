@@ -184,10 +184,10 @@ SUBROUTINE read_input()
         IF(parallel%boss)WRITE(g_out,"(1x,a25)")'Profiler on'
       CASE('tea_leaf_off')
         use_Tealeaf=.FALSE.
-        IF(parallel%boss)WRITE(g_out,"(1x,a16)")'conduction is on'
-      CASE('no_tea_leaf')
-        use_Tealeaf=.FALSE.
-        IF(parallel%boss)WRITE(g_out,"(1x,a17)")'conduction is off'
+        IF(parallel%boss)WRITE(g_out,"(1x,a17)")'Conduction is off'
+      CASE('tea_leaf_on')
+        use_Tealeaf=.TRUE.
+        IF(parallel%boss)WRITE(g_out,"(1x,a16)")'Conduction is on'
       CASE('tl_max_iters')
         max_iters = parse_getival(parse_getword(.TRUE.))
       CASE('tl_eps')
@@ -272,11 +272,11 @@ SUBROUTINE read_input()
   IF(parallel%boss) THEN
     WRITE(g_out,*)
     IF(use_fortran_kernels) THEN
-      WRITE(g_out,"(1x,a25)")'Using Fortran Kernels'
+      WRITE(g_out,"(1x,a)")'Using Fortran Kernels'
     ELSEIF(use_c_kernels) THEN
-      WRITE(g_out,"(1x,a25)")'Using C Kernels'
+      WRITE(g_out,"(1x,a)")'Using C Kernels'
     ELSEIF(use_oa_kernels) THEN
-      WRITE(g_out,"(1x,a25)")'Using OpenAcc Kernels'
+      WRITE(g_out,"(1x,a)")'Using OpenAcc Kernels'
     ENDIF
     WRITE(g_out,*)
     WRITE(g_out,*) 'Input read finished.'
