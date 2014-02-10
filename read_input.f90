@@ -183,7 +183,7 @@ SUBROUTINE read_input()
         profiler_on=.TRUE.
         IF(parallel%boss)WRITE(g_out,"(1x,a25)")'Profiler on'
       CASE('tea_leaf_off')
-        use_Tealeaf=.TRUE.
+        use_Tealeaf=.FALSE.
         IF(parallel%boss)WRITE(g_out,"(1x,a16)")'conduction is on'
       CASE('no_tea_leaf')
         use_Tealeaf=.FALSE.
