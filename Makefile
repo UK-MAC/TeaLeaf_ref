@@ -190,7 +190,7 @@ tea_leaf: c_lover *.f90 Makefile
 	generate_chunk_kernel_c.o	\
 	initialise_chunk_kernel_c.o	\
 	tea_leaf_kernel_c.o             \
-	-o clover_leaf; echo $(MESSAGE)
+	-o tea_leaf; echo $(MESSAGE)
 
 c_lover: *.c Makefile
 	$(C_MPI_COMPILER) $(CFLAGS)     \

@@ -67,6 +67,9 @@ SUBROUTINE read_input()
   use_C_kernels=.FALSE.
   use_OA_kernels=.FALSE.
   use_vector_loops=.FALSE.
+  use_Hydro = .FALSE.
+  use_Tealeaf=.TRUE.
+  coefficient = CONDUCTIVITY
   profiler_on=.FALSE.
   profiler%timestep=0.0
   profiler%acceleration=0.0
@@ -179,7 +182,7 @@ SUBROUTINE read_input()
       CASE('profiler_on')
         profiler_on=.TRUE.
         IF(parallel%boss)WRITE(g_out,"(1x,a25)")'Profiler on'
-      CASE('use_tea_leaf')
+      CASE('tea_leaf_off')
         use_Tealeaf=.TRUE.
         IF(parallel%boss)WRITE(g_out,"(1x,a16)")'conduction is on'
       CASE('no_tea_leaf')
@@ -189,7 +192,7 @@ SUBROUTINE read_input()
         max_iters = parse_getival(parse_getword(.TRUE.))
       CASE('tl_eps')
         eps = parse_getrval(parse_getword(.TRUE.))
-      CASE('no_hydro')
+      CASE('hydro_off')
         use_Hydro = .FALSE.
         IF(parallel%boss)WRITE(g_out,"(1x,a12)")'Hydro is off'
       CASE('hydro_on')
