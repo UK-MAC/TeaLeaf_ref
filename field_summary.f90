@@ -107,7 +107,6 @@ SUBROUTINE field_summary()
 
   !Check if this is the final call and if it is a test problem, check the result.
   IF(complete) THEN
-    write(0,*)"temp ",temp
     IF(parallel%boss) THEN
 !$    IF(OMP_GET_THREAD_NUM().EQ.0) THEN
         IF(test_problem.EQ.1) THEN

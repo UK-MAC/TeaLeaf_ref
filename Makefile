@@ -213,4 +213,4 @@ c_lover: *.c Makefile
 	tea_leaf_kernel_c.c
 
 clean:
-	rm -f *.o *.mod *genmod* *.lst *.cub *.ptx clover_leaf
+	rm -f *.o *.mod *genmod* *.lst *.cub *.ptx tea_leaf

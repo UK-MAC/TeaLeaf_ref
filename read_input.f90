@@ -71,7 +71,7 @@ SUBROUTINE read_input()
   use_OA_kernels=.FALSE.
   use_vector_loops=.FALSE.
   use_Hydro = .FALSE.
-  use_Tealeaf=.TRUE.
+  use_TeaLeaf=.TRUE.
   coefficient = CONDUCTIVITY
   profiler_on=.FALSE.
   profiler%timestep=0.0
