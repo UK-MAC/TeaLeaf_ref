@@ -67,8 +67,8 @@ SUBROUTINE hydro
 
     IF(use_TeaLeaf) THEN
       IF(.NOT. use_Hydro) THEN
-      ! copy tl0 to tl1
-      CALL set_field()
+        ! copy time level 0 to time level 1
+        CALL set_field()
       ENDIF
         
       CALL tea_leaf()
