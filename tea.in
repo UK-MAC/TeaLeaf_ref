@@ -15,6 +15,6 @@ timestep_rise=1.5
 max_timestep=0.004
 end_time=1.0
 end_step=87
-tl_max_iters=10000
+tl_max_iters=1000
  test_problem 1
 *endtea
