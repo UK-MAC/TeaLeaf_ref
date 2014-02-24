@@ -171,7 +171,7 @@ SUBROUTINE tea_leaf_kernel_solve(x_min,       &
                              /(1.0_8+2.0_8*(0.5_8*(Kx(j,k)+Kx(j+1,k)))*rx &
                                 +2.0_8*(0.5_8*(Ky(j,k)+Ky(j,k+1)))*ry)
 
-        error = MAX(error, ABS(u1(j,k)-u0(j,k)))
+        error = MAX(error, ABS(u1(j,k)-un(j,k)))
       ENDDO
     ENDDO
 !$OMP END DO

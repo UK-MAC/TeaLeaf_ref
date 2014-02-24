@@ -165,7 +165,7 @@ void tea_leaf_kernel_solve_c_(
 
             *error = fmax(*error,
                     fabs(u1[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)] 
-                        - u0[FTNREF2D(j,k,x_max+5,x_min-2,y_min-2)]));
+                        - un[FTNREF2D(j,k,x_max+5,x_min-2,y_min-2)]));
         }
     }
     //  }
