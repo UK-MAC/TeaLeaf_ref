@@ -49,7 +49,7 @@ SUBROUTINE set_field()
                               chunks(c)%field%energy0,   &
                               chunks(c)%field%energy1)
       ELSEIF(use_C_kernels)THEN
-        CALL set_field_kernel(chunks(c)%field%x_min,   &
+        CALL set_field_kernel_c(chunks(c)%field%x_min,   &
                               chunks(c)%field%x_max,     &
                               chunks(c)%field%y_min,     &
                               chunks(c)%field%y_max,     &
@@ -61,7 +61,7 @@ SUBROUTINE set_field()
     ENDIF
 
   ENDDO
-  !IF(profiler_on) profiler%set_field=profiler%set_field+(timer()-kernel_time)
+  IF(profiler_on) profiler%set_field=profiler%set_field+(timer()-kernel_time)
 
 END SUBROUTINE set_field
 

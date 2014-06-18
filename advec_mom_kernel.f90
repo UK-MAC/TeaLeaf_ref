@@ -198,7 +198,7 @@ SUBROUTINE advec_mom_kernel(x_min,x_max,y_min,y_max,   &
 !$OMP DO PRIVATE(upwind,downwind,donor,dif,sigma,width,limiter,vdiffuw,vdiffdw,auw,adw,wind)
       DO k=y_min,y_max+1
         DO j=x_min-1,x_max+1
-          IF(node_flux(j,k).LT.0.0)THEN
+          IF(node_flux(j,k).LT.0.0_8)THEN
             upwind=j+2
             donor=j+1
             downwind=j
@@ -213,15 +213,15 @@ SUBROUTINE advec_mom_kernel(x_min,x_max,y_min,y_max,   &
           width=celldx(j)
           vdiffuw=vel1(donor,k)-vel1(upwind,k)
           vdiffdw=vel1(downwind,k)-vel1(donor,k)
-          limiter=0.0
-          IF(vdiffuw*vdiffdw.GT.0.0)THEN
+          limiter=0.0_8
+          IF(vdiffuw*vdiffdw.GT.0.0_8)THEN
             auw=ABS(vdiffuw)
             adw=ABS(vdiffdw)
             wind=1.0_8
-            IF(vdiffdw.LE.0.0) wind=-1.0_8
+            IF(vdiffdw.LE.0.0_8) wind=-1.0_8
             limiter=wind*MIN(width*((2.0_8-sigma)*adw/width+(1.0_8+sigma)*auw/celldx(dif))/6.0_8,auw,adw)
           ENDIF
-          advec_vel(j,k)=vel1(donor,k)+(1.0-sigma)*limiter
+          advec_vel(j,k)=vel1(donor,k)+(1.0_8-sigma)*limiter
           mom_flux(j,k)=advec_vel(j,k)*node_flux(j,k)
         ENDDO
       ENDDO
@@ -297,7 +297,7 @@ SUBROUTINE advec_mom_kernel(x_min,x_max,y_min,y_max,   &
 !$OMP DO PRIVATE(upwind,donor,downwind,dif,sigma,width,limiter,vdiffuw,vdiffdw,auw,adw,wind)
       DO k=y_min-1,y_max+1
         DO j=x_min,x_max+1
-          IF(node_flux(j,k).LT.0.0)THEN
+          IF(node_flux(j,k).LT.0.0_8)THEN
             upwind=k+2
             donor=k+1
             downwind=k
@@ -313,12 +313,12 @@ SUBROUTINE advec_mom_kernel(x_min,x_max,y_min,y_max,   &
           width=celldy(k)
           vdiffuw=vel1(j,donor)-vel1(j,upwind)
           vdiffdw=vel1(j,downwind)-vel1(j,donor)
-          limiter=0.0
-          IF(vdiffuw*vdiffdw.GT.0.0)THEN
+          limiter=0.0_8
+          IF(vdiffuw*vdiffdw.GT.0.0_8)THEN
             auw=ABS(vdiffuw)
             adw=ABS(vdiffdw)
             wind=1.0_8
-            IF(vdiffdw.LE.0.0) wind=-1.0_8
+            IF(vdiffdw.LE.0.0_8) wind=-1.0_8
             limiter=wind*MIN(width*((2.0_8-sigma)*adw/width+(1.0_8+sigma)*auw/celldy(dif))/6.0_8,auw,adw)
           ENDIF
           advec_vel(j,k)=vel1(j,donor)+(1.0_8-sigma)*limiter

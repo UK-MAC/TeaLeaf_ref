@@ -70,7 +70,7 @@ void generate_chunk_kernel_c_(int *xmin,int *xmax,int *ymin,int *ymax,
 
   int j,k,jt,kt;
 
-#pragma omp parallel
+#pragma omp parallel private(state)
  {
   /* State 1 is always the background state */
 #pragma omp for private(j,k)
@@ -161,7 +161,7 @@ void generate_chunk_kernel_c_(int *xmin,int *xmax,int *ymin,int *ymax,
   for (k=y_min-1;k<=y_max+1;k++) {
 #pragma ivdep
     for (j=x_min-1;j<=x_max+1;j++) {
-      u0[FTNREF2D(j  ,k  ,x_max+5,x_min-2,y_min-2)]=energy0[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)]*density0[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)];
+      u0[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)]=energy0[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)]*density0[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)];
     }
   }
 

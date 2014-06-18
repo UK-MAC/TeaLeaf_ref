@@ -231,10 +231,36 @@ SUBROUTINE clover_exchange(fields,depth)
 
   IMPLICIT NONE
 
-  INTEGER      :: fields(:),depth
+  INTEGER      :: fields(num_fields),depth
 
   ! Assuming 1 patch per task, this will be changed
   ! Also, not packing all fields for each communication, doing one at a time
+
+  IF(fields(FIELD_P).EQ.1) THEN
+    CALL clover_exchange_message(parallel%task+1,chunks(parallel%task+1)%field%work_array1,      &
+                                 chunks(parallel%task+1)%left_snd_buffer,                      &
+                                 chunks(parallel%task+1)%left_rcv_buffer,                      &
+                                 chunks(parallel%task+1)%right_snd_buffer,                     &
+                                 chunks(parallel%task+1)%right_rcv_buffer,                     &
+                                 chunks(parallel%task+1)%bottom_snd_buffer,                    &
+                                 chunks(parallel%task+1)%bottom_rcv_buffer,                    &
+                                 chunks(parallel%task+1)%top_snd_buffer,                       &
+                                 chunks(parallel%task+1)%top_rcv_buffer,                       &
+                                 depth, CELL_DATA)
+  ENDIF
+
+  IF(fields(FIELD_U).EQ.1) THEN
+    CALL clover_exchange_message(parallel%task+1,chunks(parallel%task+1)%field%u,      &
+                                 chunks(parallel%task+1)%left_snd_buffer,                      &
+                                 chunks(parallel%task+1)%left_rcv_buffer,                      &
+                                 chunks(parallel%task+1)%right_snd_buffer,                     &
+                                 chunks(parallel%task+1)%right_rcv_buffer,                     &
+                                 chunks(parallel%task+1)%bottom_snd_buffer,                    &
+                                 chunks(parallel%task+1)%bottom_rcv_buffer,                    &
+                                 chunks(parallel%task+1)%top_snd_buffer,                       &
+                                 chunks(parallel%task+1)%top_rcv_buffer,                       &
+                                 depth, CELL_DATA)
+  ENDIF
 
   IF(fields(FIELD_DENSITY0).EQ.1) THEN
     CALL clover_exchange_message(parallel%task+1,chunks(parallel%task+1)%field%density0,      &
@@ -677,6 +703,26 @@ SUBROUTINE clover_sum(value)
   value=total
 
 END SUBROUTINE clover_sum
+
+SUBROUTINE clover_allsum(value)
+
+  ! Global reduction for CG solver
+
+  IMPLICIT NONE
+
+  REAL(KIND=8) :: value
+
+  REAL(KIND=8) :: total
+
+  INTEGER :: err
+
+  total=value
+
+  CALL MPI_ALLREDUCE(value,total,1,MPI_DOUBLE_PRECISION,MPI_SUM,MPI_COMM_WORLD,err)
+
+  value=total
+
+END SUBROUTINE clover_allsum
 
 SUBROUTINE clover_min(value)
 

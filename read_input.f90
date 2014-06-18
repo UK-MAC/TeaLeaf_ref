@@ -74,6 +74,7 @@ SUBROUTINE read_input()
   use_TeaLeaf=.TRUE.
   coefficient = CONDUCTIVITY
   profiler_on=.FALSE.
+  profile_solver=.false.
   profiler%timestep=0.0
   profiler%acceleration=0.0
   profiler%PdV=0.0
@@ -87,6 +88,14 @@ SUBROUTINE read_input()
   profiler%revert=0.0
   profiler%flux=0.0
   profiler%halo_exchange=0.0
+
+  tl_ch_cg_errswitch = .false.
+  tl_ch_cg_presteps = 30
+  tl_ch_cg_epslim = 1e-5
+
+  tl_use_chebyshev = .false.
+  tl_use_cg = .false.
+  tl_use_jacobi = .true.
 
   IF(parallel%boss)WRITE(g_out,*) 'Reading input file'
   IF(parallel%boss)WRITE(g_out,*)
@@ -168,6 +177,14 @@ SUBROUTINE read_input()
       CASE('summary_frequency')
         summary_frequency=parse_getival(parse_getword(.TRUE.))
         IF(parallel%boss)WRITE(g_out,"(1x,a25,i12)")'summary_frequency',summary_frequency
+      CASE('tl_ch_cg_presteps')
+        tl_ch_cg_presteps=parse_getival(parse_getword(.TRUE.))
+        IF(parallel%boss)WRITE(g_out,"(1x,a25,i12)")'tl_ch_cg_presteps',tl_ch_cg_presteps
+      CASE('tl_ch_cg_epslim')
+        tl_ch_cg_epslim=parse_getrval(parse_getword(.TRUE.))
+        IF(parallel%boss)WRITE(g_out,"(1x,a25,e12.4)")'tl_ch_cg_epslim',tl_ch_cg_epslim
+      CASE('tl_ch_cg_errswitch')
+        tl_ch_cg_errswitch = .true.
       CASE('use_fortran_kernels')
         use_fortran_kernels=.TRUE.
         use_C_kernels=.FALSE.
@@ -180,8 +197,23 @@ SUBROUTINE read_input()
         use_fortran_kernels=.FALSE.
         use_C_kernels=.FALSE.
         use_OA_kernels=.TRUE.
+      CASE('tl_use_jacobi')
+        tl_use_chebyshev = .false.
+        tl_use_cg = .false.
+        tl_use_jacobi = .true.
+      CASE('tl_use_cg')
+        tl_use_chebyshev = .false.
+        tl_use_cg = .true.
+        tl_use_jacobi = .false.
+      CASE('tl_use_chebyshev')
+        tl_use_chebyshev = .true.
+        tl_use_cg = .false.
+        tl_use_jacobi = .false.
       CASE('use_vector_loops')
         use_vector_loops=.TRUE.
+      CASE('profile_solver')
+        profile_solver=.TRUE.
+        IF(parallel%boss)WRITE(g_out,"(1x,a25)")'Timing iteration time of linear solver'
       CASE('profiler_on')
         profiler_on=.TRUE.
         IF(parallel%boss)WRITE(g_out,"(1x,a25)")'Profiler on'

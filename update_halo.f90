@@ -69,6 +69,7 @@ SUBROUTINE update_halo(fields,depth)
                                 chunks(c)%field%mass_flux_x,    &
                                 chunks(c)%field%mass_flux_y,    &
                                 chunks(c)%field%u,              &
+                                chunks(c)%field%work_array1,    &
                                 fields,                         &
                                 depth                           )
       ELSEIF(use_C_kernels)THEN
@@ -101,6 +102,7 @@ SUBROUTINE update_halo(fields,depth)
                                 chunks(c)%field%mass_flux_x,    &
                                 chunks(c)%field%mass_flux_y,    &
                                 chunks(c)%field%u,              &
+                                chunks(c)%field%work_array1,    &
                                 fields,                         &
                                 depth                           )
       ENDIF

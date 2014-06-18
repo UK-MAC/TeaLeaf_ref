@@ -39,7 +39,7 @@ SUBROUTINE field_summary_kernel(x_min,x_max,y_min,y_max, &
   INTEGER      :: x_min,x_max,y_min,y_max
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: volume
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: density0,energy0
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+3,y_min-2:y_max+3) :: u
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: u
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: pressure
   REAL(KIND=8), DIMENSION(x_min-2:x_max+3,y_min-2:y_max+3) :: xvel0,yvel0
   REAL(KIND=8) :: vol,mass,ie,ke,press,temp

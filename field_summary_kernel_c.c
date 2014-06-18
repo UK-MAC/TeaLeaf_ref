@@ -42,8 +42,8 @@ void field_summary_kernel_c_(int *xmin,
                           double *mss,
                           double *ien,
                           double *ken,
-                          double *tmp,
-                          double *prss)
+                          double *prss,
+                          double *tmp)
 {
 
   int x_min=*xmin;
@@ -88,7 +88,7 @@ void field_summary_kernel_c_(int *xmin,
       ie=ie+cell_mass*energy0[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)];
       ke=ke+cell_mass*0.5*vsqrd;
       press=press+cell_vol*pressure[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)];
-      temp=temp+cell_mass*u[FTNREF2D(j  ,k  ,x_max+5,x_min-2,y_min-2)];
+      temp=temp+cell_mass*u[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)];
     }
   }
 

@@ -73,13 +73,31 @@ MODULE definitions_module
    LOGICAL      :: use_OA_kernels
    LOGICAL      :: use_Tealeaf
    LOGICAL      :: use_Hydro
+   LOGICAL      :: tl_use_chebyshev
+   LOGICAL      :: tl_use_cg
+   LOGICAL      :: tl_use_jacobi
    INTEGER      :: max_iters
    REAL(KIND=8) :: eps
    INTEGER      :: coefficient
 
+   ! for chebyshev solver - whether to run cg until a certain error (tl_ch_eps)
+   ! is reached, or for a certain number of steps (tl_ch_cg_presteps)
+   LOGICAL      :: tl_ch_cg_errswitch
+   ! error to run cg to if tl_ch_cg_errswitch is set
+   REAL(KIND=8) :: tl_ch_cg_epslim
+   ! number of steps of cg to run to before switching to ch if tl_ch_cg_errswitch not set
+   INTEGER      :: tl_ch_cg_presteps
+
    LOGICAL      :: use_vector_loops ! Some loops work better in serial depending on the hardware
 
    LOGICAL      :: profiler_on ! Internal code profiler to make comparisons across systems easier
+
+   ! Profile execution time per iteration of lienar solver.
+   ! Want to know the time taken per step, but turning profiling on
+   ! interferes with GPU based solvers as profiling requires
+   ! waiting for each kernel to finish execution
+   LOGICAL      :: profile_solver
+                                
 
    TYPE profiler_type
      REAL(KIND=8)       :: timestep        &
@@ -136,7 +154,7 @@ MODULE definitions_module
      REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: yvel0,yvel1
      REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: vol_flux_x,mass_flux_x
      REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: vol_flux_y,mass_flux_y
-     REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: u
+     REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: u, u0
      REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: work_array1 !node_flux, stepbymass, volume_change, pre_vol
      REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: work_array2 !node_mass_post, post_vol
      REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: work_array3 !node_mass_pre,pre_mass

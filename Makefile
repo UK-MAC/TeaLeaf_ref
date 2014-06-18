@@ -168,7 +168,9 @@ tea_leaf: c_lover *.f90 Makefile
 	reset_field.f90			\
 	set_field_kernel.f90            \
 	set_field.f90                   \
-	tea_leaf_kernel.f90             \
+	tea_leaf_jacobi.f90             \
+	tea_leaf_cg.f90             \
+	tea_leaf_cheby.f90             \
 	tea.f90                         \
 	hydro.f90		        \
 	visit.f90			\
@@ -177,6 +179,7 @@ tea_leaf: c_lover *.f90 Makefile
 	PdV_kernel_c.o                  \
 	flux_calc_kernel_c.o            \
 	revert_kernel_c.o               \
+	set_field_kernel_c.o          \
 	reset_field_kernel_c.o          \
 	ideal_gas_kernel_c.o            \
 	viscosity_kernel_c.o            \
@@ -198,6 +201,7 @@ c_lover: *.c Makefile
 	PdV_kernel_c.c                  \
 	flux_calc_kernel_c.c            \
 	revert_kernel_c.c               \
+	set_field_kernel_c.c          \
 	reset_field_kernel_c.c          \
 	ideal_gas_kernel_c.c            \
 	viscosity_kernel_c.c            \
