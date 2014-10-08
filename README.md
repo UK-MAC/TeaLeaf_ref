@@ -2,7 +2,7 @@
 
 ## Compling
 
-- In many case just typing `make` in the required software version will work. 
+- In many cases just typing `make` in the required software version will work. 
 
 If the MPI compilers have different names then the build process needs to 
 notified of this by defining two environment variables, `MPI_COMPILER` and 
@@ -48,7 +48,7 @@ The default flags for each of these is show below:-
 * PATHSCLE: -O3
 * PGI: -O3 -Minline
 * CRAY: -em  _Note: that by default the Cray compiler with pick the optimum 
-options for performance._
+options for performance.
 
 ### Other Flags
 
