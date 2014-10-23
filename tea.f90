@@ -15,532 +15,784 @@
 ! You should have received a copy of the GNU General Public License along with 
 ! TeaLeaf. If not, see http://www.gnu.org/licenses/.
 
-!>  @brief Driver for the heat conduction kernel
+!>  @brief Communication Utilities
 !>  @author David Beckingsale, Wayne Gaudin
-!>  @details Invokes the user specified kernel for the heat conduction
+!>  @details Contains all utilities required to run TeaLeaf in a distributed
+!>  environment, including initialisation, mesh decompostion, reductions and
+!>  halo exchange using explicit buffers.
+!>
+!>  Note the halo exchange is currently coded as simply as possible and no 
+!>  optimisations have been implemented, such as post receives before sends or packing
+!>  buffers with multiple data fields. This is intentional so the effect of these
+!>  optimisations can be measured on large systems, as and when they are added.
+!>
+!>  Even without these modifications TeaLeaf weak scales well on moderately sized
+!>  systems of the order of 10K cores.
 
-MODULE tea_leaf_module
+MODULE clover_module
 
-  USE report_module
   USE data_module
-  USE tea_leaf_kernel_module
-  USE tea_leaf_kernel_cg_module
-  USE tea_leaf_kernel_cheby_module
-  USE update_halo_module
+  USE definitions_module
+  USE MPI
 
   IMPLICIT NONE
 
 CONTAINS
 
-SUBROUTINE tea_leaf()
+SUBROUTINE clover_barrier
+
+  INTEGER :: err
+
+  CALL MPI_BARRIER(MPI_COMM_WORLD,err)
+
+END SUBROUTINE clover_barrier
+
+SUBROUTINE clover_abort
+
+  INTEGER :: ierr,err
+
+  CALL MPI_ABORT(MPI_COMM_WORLD,ierr,err)
+
+END SUBROUTINE clover_abort
+
+SUBROUTINE clover_finalize
+
+  INTEGER :: err
+
+  CLOSE(g_out)
+  CALL FLUSH(0)
+  CALL FLUSH(6)
+  CALL FLUSH(g_out)
+  CALL MPI_FINALIZE(err)
+
+END SUBROUTINE clover_finalize
+
+SUBROUTINE clover_init_comms
 
   IMPLICIT NONE
 
-!$ INTEGER :: OMP_GET_THREAD_NUM
-  INTEGER :: c, n
-  REAL(KIND=8) :: ry,rx, error
+  INTEGER :: err,rank,size
 
-  INTEGER :: fields(NUM_FIELDS)
+  rank=0
+  size=1
 
-  REAL(KIND=8) :: kernel_time,timer
+  CALL MPI_INIT(err) 
 
-  ! For CG solver
-  REAL(KIND=8) :: rro, pw, rrn, alpha, beta
+  CALL MPI_COMM_RANK(MPI_COMM_WORLD,rank,err) 
+  CALL MPI_COMM_SIZE(MPI_COMM_WORLD,size,err) 
 
-  ! For chebyshev solver
-  REAL(KIND=8), DIMENSION(max_iters) :: cg_alphas, cg_betas
-  REAL(KIND=8), DIMENSION(max_iters) :: ch_alphas, ch_betas
-  REAL(KIND=8) :: eigmin, eigmax, theta
-  REAL(KIND=8) :: it_alpha, cn, gamm, bb
-  INTEGER :: est_itc, cheby_calc_steps, max_cheby_iters, info, switch_step
-  LOGICAL :: ch_switch_check
+  parallel%parallel=.TRUE.
+  parallel%task=rank
 
-  INTEGER :: cg_calc_steps
-  REAL(KIND=8) :: cg_time, ch_time, solve_timer
-  cg_time = 0.0_8
-  ch_time = 0.0_8
-  cg_calc_steps = 0
+  IF(rank.EQ.0) THEN
+    parallel%boss=.TRUE.
+  ENDIF
 
-  IF(coefficient .nE. RECIP_CONDUCTIVITY .and. coefficient .ne. conductivity) THEN
-    CALL report_error('tea_leaf', 'unknown coefficient option')
-  endif
+  parallel%boss_task=0
+  parallel%max_task=size
 
-  error = 1e10
-  cheby_calc_steps = 0
+END SUBROUTINE clover_init_comms
 
+SUBROUTINE clover_get_num_chunks(count)
+
+  IMPLICIT NONE
+
+  INTEGER :: count
+
+! Should be changed so there can be more than one chunk per mpi task
+
+  count=parallel%max_task
+
+END SUBROUTINE clover_get_num_chunks
+
+SUBROUTINE clover_decompose(x_cells,y_cells,left,right,bottom,top)
+
+  ! This decomposes the mesh into a number of chunks.
+  ! The number of chunks may be a multiple of the number of mpi tasks
+  ! Doesn't always return the best split if there are few factors
+  ! All factors need to be stored and the best picked. But its ok for now
+
+  IMPLICIT NONE
+
+  INTEGER :: x_cells,y_cells,left(:),right(:),top(:),bottom(:)
+  INTEGER :: c,delta_x,delta_y
+
+  REAL(KIND=8) :: mesh_ratio,factor_x,factor_y
+  INTEGER  :: chunk_x,chunk_y,mod_x,mod_y,split_found
+
+  INTEGER  :: cx,cy,chunk,add_x,add_y,add_x_prev,add_y_prev
+
+  ! 2D Decomposition of the mesh
+
+  mesh_ratio=real(x_cells)/real(y_cells)
+
+  chunk_x=number_of_chunks
+  chunk_y=1
+
+  split_found=0 ! Used to detect 1D decomposition
   DO c=1,number_of_chunks
-
-    IF(chunks(c)%task.EQ.parallel%task) THEN
-
-      fields=0
-      fields(FIELD_ENERGY1) = 1
-      fields(FIELD_DENSITY1) = 1
-      CALL update_halo(fields,2)
-
-      ! INIT
-      IF(profiler_on) kernel_time=timer()
-
-      if (use_fortran_kernels .or. use_c_kernels) then
-        rx = dt/(chunks(c)%field%celldx(chunks(c)%field%x_min)**2)
-        ry = dt/(chunks(c)%field%celldy(chunks(c)%field%y_min)**2)
-      endif
-
-      IF(tl_use_cg .or. tl_use_chebyshev) then
-        IF(use_fortran_kernels) THEN
-          CALL tea_leaf_kernel_init_cg_fortran(chunks(c)%field%x_min, &
-              chunks(c)%field%x_max,                       &
-              chunks(c)%field%y_min,                       &
-              chunks(c)%field%y_max,                       &
-              chunks(c)%field%density1,                    &
-              chunks(c)%field%energy1,                     &
-              chunks(c)%field%u,                           &
-              chunks(c)%field%work_array1,                 &
-              chunks(c)%field%work_array2,                 &
-              chunks(c)%field%work_array3,                 &
-              chunks(c)%field%work_array4,                 &
-              chunks(c)%field%work_array5,                 &
-              chunks(c)%field%work_array6,                 &
-              chunks(c)%field%work_array7,                 &
-              rx, ry, rro, coefficient)
-        ELSEIF(use_C_kernels) THEN
-          CALL tea_leaf_kernel_init_cg_c(chunks(c)%field%x_min, &
-              chunks(c)%field%x_max,                       &
-              chunks(c)%field%y_min,                       &
-              chunks(c)%field%y_max,                       &
-              chunks(c)%field%density1,                    &
-              chunks(c)%field%energy1,                     &
-              chunks(c)%field%u,                           &
-              chunks(c)%field%work_array1,                 &
-              chunks(c)%field%work_array2,                 &
-              chunks(c)%field%work_array3,                 &
-              chunks(c)%field%work_array4,                 &
-              chunks(c)%field%work_array5,                 &
-              chunks(c)%field%work_array6,                 &
-              chunks(c)%field%work_array7,                 &
-              rx, ry, rro, coefficient)
-        ENDIF
-
-        ! need to update p at this stage
-        fields=0
-        fields(FIELD_U) = 1
-        fields(FIELD_P) = 1
-        CALL update_halo(fields,1)
-
-        ! and globally sum rro
-        call clover_allsum(rro)
-      ELSE
-        IF (use_fortran_kernels) THEN
-          CALL tea_leaf_kernel_init(chunks(c)%field%x_min, &
-              chunks(c)%field%x_max,                       &
-              chunks(c)%field%y_min,                       &
-              chunks(c)%field%y_max,                       &
-              chunks(c)%field%celldx,                      &
-              chunks(c)%field%celldy,                      &
-              chunks(c)%field%volume,                      &
-              chunks(c)%field%density1,                    &
-              chunks(c)%field%energy1,                     &
-              chunks(c)%field%work_array1,                 &
-              chunks(c)%field%u,                           &
-              chunks(c)%field%work_array2,                 &
-              chunks(c)%field%work_array3,                 &
-              chunks(c)%field%work_array4,                 &
-              chunks(c)%field%work_array5,                 &
-              chunks(c)%field%work_array6,                 &
-              chunks(c)%field%work_array7,                 &
-              coefficient)
-      ELSEIF(use_C_kernels) THEN
-          CALL tea_leaf_kernel_init_c(chunks(c)%field%x_min, &
-              chunks(c)%field%x_max,                       &
-              chunks(c)%field%y_min,                       &
-              chunks(c)%field%y_max,                       &
-              chunks(c)%field%celldx,                      &
-              chunks(c)%field%celldy,                      &
-              chunks(c)%field%volume,                      &
-              chunks(c)%field%density1,                    &
-              chunks(c)%field%energy1,                     &
-              chunks(c)%field%work_array1,                 &
-              chunks(c)%field%u,                           &
-              chunks(c)%field%work_array2,                 &
-              chunks(c)%field%work_array3,                 &
-              chunks(c)%field%work_array4,                 &
-              chunks(c)%field%work_array5,                 &
-              chunks(c)%field%work_array6,                 &
-              chunks(c)%field%work_array7,                 &
-              coefficient)
-        ENDIF
-
+    IF (MOD(number_of_chunks,c).EQ.0) THEN
+      factor_x=number_of_chunks/real(c)
+      factor_y=c
+      !Compare the factor ratio with the mesh ratio
+      IF(factor_x/factor_y.LE.mesh_ratio) THEN
+        chunk_y=c
+        chunk_x=number_of_chunks/c
+        split_found=1
+        EXIT
       ENDIF
+    ENDIF
+  ENDDO
 
-      fields=0
-      fields(FIELD_U) = 1
+  IF(split_found.EQ.0.OR.chunk_y.EQ.number_of_chunks) THEN ! Prime number or 1D decomp detected
+    IF(mesh_ratio.GE.1.0) THEN
+      chunk_x=number_of_chunks
+      chunk_y=1
+    ELSE
+      chunk_x=1
+      chunk_y=number_of_chunks
+    ENDIF
+  ENDIF
 
-      ! need the original value of u
-      if(tl_use_chebyshev) then
-        IF(use_fortran_kernels) then
-          call tea_leaf_kernel_cheby_copy_u(chunks(c)%field%x_min,&
-            chunks(c)%field%x_max,                       &
-            chunks(c)%field%y_min,                       &
-            chunks(c)%field%y_max,                       &
-            chunks(c)%field%u0,                &
-            chunks(c)%field%u)
-        endif
-      endif
+  delta_x=x_cells/chunk_x
+  delta_y=y_cells/chunk_y
+  mod_x=MOD(x_cells,chunk_x)
+  mod_y=MOD(y_cells,chunk_y)
 
-      DO n=1,max_iters
+  ! Set up chunk mesh ranges and chunk connectivity
 
-        if (profile_solver) solve_timer=timer()
+  add_x_prev=0
+  add_y_prev=0
+  chunk=1
+  DO cy=1,chunk_y
+    DO cx=1,chunk_x
+      add_x=0
+      add_y=0
+      IF(cx.LE.mod_x)add_x=1
+      IF(cy.LE.mod_y)add_y=1
+      left(chunk)=(cx-1)*delta_x+1+add_x_prev
+      right(chunk)=left(chunk)+delta_x-1+add_x
+      bottom(chunk)=(cy-1)*delta_y+1+add_y_prev
+      top(chunk)=bottom(chunk)+delta_y-1+add_y
+      chunks(chunk)%chunk_neighbours(chunk_left)=chunk_x*(cy-1)+cx-1
+      chunks(chunk)%chunk_neighbours(chunk_right)=chunk_x*(cy-1)+cx+1
+      chunks(chunk)%chunk_neighbours(chunk_bottom)=chunk_x*(cy-2)+cx
+      chunks(chunk)%chunk_neighbours(chunk_top)=chunk_x*(cy)+cx
+      IF(cx.EQ.1)chunks(chunk)%chunk_neighbours(chunk_left)=external_face
+      IF(cx.EQ.chunk_x)chunks(chunk)%chunk_neighbours(chunk_right)=external_face
+      IF(cy.EQ.1)chunks(chunk)%chunk_neighbours(chunk_bottom)=external_face
+      IF(cy.EQ.chunk_y)chunks(chunk)%chunk_neighbours(chunk_top)=external_face
+      IF(cx.LE.mod_x)add_x_prev=add_x_prev+1
+      chunk=chunk+1
+    ENDDO
+    add_x_prev=0
+    IF(cy.LE.mod_y)add_y_prev=add_y_prev+1
+  ENDDO
 
-        IF (tl_ch_cg_errswitch) then
-            ! either the error has got below tolerance, or it's already going
-            ch_switch_check = (cheby_calc_steps .gt. 0) .or. (error .le. tl_ch_cg_epslim)
-        ELSE
-            ! enough steps have passed
-            ch_switch_check = n .ge. tl_ch_cg_presteps
-        ENDIF
+  IF(parallel%boss)THEN
+    WRITE(g_out,*)
+    WRITE(g_out,*)"Mesh ratio of ",mesh_ratio
+    WRITE(g_out,*)"Decomposing the mesh into ",chunk_x," by ",chunk_y," chunks"
+    WRITE(g_out,*)
+  ENDIF
 
-        IF (tl_use_chebyshev .and. ch_switch_check) then
-          ! don't need to update p any more
-          fields(FIELD_P) = 0
+END SUBROUTINE clover_decompose
 
-          ! on the first chebyshev steps, find the eigenvalues, coefficients,
-          ! and expected number of iterations
-          IF (cheby_calc_steps .eq. 0) then
-            ! maximum number of iterations in chebyshev solver
-            max_cheby_iters = max_iters - n + 2
-            rro = error
+SUBROUTINE clover_allocate_buffers(chunk)
 
-            ! calculate eigenvalues
-            call tea_calc_eigenvalues(cg_alphas, cg_betas, eigmin, eigmax, &
-                max_iters, n-1, info)
+  IMPLICIT NONE
 
-            ! maximum number of iterations in chebyshev solver
-            max_cheby_iters = max_iters - n + 2
+  INTEGER      :: chunk
+  
+  ! Unallocated buffers for external boundaries caused issues on some systems so they are now
+  !  all allocated
+  IF(parallel%task.EQ.chunks(chunk)%task)THEN
+    !IF(chunks(chunk)%chunk_neighbours(chunk_left).NE.external_face) THEN
+      ALLOCATE(chunks(chunk)%left_snd_buffer(2*(chunks(chunk)%field%y_max+5)))
+      ALLOCATE(chunks(chunk)%left_rcv_buffer(2*(chunks(chunk)%field%y_max+5)))
+    !ENDIF
+    !IF(chunks(chunk)%chunk_neighbours(chunk_right).NE.external_face) THEN
+      ALLOCATE(chunks(chunk)%right_snd_buffer(2*(chunks(chunk)%field%y_max+5)))
+      ALLOCATE(chunks(chunk)%right_rcv_buffer(2*(chunks(chunk)%field%y_max+5)))
+    !ENDIF
+    !IF(chunks(chunk)%chunk_neighbours(chunk_bottom).NE.external_face) THEN
+      ALLOCATE(chunks(chunk)%bottom_snd_buffer(2*(chunks(chunk)%field%x_max+5)))
+      ALLOCATE(chunks(chunk)%bottom_rcv_buffer(2*(chunks(chunk)%field%x_max+5)))
+    !ENDIF
+    !IF(chunks(chunk)%chunk_neighbours(chunk_top).NE.external_face) THEN
+      ALLOCATE(chunks(chunk)%top_snd_buffer(2*(chunks(chunk)%field%x_max+5)))
+      ALLOCATE(chunks(chunk)%top_rcv_buffer(2*(chunks(chunk)%field%x_max+5)))
+    !ENDIF
+  ENDIF
 
-            ! calculate chebyshev coefficients
-            call tea_calc_ch_coefs(ch_alphas, ch_betas, eigmin, eigmax, &
-                theta, max_cheby_iters)
+END SUBROUTINE clover_allocate_buffers
 
-            ! calculate 2 norm of u0
-            IF(use_fortran_kernels) THEN
-              call tea_leaf_calc_2norm_kernel(chunks(c)%field%x_min,        &
-                    chunks(c)%field%x_max,                       &
-                    chunks(c)%field%y_min,                       &
-                    chunks(c)%field%y_max,                       &
-                    chunks(c)%field%u0,                 &
-                    bb)
-            ENDIF
+SUBROUTINE clover_exchange(fields,depth)
 
-            call clover_allsum(bb)
+  IMPLICIT NONE
 
-            ! initialise 'p' array
-            IF(use_fortran_kernels) THEN
-              call tea_leaf_kernel_cheby_init(chunks(c)%field%x_min,&
-                    chunks(c)%field%x_max,                       &
-                    chunks(c)%field%y_min,                       &
-                    chunks(c)%field%y_max,                       &
-                    chunks(c)%field%u,                           &
-                    chunks(c)%field%u0,                 &
-                    chunks(c)%field%work_array1,                 &
-                    chunks(c)%field%work_array2,                 &
-                    chunks(c)%field%work_array3,                 &
-                    chunks(c)%field%work_array4,                 &
-                    chunks(c)%field%work_array5,                 &
-                    chunks(c)%field%work_array6,                 &
-                    chunks(c)%field%work_array7,                 &
-                    ch_alphas, ch_betas, max_cheby_iters, &
-                    rx, ry, theta, error)
-            ENDIF
+  INTEGER      :: fields(num_fields),depth
 
-            CALL update_halo(fields,1)
+  ! Assuming 1 patch per task, this will be changed
+  ! Also, not packing all fields for each communication, doing one at a time
 
-            IF(use_fortran_kernels) THEN
-                call tea_leaf_kernel_cheby_iterate(chunks(c)%field%x_min,&
-                    chunks(c)%field%x_max,                       &
-                    chunks(c)%field%y_min,                       &
-                    chunks(c)%field%y_max,                       &
-                    chunks(c)%field%u,                           &
-                    chunks(c)%field%u0,                          &
-                    chunks(c)%field%work_array1,                 &
-                    chunks(c)%field%work_array2,                 &
-                    chunks(c)%field%work_array3,                 &
-                    chunks(c)%field%work_array4,                 &
-                    chunks(c)%field%work_array5,                 &
-                    chunks(c)%field%work_array6,                 &
-                    chunks(c)%field%work_array7,                 &
-                    ch_alphas, ch_betas, max_cheby_iters,        &
-                    rx, ry, cheby_calc_steps)
-            ENDIF
+  IF(fields(FIELD_P).EQ.1) THEN
+    CALL clover_exchange_message(parallel%task+1,chunks(parallel%task+1)%field%work_array1,      &
+                                 chunks(parallel%task+1)%left_snd_buffer,                      &
+                                 chunks(parallel%task+1)%left_rcv_buffer,                      &
+                                 chunks(parallel%task+1)%right_snd_buffer,                     &
+                                 chunks(parallel%task+1)%right_rcv_buffer,                     &
+                                 chunks(parallel%task+1)%bottom_snd_buffer,                    &
+                                 chunks(parallel%task+1)%bottom_rcv_buffer,                    &
+                                 chunks(parallel%task+1)%top_snd_buffer,                       &
+                                 chunks(parallel%task+1)%top_rcv_buffer,                       &
+                                 depth, CELL_DATA)
+  ENDIF
 
-            IF(use_fortran_kernels) THEN
-              call tea_leaf_calc_2norm_kernel(chunks(c)%field%x_min,        &
-                    chunks(c)%field%x_max,                       &
-                    chunks(c)%field%y_min,                       &
-                    chunks(c)%field%y_max,                       &
-                    chunks(c)%field%work_array2,                 &
-                    error)
-            ENDIF
+  IF(fields(FIELD_U).EQ.1) THEN
+    CALL clover_exchange_message(parallel%task+1,chunks(parallel%task+1)%field%u,      &
+                                 chunks(parallel%task+1)%left_snd_buffer,                      &
+                                 chunks(parallel%task+1)%left_rcv_buffer,                      &
+                                 chunks(parallel%task+1)%right_snd_buffer,                     &
+                                 chunks(parallel%task+1)%right_rcv_buffer,                     &
+                                 chunks(parallel%task+1)%bottom_snd_buffer,                    &
+                                 chunks(parallel%task+1)%bottom_rcv_buffer,                    &
+                                 chunks(parallel%task+1)%top_snd_buffer,                       &
+                                 chunks(parallel%task+1)%top_rcv_buffer,                       &
+                                 depth, CELL_DATA)
+  ENDIF
 
-            call clover_allsum(error)
+  IF(fields(FIELD_DENSITY0).EQ.1) THEN
+    CALL clover_exchange_message(parallel%task+1,chunks(parallel%task+1)%field%density0,      &
+                                 chunks(parallel%task+1)%left_snd_buffer,                      &
+                                 chunks(parallel%task+1)%left_rcv_buffer,                      &
+                                 chunks(parallel%task+1)%right_snd_buffer,                     &
+                                 chunks(parallel%task+1)%right_rcv_buffer,                     &
+                                 chunks(parallel%task+1)%bottom_snd_buffer,                    &
+                                 chunks(parallel%task+1)%bottom_rcv_buffer,                    &
+                                 chunks(parallel%task+1)%top_snd_buffer,                       &
+                                 chunks(parallel%task+1)%top_rcv_buffer,                       &
+                                 depth,CELL_DATA)
+  ENDIF
 
-            it_alpha = eps*bb/(4.0_8*error)
-            cn = eigmax/eigmin
-            gamm = (sqrt(cn) - 1.0_8)/(sqrt(cn) + 1.0_8)
-            est_itc = nint(log(it_alpha)/(2.0_8*log(gamm)))
+  IF(fields(FIELD_DENSITY1).EQ.1) THEN
+    CALL clover_exchange_message(parallel%task+1,chunks(parallel%task+1)%field%density1,      &
+                                 chunks(parallel%task+1)%left_snd_buffer,                      &
+                                 chunks(parallel%task+1)%left_rcv_buffer,                      &
+                                 chunks(parallel%task+1)%right_snd_buffer,                     &
+                                 chunks(parallel%task+1)%right_rcv_buffer,                     &
+                                 chunks(parallel%task+1)%bottom_snd_buffer,                    &
+                                 chunks(parallel%task+1)%bottom_rcv_buffer,                    &
+                                 chunks(parallel%task+1)%top_snd_buffer,                       &
+                                 chunks(parallel%task+1)%top_rcv_buffer,                       &
+                                 depth,CELL_DATA)
+  ENDIF
 
-            ! FIXME still not giving correct answer, but multiply by 2.5 does
-            ! an 'okay' job for now
-            est_itc = est_itc * 2.5
+  IF(fields(FIELD_ENERGY0).EQ.1) THEN
+    CALL clover_exchange_message(parallel%task+1,chunks(parallel%task+1)%field%energy0,       &
+                                 chunks(parallel%task+1)%left_snd_buffer,                      &
+                                 chunks(parallel%task+1)%left_rcv_buffer,                      &
+                                 chunks(parallel%task+1)%right_snd_buffer,                     &
+                                 chunks(parallel%task+1)%right_rcv_buffer,                     &
+                                 chunks(parallel%task+1)%bottom_snd_buffer,                    &
+                                 chunks(parallel%task+1)%bottom_rcv_buffer,                    &
+                                 chunks(parallel%task+1)%top_snd_buffer,                       &
+                                 chunks(parallel%task+1)%top_rcv_buffer,                       &
+                                 depth,CELL_DATA)
+  ENDIF
 
-            if (parallel%boss) then
-              write(g_out,'(a,i3,a,e15.7)') "Switching after ",n," steps, error ",rro
-              write(g_out,'(5a11)')"eigmin", "eigmax", "cn", "error", "est itc"
-              write(g_out,'(2f11.8,2e11.4,11i11)')eigmin, eigmax, cn, error, est_itc
-              write(0,'(a,i3,a,e15.7)') "Switching after ",n," steps, error ",rro
-              write(0,'(5a11)')"eigmin", "eigmax", "cn", "error", "est itc"
-              write(0,'(2f11.8,2e11.4,11i11)')eigmin, eigmax, cn, error, est_itc
-            endif
+  IF(fields(FIELD_ENERGY1).EQ.1) THEN
+    CALL clover_exchange_message(parallel%task+1,chunks(parallel%task+1)%field%energy1,       &
+                                 chunks(parallel%task+1)%left_snd_buffer,                      &
+                                 chunks(parallel%task+1)%left_rcv_buffer,                      &
+                                 chunks(parallel%task+1)%right_snd_buffer,                     &
+                                 chunks(parallel%task+1)%right_rcv_buffer,                     &
+                                 chunks(parallel%task+1)%bottom_snd_buffer,                    &
+                                 chunks(parallel%task+1)%bottom_rcv_buffer,                    &
+                                 chunks(parallel%task+1)%top_snd_buffer,                       &
+                                 chunks(parallel%task+1)%top_rcv_buffer,                       &
+                                 depth,CELL_DATA)
+  ENDIF
 
-            if (info .ne. 0) then
-              CALL report_error('tea_leaf', 'Error in calculating eigenvalues')
-            endif
+  IF(fields(FIELD_PRESSURE).EQ.1) THEN
+    CALL clover_exchange_message(parallel%task+1,chunks(parallel%task+1)%field%pressure,      &
+                                 chunks(parallel%task+1)%left_snd_buffer,                      &
+                                 chunks(parallel%task+1)%left_rcv_buffer,                      &
+                                 chunks(parallel%task+1)%right_snd_buffer,                     &
+                                 chunks(parallel%task+1)%right_rcv_buffer,                     &
+                                 chunks(parallel%task+1)%bottom_snd_buffer,                    &
+                                 chunks(parallel%task+1)%bottom_rcv_buffer,                    &
+                                 chunks(parallel%task+1)%top_snd_buffer,                       &
+                                 chunks(parallel%task+1)%top_rcv_buffer,                       &
+                                 depth,CELL_DATA)
+  ENDIF
 
-            switch_step = n
-            cheby_calc_steps = 2
-          else
-            IF(use_fortran_kernels) THEN
-                call tea_leaf_kernel_cheby_iterate(chunks(c)%field%x_min,&
-                    chunks(c)%field%x_max,                       &
-                    chunks(c)%field%y_min,                       &
-                    chunks(c)%field%y_max,                       &
-                    chunks(c)%field%u,                           &
-                    chunks(c)%field%u0,                          &
-                    chunks(c)%field%work_array1,                 &
-                    chunks(c)%field%work_array2,                 &
-                    chunks(c)%field%work_array3,                 &
-                    chunks(c)%field%work_array4,                 &
-                    chunks(c)%field%work_array5,                 &
-                    chunks(c)%field%work_array6,                 &
-                    chunks(c)%field%work_array7,                 &
-                    ch_alphas, ch_betas, max_cheby_iters,        &
-                    rx, ry, cheby_calc_steps)
-            ENDIF
+  IF(fields(FIELD_VISCOSITY).EQ.1) THEN
+    CALL clover_exchange_message(parallel%task+1,chunks(parallel%task+1)%field%viscosity,     &
+                                 chunks(parallel%task+1)%left_snd_buffer,                      &
+                                 chunks(parallel%task+1)%left_rcv_buffer,                      &
+                                 chunks(parallel%task+1)%right_snd_buffer,                     &
+                                 chunks(parallel%task+1)%right_rcv_buffer,                     &
+                                 chunks(parallel%task+1)%bottom_snd_buffer,                    &
+                                 chunks(parallel%task+1)%bottom_rcv_buffer,                    &
+                                 chunks(parallel%task+1)%top_snd_buffer,                       &
+                                 chunks(parallel%task+1)%top_rcv_buffer,                       &
+                                 depth,CELL_DATA)
+  ENDIF
 
-            ! after estimated number of iterations has passed, calc resid
-            ! Leaving 10 iterations between each global reduction won't affect
-            ! total time spent much if at all (number of steps spent in
-            ! chebyshev is typically O(300+)) but will greatyl reduce global
-            ! synchronisations needed
-            if ((n-switch_step .ge. est_itc) .and. (mod(n, 10) .eq. 0)) then
-              IF(use_fortran_kernels) THEN
-                call tea_leaf_calc_2norm_kernel(chunks(c)%field%x_min,        &
-                      chunks(c)%field%x_max,                       &
-                      chunks(c)%field%y_min,                       &
-                      chunks(c)%field%y_max,                       &
-                      chunks(c)%field%work_array2,                 &
-                      error)
-              ENDIF
+  IF(fields(FIELD_SOUNDSPEED).EQ.1) THEN
+    CALL clover_exchange_message(parallel%task+1,chunks(parallel%task+1)%field%soundspeed,    &
+                                 chunks(parallel%task+1)%left_snd_buffer,                      &
+                                 chunks(parallel%task+1)%left_rcv_buffer,                      &
+                                 chunks(parallel%task+1)%right_snd_buffer,                     &
+                                 chunks(parallel%task+1)%right_rcv_buffer,                     &
+                                 chunks(parallel%task+1)%bottom_snd_buffer,                    &
+                                 chunks(parallel%task+1)%bottom_rcv_buffer,                    &
+                                 chunks(parallel%task+1)%top_snd_buffer,                       &
+                                 chunks(parallel%task+1)%top_rcv_buffer,                       &
+                                 depth,CELL_DATA)
+  ENDIF
 
-              call clover_allsum(error)
-            else
-              ! dummy to make it go smaller every time but not reach tolerance
-              error = 1.0_8/(cheby_calc_steps)
-            endif
-          endif
+  IF(fields(FIELD_XVEL0).EQ.1) THEN
+    CALL clover_exchange_message(parallel%task+1,chunks(parallel%task+1)%field%xvel0,         &
+                                 chunks(parallel%task+1)%left_snd_buffer,                      &
+                                 chunks(parallel%task+1)%left_rcv_buffer,                      &
+                                 chunks(parallel%task+1)%right_snd_buffer,                     &
+                                 chunks(parallel%task+1)%right_rcv_buffer,                     &
+                                 chunks(parallel%task+1)%bottom_snd_buffer,                    &
+                                 chunks(parallel%task+1)%bottom_rcv_buffer,                    &
+                                 chunks(parallel%task+1)%top_snd_buffer,                       &
+                                 chunks(parallel%task+1)%top_rcv_buffer,                       &
+                                 depth,VERTEX_DATA)
+  ENDIF
 
-          cheby_calc_steps = cheby_calc_steps + 1
+  IF(fields(FIELD_XVEL1).EQ.1) THEN
+    CALL clover_exchange_message(parallel%task+1,chunks(parallel%task+1)%field%xvel1,         &
+                                 chunks(parallel%task+1)%left_snd_buffer,                      &
+                                 chunks(parallel%task+1)%left_rcv_buffer,                      &
+                                 chunks(parallel%task+1)%right_snd_buffer,                     &
+                                 chunks(parallel%task+1)%right_rcv_buffer,                     &
+                                 chunks(parallel%task+1)%bottom_snd_buffer,                    &
+                                 chunks(parallel%task+1)%bottom_rcv_buffer,                    &
+                                 chunks(parallel%task+1)%top_snd_buffer,                       &
+                                 chunks(parallel%task+1)%top_rcv_buffer,                       &
+                                 depth,VERTEX_DATA)
+  ENDIF
 
-        ELSEIF(tl_use_cg .or. tl_use_chebyshev) then
-          fields(FIELD_P) = 1
-          cg_calc_steps = cg_calc_steps + 1
+  IF(fields(FIELD_YVEL0).EQ.1) THEN
+    CALL clover_exchange_message(parallel%task+1,chunks(parallel%task+1)%field%yvel0,         &
+                                 chunks(parallel%task+1)%left_snd_buffer,                      &
+                                 chunks(parallel%task+1)%left_rcv_buffer,                      &
+                                 chunks(parallel%task+1)%right_snd_buffer,                     &
+                                 chunks(parallel%task+1)%right_rcv_buffer,                     &
+                                 chunks(parallel%task+1)%bottom_snd_buffer,                    &
+                                 chunks(parallel%task+1)%bottom_rcv_buffer,                    &
+                                 chunks(parallel%task+1)%top_snd_buffer,                       &
+                                 chunks(parallel%task+1)%top_rcv_buffer,                       &
+                                 depth,VERTEX_DATA)
+  ENDIF
 
-          IF(use_fortran_kernels) THEN
-            CALL tea_leaf_kernel_solve_cg_fortran_calc_w(chunks(c)%field%x_min,&
-                chunks(c)%field%x_max,                       &
-                chunks(c)%field%y_min,                       &
-                chunks(c)%field%y_max,                       &
-                chunks(c)%field%work_array1,                 &
-                chunks(c)%field%work_array4,                 &
-                chunks(c)%field%work_array6,                 &
-                chunks(c)%field%work_array7,                 &
-                rx, ry, pw)
-          ELSEIF(use_c_kernels) THEN
-            CALL tea_leaf_kernel_solve_cg_c_calc_w(chunks(c)%field%x_min,&
-                chunks(c)%field%x_max,                       &
-                chunks(c)%field%y_min,                       &
-                chunks(c)%field%y_max,                       &
-                chunks(c)%field%work_array1,                 &
-                chunks(c)%field%work_array4,                 &
-                chunks(c)%field%work_array6,                 &
-                chunks(c)%field%work_array7,                 &
-                rx, ry, pw)
-          ENDIF
+  IF(fields(FIELD_YVEL1).EQ.1) THEN
+    CALL clover_exchange_message(parallel%task+1,chunks(parallel%task+1)%field%yvel1,         &
+                                 chunks(parallel%task+1)%left_snd_buffer,                      &
+                                 chunks(parallel%task+1)%left_rcv_buffer,                      &
+                                 chunks(parallel%task+1)%right_snd_buffer,                     &
+                                 chunks(parallel%task+1)%right_rcv_buffer,                     &
+                                 chunks(parallel%task+1)%bottom_snd_buffer,                    &
+                                 chunks(parallel%task+1)%bottom_rcv_buffer,                    &
+                                 chunks(parallel%task+1)%top_snd_buffer,                       &
+                                 chunks(parallel%task+1)%top_rcv_buffer,                       &
+                                 depth,VERTEX_DATA)
+  ENDIF
 
-          CALL clover_allsum(pw)
-          alpha = rro/pw
-          if(tl_use_chebyshev) cg_alphas(n) = alpha
+  IF(fields(FIELD_VOL_FLUX_X).EQ.1) THEN
+    CALL clover_exchange_message(parallel%task+1,chunks(parallel%task+1)%field%vol_flux_x,    &
+                                 chunks(parallel%task+1)%left_snd_buffer,                      &
+                                 chunks(parallel%task+1)%left_rcv_buffer,                      &
+                                 chunks(parallel%task+1)%right_snd_buffer,                     &
+                                 chunks(parallel%task+1)%right_rcv_buffer,                     &
+                                 chunks(parallel%task+1)%bottom_snd_buffer,                    &
+                                 chunks(parallel%task+1)%bottom_rcv_buffer,                    &
+                                 chunks(parallel%task+1)%top_snd_buffer,                       &
+                                 chunks(parallel%task+1)%top_rcv_buffer,                       &
+                                 depth,X_FACE_DATA)
+  ENDIF
 
-          IF(use_fortran_kernels) THEN
-            CALL tea_leaf_kernel_solve_cg_fortran_calc_ur(chunks(c)%field%x_min,&
-                chunks(c)%field%x_max,                       &
-                chunks(c)%field%y_min,                       &
-                chunks(c)%field%y_max,                       &
-                chunks(c)%field%u,                           &
-                chunks(c)%field%work_array1,                 &
-                chunks(c)%field%work_array2,                 &
-                chunks(c)%field%work_array3,                 &
-                chunks(c)%field%work_array4,                 &
-                chunks(c)%field%work_array5,                 &
-                alpha, rrn)
-          ELSEIF(use_c_kernels) THEN
-            CALL tea_leaf_kernel_solve_cg_c_calc_ur(chunks(c)%field%x_min,&
-                chunks(c)%field%x_max,                       &
-                chunks(c)%field%y_min,                       &
-                chunks(c)%field%y_max,                       &
-                chunks(c)%field%u,                           &
-                chunks(c)%field%work_array1,                 &
-                chunks(c)%field%work_array2,                 &
-                chunks(c)%field%work_array3,                 &
-                chunks(c)%field%work_array4,                 &
-                chunks(c)%field%work_array5,                 &
-                alpha, rrn)
-          ENDIF
+  IF(fields(FIELD_VOL_FLUX_Y).EQ.1) THEN
+    CALL clover_exchange_message(parallel%task+1,chunks(parallel%task+1)%field%vol_flux_y,    &
+                                 chunks(parallel%task+1)%left_snd_buffer,                      &
+                                 chunks(parallel%task+1)%left_rcv_buffer,                      &
+                                 chunks(parallel%task+1)%right_snd_buffer,                     &
+                                 chunks(parallel%task+1)%right_rcv_buffer,                     &
+                                 chunks(parallel%task+1)%bottom_snd_buffer,                    &
+                                 chunks(parallel%task+1)%bottom_rcv_buffer,                    &
+                                 chunks(parallel%task+1)%top_snd_buffer,                       &
+                                 chunks(parallel%task+1)%top_rcv_buffer,                       &
+                                 depth,Y_FACE_DATA)
+  ENDIF
 
-          CALL clover_allsum(rrn)
-          beta = rrn/rro
-          if(tl_use_chebyshev) cg_betas(n) = beta
+  IF(fields(FIELD_MASS_FLUX_X).EQ.1) THEN
+    CALL clover_exchange_message(parallel%task+1,chunks(parallel%task+1)%field%mass_flux_x,   &
+                                 chunks(parallel%task+1)%left_snd_buffer,                      &
+                                 chunks(parallel%task+1)%left_rcv_buffer,                      &
+                                 chunks(parallel%task+1)%right_snd_buffer,                     &
+                                 chunks(parallel%task+1)%right_rcv_buffer,                     &
+                                 chunks(parallel%task+1)%bottom_snd_buffer,                    &
+                                 chunks(parallel%task+1)%bottom_rcv_buffer,                    &
+                                 chunks(parallel%task+1)%top_snd_buffer,                       &
+                                 chunks(parallel%task+1)%top_rcv_buffer,                       &
+                                 depth,X_FACE_DATA)
+  ENDIF
 
-          IF(use_fortran_kernels) THEN
-            CALL tea_leaf_kernel_solve_cg_fortran_calc_p(chunks(c)%field%x_min,&
-                chunks(c)%field%x_max,                       &
-                chunks(c)%field%y_min,                       &
-                chunks(c)%field%y_max,                       &
-                chunks(c)%field%work_array1,                 &
-                chunks(c)%field%work_array2,                 &
-                chunks(c)%field%work_array5,                 &
-                beta)
-          ELSEIF(use_c_kernels) THEN
-            CALL tea_leaf_kernel_solve_cg_c_calc_p(chunks(c)%field%x_min,&
-                chunks(c)%field%x_max,                       &
-                chunks(c)%field%y_min,                       &
-                chunks(c)%field%y_max,                       &
-                chunks(c)%field%work_array1,                 &
-                chunks(c)%field%work_array2,                 &
-                chunks(c)%field%work_array5,                 &
-                beta)
-          ENDIF
+  IF(fields(FIELD_MASS_FLUX_Y).EQ.1) THEN
+    CALL clover_exchange_message(parallel%task+1,chunks(parallel%task+1)%field%mass_flux_y,   &
+                                 chunks(parallel%task+1)%left_snd_buffer,                      &
+                                 chunks(parallel%task+1)%left_rcv_buffer,                      &
+                                 chunks(parallel%task+1)%right_snd_buffer,                     &
+                                 chunks(parallel%task+1)%right_rcv_buffer,                     &
+                                 chunks(parallel%task+1)%bottom_snd_buffer,                    &
+                                 chunks(parallel%task+1)%bottom_rcv_buffer,                    &
+                                 chunks(parallel%task+1)%top_snd_buffer,                       &
+                                 chunks(parallel%task+1)%top_rcv_buffer,                       &
+                                 depth,Y_FACE_DATA)
+  ENDIF
 
-          error = rrn
-          rro = rrn
+  IF(fields(FIELD_U).EQ.1) THEN
+    CALL clover_exchange_message(parallel%task+1,chunks(parallel%task+1)%field%u,              &
+                                 chunks(parallel%task+1)%left_snd_buffer,                      &
+                                 chunks(parallel%task+1)%left_rcv_buffer,                      &
+                                 chunks(parallel%task+1)%right_snd_buffer,                     &
+                                 chunks(parallel%task+1)%right_rcv_buffer,                     &
+                                 chunks(parallel%task+1)%bottom_snd_buffer,                    &
+                                 chunks(parallel%task+1)%bottom_rcv_buffer,                    &
+                                 chunks(parallel%task+1)%top_snd_buffer,                       &
+                                 chunks(parallel%task+1)%top_rcv_buffer,                       &
+                                 depth,CELL_DATA)
+  ENDIF
 
-          CALL clover_allsum(error)
-        ELSE
-          IF(use_fortran_kernels) THEN
-            CALL tea_leaf_kernel_solve(chunks(c)%field%x_min,&
-                chunks(c)%field%x_max,                       &
-                chunks(c)%field%y_min,                       &
-                chunks(c)%field%y_max,                       &
-                rx,                                          &
-                ry,                                          &
-                chunks(c)%field%work_array6,                 &
-                chunks(c)%field%work_array7,                 &
-                error,                                       &
-                chunks(c)%field%work_array1,                 &
-                chunks(c)%field%u,                           &
-                chunks(c)%field%work_array2)
-          ELSEIF(use_C_kernels) THEN
-              CALL tea_leaf_kernel_solve_c(chunks(c)%field%x_min,&
-                  chunks(c)%field%x_max,                       &
-                  chunks(c)%field%y_min,                       &
-                  chunks(c)%field%y_max,                       &
-                  rx,                                          &
-                  ry,                                          &
-                  chunks(c)%field%work_array6,                 &
-                  chunks(c)%field%work_array7,                 &
-                  error,                                       &
-                  chunks(c)%field%work_array1,                 &
-                  chunks(c)%field%u,                           &
-                  chunks(c)%field%work_array2)
-          ENDIF
 
-          CALL clover_max(error)
-        ENDIF
+END SUBROUTINE clover_exchange
 
-        ! updates u and possibly p
-        CALL update_halo(fields,1)
+SUBROUTINE clover_exchange_message(chunk,field,                            &
+                                   left_snd_buffer,                        &
+                                   left_rcv_buffer,                        &
+                                   right_snd_buffer,                       &
+                                   right_rcv_buffer,                       &
+                                   bottom_snd_buffer,                      &
+                                   bottom_rcv_buffer,                      &
+                                   top_snd_buffer,                         &
+                                   top_rcv_buffer,                         &
+                                   depth,field_type)
 
-        if (profile_solver) then
-          IF (tl_use_chebyshev .and. ch_switch_check) then
-              ch_time=ch_time+(timer()-solve_timer)
-          else
-              cg_time=cg_time+(timer()-solve_timer)
-          endif
-        endif
+  USE pack_kernel_module
 
-        IF (abs(error) .LT. eps) EXIT
+  IMPLICIT NONE
 
-      ENDDO
+  REAL(KIND=8) :: field(-1:,-1:) ! This seems to work for any type of mesh data
+  REAL(KIND=8) :: left_snd_buffer(:),left_rcv_buffer(:),right_snd_buffer(:),right_rcv_buffer(:)
+  REAL(KIND=8) :: bottom_snd_buffer(:),bottom_rcv_buffer(:),top_snd_buffer(:),top_rcv_buffer(:)
 
-      IF (parallel%boss) THEN
-!$      IF(OMP_GET_THREAD_NUM().EQ.0) THEN
-          WRITE(g_out,"('Conduction error ',e14.7)") error
-          WRITE(g_out,"('Iteration count ',i8)") n-1
-          WRITE(0,"('Conduction error ',e14.7)") error
-          WRITE(0,"('Iteration count ', i8)") n-1
-!$      ENDIF
-      ENDIF
+  INTEGER      :: chunk,depth,field_type
 
-      ! RESET
-      IF(use_fortran_kernels) THEN
-          CALL tea_leaf_kernel_finalise(chunks(c)%field%x_min, &
-              chunks(c)%field%x_max,                           &
-              chunks(c)%field%y_min,                           &
-              chunks(c)%field%y_max,                           &
-              chunks(c)%field%energy1,                         &
-              chunks(c)%field%density1,                        &
-              chunks(c)%field%u)
-      ELSEIF(use_C_kernels) THEN
-          CALL tea_leaf_kernel_finalise_c(chunks(c)%field%x_min, &
-              chunks(c)%field%x_max,                           &
-              chunks(c)%field%y_min,                           &
-              chunks(c)%field%y_max,                           &
-              chunks(c)%field%energy1,                         &
-              chunks(c)%field%density1,                        &
-              chunks(c)%field%u)
-      ENDIF
+  INTEGER      :: size,err,request(8),tag,message_count,j,k,x_inc,y_inc,index
+  INTEGER      :: status(MPI_STATUS_SIZE,8)
+  INTEGER      :: receiver,sender
 
-      fields=0
-      fields(FIELD_ENERGY1) = 1
-      CALL update_halo(fields,1)
+  ! Field type will either be cell, vertex, x_face or y_face to get the message limits correct
 
+  ! I am packing my own buffers. I am sure this could be improved with MPI data types
+  !  but this will do for now
+
+  ! I am also sending buffers to chunks with the same task id for now.
+  ! This can be improved in the future but at the moment there is just 1 chunk per task anyway
+
+  ! The tag will be a function of the sending chunk and the face it is coming from
+  !  like chunk 6 sending the left face
+
+  ! No open mp in here either. May be beneficial will packing and unpacking in the future, though I am not sure.
+
+  ! Change this so it will allow more than 1 chunk per task
+
+  request=0
+  message_count=0
+
+  ! Pack and send
+
+  ! These array modifications still need to be added on, plus the donor data location changes as in update_halo
+  IF(field_type.EQ.CELL_DATA) THEN
+    x_inc=0
+    y_inc=0
+  ENDIF
+  IF(field_type.EQ.VERTEX_DATA) THEN
+    x_inc=1
+    y_inc=1
+  ENDIF
+  IF(field_type.EQ.X_FACE_DATA) THEN
+    x_inc=1
+    y_inc=0
+  ENDIF
+  IF(field_type.EQ.Y_FACE_DATA) THEN
+    x_inc=0
+    y_inc=1
+  ENDIF
+
+  ! Pack real data into buffers
+  IF(parallel%task.EQ.chunks(chunk)%task) THEN
+    size=(1+(chunks(chunk)%field%y_max+y_inc+depth)-(chunks(chunk)%field%y_min-depth))*depth
+    IF(use_fortran_kernels) THEN
+      CALL pack_left_right_buffers(chunks(chunk)%field%x_min,chunks(chunk)%field%x_max, &
+                                   chunks(chunk)%field%y_min,chunks(chunk)%field%y_max, &
+                                   chunks(chunk)%chunk_neighbours(chunk_left),          &
+                                   chunks(chunk)%chunk_neighbours(chunk_right),         &
+                                   external_face,                                       &
+                                   x_inc,y_inc,depth,size,                              &
+                                   field,left_snd_buffer,right_snd_buffer)
+    ELSEIF(use_C_kernels)THEN
+      CALL pack_left_right_buffers_c(chunks(chunk)%field%x_min,chunks(chunk)%field%x_max, &
+                                     chunks(chunk)%field%y_min,chunks(chunk)%field%y_max, &
+                                     chunks(chunk)%chunk_neighbours(chunk_left),          &
+                                     chunks(chunk)%chunk_neighbours(chunk_right),         &
+                                     external_face,                                       &
+                                     x_inc,y_inc,depth,size,                              &
+                                     field,left_snd_buffer,right_snd_buffer)
     ENDIF
 
-  ENDDO
-  IF(profile_solver) profiler%tea=profiler%tea+(timer()-kernel_time)
+    ! Send/receive the data
+    IF(chunks(chunk)%chunk_neighbours(chunk_left).NE.external_face) THEN
+      tag=4*(chunk)+1 ! 4 because we have 4 faces, 1 because it is leaving the left face
+      receiver=chunks(chunks(chunk)%chunk_neighbours(chunk_left))%task
+      CALL MPI_ISEND(left_snd_buffer,size,MPI_DOUBLE_PRECISION,receiver,tag &
+                    ,MPI_COMM_WORLD,request(message_count+1),err)
+      tag=4*(chunks(chunk)%chunk_neighbours(chunk_left))+2 ! 4 because we have 4 faces, 1 because it is coming from the right face of the left neighbour
+      sender=chunks(chunks(chunk)%chunk_neighbours(chunk_left))%task
+      CALL MPI_IRECV(left_rcv_buffer,size,MPI_DOUBLE_PRECISION,sender,tag &
+                    ,MPI_COMM_WORLD,request(message_count+2),err)
+      message_count=message_count+2
+    ENDIF
 
-  IF (profile_solver .and. tl_use_chebyshev) THEN
-    call clover_sum(ch_time)
-    call clover_sum(cg_time)
-  endif
-  IF (profile_solver .and. parallel%boss .and. tl_use_chebyshev) THEN
-    write(0, "(a3, a16, a7, a16, a7)") "", "Time", "Steps", "Per it", "Ratio"
-    write(0, "(a3, f16.10, i7, f16.10, f7.2)") "CG", cg_time + 0.0_8, cg_calc_steps, &
-        merge(cg_time/cg_calc_steps, 0.0_8, cg_calc_steps .gt. 0), 1.0_8
-    write(0, "(a3, f16.10, i7, f16.10, f7.2)") "CH", ch_time + 0.0_8, cheby_calc_steps, &
-        merge(ch_time/cheby_calc_steps, 0.0_8, cheby_calc_steps .gt. 0), &
-        merge((ch_time/cheby_calc_steps)/(cg_time/cg_calc_steps), 0.0_8, cheby_calc_steps .gt. 0)
-    write(0, "('Chebyshev actually took ', i6, ' (' i6, ' off guess)')") &
-        cheby_calc_steps, cheby_calc_steps-est_itc
+    IF(chunks(chunk)%chunk_neighbours(chunk_right).NE.external_face) THEN
+      tag=4*chunk+2 ! 4 because we have 4 faces, 2 because it is leaving the right face
+      receiver=chunks(chunks(chunk)%chunk_neighbours(chunk_right))%task
+      CALL MPI_ISEND(right_snd_buffer,size,MPI_DOUBLE_PRECISION,receiver,tag &
+                    ,MPI_COMM_WORLD,request(message_count+1),err)
+      tag=4*(chunks(chunk)%chunk_neighbours(chunk_right))+1 ! 4 because we have 4 faces, 1 because it is coming from the left face of the right neighbour
+      sender=chunks(chunks(chunk)%chunk_neighbours(chunk_right))%task
+      CALL MPI_IRECV(right_rcv_buffer,size,MPI_DOUBLE_PRECISION,sender,tag, &
+                     MPI_COMM_WORLD,request(message_count+2),err)
+      message_count=message_count+2
+    ENDIF
+  ENDIF
 
-    write(g_out, "(a3, a16, a7, a16, a7)") "", "Time", "Steps", "Per it", "Ratio"
-    write(g_out, "(a3, f16.10, i7, f16.10, f7.2)") "CG", cg_time + 0.0_8, cg_calc_steps, &
-        merge(cg_time/cg_calc_steps, 0.0_8, cg_calc_steps .gt. 0), 1.0_8
-    write(g_out, "(a3, f16.10, i7, f16.10, f7.2)") "CH", ch_time + 0.0_8, cheby_calc_steps, &
-        merge(ch_time/cheby_calc_steps, 0.0_8, cheby_calc_steps .gt. 0), &
-        merge((ch_time/cheby_calc_steps)/(cg_time/cg_calc_steps), 0.0_8, cheby_calc_steps .gt. 0)
-    write(g_out, "('Chebyshev actually took ', i6, ' (' i6, ' off guess)')") &
-        cheby_calc_steps, cheby_calc_steps-est_itc
-  endif
+  ! Wait for the messages
+  CALL MPI_WAITALL(message_count,request,status,err)
 
-END SUBROUTINE tea_leaf
+  ! Unpack buffers in halo cells
+  IF(parallel%task.EQ.chunks(chunk)%task) THEN
+    IF(use_fortran_kernels) THEN
+      CALL unpack_left_right_buffers(chunks(chunk)%field%x_min,chunks(chunk)%field%x_max, &
+                                     chunks(chunk)%field%y_min,chunks(chunk)%field%y_max, &
+                                     chunks(chunk)%chunk_neighbours(chunk_left),          &
+                                     chunks(chunk)%chunk_neighbours(chunk_right),         &
+                                     external_face,                                       &
+                                     x_inc,y_inc,depth,size,                              &
+                                     field,left_rcv_buffer,right_rcv_buffer)
+    ELSEIF(use_C_kernels)THEN
+      CALL unpack_left_right_buffers_c(chunks(chunk)%field%x_min,chunks(chunk)%field%x_max, &
+                                       chunks(chunk)%field%y_min,chunks(chunk)%field%y_max, &
+                                       chunks(chunk)%chunk_neighbours(chunk_left),          &
+                                       chunks(chunk)%chunk_neighbours(chunk_right),         &
+                                       external_face,                                       &
+                                       x_inc,y_inc,depth,size,                              &
+                                       field,left_rcv_buffer,right_rcv_buffer)
+    ENDIF
+  ENDIF
 
-END MODULE tea_leaf_module
+  request=0
+  message_count=0
+
+  ! Pack real data into buffers
+  IF(parallel%task.EQ.chunks(chunk)%task) THEN
+    size=(1+(chunks(chunk)%field%x_max+x_inc+depth)-(chunks(chunk)%field%x_min-depth))*depth
+    IF(use_fortran_kernels) THEN
+      CALL pack_top_bottom_buffers(chunks(chunk)%field%x_min,chunks(chunk)%field%x_max, &
+                                   chunks(chunk)%field%y_min,chunks(chunk)%field%y_max, &
+                                   chunks(chunk)%chunk_neighbours(chunk_bottom),        &
+                                   chunks(chunk)%chunk_neighbours(chunk_top),           &
+                                   external_face,                                       &
+                                   x_inc,y_inc,depth,size,                              &
+                                   field,bottom_snd_buffer,top_snd_buffer)
+    ELSEIF(use_C_kernels)THEN
+      CALL pack_top_bottom_buffers_c(chunks(chunk)%field%x_min,chunks(chunk)%field%x_max, &
+                                     chunks(chunk)%field%y_min,chunks(chunk)%field%y_max, &
+                                     chunks(chunk)%chunk_neighbours(chunk_bottom),        &
+                                     chunks(chunk)%chunk_neighbours(chunk_top),           &
+                                     external_face,                                       &
+                                     x_inc,y_inc,depth,size,                              &
+                                     field,bottom_snd_buffer,top_snd_buffer)
+    ENDIF
+
+    ! Send/receive the data
+    IF(chunks(chunk)%chunk_neighbours(chunk_bottom).NE.external_face) THEN
+      tag=4*(chunk)+3 ! 4 because we have 4 faces, 3 because it is leaving the bottom face
+      receiver=chunks(chunks(chunk)%chunk_neighbours(chunk_bottom))%task
+      CALL MPI_ISEND(bottom_snd_buffer,size,MPI_DOUBLE_PRECISION,receiver,tag &
+                    ,MPI_COMM_WORLD,request(message_count+1),err)
+      tag=4*(chunks(chunk)%chunk_neighbours(chunk_bottom))+4 ! 4 because we have 4 faces, 1 because it is coming from the top face of the bottom neighbour
+      sender=chunks(chunks(chunk)%chunk_neighbours(chunk_bottom))%task
+      CALL MPI_IRECV(bottom_rcv_buffer,size,MPI_DOUBLE_PRECISION,sender,tag &
+                    ,MPI_COMM_WORLD,request(message_count+2),err)
+      message_count=message_count+2
+    ENDIF
+
+    IF(chunks(chunk)%chunk_neighbours(chunk_top).NE.external_face) THEN
+      tag=4*(chunk)+4 ! 4 because we have 4 faces, 4 because it is leaving the top face
+      receiver=chunks(chunks(chunk)%chunk_neighbours(chunk_top))%task
+      CALL MPI_ISEND(top_snd_buffer,size,MPI_DOUBLE_PRECISION,receiver,tag &
+                    ,MPI_COMM_WORLD,request(message_count+1),err)
+      tag=4*(chunks(chunk)%chunk_neighbours(chunk_top))+3 ! 4 because we have 4 faces, 4 because it is coming from the left face of the top neighbour
+      sender=chunks(chunks(chunk)%chunk_neighbours(chunk_top))%task
+      CALL MPI_IRECV(top_rcv_buffer,size,MPI_DOUBLE_PRECISION,sender,tag, &
+                     MPI_COMM_WORLD,request(message_count+2),err)
+      message_count=message_count+2
+    ENDIF
+
+  ENDIF
+
+  ! Wait for the messages
+  CALL MPI_WAITALL(message_count,request,status,err)
+
+  ! Unpack buffers in halo cells
+  IF(parallel%task.EQ.chunks(chunk)%task) THEN
+    IF(use_fortran_kernels) THEN
+      CALL unpack_top_bottom_buffers(chunks(chunk)%field%x_min,chunks(chunk)%field%x_max, &
+                                     chunks(chunk)%field%y_min,chunks(chunk)%field%y_max, &
+                                     chunks(chunk)%chunk_neighbours(chunk_bottom),        &
+                                     chunks(chunk)%chunk_neighbours(chunk_top),           &
+                                     external_face,                                       &
+                                     x_inc,y_inc,depth,size,                              &
+                                     field,bottom_rcv_buffer,top_rcv_buffer)
+    ELSEIF(use_C_kernels)THEN
+      CALL unpack_top_bottom_buffers_c(chunks(chunk)%field%x_min,chunks(chunk)%field%x_max, &
+                                       chunks(chunk)%field%y_min,chunks(chunk)%field%y_max, &
+                                       chunks(chunk)%chunk_neighbours(chunk_bottom),        &
+                                       chunks(chunk)%chunk_neighbours(chunk_top),           &
+                                       external_face,                                       &
+                                       x_inc,y_inc,depth,size,                              &
+                                       field,bottom_rcv_buffer,top_rcv_buffer)
+    ENDIF
+  ENDIF
+
+END SUBROUTINE clover_exchange_message
+
+SUBROUTINE clover_sum(value)
+
+  ! Only sums to the master
+
+  IMPLICIT NONE
+
+  REAL(KIND=8) :: value
+
+  REAL(KIND=8) :: total
+
+  INTEGER :: err
+
+  total=value
+
+  CALL MPI_REDUCE(value,total,1,MPI_DOUBLE_PRECISION,MPI_SUM,0,MPI_COMM_WORLD,err)
+
+  value=total
+
+END SUBROUTINE clover_sum
+
+SUBROUTINE clover_allsum(value)
+
+  ! Global reduction for CG solver
+
+  IMPLICIT NONE
+
+  REAL(KIND=8) :: value
+
+  REAL(KIND=8) :: total
+
+  INTEGER :: err
+
+  total=value
+
+  CALL MPI_ALLREDUCE(value,total,1,MPI_DOUBLE_PRECISION,MPI_SUM,MPI_COMM_WORLD,err)
+
+  value=total
+
+END SUBROUTINE clover_allsum
+
+SUBROUTINE clover_min(value)
+
+  IMPLICIT NONE
+
+  REAL(KIND=8) :: value
+
+  REAL(KIND=8) :: minimum
+
+  INTEGER :: err
+
+  minimum=value
+
+  CALL MPI_ALLREDUCE(value,minimum,1,MPI_DOUBLE_PRECISION,MPI_MIN,MPI_COMM_WORLD,err)
+
+  value=minimum
+
+END SUBROUTINE clover_min
+
+SUBROUTINE clover_max(value)
+
+  IMPLICIT NONE
+
+  REAL(KIND=8) :: value
+
+  REAL(KIND=8) :: maximum
+
+  INTEGER :: err
+
+  maximum=value
+
+  CALL MPI_ALLREDUCE(value,maximum,1,MPI_DOUBLE_PRECISION,MPI_MAX,MPI_COMM_WORLD,err)
+
+  value=maximum
+
+END SUBROUTINE clover_max
+
+SUBROUTINE clover_allgather(value,values)
+
+  IMPLICIT NONE
+
+  REAL(KIND=8) :: value
+
+  REAL(KIND=8) :: values(parallel%max_task)
+
+  INTEGER :: err
+
+  values(1)=value ! Just to ensure it will work in serial
+
+  CALL MPI_ALLGATHER(value,1,MPI_DOUBLE_PRECISION,values,1,MPI_DOUBLE_PRECISION,MPI_COMM_WORLD,err)
+
+END SUBROUTINE clover_allgather
+
+SUBROUTINE clover_check_error(error)
+
+  IMPLICIT NONE
+
+  INTEGER :: error
+
+  INTEGER :: maximum
+
+  INTEGER :: err
+
+  maximum=error
+
+  CALL MPI_ALLREDUCE(error,maximum,1,MPI_INTEGER,MPI_MAX,MPI_COMM_WORLD,err)
+
+  error=maximum
+
+END SUBROUTINE clover_check_error
+
+
+END MODULE clover_module
