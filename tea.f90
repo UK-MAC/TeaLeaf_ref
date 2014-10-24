@@ -29,7 +29,7 @@
 !>  Even without these modifications TeaLeaf weak scales well on moderately sized
 !>  systems of the order of 10K cores.
 
-MODULE clover_module
+MODULE tea_module
 
   USE data_module
   USE definitions_module
@@ -39,23 +39,23 @@ MODULE clover_module
 
 CONTAINS
 
-SUBROUTINE clover_barrier
+SUBROUTINE tea_barrier
 
   INTEGER :: err
 
   CALL MPI_BARRIER(MPI_COMM_WORLD,err)
 
-END SUBROUTINE clover_barrier
+END SUBROUTINE tea_barrier
 
-SUBROUTINE clover_abort
+SUBROUTINE tea_abort
 
   INTEGER :: ierr,err
 
   CALL MPI_ABORT(MPI_COMM_WORLD,ierr,err)
 
-END SUBROUTINE clover_abort
+END SUBROUTINE tea_abort
 
-SUBROUTINE clover_finalize
+SUBROUTINE tea_finalize
 
   INTEGER :: err
 
@@ -65,9 +65,9 @@ SUBROUTINE clover_finalize
   CALL FLUSH(g_out)
   CALL MPI_FINALIZE(err)
 
-END SUBROUTINE clover_finalize
+END SUBROUTINE tea_finalize
 
-SUBROUTINE clover_init_comms
+SUBROUTINE tea_init_comms
 
   IMPLICIT NONE
 
@@ -91,9 +91,9 @@ SUBROUTINE clover_init_comms
   parallel%boss_task=0
   parallel%max_task=size
 
-END SUBROUTINE clover_init_comms
+END SUBROUTINE tea_init_comms
 
-SUBROUTINE clover_get_num_chunks(count)
+SUBROUTINE tea_get_num_chunks(count)
 
   IMPLICIT NONE
 
@@ -103,9 +103,9 @@ SUBROUTINE clover_get_num_chunks(count)
 
   count=parallel%max_task
 
-END SUBROUTINE clover_get_num_chunks
+END SUBROUTINE tea_get_num_chunks
 
-SUBROUTINE clover_decompose(x_cells,y_cells,left,right,bottom,top)
+SUBROUTINE tea_decompose(x_cells,y_cells,left,right,bottom,top)
 
   ! This decomposes the mesh into a number of chunks.
   ! The number of chunks may be a multiple of the number of mpi tasks
@@ -196,9 +196,9 @@ SUBROUTINE clover_decompose(x_cells,y_cells,left,right,bottom,top)
     WRITE(g_out,*)
   ENDIF
 
-END SUBROUTINE clover_decompose
+END SUBROUTINE tea_decompose
 
-SUBROUTINE clover_allocate_buffers(chunk)
+SUBROUTINE tea_allocate_buffers(chunk)
 
   IMPLICIT NONE
 
@@ -225,9 +225,9 @@ SUBROUTINE clover_allocate_buffers(chunk)
     !ENDIF
   ENDIF
 
-END SUBROUTINE clover_allocate_buffers
+END SUBROUTINE tea_allocate_buffers
 
-SUBROUTINE clover_exchange(fields,depth)
+SUBROUTINE tea_exchange(fields,depth)
 
   IMPLICIT NONE
 
@@ -237,7 +237,7 @@ SUBROUTINE clover_exchange(fields,depth)
   ! Also, not packing all fields for each communication, doing one at a time
 
   IF(fields(FIELD_P).EQ.1) THEN
-    CALL clover_exchange_message(parallel%task+1,chunks(parallel%task+1)%field%work_array1,      &
+    CALL tea_exchange_message(parallel%task+1,chunks(parallel%task+1)%field%work_array1,       &
                                  chunks(parallel%task+1)%left_snd_buffer,                      &
                                  chunks(parallel%task+1)%left_rcv_buffer,                      &
                                  chunks(parallel%task+1)%right_snd_buffer,                     &
@@ -250,7 +250,7 @@ SUBROUTINE clover_exchange(fields,depth)
   ENDIF
 
   IF(fields(FIELD_U).EQ.1) THEN
-    CALL clover_exchange_message(parallel%task+1,chunks(parallel%task+1)%field%u,      &
+    CALL tea_exchange_message(parallel%task+1,chunks(parallel%task+1)%field%u,                 &
                                  chunks(parallel%task+1)%left_snd_buffer,                      &
                                  chunks(parallel%task+1)%left_rcv_buffer,                      &
                                  chunks(parallel%task+1)%right_snd_buffer,                     &
@@ -263,7 +263,7 @@ SUBROUTINE clover_exchange(fields,depth)
   ENDIF
 
   IF(fields(FIELD_DENSITY0).EQ.1) THEN
-    CALL clover_exchange_message(parallel%task+1,chunks(parallel%task+1)%field%density0,      &
+    CALL tea_exchange_message(parallel%task+1,chunks(parallel%task+1)%field%density0,          &
                                  chunks(parallel%task+1)%left_snd_buffer,                      &
                                  chunks(parallel%task+1)%left_rcv_buffer,                      &
                                  chunks(parallel%task+1)%right_snd_buffer,                     &
@@ -276,7 +276,7 @@ SUBROUTINE clover_exchange(fields,depth)
   ENDIF
 
   IF(fields(FIELD_DENSITY1).EQ.1) THEN
-    CALL clover_exchange_message(parallel%task+1,chunks(parallel%task+1)%field%density1,      &
+    CALL tea_exchange_message(parallel%task+1,chunks(parallel%task+1)%field%density1,          &
                                  chunks(parallel%task+1)%left_snd_buffer,                      &
                                  chunks(parallel%task+1)%left_rcv_buffer,                      &
                                  chunks(parallel%task+1)%right_snd_buffer,                     &
@@ -289,7 +289,7 @@ SUBROUTINE clover_exchange(fields,depth)
   ENDIF
 
   IF(fields(FIELD_ENERGY0).EQ.1) THEN
-    CALL clover_exchange_message(parallel%task+1,chunks(parallel%task+1)%field%energy0,       &
+    CALL tea_exchange_message(parallel%task+1,chunks(parallel%task+1)%field%energy0,           &
                                  chunks(parallel%task+1)%left_snd_buffer,                      &
                                  chunks(parallel%task+1)%left_rcv_buffer,                      &
                                  chunks(parallel%task+1)%right_snd_buffer,                     &
@@ -302,7 +302,7 @@ SUBROUTINE clover_exchange(fields,depth)
   ENDIF
 
   IF(fields(FIELD_ENERGY1).EQ.1) THEN
-    CALL clover_exchange_message(parallel%task+1,chunks(parallel%task+1)%field%energy1,       &
+    CALL tea_exchange_message(parallel%task+1,chunks(parallel%task+1)%field%energy1,           &
                                  chunks(parallel%task+1)%left_snd_buffer,                      &
                                  chunks(parallel%task+1)%left_rcv_buffer,                      &
                                  chunks(parallel%task+1)%right_snd_buffer,                     &
@@ -312,153 +312,10 @@ SUBROUTINE clover_exchange(fields,depth)
                                  chunks(parallel%task+1)%top_snd_buffer,                       &
                                  chunks(parallel%task+1)%top_rcv_buffer,                       &
                                  depth,CELL_DATA)
-  ENDIF
-
-  IF(fields(FIELD_PRESSURE).EQ.1) THEN
-    CALL clover_exchange_message(parallel%task+1,chunks(parallel%task+1)%field%pressure,      &
-                                 chunks(parallel%task+1)%left_snd_buffer,                      &
-                                 chunks(parallel%task+1)%left_rcv_buffer,                      &
-                                 chunks(parallel%task+1)%right_snd_buffer,                     &
-                                 chunks(parallel%task+1)%right_rcv_buffer,                     &
-                                 chunks(parallel%task+1)%bottom_snd_buffer,                    &
-                                 chunks(parallel%task+1)%bottom_rcv_buffer,                    &
-                                 chunks(parallel%task+1)%top_snd_buffer,                       &
-                                 chunks(parallel%task+1)%top_rcv_buffer,                       &
-                                 depth,CELL_DATA)
-  ENDIF
-
-  IF(fields(FIELD_VISCOSITY).EQ.1) THEN
-    CALL clover_exchange_message(parallel%task+1,chunks(parallel%task+1)%field%viscosity,     &
-                                 chunks(parallel%task+1)%left_snd_buffer,                      &
-                                 chunks(parallel%task+1)%left_rcv_buffer,                      &
-                                 chunks(parallel%task+1)%right_snd_buffer,                     &
-                                 chunks(parallel%task+1)%right_rcv_buffer,                     &
-                                 chunks(parallel%task+1)%bottom_snd_buffer,                    &
-                                 chunks(parallel%task+1)%bottom_rcv_buffer,                    &
-                                 chunks(parallel%task+1)%top_snd_buffer,                       &
-                                 chunks(parallel%task+1)%top_rcv_buffer,                       &
-                                 depth,CELL_DATA)
-  ENDIF
-
-  IF(fields(FIELD_SOUNDSPEED).EQ.1) THEN
-    CALL clover_exchange_message(parallel%task+1,chunks(parallel%task+1)%field%soundspeed,    &
-                                 chunks(parallel%task+1)%left_snd_buffer,                      &
-                                 chunks(parallel%task+1)%left_rcv_buffer,                      &
-                                 chunks(parallel%task+1)%right_snd_buffer,                     &
-                                 chunks(parallel%task+1)%right_rcv_buffer,                     &
-                                 chunks(parallel%task+1)%bottom_snd_buffer,                    &
-                                 chunks(parallel%task+1)%bottom_rcv_buffer,                    &
-                                 chunks(parallel%task+1)%top_snd_buffer,                       &
-                                 chunks(parallel%task+1)%top_rcv_buffer,                       &
-                                 depth,CELL_DATA)
-  ENDIF
-
-  IF(fields(FIELD_XVEL0).EQ.1) THEN
-    CALL clover_exchange_message(parallel%task+1,chunks(parallel%task+1)%field%xvel0,         &
-                                 chunks(parallel%task+1)%left_snd_buffer,                      &
-                                 chunks(parallel%task+1)%left_rcv_buffer,                      &
-                                 chunks(parallel%task+1)%right_snd_buffer,                     &
-                                 chunks(parallel%task+1)%right_rcv_buffer,                     &
-                                 chunks(parallel%task+1)%bottom_snd_buffer,                    &
-                                 chunks(parallel%task+1)%bottom_rcv_buffer,                    &
-                                 chunks(parallel%task+1)%top_snd_buffer,                       &
-                                 chunks(parallel%task+1)%top_rcv_buffer,                       &
-                                 depth,VERTEX_DATA)
-  ENDIF
-
-  IF(fields(FIELD_XVEL1).EQ.1) THEN
-    CALL clover_exchange_message(parallel%task+1,chunks(parallel%task+1)%field%xvel1,         &
-                                 chunks(parallel%task+1)%left_snd_buffer,                      &
-                                 chunks(parallel%task+1)%left_rcv_buffer,                      &
-                                 chunks(parallel%task+1)%right_snd_buffer,                     &
-                                 chunks(parallel%task+1)%right_rcv_buffer,                     &
-                                 chunks(parallel%task+1)%bottom_snd_buffer,                    &
-                                 chunks(parallel%task+1)%bottom_rcv_buffer,                    &
-                                 chunks(parallel%task+1)%top_snd_buffer,                       &
-                                 chunks(parallel%task+1)%top_rcv_buffer,                       &
-                                 depth,VERTEX_DATA)
-  ENDIF
-
-  IF(fields(FIELD_YVEL0).EQ.1) THEN
-    CALL clover_exchange_message(parallel%task+1,chunks(parallel%task+1)%field%yvel0,         &
-                                 chunks(parallel%task+1)%left_snd_buffer,                      &
-                                 chunks(parallel%task+1)%left_rcv_buffer,                      &
-                                 chunks(parallel%task+1)%right_snd_buffer,                     &
-                                 chunks(parallel%task+1)%right_rcv_buffer,                     &
-                                 chunks(parallel%task+1)%bottom_snd_buffer,                    &
-                                 chunks(parallel%task+1)%bottom_rcv_buffer,                    &
-                                 chunks(parallel%task+1)%top_snd_buffer,                       &
-                                 chunks(parallel%task+1)%top_rcv_buffer,                       &
-                                 depth,VERTEX_DATA)
-  ENDIF
-
-  IF(fields(FIELD_YVEL1).EQ.1) THEN
-    CALL clover_exchange_message(parallel%task+1,chunks(parallel%task+1)%field%yvel1,         &
-                                 chunks(parallel%task+1)%left_snd_buffer,                      &
-                                 chunks(parallel%task+1)%left_rcv_buffer,                      &
-                                 chunks(parallel%task+1)%right_snd_buffer,                     &
-                                 chunks(parallel%task+1)%right_rcv_buffer,                     &
-                                 chunks(parallel%task+1)%bottom_snd_buffer,                    &
-                                 chunks(parallel%task+1)%bottom_rcv_buffer,                    &
-                                 chunks(parallel%task+1)%top_snd_buffer,                       &
-                                 chunks(parallel%task+1)%top_rcv_buffer,                       &
-                                 depth,VERTEX_DATA)
-  ENDIF
-
-  IF(fields(FIELD_VOL_FLUX_X).EQ.1) THEN
-    CALL clover_exchange_message(parallel%task+1,chunks(parallel%task+1)%field%vol_flux_x,    &
-                                 chunks(parallel%task+1)%left_snd_buffer,                      &
-                                 chunks(parallel%task+1)%left_rcv_buffer,                      &
-                                 chunks(parallel%task+1)%right_snd_buffer,                     &
-                                 chunks(parallel%task+1)%right_rcv_buffer,                     &
-                                 chunks(parallel%task+1)%bottom_snd_buffer,                    &
-                                 chunks(parallel%task+1)%bottom_rcv_buffer,                    &
-                                 chunks(parallel%task+1)%top_snd_buffer,                       &
-                                 chunks(parallel%task+1)%top_rcv_buffer,                       &
-                                 depth,X_FACE_DATA)
-  ENDIF
-
-  IF(fields(FIELD_VOL_FLUX_Y).EQ.1) THEN
-    CALL clover_exchange_message(parallel%task+1,chunks(parallel%task+1)%field%vol_flux_y,    &
-                                 chunks(parallel%task+1)%left_snd_buffer,                      &
-                                 chunks(parallel%task+1)%left_rcv_buffer,                      &
-                                 chunks(parallel%task+1)%right_snd_buffer,                     &
-                                 chunks(parallel%task+1)%right_rcv_buffer,                     &
-                                 chunks(parallel%task+1)%bottom_snd_buffer,                    &
-                                 chunks(parallel%task+1)%bottom_rcv_buffer,                    &
-                                 chunks(parallel%task+1)%top_snd_buffer,                       &
-                                 chunks(parallel%task+1)%top_rcv_buffer,                       &
-                                 depth,Y_FACE_DATA)
-  ENDIF
-
-  IF(fields(FIELD_MASS_FLUX_X).EQ.1) THEN
-    CALL clover_exchange_message(parallel%task+1,chunks(parallel%task+1)%field%mass_flux_x,   &
-                                 chunks(parallel%task+1)%left_snd_buffer,                      &
-                                 chunks(parallel%task+1)%left_rcv_buffer,                      &
-                                 chunks(parallel%task+1)%right_snd_buffer,                     &
-                                 chunks(parallel%task+1)%right_rcv_buffer,                     &
-                                 chunks(parallel%task+1)%bottom_snd_buffer,                    &
-                                 chunks(parallel%task+1)%bottom_rcv_buffer,                    &
-                                 chunks(parallel%task+1)%top_snd_buffer,                       &
-                                 chunks(parallel%task+1)%top_rcv_buffer,                       &
-                                 depth,X_FACE_DATA)
-  ENDIF
-
-  IF(fields(FIELD_MASS_FLUX_Y).EQ.1) THEN
-    CALL clover_exchange_message(parallel%task+1,chunks(parallel%task+1)%field%mass_flux_y,   &
-                                 chunks(parallel%task+1)%left_snd_buffer,                      &
-                                 chunks(parallel%task+1)%left_rcv_buffer,                      &
-                                 chunks(parallel%task+1)%right_snd_buffer,                     &
-                                 chunks(parallel%task+1)%right_rcv_buffer,                     &
-                                 chunks(parallel%task+1)%bottom_snd_buffer,                    &
-                                 chunks(parallel%task+1)%bottom_rcv_buffer,                    &
-                                 chunks(parallel%task+1)%top_snd_buffer,                       &
-                                 chunks(parallel%task+1)%top_rcv_buffer,                       &
-                                 depth,Y_FACE_DATA)
   ENDIF
 
   IF(fields(FIELD_U).EQ.1) THEN
-    CALL clover_exchange_message(parallel%task+1,chunks(parallel%task+1)%field%u,              &
+    CALL tea_exchange_message(parallel%task+1,chunks(parallel%task+1)%field%u,                 &
                                  chunks(parallel%task+1)%left_snd_buffer,                      &
                                  chunks(parallel%task+1)%left_rcv_buffer,                      &
                                  chunks(parallel%task+1)%right_snd_buffer,                     &
@@ -471,9 +328,9 @@ SUBROUTINE clover_exchange(fields,depth)
   ENDIF
 
 
-END SUBROUTINE clover_exchange
+END SUBROUTINE tea_exchange
 
-SUBROUTINE clover_exchange_message(chunk,field,                            &
+SUBROUTINE tea_exchange_message(chunk,field,                               &
                                    left_snd_buffer,                        &
                                    left_rcv_buffer,                        &
                                    right_snd_buffer,                       &
@@ -682,9 +539,9 @@ SUBROUTINE clover_exchange_message(chunk,field,                            &
     ENDIF
   ENDIF
 
-END SUBROUTINE clover_exchange_message
+END SUBROUTINE tea_exchange_message
 
-SUBROUTINE clover_sum(value)
+SUBROUTINE tea_sum(value)
 
   ! Only sums to the master
 
@@ -702,9 +559,9 @@ SUBROUTINE clover_sum(value)
 
   value=total
 
-END SUBROUTINE clover_sum
+END SUBROUTINE tea_sum
 
-SUBROUTINE clover_allsum(value)
+SUBROUTINE tea_allsum(value)
 
   ! Global reduction for CG solver
 
@@ -722,9 +579,9 @@ SUBROUTINE clover_allsum(value)
 
   value=total
 
-END SUBROUTINE clover_allsum
+END SUBROUTINE tea_allsum
 
-SUBROUTINE clover_min(value)
+SUBROUTINE tea_min(value)
 
   IMPLICIT NONE
 
@@ -740,9 +597,9 @@ SUBROUTINE clover_min(value)
 
   value=minimum
 
-END SUBROUTINE clover_min
+END SUBROUTINE tea_min
 
-SUBROUTINE clover_max(value)
+SUBROUTINE tea_max(value)
 
   IMPLICIT NONE
 
@@ -758,9 +615,9 @@ SUBROUTINE clover_max(value)
 
   value=maximum
 
-END SUBROUTINE clover_max
+END SUBROUTINE tea_max
 
-SUBROUTINE clover_allgather(value,values)
+SUBROUTINE tea_allgather(value,values)
 
   IMPLICIT NONE
 
@@ -774,9 +631,9 @@ SUBROUTINE clover_allgather(value,values)
 
   CALL MPI_ALLGATHER(value,1,MPI_DOUBLE_PRECISION,values,1,MPI_DOUBLE_PRECISION,MPI_COMM_WORLD,err)
 
-END SUBROUTINE clover_allgather
+END SUBROUTINE tea_allgather
 
-SUBROUTINE clover_check_error(error)
+SUBROUTINE tea_check_error(error)
 
   IMPLICIT NONE
 
@@ -792,7 +649,7 @@ SUBROUTINE clover_check_error(error)
 
   error=maximum
 
-END SUBROUTINE clover_check_error
+END SUBROUTINE tea_check_error
 
 
-END MODULE clover_module
+END MODULE tea_module

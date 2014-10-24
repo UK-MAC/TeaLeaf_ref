@@ -23,7 +23,7 @@
 
 SUBROUTINE read_input()
 
-  USE clover_module
+  USE tea_module
   USE parse_module
   USE report_module
 
@@ -55,13 +55,6 @@ SUBROUTINE read_input()
   summary_frequency=10
 
   dtinit=0.1
-  dtmax=1.0
-  dtmin=0.0000001
-  dtrise=1.5
-  dtc_safe=0.7
-  dtu_safe=0.5
-  dtv_safe=0.5
-  dtdiv_safe=0.7
 
   max_iters=1000
   eps=1.0e-10
@@ -70,23 +63,12 @@ SUBROUTINE read_input()
   use_C_kernels=.FALSE.
   use_OA_kernels=.FALSE.
   use_vector_loops=.FALSE.
-  use_Hydro = .FALSE.
-  use_TeaLeaf=.TRUE.
   coefficient = CONDUCTIVITY
   profiler_on=.FALSE.
   profile_solver=.false.
   profiler%timestep=0.0
-  profiler%acceleration=0.0
-  profiler%PdV=0.0
-  profiler%cell_advection=0.0
-  profiler%mom_advection=0.0
-  profiler%viscosity=0.0
-  profiler%ideal_gas=0.0
   profiler%visit=0.0
   profiler%summary=0.0
-  profiler%reset=0.0
-  profiler%revert=0.0
-  profiler%flux=0.0
   profiler%halo_exchange=0.0
 
   tl_ch_cg_errswitch = .false.
@@ -125,8 +107,6 @@ SUBROUTINE read_input()
   states(:)%defined=.FALSE.
   states(:)%energy=0.0
   states(:)%density=0.0
-  states(:)%xvel=0.0
-  states(:)%yvel=0.0
 
   DO
     stat=parse_getline(dummy)
@@ -141,12 +121,6 @@ SUBROUTINE read_input()
       CASE('initial_timestep')
         dtinit=parse_getrval(parse_getword(.TRUE.))
         IF(parallel%boss)WRITE(g_out,"(1x,a25,e12.4)")'initial_timestep ',dtinit
-      CASE('max_timestep')
-        dtmax=parse_getrval(parse_getword(.TRUE.))
-        IF(parallel%boss)WRITE(g_out,"(1x,a25,e12.4)")'max_timestep',dtinit
-      CASE('timestep_rise')
-        dtrise=parse_getrval(parse_getword(.TRUE.))
-        IF(parallel%boss)WRITE(g_out,"(1x,a25,e12.4)")'timestep_rise',dtrise
       CASE('end_time')
         end_time=parse_getrval(parse_getword(.TRUE.))
         IF(parallel%boss)WRITE(g_out,"(1x,a25,e12.4)")'end_time',end_time
@@ -217,22 +191,10 @@ SUBROUTINE read_input()
       CASE('profiler_on')
         profiler_on=.TRUE.
         IF(parallel%boss)WRITE(g_out,"(1x,a25)")'Profiler on'
-      CASE('tea_leaf_off')
-        use_Tealeaf=.FALSE.
-        IF(parallel%boss)WRITE(g_out,"(1x,a17)")'Conduction is off'
-      CASE('tea_leaf_on')
-        use_Tealeaf=.TRUE.
-        IF(parallel%boss)WRITE(g_out,"(1x,a16)")'Conduction is on'
       CASE('tl_max_iters')
         max_iters = parse_getival(parse_getword(.TRUE.))
       CASE('tl_eps')
         eps = parse_getrval(parse_getword(.TRUE.))
-      CASE('hydro_off')
-        use_Hydro = .FALSE.
-        IF(parallel%boss)WRITE(g_out,"(1x,a12)")'Hydro is off'
-      CASE('hydro_on')
-        use_Hydro = .TRUE.
-        IF(parallel%boss)WRITE(g_out,"(1x,a11)")'Hydro is on'
       CASE('tl_coefficient_density')
         coefficient = CONDUCTIVITY
         IF(parallel%boss)WRITE(g_out,"(1x,a29)")'Diffusion coefficient density'
@@ -257,12 +219,6 @@ SUBROUTINE read_input()
 
           SELECT CASE(word)
 
-          CASE('xvel')
-            states(state)%xvel=parse_getrval(parse_getword(.TRUE.))
-            IF(parallel%boss)WRITE(g_out,"(1x,a25,e12.4)")'xvel ',states(state)%xvel
-          CASE('yvel')
-            states(state)%yvel=parse_getrval(parse_getword(.TRUE.))
-            IF(parallel%boss)WRITE(g_out,"(1x,a25,e12.4)")'yvel ',states(state)%yvel
           CASE('xmin')
             states(state)%xmin=parse_getrval(parse_getword(.TRUE.))
             IF(parallel%boss)WRITE(g_out,"(1x,a25,e12.4)")'state xmin ',states(state)%xmin

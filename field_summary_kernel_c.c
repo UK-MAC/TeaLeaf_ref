@@ -18,8 +18,7 @@
 /**
  *  @brief C field summary kernel
  *  @author David Beckingsale, Wayne Gaudin
- *  @details The total mass, internal energy, kinetic energy, temperature and volume weighted
- *  pressure for the chunk is calculated.
+ *  @details The total mass, internal energy and temperature for the chunk is calculated.
  */
 
 #include <stdio.h>
@@ -35,14 +34,9 @@ void field_summary_kernel_c_(int *xmin,
                           double *density0,
                           double *energy0,
                           double *u,
-                          double *pressure,
-                          double *xvel0,
-                          double *yvel0,
                           double *vl,
                           double *mss,
                           double *ien,
-                          double *ken,
-                          double *prss,
                           double *tmp)
 {
 
@@ -53,41 +47,28 @@ void field_summary_kernel_c_(int *xmin,
   double vol=*vl;
   double mass=*mss;
   double ie=*ien;
-  double ke=*ken;
   double temp=*tmp;
-  double press=*prss;
 
-  int j,k,jv,kv;
-  double vsqrd,cell_vol,cell_mass;
+  int j,k;
+  double cell_vol,cell_mass;
 
 
   vol=0.0;
   mass=0.0;
   ie=0.0;
-  ke=0.0;;
-  press=0.0;
   temp=0.0;
 
 #pragma omp parallel
  {
-#pragma omp for private(vsqrd,cell_vol,cell_mass) reduction(+ : vol,mass,press,ie,ke,temp,j,jv,kv)
+#pragma omp for private(cell_vol,cell_mass,j) reduction(+ : vol,mass,ie,temp)
   for (k=y_min;k<=y_max;k++) {
 #pragma ivdep
     for (j=x_min;j<=x_max;j++) {
-      vsqrd=0.0;
-      for (kv=k;kv<=k+1;kv++) {
-        for (jv=j;jv<=j+1;jv++) {
-          vsqrd=vsqrd+0.25*(xvel0[FTNREF2D(jv ,kv ,x_max+5,x_min-2,y_min-2)]*xvel0[FTNREF2D(jv ,kv ,x_max+5,x_min-2,y_min-2)]
-                           +yvel0[FTNREF2D(jv ,kv ,x_max+5,x_min-2,y_min-2)]*yvel0[FTNREF2D(jv ,kv ,x_max+5,x_min-2,y_min-2)]);
-        }
-      }
       cell_vol=volume[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)];
       cell_mass=cell_vol*density0[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)];
       vol=vol+cell_vol;
       mass=mass+cell_mass;
       ie=ie+cell_mass*energy0[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)];
-      ke=ke+cell_mass*0.5*vsqrd;
-      press=press+cell_vol*pressure[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)];
       temp=temp+cell_mass*u[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)];
     }
   }
@@ -97,8 +78,6 @@ void field_summary_kernel_c_(int *xmin,
  *vl=vol;
  *mss=mass;
  *ien=ie;
- *ken=ke;
- *prss=press;
  *tmp=temp;
 
 }

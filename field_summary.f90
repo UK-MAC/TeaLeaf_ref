@@ -26,13 +26,12 @@
 
 SUBROUTINE field_summary()
 
-  USE clover_module
-  USE ideal_gas_module
+  USE tea_module
   USE field_summary_kernel_module
 
   IMPLICIT NONE
 
-  REAL(KIND=8) :: vol,mass,ie,ke,press,temp
+  REAL(KIND=8) :: vol,mass,ie,temp
   REAL(KIND=8) :: qa_diff
 
 !$ INTEGER :: OMP_GET_THREAD_NUM
@@ -44,15 +43,9 @@ SUBROUTINE field_summary()
   IF(parallel%boss)THEN
     WRITE(g_out,*)
     WRITE(g_out,*) 'Time ',time
-    WRITE(g_out,'(a13,8a16)')'           ','Volume','Mass','Density','Pressure',&
-        'Internal Energy','Kinetic Energy','Total Energy','U'
+    WRITE(g_out,'(a13,5a16)')'           ','Volume','Mass','Density'       &
+                                          ,'Energy','U'
   ENDIF
-
-  IF(profiler_on) kernel_time=timer()
-  DO c=1,number_of_chunks
-    CALL ideal_gas(c,.FALSE.)
-  ENDDO
-  IF(profiler_on) profiler%ideal_gas=profiler%ideal_gas+(timer()-kernel_time)
 
   IF(profiler_on) kernel_time=timer()
   IF(use_fortran_kernels)THEN
@@ -66,10 +59,7 @@ SUBROUTINE field_summary()
                                   chunks(c)%field%density0,                &
                                   chunks(c)%field%energy0,                 &
                                   chunks(c)%field%u,                       &
-                                  chunks(c)%field%pressure,                &
-                                  chunks(c)%field%xvel0,                   &
-                                  chunks(c)%field%yvel0,                   &
-                                  vol,mass,ie,ke,press,temp                )
+                                  vol,mass,ie,temp                         )
       ENDIF
     ENDDO
   ELSEIF(use_C_kernels)THEN
@@ -83,26 +73,21 @@ SUBROUTINE field_summary()
                                   chunks(c)%field%density0,                &
                                   chunks(c)%field%energy0,                 &
                                   chunks(c)%field%u,                       &
-                                  chunks(c)%field%pressure,                &
-                                  chunks(c)%field%xvel0,                   &
-                                  chunks(c)%field%yvel0,                   &
-                                  vol,mass,ie,ke,press,temp                )
+                                  vol,mass,ie,temp                         )
       ENDIF
     ENDDO
   ENDIF
 
   ! For mpi I need a reduction here
-  CALL clover_sum(vol)
-  CALL clover_sum(mass)
-  CALL clover_sum(press)
-  CALL clover_sum(ie)
-  CALL clover_sum(ke)
-  CALL clover_sum(temp)
+  CALL tea_sum(vol)
+  CALL tea_sum(mass)
+  CALL tea_sum(ie)
+  CALL tea_sum(temp)
   IF(profiler_on) profiler%summary=profiler%summary+(timer()-kernel_time)
 
   IF(parallel%boss) THEN
 !$  IF(OMP_GET_THREAD_NUM().EQ.0) THEN
-      WRITE(g_out,'(a6,i7,8e16.7)')' step:',step,vol,mass,mass/vol,press/vol,ie,ke,ie+ke,temp
+      WRITE(g_out,'(a6,i7,5e16.7)')' step:',step,vol,mass,mass/vol,ie,temp
       WRITE(g_out,*)
 !$  ENDIF
   ENDIF

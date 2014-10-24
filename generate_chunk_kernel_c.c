@@ -37,14 +37,10 @@ void generate_chunk_kernel_c_(int *xmin,int *xmax,int *ymin,int *ymax,
                               double *celly,
                               double *density0,
                               double *energy0,
-                              double *xvel0,
-                              double *yvel0,
                               double *u0,
                               int *nmbr_f_stts,
                               double *state_density,
                               double *state_energy,
-                              double *state_xvel,
-                              double *state_yvel,
                               double *state_xmin,
                               double *state_xmax,
                               double *state_ymin,
@@ -89,25 +85,8 @@ void generate_chunk_kernel_c_(int *xmin,int *xmax,int *ymin,int *ymax,
    }
   }
 
-#pragma omp for private(j,k)
-  for (k=y_min-2;k<=y_max+2;k++) {
-#pragma ivdep
-    for (j=x_min-2;j<=x_max+2;j++) {
-      xvel0[FTNREF2D(j  ,k  ,x_max+5,x_min-2,y_min-2)]=state_xvel[FTNREF1D(1,1)];
-   }
-  }
-
-#pragma omp for private(j,k)
-  for (k=y_min-2;k<=y_max+2;k++) {
-#pragma ivdep
-    for (j=x_min-2;j<=x_max+2;j++) {
-      yvel0[FTNREF2D(j  ,k  ,x_max+5,x_min-2,y_min-2)]=state_yvel[FTNREF1D(1,1)];
-   }
-  }
-
   for ( state=2;state<=number_of_states;state++) {
 
-/* Could the velocity setting be thread unsafe? */
     x_cent=state_xmin[FTNREF1D(state,1)];
     y_cent=state_ymin[FTNREF1D(state,1)];
 
@@ -120,12 +99,6 @@ void generate_chunk_kernel_c_(int *xmin,int *xmax,int *ymin,int *ymax,
             if(vertexy[FTNREF1D(k+1,y_min-2)]>=state_ymin[FTNREF1D(state,1)] && vertexy[FTNREF1D(k,y_min-2)]<state_ymax[FTNREF1D(state,1)]) {
               density0[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)]=state_density[FTNREF1D(state,1)];
               energy0[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)]=state_energy[FTNREF1D(state,1)];
-              for (kt=k;kt<=k+1;kt++) {
-                for (jt=j;jt<=j+1;jt++) {
-		  xvel0[FTNREF2D(jt,kt,x_max+5,x_min-2,y_min-2)]=state_xvel[FTNREF1D(state,1)];
-		  yvel0[FTNREF2D(jt,kt,x_max+5,x_min-2,y_min-2)]=state_yvel[FTNREF1D(state,1)];
-	        }
-	      }
             }
           }
 	}else if(state_geometry[FTNREF1D(state,1)]==g_circ ) {
@@ -133,23 +106,11 @@ void generate_chunk_kernel_c_(int *xmin,int *xmax,int *ymin,int *ymax,
           if(radius<=state_radius[FTNREF1D(state,1)]) {
             density0[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)]=state_density[FTNREF1D(state,1)];
             energy0[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)]=state_density[FTNREF1D(state,1)];
-            for (kt=k;kt<=k+1;kt++) {
-              for (jt=j;jt<=j+1;jt++) {
-                xvel0[FTNREF2D(jt,kt,x_max+5,x_min-2,y_min-2)]=state_xvel[FTNREF1D(state,1)];
-                yvel0[FTNREF2D(jt,kt,x_max+5,x_min-2,y_min-2)]=state_yvel[FTNREF1D(state,1)];
-              }
-            }
           }
 	}else if(state_geometry[FTNREF1D(state,1)]==g_point) {
           if(vertexx[FTNREF1D(j,x_min-2)]==x_cent && vertexy[FTNREF1D(j,x_min-2)]==y_cent) {
             density0[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)]=state_density[FTNREF1D(state,1)];
             energy0[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)]=state_density[FTNREF1D(state,1)];
-            for (kt=k;kt<=k+1;kt++) {
-              for (jt=j;jt<=j+1;jt++) {
-                xvel0[FTNREF2D(jt,kt,x_max+5,x_min-2,y_min-2)]=state_xvel[FTNREF1D(state,1)];
-                yvel0[FTNREF2D(jt,kt,x_max+5,x_min-2,y_min-2)]=state_yvel[FTNREF1D(state,1)];
-	      }
-	    }
 	  }
 	}
       }

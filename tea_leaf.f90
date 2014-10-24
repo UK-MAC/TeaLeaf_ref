@@ -19,10 +19,8 @@
 !>  @author David Beckingsale, Wayne Gaudin
 !>  @details TeaLeaf in a proxy-app that solves the linear heat conduction
 !>  equations using an implicit finite volume method on a Cartesian grid.
-!>  The grid is staggered with internal energy, density, temperature and pressure at cell
-!>  centres and velocities on cell vertices.
-!>
-!>  The CloverLeaf hydrodynamics can also be invoked to produce a coupled conduction/advection system
+!>  The grid is staggered with internal energy, density, and temperature at cell
+!>  centres.
 !>
 !>  It can be run in distributed mode using MPI.
 !>
@@ -36,13 +34,13 @@
 !>  converted to a scalar.
 PROGRAM tea_leaf
 
-  USE clover_module
+  USE tea_module
 
   IMPLICIT NONE
 
 !$ INTEGER :: OMP_GET_NUM_THREADS,OMP_GET_THREAD_NUM
 
-  CALL clover_init_comms()
+  CALL tea_init_comms()
 
 !$OMP PARALLEL
   IF(parallel%boss)THEN
@@ -67,8 +65,8 @@ PROGRAM tea_leaf
 
   CALL initialise
 
-  CALL hydro
-  
+  CALL diffuse
+
   ! Deallocate everything
   
 END PROGRAM tea_leaf

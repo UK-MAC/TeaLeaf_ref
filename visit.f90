@@ -19,15 +19,11 @@
 !>  @author David Beckingsale, Wayne Gaudin
 !>  @details The field data over all mesh chunks is written to a .vtk files and
 !>  the .visit file is written that defines the time for each set of vtk files.
-!>  The ideal gas and viscosity routines are invoked to make sure this data is
-!>  up to data with the current energy, density and velocity.
 
 SUBROUTINE visit
 
-  USE clover_module
+  USE tea_module
   USE update_halo_module
-  USE viscosity_module
-  USE ideal_gas_module
 
   IMPLICIT NONE
 
@@ -45,7 +41,7 @@ SUBROUTINE visit
 
   REAL(KIND=8) :: kernel_time,timer
 
-  name = 'clover'
+  name = 'tea'
 
   IF(first_call) THEN
 
@@ -59,24 +55,6 @@ SUBROUTINE visit
     first_call=.FALSE.
 
   ENDIF
-
-  IF(profiler_on) kernel_time=timer()
-  DO c=1,number_of_chunks
-    CALL ideal_gas(c,.FALSE.)
-  ENDDO
-  IF(profiler_on) profiler%ideal_gas=profiler%ideal_gas+(timer()-kernel_time)
-
-  fields=0
-  fields(FIELD_PRESSURE)=1
-  fields(FIELD_XVEL0)=1
-  fields(FIELD_YVEL0)=1
-  IF(profiler_on) kernel_time=timer()
-  CALL update_halo(fields,1)
-  IF(profiler_on) profiler%halo_exchange=profiler%halo_exchange+(timer()-kernel_time)
-
-  IF(profiler_on) kernel_time=timer()
-  CALL viscosity()
-  IF(profiler_on) profiler%viscosity=profiler%viscosity+(timer()-kernel_time)
 
   IF ( parallel%boss ) THEN
 
@@ -135,39 +113,9 @@ SUBROUTINE visit
       DO k=chunks(c)%field%y_min,chunks(c)%field%y_max
         WRITE(u,'(e12.4)')(chunks(c)%field%energy0(j,k),j=chunks(c)%field%x_min,chunks(c)%field%x_max)
       ENDDO
-      WRITE(u,'(a,i20,a)')'pressure 1 ',nxc*nyc,' double'
-      DO k=chunks(c)%field%y_min,chunks(c)%field%y_max
-        WRITE(u,'(e12.4)')(chunks(c)%field%pressure(j,k),j=chunks(c)%field%x_min,chunks(c)%field%x_max)
-      ENDDO
-      WRITE(u,'(a,i20,a)')'viscosity 1 ',nxc*nyc,' double'
-      DO k=chunks(c)%field%y_min,chunks(c)%field%y_max
-        DO j=chunks(c)%field%x_min,chunks(c)%field%x_max
-          temp_var=0.0
-          IF(chunks(c)%field%viscosity(j,k).GT.0.00000001) temp_var=chunks(c)%field%viscosity(j,k)
-          WRITE(u,'(e12.4)') temp_var
-        ENDDO
-      ENDDO
       WRITE(u,'(a,i20,a)')'temperature 1 ',nxc*nyc,' double'
       DO k=chunks(c)%field%y_min,chunks(c)%field%y_max
         WRITE(u,'(e12.4)')(chunks(c)%field%u(j,k),j=chunks(c)%field%x_min,chunks(c)%field%x_max)
-      ENDDO
-      WRITE(u,'(a,i20)')'POINT_DATA ',nxv*nyv
-      WRITE(u,'(a)')'FIELD FieldData 2'
-      WRITE(u,'(a,i20,a)')'x_vel 1 ',nxv*nyv,' double'
-      DO k=chunks(c)%field%y_min,chunks(c)%field%y_max+1
-        DO j=chunks(c)%field%x_min,chunks(c)%field%x_max+1
-          temp_var=0.0
-          IF(ABS(chunks(c)%field%xvel0(j,k)).GT.0.00000001) temp_var=chunks(c)%field%xvel0(j,k)
-          WRITE(u,'(e12.4)') temp_var
-        ENDDO
-      ENDDO
-      WRITE(u,'(a,i20,a)')'y_vel 1 ',nxv*nyv,' double'
-      DO k=chunks(c)%field%y_min,chunks(c)%field%y_max+1
-        DO j=chunks(c)%field%x_min,chunks(c)%field%x_max+1
-          temp_var=0.0
-          IF(ABS(chunks(c)%field%yvel0(j,k)).GT.0.00000001) temp_var=chunks(c)%field%yvel0(j,k)
-          WRITE(u,'(e12.4)') temp_var
-        ENDDO
       ENDDO
       CLOSE(u)
     ENDIF

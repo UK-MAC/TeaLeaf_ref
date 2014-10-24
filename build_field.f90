@@ -22,7 +22,7 @@
 
 SUBROUTINE build_field(chunk,x_cells,y_cells)
 
-   USE clover_module
+   USE tea_module
 
    IMPLICIT NONE
 
@@ -42,30 +42,6 @@ SUBROUTINE build_field(chunk,x_cells,y_cells)
                    chunks(chunk)%field%y_min-2:chunks(chunk)%field%y_max+2))
    ALLOCATE(chunks(chunk)%field%energy1   (chunks(chunk)%field%x_min-2:chunks(chunk)%field%x_max+2, &
                    chunks(chunk)%field%y_min-2:chunks(chunk)%field%y_max+2))
-   ALLOCATE(chunks(chunk)%field%pressure  (chunks(chunk)%field%x_min-2:chunks(chunk)%field%x_max+2, &
-                   chunks(chunk)%field%y_min-2:chunks(chunk)%field%y_max+2))
-   ALLOCATE(chunks(chunk)%field%viscosity (chunks(chunk)%field%x_min-2:chunks(chunk)%field%x_max+2, &
-                   chunks(chunk)%field%y_min-2:chunks(chunk)%field%y_max+2))
-   ALLOCATE(chunks(chunk)%field%soundspeed(chunks(chunk)%field%x_min-2:chunks(chunk)%field%x_max+2, &
-                   chunks(chunk)%field%y_min-2:chunks(chunk)%field%y_max+2))
-
-   ALLOCATE(chunks(chunk)%field%xvel0(chunks(chunk)%field%x_min-2:chunks(chunk)%field%x_max+3, &
-                                      chunks(chunk)%field%y_min-2:chunks(chunk)%field%y_max+3))
-   ALLOCATE(chunks(chunk)%field%xvel1(chunks(chunk)%field%x_min-2:chunks(chunk)%field%x_max+3, &
-                                      chunks(chunk)%field%y_min-2:chunks(chunk)%field%y_max+3))
-   ALLOCATE(chunks(chunk)%field%yvel0(chunks(chunk)%field%x_min-2:chunks(chunk)%field%x_max+3, &
-                                      chunks(chunk)%field%y_min-2:chunks(chunk)%field%y_max+3))
-   ALLOCATE(chunks(chunk)%field%yvel1(chunks(chunk)%field%x_min-2:chunks(chunk)%field%x_max+3, &
-                                      chunks(chunk)%field%y_min-2:chunks(chunk)%field%y_max+3))
-
-   ALLOCATE(chunks(chunk)%field%vol_flux_x (chunks(chunk)%field%x_min-2:chunks(chunk)%field%x_max+3, &
-                                            chunks(chunk)%field%y_min-2:chunks(chunk)%field%y_max+2))
-   ALLOCATE(chunks(chunk)%field%mass_flux_x(chunks(chunk)%field%x_min-2:chunks(chunk)%field%x_max+3, &
-                                            chunks(chunk)%field%y_min-2:chunks(chunk)%field%y_max+2))
-   ALLOCATE(chunks(chunk)%field%vol_flux_y (chunks(chunk)%field%x_min-2:chunks(chunk)%field%x_max+2, &
-                                            chunks(chunk)%field%y_min-2:chunks(chunk)%field%y_max+3))
-   ALLOCATE(chunks(chunk)%field%mass_flux_y(chunks(chunk)%field%x_min-2:chunks(chunk)%field%x_max+2, &
-                                            chunks(chunk)%field%y_min-2:chunks(chunk)%field%y_max+3))
 
    ALLOCATE(chunks(chunk)%field%u0        (chunks(chunk)%field%x_min-2:chunks(chunk)%field%x_max+2, &
                    chunks(chunk)%field%y_min-2:chunks(chunk)%field%y_max+2))
@@ -118,22 +94,9 @@ SUBROUTINE build_field(chunk,x_cells,y_cells)
    chunks(chunk)%field%density1=0.0
    chunks(chunk)%field%energy0=0.0
    chunks(chunk)%field%energy1=0.0
-   chunks(chunk)%field%pressure=0.0
-   chunks(chunk)%field%viscosity=0.0
-   chunks(chunk)%field%soundspeed=0.0
    chunks(chunk)%field%u=0.0
    chunks(chunk)%field%u0=0.0
    
-   chunks(chunk)%field%xvel0=0.0
-   chunks(chunk)%field%xvel1=0.0
-   chunks(chunk)%field%yvel0=0.0
-   chunks(chunk)%field%yvel1=0.0
-   
-   chunks(chunk)%field%vol_flux_x=0.0
-   chunks(chunk)%field%mass_flux_x=0.0
-   chunks(chunk)%field%vol_flux_y=0.0
-   chunks(chunk)%field%mass_flux_y=0.0
-
    chunks(chunk)%field%cellx=0.0
    chunks(chunk)%field%celly=0.0
    chunks(chunk)%field%vertexx=0.0

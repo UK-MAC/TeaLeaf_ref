@@ -24,7 +24,7 @@
 
 SUBROUTINE initialise
 
-  USE clover_module
+  USE tea_module
   USE parse_module
   USE report_module
 
@@ -60,7 +60,7 @@ SUBROUTINE initialise
   ENDIF
 !$OMP END PARALLEL
 
-  CALL clover_barrier
+  CALL tea_barrier
 
   IF(parallel%boss)THEN
     WRITE(g_out,*) 'Tea will run from the following input:-'
@@ -112,14 +112,14 @@ SUBROUTINE initialise
     CLOSE(out_unit)
   ENDIF
 
-  CALL clover_barrier
+  CALL tea_barrier
 
   g_in=get_unit(dummy)
   OPEN(FILE='tea.in.tmp',ACTION='READ',STATUS='OLD',UNIT=g_in,IOSTAT=ios)
 
   IF(ios.NE.0) CALL report_error('initialise','Error opening tea.in.tmp file')
 
-  CALL clover_barrier
+  CALL tea_barrier
 
   IF(parallel%boss)THEN
      REWIND(uin)
@@ -138,13 +138,13 @@ SUBROUTINE initialise
 
   CALL read_input()
 
-  CALL clover_barrier
+  CALL tea_barrier
 
   step=0
 
   CALL start
 
-  CALL clover_barrier
+  CALL tea_barrier
 
   IF(parallel%boss)THEN
      WRITE(g_out,*) 'Starting the calculation'

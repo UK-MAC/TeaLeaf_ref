@@ -18,7 +18,7 @@
 !>  @brief Fortran set field kernel.
 !>  @author David Beckingsale, Wayne Gaudin
 !>  @details Copies all of the final start of step filed data to the end of
-!>  step data. Need for no hydro case
+!>  step data.
 
 MODULE set_field_kernel_module
 

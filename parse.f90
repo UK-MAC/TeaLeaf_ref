@@ -19,7 +19,7 @@
 !>  @author David Beckingsale, Wayne Gaudin
 !>  @details Provides utilities to manipulate and parse Fortran strings.
 
-MODULE clover_case_change
+MODULE tea_case_change
 
 USE data_module
 
@@ -63,9 +63,9 @@ FUNCTION toupper(string) RESULT (toupper_result)
 
 END FUNCTION toupper
 
-END MODULE clover_case_change
+END MODULE tea_case_change
 
-MODULE clover_isitanint_mod
+MODULE tea_isitanint_mod
 
 CONTAINS
 
@@ -94,7 +94,7 @@ FUNCTION isitanint(instring) RESULT(isitanint_result)
 
 END FUNCTION isitanint
 
-END MODULE clover_isitanint_mod
+END MODULE tea_isitanint_mod
 
 MODULE parse_module
 
@@ -278,7 +278,7 @@ FUNCTION parse_getline(dummy)
 
   FUNCTION parse_getival(word)
 
-    USE clover_module
+    USE tea_module
 
     CHARACTER(LEN=*)  :: word
     INTEGER         :: temp,parse_getival
@@ -289,7 +289,7 @@ FUNCTION parse_getline(dummy)
 
     IF(ios.NE.0)THEN
        CALL report_error('parse_getival','Error attempting to convert to integer:'//word)
-       CALL clover_abort
+       CALL tea_abort
     ENDIF
 
     parse_getival=temp
@@ -298,7 +298,7 @@ FUNCTION parse_getline(dummy)
 
   FUNCTION parse_getlval(word)
 
-    USE clover_module
+    USE tea_module
 
     CHARACTER(LEN=*)  :: word
     LOGICAL :: temp,parse_getlval
@@ -322,7 +322,7 @@ FUNCTION parse_getline(dummy)
 
     IF(ios.NE.0)THEN
        CALL report_error('parse_getlval','Error attempting to convert to logical:'//word)
-       CALL clover_abort
+       CALL tea_abort
     ENDIF
 
     parse_getlval=temp
@@ -331,7 +331,7 @@ FUNCTION parse_getline(dummy)
 
   FUNCTION parse_getrval(word)
 
-    USE clover_module
+    USE tea_module
 
     CHARACTER(LEN=*) :: word
     REAL(KIND=8)   :: temp,parse_getrval
@@ -346,7 +346,7 @@ FUNCTION parse_getline(dummy)
 
     IF(ios.NE.0)THEN
        CALL report_error('parse_getrval','Error attempting to convert to real:'//word)
-       CALL clover_abort
+       CALL tea_abort
     ENDIF
 
     parse_getrval=temp

@@ -26,14 +26,14 @@ CONTAINS
 
 SUBROUTINE update_halo(fields,depth)
 
-  USE clover_module
+  USE tea_module
   USE update_halo_kernel_module
 
   IMPLICIT NONE
 
   INTEGER :: c,fields(NUM_FIELDS),depth
 
-  CALL clover_exchange(fields,depth)
+  CALL tea_exchange(fields,depth)
 
   DO c=1,number_of_chunks
 
@@ -55,19 +55,8 @@ SUBROUTINE update_halo(fields,depth)
                                 chunks(c)%chunk_neighbours,     &
                                 chunks(c)%field%density0,       &
                                 chunks(c)%field%energy0,        &
-                                chunks(c)%field%pressure,       &
-                                chunks(c)%field%viscosity,      &
-                                chunks(c)%field%soundspeed,     &
                                 chunks(c)%field%density1,       &
                                 chunks(c)%field%energy1,        &
-                                chunks(c)%field%xvel0,          &
-                                chunks(c)%field%yvel0,          &
-                                chunks(c)%field%xvel1,          &
-                                chunks(c)%field%yvel1,          &
-                                chunks(c)%field%vol_flux_x,     &
-                                chunks(c)%field%vol_flux_y,     &
-                                chunks(c)%field%mass_flux_x,    &
-                                chunks(c)%field%mass_flux_y,    &
                                 chunks(c)%field%u,              &
                                 chunks(c)%field%work_array1,    &
                                 fields,                         &
@@ -88,19 +77,8 @@ SUBROUTINE update_halo(fields,depth)
                                 chunks(c)%chunk_neighbours,     &
                                 chunks(c)%field%density0,       &
                                 chunks(c)%field%energy0,        &
-                                chunks(c)%field%pressure,       &
-                                chunks(c)%field%viscosity,      &
-                                chunks(c)%field%soundspeed,     &
                                 chunks(c)%field%density1,       &
                                 chunks(c)%field%energy1,        &
-                                chunks(c)%field%xvel0,          &
-                                chunks(c)%field%yvel0,          &
-                                chunks(c)%field%xvel1,          &
-                                chunks(c)%field%yvel1,          &
-                                chunks(c)%field%vol_flux_x,     &
-                                chunks(c)%field%vol_flux_y,     &
-                                chunks(c)%field%mass_flux_x,    &
-                                chunks(c)%field%mass_flux_y,    &
                                 chunks(c)%field%u,              &
                                 chunks(c)%field%work_array1,    &
                                 fields,                         &

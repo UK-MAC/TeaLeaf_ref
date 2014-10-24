@@ -127,7 +127,7 @@ SUBROUTINE tea_leaf()
         CALL update_halo(fields,1)
 
         ! and globally sum rro
-        call clover_allsum(rro)
+        call tea_allsum(rro)
       ELSE
         IF (use_fortran_kernels) THEN
           CALL tea_leaf_kernel_init(chunks(c)%field%x_min, &
@@ -230,7 +230,7 @@ SUBROUTINE tea_leaf()
                     bb)
             ENDIF
 
-            call clover_allsum(bb)
+            call tea_allsum(bb)
 
             ! initialise 'p' array
             IF(use_fortran_kernels) THEN
@@ -280,7 +280,7 @@ SUBROUTINE tea_leaf()
                     error)
             ENDIF
 
-            call clover_allsum(error)
+            call tea_allsum(error)
 
             it_alpha = eps*bb/(4.0_8*error)
             cn = eigmax/eigmin
@@ -340,7 +340,7 @@ SUBROUTINE tea_leaf()
                       error)
               ENDIF
 
-              call clover_allsum(error)
+              call tea_allsum(error)
             else
               ! dummy to make it go smaller every time but not reach tolerance
               error = 1.0_8/(cheby_calc_steps)
@@ -375,7 +375,7 @@ SUBROUTINE tea_leaf()
                 rx, ry, pw)
           ENDIF
 
-          CALL clover_allsum(pw)
+          CALL tea_allsum(pw)
           alpha = rro/pw
           if(tl_use_chebyshev) cg_alphas(n) = alpha
 
@@ -405,7 +405,7 @@ SUBROUTINE tea_leaf()
                 alpha, rrn)
           ENDIF
 
-          CALL clover_allsum(rrn)
+          CALL tea_allsum(rrn)
           beta = rrn/rro
           if(tl_use_chebyshev) cg_betas(n) = beta
 
@@ -432,7 +432,7 @@ SUBROUTINE tea_leaf()
           error = rrn
           rro = rrn
 
-          CALL clover_allsum(error)
+          CALL tea_allsum(error)
         ELSE
           IF(use_fortran_kernels) THEN
             CALL tea_leaf_kernel_solve(chunks(c)%field%x_min,&
@@ -462,7 +462,7 @@ SUBROUTINE tea_leaf()
                   chunks(c)%field%work_array2)
           ENDIF
 
-          CALL clover_max(error)
+          CALL tea_max(error)
         ENDIF
 
         ! updates u and possibly p
@@ -518,8 +518,8 @@ SUBROUTINE tea_leaf()
   IF(profile_solver) profiler%tea=profiler%tea+(timer()-kernel_time)
 
   IF (profile_solver .and. tl_use_chebyshev) THEN
-    call clover_sum(ch_time)
-    call clover_sum(cg_time)
+    call tea_sum(ch_time)
+    call tea_sum(cg_time)
   endif
   IF (profile_solver .and. parallel%boss .and. tl_use_chebyshev) THEN
     write(0, "(a3, a16, a7, a16, a7)") "", "Time", "Steps", "Per it", "Ratio"

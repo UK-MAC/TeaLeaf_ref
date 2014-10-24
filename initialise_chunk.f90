@@ -21,7 +21,7 @@
 
 SUBROUTINE initialise_chunk(chunk)
 
-  USE clover_module
+  USE tea_module
   USE initialise_chunk_kernel_module
 
   IMPLICIT NONE

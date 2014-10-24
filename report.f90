@@ -22,7 +22,7 @@
 MODULE report_module
 
   USE data_module
-  USE clover_module
+  USE tea_module
  
 CONTAINS
 
@@ -44,14 +44,14 @@ SUBROUTINE report_error(location, error)
   WRITE(*    ,*)
   WRITE(g_out,*)
   WRITE(0    ,*)
-  WRITE(*    ,*) 'CLOVER is terminating.'
+  WRITE(*    ,*) 'TEA is terminating.'
   WRITE(*,    *)
-  WRITE(g_out,*) 'CLOVER is terminating.'
+  WRITE(g_out,*) 'TEA is terminating.'
   WRITE(g_out,*)
-  WRITE(0    ,*) 'CLOVER is terminating.'
+  WRITE(0    ,*) 'TEA is terminating.'
   WRITE(0    ,*)
 
-  CALL clover_abort
+  CALL tea_abort
 
 END SUBROUTINE report_error
 

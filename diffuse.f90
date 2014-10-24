@@ -15,7 +15,7 @@
 ! You should have received a copy of the GNU General Public License along with 
 ! TeaLeaf. If not, see http://www.gnu.org/licenses/.
 
-!>  @brief Controls the main hydro/conduction cycle.
+!>  @brief Controls the main diffusion cycle.
 !>  @author David Beckingsale, Wayne Gaudin
 !>  @details Controls the top level cycle, invoking all the drivers and checks
 !>  for outputs and completion.
@@ -52,7 +52,7 @@ SUBROUTINE diffuse
 
     CALL tea_leaf()
     
-    CALL reset_field()
+    !CALL reset_field()
 
     advect_x = .NOT. advect_x
   
@@ -95,38 +95,29 @@ SUBROUTINE diffuse
         ! adding it up, which always gives over 100%. I think this is because it
         ! does not take into account compute overlaps before syncronisations
         ! caused by halo exhanges.
-        kernel_total=profiler%timestep+profiler%ideal_gas+profiler%viscosity+profiler%PdV          &
-                    +profiler%revert+profiler%acceleration+profiler%flux+profiler%cell_advection   &
-                    +profiler%mom_advection+profiler%reset+profiler%halo_exchange+profiler%summary &
-                    +profiler%visit+profiler%tea+profiler%set_field
-        CALL clover_allgather(kernel_total,totals)
+        kernel_total=profiler%timestep+profiler%halo_exchange+profiler%summary+profiler%visit+profiler%tea+profiler%set_field
+        CALL tea_allgather(kernel_total,totals)
         ! So then what I do is use the individual kernel times for the
         ! maximum kernel time task for the profile print
         loc=MAXLOC(totals)
         kernel_total=totals(loc(1))
-        CALL clover_allgather(profiler%timestep,totals)
+        CALL tea_allgather(profiler%timestep,totals)
         profiler%timestep=totals(loc(1))
-        CALL clover_allgather(profiler%revert,totals)
-        profiler%revert=totals(loc(1))
-        CALL clover_allgather(profiler%reset,totals)
-        profiler%reset=totals(loc(1))
-        CALL clover_allgather(profiler%halo_exchange,totals)
+        CALL tea_allgather(profiler%halo_exchange,totals)
         profiler%halo_exchange=totals(loc(1))
-        CALL clover_allgather(profiler%summary,totals)
+        CALL tea_allgather(profiler%summary,totals)
         profiler%summary=totals(loc(1))
-        CALL clover_allgather(profiler%visit,totals)
+        CALL tea_allgather(profiler%visit,totals)
         profiler%visit=totals(loc(1))
-        CALL clover_allgather(profiler%tea,totals)
+        CALL tea_allgather(profiler%tea,totals)
         profiler%tea=totals(loc(1))
-        CALL clover_allgather(profiler%set_field,totals)
+        CALL tea_allgather(profiler%set_field,totals)
         profiler%set_field=totals(loc(1))
 
         IF ( parallel%boss ) THEN
           WRITE(g_out,*)
           WRITE(g_out,'(a58,2f16.4)')"Profiler Output                 Time            Percentage"
           WRITE(g_out,'(a23,2f16.4)')"Timestep              :",profiler%timestep,100.0*(profiler%timestep/wall_clock)
-          WRITE(g_out,'(a23,2f16.4)')"Revert                :",profiler%revert,100.0*(profiler%revert/wall_clock)
-          WRITE(g_out,'(a23,2f16.4)')"Reset                 :",profiler%reset,100.0*(profiler%reset/wall_clock)
           WRITE(g_out,'(a23,2f16.4)')"Halo Exchange         :",profiler%halo_exchange,100.0*(profiler%halo_exchange/wall_clock)
           WRITE(g_out,'(a23,2f16.4)')"Summary               :",profiler%summary,100.0*(profiler%summary/wall_clock)
           WRITE(g_out,'(a23,2f16.4)')"Visit                 :",profiler%visit,100.0*(profiler%visit/wall_clock)
@@ -137,7 +128,7 @@ SUBROUTINE diffuse
         ENDIF
       ENDIF
 
-      CALL clover_finalize
+      CALL tea_finalize
 
       EXIT
 
