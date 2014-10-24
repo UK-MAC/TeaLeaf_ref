@@ -39,6 +39,9 @@ SUBROUTINE diffuse
 
   timerstart = timer()
 
+  ! copy time level 0 to time level 1
+  CALL set_field()
+
   DO
 
     step_time = timer()
@@ -47,13 +50,9 @@ SUBROUTINE diffuse
 
     CALL timestep()
 
-    ! copy time level 0 to time level 1
-    CALL set_field()
 
     CALL tea_leaf()
     
-    !CALL reset_field()
-
     advect_x = .NOT. advect_x
   
     time = time + dt
