@@ -62,7 +62,6 @@ SUBROUTINE read_input()
   use_fortran_kernels=.TRUE.
   use_C_kernels=.FALSE.
   use_OA_kernels=.FALSE.
-  use_vector_loops=.FALSE.
   coefficient = CONDUCTIVITY
   profiler_on=.FALSE.
   profile_solver=.false.
@@ -183,8 +182,6 @@ SUBROUTINE read_input()
         tl_use_chebyshev = .true.
         tl_use_cg = .false.
         tl_use_jacobi = .false.
-      CASE('use_vector_loops')
-        use_vector_loops=.TRUE.
       CASE('profile_solver')
         profile_solver=.TRUE.
         IF(parallel%boss)WRITE(g_out,"(1x,a25)")'Timing iteration time of linear solver'

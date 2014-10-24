@@ -84,8 +84,6 @@ MODULE definitions_module
    ! number of steps of cg to run to before switching to ch if tl_ch_cg_errswitch not set
    INTEGER      :: tl_ch_cg_presteps
 
-   LOGICAL      :: use_vector_loops ! Some loops work better in serial depending on the hardware
-
    LOGICAL      :: profiler_on ! Internal code profiler to make comparisons across systems easier
 
    ! Profile execution time per iteration of lienar solver.
