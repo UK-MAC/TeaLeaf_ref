@@ -242,7 +242,7 @@ SUBROUTINE tqli(d,e,n, info)
     REAL(KIND=8) :: b,c,dd,f,g,p,r,s
     e(:)=eoshift(e(:),1)
     info = 0
-    do l=1,n
+    DO l=1,n
         iter=0
         iterate: do
             do m=l,n-1
@@ -261,7 +261,7 @@ SUBROUTINE tqli(d,e,n, info)
             s=1.0_8
             c=1.0_8
             p=0.0_8
-            do i=m-1,l,-1
+            DO i=m-1,l,-1
                 f=s*e(i)
                 b=c*e(i)
                 r=SQRT(f**2.0_8+g**2.0_8)
@@ -282,8 +282,8 @@ SUBROUTINE tqli(d,e,n, info)
             d(l)=d(l)-p
             e(l)=g
             e(m)=0.0_8
-        end do iterate
-    end do
+        END DO iterate
+    END DO
 END SUBROUTINE tqli
 
 SUBROUTINE tea_calc_eigenvalues(cg_alphas, cg_betas, eigmin, eigmax, &

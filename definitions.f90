@@ -95,9 +95,9 @@ MODULE definitions_module
      REAL(KIND=8)       :: timestep        &
                           ,visit           &
                           ,summary         &
-                          ,tea             &
                           ,tea_init        &
                           ,tea_solve       &
+                          ,tea_reset       &
                           ,set_field       &
                           ,halo_exchange
                      
