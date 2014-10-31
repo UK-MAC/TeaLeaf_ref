@@ -256,7 +256,7 @@ SUBROUTINE tqli(d,e,n, info)
             endif
             iter=iter+1
             g=(d(l+1)-d(l))/(2.0_8*e(l))
-            r=hypot(g,1.0_8)
+            r=SQRT(g**2.0_8+1.0_8**2.0_8)
             g=d(m)-d(l)+e(l)/(g+sign(r,g))
             s=1.0_8
             c=1.0_8
@@ -264,7 +264,7 @@ SUBROUTINE tqli(d,e,n, info)
             do i=m-1,l,-1
                 f=s*e(i)
                 b=c*e(i)
-                r=hypot(f,g)
+                r=SQRT(f**2.0_8+g**2.0_8)
                 e(i+1)=r
                 if (r == 0.0_8) then
                     d(i+1)=d(i+1)-p
