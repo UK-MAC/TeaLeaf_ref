@@ -41,8 +41,7 @@ MODULE data_module
                              ,CHUNK_TOP    =4    &
                              ,EXTERNAL_FACE=-1
 
-   INTEGER,         PARAMETER :: FIELD_DENSITY0   = 1         &
-                                ,FIELD_DENSITY1   = 2         &
+   INTEGER,         PARAMETER :: FIELD_DENSITY    = 1         &
                                 ,FIELD_ENERGY0    = 3         &
                                 ,FIELD_ENERGY1    = 4         &
                                 ,FIELD_PRESSURE   = 5         &

@@ -56,7 +56,7 @@ SUBROUTINE field_summary()
                                   chunks(c)%field%y_min,                   &
                                   chunks(c)%field%y_max,                   &
                                   chunks(c)%field%volume,                  &
-                                  chunks(c)%field%density0,                &
+                                  chunks(c)%field%density,                 &
                                   chunks(c)%field%energy0,                 &
                                   chunks(c)%field%u,                       &
                                   vol,mass,ie,temp                         )
@@ -70,7 +70,7 @@ SUBROUTINE field_summary()
                                   chunks(c)%field%y_min,                   &
                                   chunks(c)%field%y_max,                   &
                                   chunks(c)%field%volume,                  &
-                                  chunks(c)%field%density0,                &
+                                  chunks(c)%field%density,                 &
                                   chunks(c)%field%energy0,                 &
                                   chunks(c)%field%u,                       &
                                   vol,mass,ie,temp                         )

@@ -34,9 +34,7 @@ SUBROUTINE build_field(chunk,x_cells,y_cells)
    chunks(chunk)%field%x_max=x_cells
    chunks(chunk)%field%y_max=y_cells
 
-   ALLOCATE(chunks(chunk)%field%density0  (chunks(chunk)%field%x_min-2:chunks(chunk)%field%x_max+2, &
-                   chunks(chunk)%field%y_min-2:chunks(chunk)%field%y_max+2))
-   ALLOCATE(chunks(chunk)%field%density1  (chunks(chunk)%field%x_min-2:chunks(chunk)%field%x_max+2, &
+   ALLOCATE(chunks(chunk)%field%density   (chunks(chunk)%field%x_min-2:chunks(chunk)%field%x_max+2, &
                    chunks(chunk)%field%y_min-2:chunks(chunk)%field%y_max+2))
    ALLOCATE(chunks(chunk)%field%energy0   (chunks(chunk)%field%x_min-2:chunks(chunk)%field%x_max+2, &
                    chunks(chunk)%field%y_min-2:chunks(chunk)%field%y_max+2))
@@ -90,8 +88,7 @@ SUBROUTINE build_field(chunk,x_cells,y_cells)
    chunks(chunk)%field%work_array6=0.0
    chunks(chunk)%field%work_array7=0.0
 
-   chunks(chunk)%field%density0=0.0
-   chunks(chunk)%field%density1=0.0
+   chunks(chunk)%field%density=0.0
    chunks(chunk)%field%energy0=0.0
    chunks(chunk)%field%energy1=0.0
    chunks(chunk)%field%u=0.0

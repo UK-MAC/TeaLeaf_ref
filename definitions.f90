@@ -120,7 +120,7 @@ MODULE definitions_module
    INTEGER         :: jdt,kdt
 
    TYPE field_type
-     REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: density0,density1
+     REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: density
      REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: energy0,energy1
      REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: u, u0
      REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: work_array1

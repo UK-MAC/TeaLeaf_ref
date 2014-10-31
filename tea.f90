@@ -262,21 +262,8 @@ SUBROUTINE tea_exchange(fields,depth)
                                  depth, CELL_DATA)
   ENDIF
 
-  IF(fields(FIELD_DENSITY0).EQ.1) THEN
-    CALL tea_exchange_message(parallel%task+1,chunks(parallel%task+1)%field%density0,          &
-                                 chunks(parallel%task+1)%left_snd_buffer,                      &
-                                 chunks(parallel%task+1)%left_rcv_buffer,                      &
-                                 chunks(parallel%task+1)%right_snd_buffer,                     &
-                                 chunks(parallel%task+1)%right_rcv_buffer,                     &
-                                 chunks(parallel%task+1)%bottom_snd_buffer,                    &
-                                 chunks(parallel%task+1)%bottom_rcv_buffer,                    &
-                                 chunks(parallel%task+1)%top_snd_buffer,                       &
-                                 chunks(parallel%task+1)%top_rcv_buffer,                       &
-                                 depth,CELL_DATA)
-  ENDIF
-
-  IF(fields(FIELD_DENSITY1).EQ.1) THEN
-    CALL tea_exchange_message(parallel%task+1,chunks(parallel%task+1)%field%density1,          &
+  IF(fields(FIELD_DENSITY).EQ.1) THEN
+    CALL tea_exchange_message(parallel%task+1,chunks(parallel%task+1)%field%density,           &
                                  chunks(parallel%task+1)%left_snd_buffer,                      &
                                  chunks(parallel%task+1)%left_rcv_buffer,                      &
                                  chunks(parallel%task+1)%right_snd_buffer,                     &

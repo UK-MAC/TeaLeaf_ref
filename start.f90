@@ -122,9 +122,8 @@ SUBROUTINE start
 
   ! Prime all halo data for the first step
   fields=0
-  fields(FIELD_DENSITY0)=1
+  fields(FIELD_DENSITY)=1
   fields(FIELD_ENERGY0)=1
-  fields(FIELD_DENSITY1)=1
   fields(FIELD_ENERGY1)=1
 
   CALL update_halo(fields,2)

@@ -31,7 +31,7 @@ void field_summary_kernel_c_(int *xmin,
                           int *ymin,
                           int *ymax,
                           double *volume,
-                          double *density0,
+                          double *density,
                           double *energy0,
                           double *u,
                           double *vl,
@@ -65,7 +65,7 @@ void field_summary_kernel_c_(int *xmin,
 #pragma ivdep
     for (j=x_min;j<=x_max;j++) {
       cell_vol=volume[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)];
-      cell_mass=cell_vol*density0[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)];
+      cell_mass=cell_vol*density[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)];
       vol=vol+cell_vol;
       mass=mass+cell_mass;
       ie=ie+cell_mass*energy0[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)];
