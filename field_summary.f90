@@ -97,7 +97,8 @@ SUBROUTINE field_summary()
     IF(parallel%boss) THEN
 !$    IF(OMP_GET_THREAD_NUM().EQ.0) THEN
         IF(test_problem.EQ.1) THEN
-          qa_diff=ABS((100.0_8*(temp/ 157.550841837068_8))-100.0_8)
+  ! Note that the "correct" solution is the Jacobi result with IEEE switched on, 1 task, 1 thread, Intel compiler on Ivy Bridge
+          qa_diff=ABS((100.0_8*(temp/157.550841832793_8))-100.0_8)
           WRITE(*,*)"Test problem 1 is within",qa_diff,"% of the expected solution"
           WRITE(g_out,*)"Test problem 1 is within",qa_diff,"% of the expected solution"
           IF(qa_diff.LT.0.001) THEN
@@ -111,6 +112,5 @@ SUBROUTINE field_summary()
 !$    ENDIF
     ENDIF
   ENDIF
-
 
 END SUBROUTINE field_summary

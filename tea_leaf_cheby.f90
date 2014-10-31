@@ -1,4 +1,4 @@
-!cROWn Copyright 2014 AWE.
+!Crown Copyright 2014 AWE.
 !
 ! This file is part of TeaLeaf.
 !
@@ -53,34 +53,33 @@ SUBROUTINE tea_leaf_calc_2norm_kernel(x_min, &
 
 end SUBROUTINE tea_leaf_calc_2norm_kernel
 
-SUBROUTINE tea_leaf_kernel_cheby_init(x_min,             &
+SUBROUTINE tea_leaf_kernel_cheby_init(x_min,  &
                            x_max,             &
                            y_min,             &
                            y_max,             &
-                           u,                &
+                           u,                 &
                            u0,                &
-                           p,                &
-                           r,            &
-                           Mi,            &
-                           w,     &
-                           z,            &
+                           p,                 &
+                           r,                 &
+                           Mi,                &
+                           w,                 &
+                           z,                 &
                            Kx,                &
-                           Ky,  &
-                           ch_alphas, &
-                           ch_betas, &
-                           max_cheby_iters, &
-                           rx, &
-                           ry, &
-                           theta, &
-                           error)
+                           Ky,                &
+                           ch_alphas,         &
+                           ch_betas,          &
+                           max_cheby_iters,   &
+                           rx,                &
+                           ry,                &
+                           theta,             &
+                           error              )
   IMPLICIT NONE
 
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: u
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: u0
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: w
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: p, r, Mi, z
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: Kx, Ky
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: u, u0, p
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+3,y_min-2:y_max+3) :: w
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+3,y_min-2:y_max+3) :: r, Mi, z
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+3,y_min-2:y_max+3) :: Kx, Ky
 
   INTEGER :: j,k, max_cheby_iters
   REAL(KIND=8) ::  rx, ry, error, theta
@@ -112,34 +111,33 @@ SUBROUTINE tea_leaf_kernel_cheby_init(x_min,             &
 
 END SUBROUTINE
 
-SUBROUTINE tea_leaf_kernel_cheby_iterate(x_min,             &
-                           x_max,             &
-                           y_min,             &
-                           y_max,             &
-                           u,                &
-                           u0,                &
-                           p,                &
-                           r,            &
-                           Mi,            &
-                           w,     &
-                           z,            &
-                           Kx,                &
-                           Ky,  &
-                           ch_alphas, &
-                           ch_betas, &
-                           max_cheby_iters, &
-                           rx, &
-                           ry, &
-                           step)
+SUBROUTINE tea_leaf_kernel_cheby_iterate(x_min, &
+                           x_max,               &
+                           y_min,               &
+                           y_max,               &
+                           u,                   &
+                           u0,                  &
+                           p,                   &
+                           r,                   &
+                           Mi,                  &
+                           w                ,   &
+                           z,                   &
+                           Kx,                  &
+                           Ky,                  &
+                           ch_alphas,           &
+                           ch_betas,            &
+                           max_cheby_iters,     &
+                           rx,                  &
+                           ry,                  &
+                           step                 )
 
   IMPLICIT NONE
 
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: u
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: u0
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: w
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: p, r, Mi, z
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: Kx, Ky
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: u, u0, p
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+3,y_min-2:y_max+3) :: w
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+3,y_min-2:y_max+3) :: r, Mi, z
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+3,y_min-2:y_max+3) :: Kx, Ky
 
   INTEGER :: j,k
 
@@ -174,7 +172,7 @@ SUBROUTINE tea_leaf_kernel_cheby_iterate(x_min,             &
 
 END SUBROUTINE tea_leaf_kernel_cheby_iterate
 
-SUBROUTINE tea_leaf_kernel_cheby_copy_u(x_min,             &
+SUBROUTINE tea_leaf_kernel_cheby_copy_u(x_min,&
                            x_max,             &
                            y_min,             &
                            y_max,             &
@@ -197,23 +195,23 @@ SUBROUTINE tea_leaf_kernel_cheby_copy_u(x_min,             &
 
 end SUBROUTINE
 
-SUBROUTINE tea_leaf_kernel_cheby_reset_Mi(x_min,             &
-                           x_max,             &
-                           y_min,             &
-                           y_max,             &
-                           p,           & ! 1
-                           r,           & ! 2
-                           Mi,          & ! 3
-                           z,           & ! 5
-                           rro)
+SUBROUTINE tea_leaf_kernel_cheby_reset_Mi(x_min,&
+                           x_max,               &
+                           y_min,               &
+                           y_max,               &
+                           p,                   & ! 1
+                           r,                   & ! 2
+                           Mi,                  & ! 3
+                           z,                   & ! 5
+                           rro                  )
 
   IMPLICIT NONE
 
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: p
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: r
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: Mi
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: z
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+3,y_min-2:y_max+3) :: r
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+3,y_min-2:y_max+3) :: Mi
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+3,y_min-2:y_max+3) :: z
 
   INTEGER(KIND=4) :: j,k
 

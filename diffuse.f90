@@ -39,6 +39,8 @@ SUBROUTINE diffuse
 
   timerstart = timer()
 
+  second_step=0.0 ! In order to prevent unused error
+
   ! copy time level 0 to time level 1
   CALL set_field()
 

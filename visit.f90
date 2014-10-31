@@ -104,7 +104,7 @@ SUBROUTINE visit
       WRITE(u,'(a)')'Z_COORDINATES 1 double'
       WRITE(u,'(a)')'0'
       WRITE(u,'(a,i20)')'CELL_DATA ',nxc*nyc
-      WRITE(u,'(a)')'FIELD FieldData 5'
+      WRITE(u,'(a)')'FIELD FieldData 3'
       WRITE(u,'(a,i20,a)')'density 1 ',nxc*nyc,' double'
       DO k=chunks(c)%field%y_min,chunks(c)%field%y_max
         WRITE(u,'(e12.4)')(chunks(c)%field%density0(j,k),j=chunks(c)%field%x_min,chunks(c)%field%x_max)

@@ -98,6 +98,8 @@ MODULE definitions_module
                           ,visit           &
                           ,summary         &
                           ,tea             &
+                          ,tea_init        &
+                          ,tea_solve       &
                           ,set_field       &
                           ,halo_exchange
                      

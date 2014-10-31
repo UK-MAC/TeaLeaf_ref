@@ -91,6 +91,8 @@ SUBROUTINE initialise
       WRITE(out_unit,'(A)')'end_step=10'
       WRITE(out_unit,'(A)')'tl_max_iters=1000'
       WRITE(out_unit,'(A)')' test_problem 1'
+      WRITE(out_unit,'(A)')'tl_use_jacobi'
+      WRITE(out_unit,'(A)')'tl_eps=1.0e-15'
       WRITE(out_unit,'(A)')'*endtea'
       CLOSE(out_unit)
       uin=get_unit(dummy)

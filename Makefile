@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License along with 
 # TeaLeaf. If not, see http://www.gnu.org/licenses/.
 
-#  @brief Makefile for TeaLeaf
+#  @brief Makefile for CloverLeaf
 #  @author David Beckingsale, Wayne Gaudin
 #  @details Agnostic, platform independent makefile for the TeaLeaf benchmark code.
 
