@@ -111,8 +111,6 @@ SUBROUTINE start
     ENDIF
   ENDDO
 
-  advect_x=.TRUE.
-
   CALL tea_barrier
 
   ! Do no profile the start up costs otherwise the total times will not add up

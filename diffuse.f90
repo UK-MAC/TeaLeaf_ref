@@ -52,11 +52,8 @@ SUBROUTINE diffuse
 
     CALL timestep()
 
-
     CALL tea_leaf()
     
-    advect_x = .NOT. advect_x
-  
     time = time + dt
 
     IF(summary_frequency.NE.0) THEN

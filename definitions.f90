@@ -59,8 +59,6 @@ MODULE definitions_module
 
    INTEGER      :: step
 
-   LOGICAL      :: advect_x
-
    INTEGER      :: error_condition
 
    INTEGER      :: test_problem
