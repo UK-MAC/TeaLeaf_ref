@@ -82,7 +82,6 @@ MODULE data_module
    INTEGER         ::            CONDUCTIVITY        = 1 &
                                 ,RECIP_CONDUCTIVITY  = 2
 
-
    TYPE parallel_type
       LOGICAL           ::      parallel &
                                ,boss
@@ -91,9 +90,9 @@ MODULE data_module
                                ,boss_task
 
    END TYPE parallel_type
-   
+
    TYPE(parallel_type) :: parallel
-     
+
    INTEGER,        PARAMETER ::g_len_max=500
 
 END MODULE data_module

@@ -96,8 +96,12 @@ SUBROUTINE tea_leaf_kernel_cheby_init(x_min,             &
                 - ry*(Ky(j, k+1)*u(j, k+1) + Ky(j, k)*u(j, k-1))  &
                 - rx*(Kx(j+1, k)*u(j+1, k) + Kx(j, k)*u(j-1, k))
             r(j, k) = u0(j, k) - w(j, k)
-            !z(j, k) = Mi(j, k)*r(j, k)
-          p(j, k) = (Mi(j, k)*r(j, k))/theta
+
+#if defined(USE_PRECONDITIONER)
+            p(j, k) = (Mi(j, k)*r(j, k))/theta
+#else
+            p(j, k) = r(j, k)/theta
+#endif
         ENDDO
     ENDDO
 !$OMP END DO
@@ -158,8 +162,11 @@ SUBROUTINE tea_leaf_kernel_cheby_iterate(x_min,             &
                 - ry*(Ky(j, k+1)*u(j, k+1) + Ky(j, k)*u(j, k-1))  &
                 - rx*(Kx(j+1, k)*u(j+1, k) + Kx(j, k)*u(j-1, k))
             r(j, k) = u0(j, k) - w(j, k)
-            !z(j, k) = Mi(j, k)*r(j, k)
+#if defined(USE_PRECONDITIONER)
             p(j, k) = ch_alphas(step)*p(j, k) + ch_betas(step)*Mi(j, k)*r(j, k)
+#else
+            p(j, k) = ch_alphas(step)*p(j, k) + ch_betas(step)*r(j, k)
+#endif
         ENDDO
     ENDDO
 !$OMP END DO
@@ -190,45 +197,6 @@ SUBROUTINE tea_leaf_kernel_cheby_copy_u(x_min,             &
     DO k=y_min,y_max
         DO j=x_min,x_max
             u0(j, k) = u(j, k)
-        ENDDO
-    ENDDO
-!$OMP END DO
-!$OMP END PARALLEL
-
-end SUBROUTINE
-
-SUBROUTINE tea_leaf_kernel_cheby_reset_Mi(x_min,             &
-                           x_max,             &
-                           y_min,             &
-                           y_max,             &
-                           p,           & ! 1
-                           r,           & ! 2
-                           Mi,          & ! 3
-                           z,           & ! 5
-                           rro)
-
-  IMPLICIT NONE
-
-  INTEGER(KIND=4):: x_min,x_max,y_min,y_max
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: p
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: r
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: Mi
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: z
-
-  INTEGER(KIND=4) :: j,k
-
-  REAL(kind=8) :: rro
-
-!$OMP PARALLEL
-!$OMP DO REDUCTION(+:rro)
-    DO k=y_min,y_max
-        DO j=x_min,x_max
-            Mi(j, k) = 1.0_8
-
-            z(j, k) = r(j, k)
-            p(j, k) = r(j, k)
-
-            rro = rro + r(j, k)*r(j, k);
         ENDDO
     ENDDO
 !$OMP END DO

@@ -119,6 +119,7 @@ SUBROUTINE tea_leaf_kernel_init_cg_fortran(x_min,             &
 
             r(j, k) = u(j, k) - w(j, k)
 
+#if defined(USE_PRECONDITIONER)
             ! inverse diagonal used as preconditioner
             Mi(j, k) = (1.0_8                                     &
                 + ry*(Ky(j, k+1) + Ky(j, k))                      &
@@ -127,8 +128,11 @@ SUBROUTINE tea_leaf_kernel_init_cg_fortran(x_min,             &
 
             z(j, k) = Mi(j, k)*r(j, k)
             p(j, k) = z(j, k)
+#else
+            p(j, k) = r(j, k)
+#endif
 
-            rro = rro + r(j, k)*z(j, k);
+            rro = rro + r(j, k)*p(j, k);
         ENDDO
     ENDDO
 !$OMP END DO
@@ -215,9 +219,12 @@ SUBROUTINE tea_leaf_kernel_solve_cg_fortran_calc_ur(x_min,             &
         DO j=x_min,x_max
             u(j, k) = u(j, k) + alpha*p(j, k)
             r(j, k) = r(j, k) - alpha*w(j, k)
+#if defined(USE_PRECONDITIONER)
             z(j, k) = Mi(j, k)*r(j, k)
-
             rrn = rrn + r(j, k)*z(j, k)
+#else
+            rrn = rrn + r(j, k)*r(j, k)
+#endif
         ENDDO
     ENDDO
 !$OMP END DO
@@ -250,7 +257,11 @@ SUBROUTINE tea_leaf_kernel_solve_cg_fortran_calc_p(x_min,             &
 !$OMP DO
     DO k=y_min,y_max
         DO j=x_min,x_max
+#if defined(USE_PRECONDITIONER)
             p(j, k) = z(j, k) + beta*p(j, k)
+#else
+            p(j, k) = r(j, k) + beta*p(j, k)
+#endif
         ENDDO
     ENDDO
 !$OMP END DO

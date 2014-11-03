@@ -35,7 +35,7 @@ SUBROUTINE set_field()
   REAL(KIND=8) :: kernel_time,timer
 
   IF(profiler_on) kernel_time=timer()
-  DO c=1,number_of_chunks
+  DO c=1,chunks_per_task
 
     IF(chunks(c)%task.EQ.parallel%task) THEN
 

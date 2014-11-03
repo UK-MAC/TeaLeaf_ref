@@ -35,7 +35,7 @@ SUBROUTINE update_halo(fields,depth)
 
   CALL tea_exchange(fields,depth)
 
-  DO c=1,number_of_chunks
+  DO c=1,chunks_per_task
 
     IF(chunks(c)%task.EQ.parallel%task) THEN
 
@@ -59,6 +59,7 @@ SUBROUTINE update_halo(fields,depth)
                                 chunks(c)%field%energy1,        &
                                 chunks(c)%field%u,              &
                                 chunks(c)%field%work_array1,    &
+                                chunks(c)%field%work_array8,    &
                                 fields,                         &
                                 depth                           )
       ELSEIF(use_C_kernels)THEN

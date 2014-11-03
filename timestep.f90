@@ -44,7 +44,7 @@ SUBROUTINE timestep()
 !$ INTEGER :: OMP_GET_THREAD_NUM
 
   IF(profiler_on) kernel_time=timer()
-  DO c = 1, number_of_chunks
+  DO c = 1, chunks_per_task
     CALL calc_dt(c,dtlp)
 
     IF(dtlp.LE.dt) THEN

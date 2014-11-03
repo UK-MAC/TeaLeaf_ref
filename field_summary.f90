@@ -49,7 +49,7 @@ SUBROUTINE field_summary()
 
   IF(profiler_on) kernel_time=timer()
   IF(use_fortran_kernels)THEN
-    DO c=1,number_of_chunks
+    DO c=1,chunks_per_task
       IF(chunks(c)%task.EQ.parallel%task) THEN
         CALL field_summary_kernel(chunks(c)%field%x_min,                   &
                                   chunks(c)%field%x_max,                   &
