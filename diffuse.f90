@@ -39,6 +39,8 @@ SUBROUTINE diffuse
 
   timerstart = timer()
 
+  second_step=0.0 ! In order to prevent unused error
+
   ! copy time level 0 to time level 1
   CALL set_field()
 
@@ -50,11 +52,8 @@ SUBROUTINE diffuse
 
     CALL timestep()
 
-
     CALL tea_leaf()
     
-    advect_x = .NOT. advect_x
-  
     time = time + dt
 
     IF(summary_frequency.NE.0) THEN
@@ -94,7 +93,7 @@ SUBROUTINE diffuse
         ! adding it up, which always gives over 100%. I think this is because it
         ! does not take into account compute overlaps before syncronisations
         ! caused by halo exhanges.
-        kernel_total=profiler%timestep+profiler%halo_exchange+profiler%summary+profiler%visit+profiler%tea+profiler%set_field
+        kernel_total=profiler%timestep+profiler%halo_exchange+profiler%summary+profiler%visit+profiler%tea_init+profiler%set_field
         CALL tea_allgather(kernel_total,totals)
         ! So then what I do is use the individual kernel times for the
         ! maximum kernel time task for the profile print
@@ -108,8 +107,8 @@ SUBROUTINE diffuse
         profiler%summary=totals(loc(1))
         CALL tea_allgather(profiler%visit,totals)
         profiler%visit=totals(loc(1))
-        CALL tea_allgather(profiler%tea,totals)
-        profiler%tea=totals(loc(1))
+        CALL tea_allgather(profiler%tea_init,totals)
+        profiler%tea_init=totals(loc(1))
         CALL tea_allgather(profiler%set_field,totals)
         profiler%set_field=totals(loc(1))
 
@@ -120,7 +119,7 @@ SUBROUTINE diffuse
           WRITE(g_out,'(a23,2f16.4)')"Halo Exchange         :",profiler%halo_exchange,100.0*(profiler%halo_exchange/wall_clock)
           WRITE(g_out,'(a23,2f16.4)')"Summary               :",profiler%summary,100.0*(profiler%summary/wall_clock)
           WRITE(g_out,'(a23,2f16.4)')"Visit                 :",profiler%visit,100.0*(profiler%visit/wall_clock)
-          WRITE(g_out,'(a23,2f16.4)')"Tea                   :",profiler%tea,100.0*(profiler%tea/wall_clock)
+          WRITE(g_out,'(a23,2f16.4)')"Tea Init              :",profiler%tea_init,100.0*(profiler%tea_init/wall_clock)
           WRITE(g_out,'(a23,2f16.4)')"Set Field             :",profiler%set_field,100.0*(profiler%set_field/wall_clock)
           WRITE(g_out,'(a23,2f16.4)')"Total                 :",kernel_total,100.0*(kernel_total/wall_clock)
           WRITE(g_out,'(a23,2f16.4)')"The Rest              :",wall_clock-kernel_total,100.0*(wall_clock-kernel_total)/wall_clock

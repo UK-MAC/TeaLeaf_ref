@@ -35,7 +35,7 @@ void generate_chunk_kernel_c_(int *xmin,int *xmax,int *ymin,int *ymax,
                               double *vertexy,
                               double *cellx,
                               double *celly,
-                              double *density0,
+                              double *density,
                               double *energy0,
                               double *u0,
                               int *nmbr_f_stts,
@@ -81,7 +81,7 @@ void generate_chunk_kernel_c_(int *xmin,int *xmax,int *ymin,int *ymax,
   for (k=y_min-2;k<=y_max+2;k++) {
 #pragma ivdep
     for (j=x_min-2;j<=x_max+2;j++) {
-      density0[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)]=state_density[FTNREF1D(1,1)];
+      density[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)]=state_density[FTNREF1D(1,1)];
    }
   }
 
@@ -97,19 +97,19 @@ void generate_chunk_kernel_c_(int *xmin,int *xmax,int *ymin,int *ymax,
         if(state_geometry[FTNREF1D(state,1)]==g_rect ) {
           if(vertexx[FTNREF1D(j+1,x_min-2)]>=state_xmin[FTNREF1D(state,1)] && vertexx[FTNREF1D(j,x_min-2)]<state_xmax[FTNREF1D(state,1)]) {
             if(vertexy[FTNREF1D(k+1,y_min-2)]>=state_ymin[FTNREF1D(state,1)] && vertexy[FTNREF1D(k,y_min-2)]<state_ymax[FTNREF1D(state,1)]) {
-              density0[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)]=state_density[FTNREF1D(state,1)];
+              density[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)]=state_density[FTNREF1D(state,1)];
               energy0[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)]=state_energy[FTNREF1D(state,1)];
             }
           }
 	}else if(state_geometry[FTNREF1D(state,1)]==g_circ ) {
           radius=sqrt((cellx[FTNREF1D(j,x_min-2)]-x_cent)*(cellx[FTNREF1D(j,x_min-2)]-x_cent)+(celly[FTNREF1D(k,y_min-2)]-y_cent)*(celly[FTNREF1D(k,y_min-2)]-y_cent));
           if(radius<=state_radius[FTNREF1D(state,1)]) {
-            density0[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)]=state_density[FTNREF1D(state,1)];
+            density[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)]=state_density[FTNREF1D(state,1)];
             energy0[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)]=state_density[FTNREF1D(state,1)];
           }
 	}else if(state_geometry[FTNREF1D(state,1)]==g_point) {
           if(vertexx[FTNREF1D(j,x_min-2)]==x_cent && vertexy[FTNREF1D(j,x_min-2)]==y_cent) {
-            density0[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)]=state_density[FTNREF1D(state,1)];
+            density[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)]=state_density[FTNREF1D(state,1)];
             energy0[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)]=state_density[FTNREF1D(state,1)];
 	  }
 	}
@@ -122,7 +122,7 @@ void generate_chunk_kernel_c_(int *xmin,int *xmax,int *ymin,int *ymax,
   for (k=y_min-1;k<=y_max+1;k++) {
 #pragma ivdep
     for (j=x_min-1;j<=x_max+1;j++) {
-      u0[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)]=energy0[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)]*density0[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)];
+      u0[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)]=energy0[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)]*density[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)];
     }
   }
 

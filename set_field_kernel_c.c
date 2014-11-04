@@ -28,8 +28,6 @@
 #include <math.h>
 
 void set_field_kernel_c_(int *xmin,int *xmax,int *ymin,int *ymax,
-                        double *density0,
-                        double *density1,
                         double *energy0,
                         double *energy1)
 {
@@ -42,13 +40,6 @@ void set_field_kernel_c_(int *xmin,int *xmax,int *ymin,int *ymax,
   
 #pragma omp parallel
  {
-#pragma omp for private(j)
-  for (k=y_min;k<=y_max;k++) {
-#pragma ivdep
-    for (j=x_min;j<=x_max;j++) {
-      density1[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)]=density0[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)];
-    }
-  }
 #pragma omp for private(j)
   for (k=y_min;k<=y_max;k++) {
 #pragma ivdep

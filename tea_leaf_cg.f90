@@ -25,23 +25,23 @@ IMPLICIT NONE
 
 CONTAINS
 
-SUBROUTINE tea_leaf_kernel_init_cg_fortran(x_min,             &
-                           x_max,             &
-                           y_min,             &
-                           y_max,             &
-                           density,           &
-                           energy,            &
-                           u,                 &
-                           p,           & ! 1
-                           r,           & ! 2
-                           Mi,          & ! 3
-                           w,           & ! 4
-                           z,           & ! 5
-                           Kx,          & ! 6
-                           Ky,          & ! 7
-                           rx,          &
-                           ry,          &
-                           rro,         &
+SUBROUTINE tea_leaf_kernel_init_cg_fortran(x_min,  &
+                           x_max,                  &
+                           y_min,                  &
+                           y_max,                  &
+                           density,                &
+                           energy,                 &
+                           u,                      &
+                           p,                      & ! 1
+                           r,                      & ! 2
+                           Mi,                     & ! 3
+                           w,                      & ! 4
+                           z,                      & ! 5
+                           Kx,                     & ! 6
+                           Ky,                     & ! 7
+                           rx,                     &
+                           ry,                     &
+                           rro,                    &
                            coef)
 
   IMPLICIT NONE
@@ -51,12 +51,12 @@ SUBROUTINE tea_leaf_kernel_init_cg_fortran(x_min,             &
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: energy
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: u
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: p
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: r
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: Mi
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: w
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: z
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: Kx
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: Ky
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+3,y_min-2:y_max+3) :: r
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+3,y_min-2:y_max+3) :: Mi
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+3,y_min-2:y_max+3) :: w
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+3,y_min-2:y_max+3) :: z
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+3,y_min-2:y_max+3) :: Kx
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+3,y_min-2:y_max+3) :: Ky
 
   INTEGER(KIND=4) :: coef
   INTEGER(KIND=4) :: j,k,n
@@ -141,24 +141,24 @@ SUBROUTINE tea_leaf_kernel_init_cg_fortran(x_min,             &
 END SUBROUTINE tea_leaf_kernel_init_cg_fortran
 
 SUBROUTINE tea_leaf_kernel_solve_cg_fortran_calc_w(x_min,             &
-                           x_max,             &
-                           y_min,             &
-                           y_max,             &
-                           p,            &
-                           w,     &
-                           Kx,  &
-                           Ky,            &
-                           rx, &
-                           ry, &
-                           pw)
+                                                   x_max,             &
+                                                   y_min,             &
+                                                   y_max,             &
+                                                   p,                 &
+                                                   w,                 &
+                                                   Kx,                &
+                                                   Ky,                &
+                                                   rx,                &
+                                                   ry,                &
+                                                   pw                 )
 
   IMPLICIT NONE
 
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: p
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: w
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: Kx
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: Ky
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+3,y_min-2:y_max+3) :: w
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+3,y_min-2:y_max+3) :: Kx
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+3,y_min-2:y_max+3) :: Ky
 
     REAL(KIND=8) ::  rx, ry
 
@@ -186,27 +186,27 @@ SUBROUTINE tea_leaf_kernel_solve_cg_fortran_calc_w(x_min,             &
 END SUBROUTINE tea_leaf_kernel_solve_cg_fortran_calc_w
 
 SUBROUTINE tea_leaf_kernel_solve_cg_fortran_calc_ur(x_min,             &
-                           x_max,             &
-                           y_min,             &
-                           y_max,             &
-                           u,                &
-                           p,            &
-                           r,            &
-                           Mi,                &
-                           w,     &
-                           z,     &
-                           alpha, &
-                           rrn)
+                                                    x_max,             &
+                                                    y_min,             &
+                                                    y_max,             &
+                                                    u,                 &
+                                                    p,                 &
+                                                    r,                 &
+                                                    Mi,                &
+                                                    w,                 &
+                                                    z,                 &
+                                                    alpha,             &
+                                                    rrn                )
 
   IMPLICIT NONE
 
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: u
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: p
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: r
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: Mi
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: w
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: z
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+3,y_min-2:y_max+3) :: r
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+3,y_min-2:y_max+3) :: Mi
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+3,y_min-2:y_max+3) :: w
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+3,y_min-2:y_max+3) :: z
 
     INTEGER(KIND=4) :: j,k,n
     REAL(kind=8) :: alpha, rrn
@@ -233,20 +233,20 @@ SUBROUTINE tea_leaf_kernel_solve_cg_fortran_calc_ur(x_min,             &
 END SUBROUTINE tea_leaf_kernel_solve_cg_fortran_calc_ur
 
 SUBROUTINE tea_leaf_kernel_solve_cg_fortran_calc_p(x_min,             &
-                           x_max,             &
-                           y_min,             &
-                           y_max,             &
-                           p,            &
-                           r,            &
-                           z,     &
-                           beta)
+                                                   x_max,             &
+                                                   y_min,             &
+                                                   y_max,             &
+                                                   p,                 &
+                                                   r,                 &
+                                                   z,                 &
+                                                   beta               )
 
   IMPLICIT NONE
 
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: p
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: r
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: z
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+3,y_min-2:y_max+3) :: r
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+3,y_min-2:y_max+3) :: z
 
     REAL(kind=8) :: error
 

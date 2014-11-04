@@ -33,9 +33,8 @@ void update_halo_kernel_c_(int *xmin,int *xmax,int *ymin,int *ymax,
                         int *lft,int *bttm,int *rght,int *tp,
                         int *lft_bndry,int *bttm_bndry,int *rght_bndry,int *tp_bndry,
                         int *chunk_neighbours,
-                        double *density0,
+                        double *density,
                         double *energy0,
-                        double *density1,
                         double *energy1,
                         double *u,
                         double *p,
@@ -60,8 +59,7 @@ void update_halo_kernel_c_(int *xmin,int *xmax,int *ymin,int *ymax,
   /* These need to be kept consistent with the data module to avoid use statement */
   int CHUNK_LEFT=1,CHUNK_RIGHT=2,CHUNK_BOTTOM=3,CHUNK_TOP=4,EXTERNAL_FACE=-1;
 
-  int FIELD_DENSITY0   = 1;
-  int FIELD_DENSITY1   = 2;
+  int FIELD_DENSITY    = 1;
   int FIELD_ENERGY0    = 3;
   int FIELD_ENERGY1    = 4;
   int FIELD_U          =16;
@@ -74,13 +72,13 @@ void update_halo_kernel_c_(int *xmin,int *xmax,int *ymin,int *ymax,
 
 #pragma omp parallel
  {
-  if(fields[FTNREF1D(FIELD_DENSITY0,1)]==1) {
+  if(fields[FTNREF1D(FIELD_DENSITY,1)]==1) {
     if(chunk_neighbours[FTNREF1D(CHUNK_BOTTOM,1)]==EXTERNAL_FACE) {
 #pragma omp for private(j,k)
       for (j=x_min-depth;j<=x_max+depth;j++) {
 #pragma ivdep
         for (k=1;k<=depth;k++) {
-          density0[FTNREF2D(j  ,1-k,x_max+4,x_min-2,y_min-2)]=density0[FTNREF2D(j  ,0+k,x_max+4,x_min-2,y_min-2)];
+          density[FTNREF2D(j  ,1-k,x_max+4,x_min-2,y_min-2)]=density[FTNREF2D(j  ,0+k,x_max+4,x_min-2,y_min-2)];
 	}
       }
     }
@@ -90,7 +88,7 @@ void update_halo_kernel_c_(int *xmin,int *xmax,int *ymin,int *ymax,
       for (j=x_min-depth;j<=x_max+depth;j++) {
 #pragma ivdep
         for (k=1;k<=depth;k++) {
-          density0[FTNREF2D(j  ,y_max+k,x_max+4,x_min-2,y_min-2)]=density0[FTNREF2D(j  ,y_max+1-k,x_max+4,x_min-2,y_min-2)];
+          density[FTNREF2D(j  ,y_max+k,x_max+4,x_min-2,y_min-2)]=density[FTNREF2D(j  ,y_max+1-k,x_max+4,x_min-2,y_min-2)];
 	}
       }
     }
@@ -100,7 +98,7 @@ void update_halo_kernel_c_(int *xmin,int *xmax,int *ymin,int *ymax,
       for (k=y_min-depth;k<=y_max+depth;k++) {
 #pragma ivdep
         for (j=1;j<=depth;j++) {
-          density0[FTNREF2D(1-j,k,x_max+4,x_min-2,y_min-2)]=density0[FTNREF2D(0+j,k,x_max+4,x_min-2,y_min-2)];
+          density[FTNREF2D(1-j,k,x_max+4,x_min-2,y_min-2)]=density[FTNREF2D(0+j,k,x_max+4,x_min-2,y_min-2)];
         }
       }
     }
@@ -110,49 +108,7 @@ void update_halo_kernel_c_(int *xmin,int *xmax,int *ymin,int *ymax,
       for (k=y_min-depth;k<=y_max+depth;k++) {
 #pragma ivdep
         for (j=1;j<=depth;j++) {
-          density0[FTNREF2D(x_max+j,k,x_max+4,x_min-2,y_min-2)]=density0[FTNREF2D(x_max+1-j,k,x_max+4,x_min-2,y_min-2)];
-	}
-      }
-    }
-  }
-
-  if(fields[FTNREF1D(FIELD_DENSITY1,1)]==1) {
-    if(chunk_neighbours[FTNREF1D(CHUNK_BOTTOM,1)]==EXTERNAL_FACE) {
-#pragma omp for private(j,k)
-      for (j=x_min-depth;j<=x_max+depth;j++) {
-#pragma ivdep
-        for (k=1;k<=depth;k++) {
-          density1[FTNREF2D(j  ,1-k,x_max+4,x_min-2,y_min-2)]=density1[FTNREF2D(j  ,0+k,x_max+4,x_min-2,y_min-2)];
-	}
-      }
-    }
-
-    if(chunk_neighbours[FTNREF1D(CHUNK_TOP,1)]==EXTERNAL_FACE) {
-#pragma omp for private(j,k)
-      for (j=x_min-depth;j<=x_max+depth;j++) {
-#pragma ivdep
-        for (k=1;k<=depth;k++) {
-          density1[FTNREF2D(j  ,y_max+k,x_max+4,x_min-2,y_min-2)]=density1[FTNREF2D(j  ,y_max+1-k,x_max+4,x_min-2,y_min-2)];
-	}
-      }
-    }
-
-    if(chunk_neighbours[FTNREF1D(CHUNK_LEFT,1)]==EXTERNAL_FACE) {
-#pragma omp for private(j,k)
-      for (k=y_min-depth;k<=y_max+depth;k++) {
-#pragma ivdep
-        for (j=1;j<=depth;j++) {
-          density1[FTNREF2D(1-j,k,x_max+4,x_min-2,y_min-2)]=density1[FTNREF2D(0+j,k,x_max+4,x_min-2,y_min-2)];
-        }
-      }
-    }
-
-    if(chunk_neighbours[FTNREF1D(CHUNK_RIGHT,1)]==EXTERNAL_FACE) {
-#pragma omp for private(j,k)
-      for (k=y_min-depth;k<=y_max+depth;k++) {
-#pragma ivdep
-        for (j=1;j<=depth;j++) {
-          density1[FTNREF2D(x_max+j,k,x_max+4,x_min-2,y_min-2)]=density1[FTNREF2D(x_max+1-j,k,x_max+4,x_min-2,y_min-2)];
+          density[FTNREF2D(x_max+j,k,x_max+4,x_min-2,y_min-2)]=density[FTNREF2D(x_max+1-j,k,x_max+4,x_min-2,y_min-2)];
 	}
       }
     }

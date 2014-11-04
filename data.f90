@@ -41,8 +41,7 @@ MODULE data_module
                              ,CHUNK_TOP    =4    &
                              ,EXTERNAL_FACE=-1
 
-   INTEGER,         PARAMETER :: FIELD_DENSITY0   = 1         &
-                                ,FIELD_DENSITY1   = 2         &
+   INTEGER,         PARAMETER :: FIELD_DENSITY    = 1         &
                                 ,FIELD_ENERGY0    = 3         &
                                 ,FIELD_ENERGY1    = 4         &
                                 ,FIELD_PRESSURE   = 5         &
@@ -58,7 +57,8 @@ MODULE data_module
                                 ,FIELD_MASS_FLUX_Y=15         &
                                 ,FIELD_U          =16         &
                                 ,FIELD_P          =17         &
-                                ,NUM_FIELDS       =17
+                                ,FIELD_SD         =18         &
+                                ,NUM_FIELDS       =18
 
    INTEGER,         PARAMETER :: CELL_DATA     = 1,        &
                                  VERTEX_DATA   = 2,        &
@@ -94,5 +94,8 @@ MODULE data_module
    TYPE(parallel_type) :: parallel
 
    INTEGER,        PARAMETER ::g_len_max=500
+   INTEGER,        PARAMETER ::chunks_per_task=1
+
+   INTEGER                   ::lr_pack_buffer_size,bt_pack_buffer_size
 
 END MODULE data_module

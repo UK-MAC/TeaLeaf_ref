@@ -26,26 +26,13 @@ CONTAINS
 SUBROUTINE calc_dt(chunk,local_dt)
 
   USE tea_module
-  USE calc_dt_kernel_module
 
   IMPLICIT NONE
 
   INTEGER          :: chunk
   REAL(KIND=8)     :: local_dt
 
-  local_dt=dtinit
-
-  IF(chunks(chunk)%task.NE.parallel%task) RETURN
-
-  IF(use_fortran_kernels)THEN
-
-    CALL calc_dt_kernel(local_dt)
-
-  ELSEIF(use_C_kernels)THEN
-
-    CALL calc_dt_kernel_c(local_dt)
-
-  ENDIF 
+  local_dt = dtinit
 
 END SUBROUTINE calc_dt
 

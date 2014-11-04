@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License along with 
 # TeaLeaf. If not, see http://www.gnu.org/licenses/.
 
-#  @brief Makefile for CloverLeaf
+#  @brief Makefile for TeaLeaf
 #  @author David Beckingsale, Wayne Gaudin
 #  @details Agnostic, platform independent makefile for the TeaLeaf benchmark code.
 
@@ -152,6 +152,7 @@ tea_leaf: c_lover *.f90 Makefile
 	tea_leaf_jacobi.f90             \
 	tea_leaf_cg.f90             	\
 	tea_leaf_cheby.f90             	\
+	tea_leaf_ppcg.f90             	\
 	tea_solve.f90                   \
 	visit.f90			\
 	tea_leaf.f90			\

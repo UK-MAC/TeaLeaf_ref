@@ -32,7 +32,7 @@ SUBROUTINE generate_chunk_kernel(x_min,x_max,y_min,y_max, &
                                  vertexy,                 &
                                  cellx,                   &
                                  celly,                   &
-                                 density0,                &
+                                 density,                 &
                                  energy0,                 &
                                  u0,                      &
                                  number_of_states,        &
@@ -56,7 +56,7 @@ SUBROUTINE generate_chunk_kernel(x_min,x_max,y_min,y_max, &
   REAL(KIND=8), DIMENSION(y_min-2:y_max+3) :: vertexdy
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2) :: cellx
   REAL(KIND=8), DIMENSION(y_min-2:y_max+2) :: celly
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: density0,energy0
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: density,energy0
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: u0
   INTEGER      :: number_of_states
   REAL(KIND=8), DIMENSION(number_of_states) :: state_density
@@ -89,7 +89,7 @@ SUBROUTINE generate_chunk_kernel(x_min,x_max,y_min,y_max, &
 !$OMP DO
   DO k=y_min-2,y_max+2
     DO j=x_min-2,x_max+2
-      density0(j,k)=state_density(1)
+      density(j,k)=state_density(1)
     ENDDO
   ENDDO
 !$OMP END DO
@@ -106,19 +106,19 @@ SUBROUTINE generate_chunk_kernel(x_min,x_max,y_min,y_max, &
           IF(vertexx(j+1).GE.state_xmin(state).AND.vertexx(j).LT.state_xmax(state)) THEN
             IF(vertexy(k+1).GE.state_ymin(state).AND.vertexy(k).LT.state_ymax(state)) THEN
               energy0(j,k)=state_energy(state)
-              density0(j,k)=state_density(state)
+              density(j,k)=state_density(state)
             ENDIF
           ENDIF
         ELSEIF(state_geometry(state).EQ.g_circ ) THEN
           radius=SQRT((cellx(j)-x_cent)*(cellx(j)-x_cent)+(celly(k)-y_cent)*(celly(k)-y_cent))
           IF(radius.LE.state_radius(state))THEN
             energy0(j,k)=state_energy(state)
-            density0(j,k)=state_density(state)
+            density(j,k)=state_density(state)
           ENDIF
         ELSEIF(state_geometry(state).EQ.g_point) THEN
           IF(vertexx(j).EQ.x_cent .AND. vertexy(k).EQ.y_cent) THEN
             energy0(j,k)=state_energy(state)
-            density0(j,k)=state_density(state)
+            density(j,k)=state_density(state)
           ENDIF
         ENDIF
       ENDDO
@@ -130,7 +130,7 @@ SUBROUTINE generate_chunk_kernel(x_min,x_max,y_min,y_max, &
 !$OMP DO 
   DO k=y_min-1, y_max+1
     DO j=x_min-1, x_max+1
-      u0(j,k) =  energy0(j,k) * density0(j,k)
+      u0(j,k) =  energy0(j,k) * density(j,k)
     ENDDO
   ENDDO
 !$OMP END DO

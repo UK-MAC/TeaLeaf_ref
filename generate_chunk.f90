@@ -53,7 +53,7 @@ SUBROUTINE generate_chunk(chunk)
                                chunks(chunk)%field%vertexy,           &
                                chunks(chunk)%field%cellx,             &
                                chunks(chunk)%field%celly,             &
-                               chunks(chunk)%field%density0,          &
+                               chunks(chunk)%field%density,           &
                                chunks(chunk)%field%energy0,           &
                                chunks(chunk)%field%u,                 &
                                number_of_states,                      &
@@ -77,7 +77,7 @@ SUBROUTINE generate_chunk(chunk)
                                  chunks(chunk)%field%vertexy,           &
                                  chunks(chunk)%field%cellx,             &
                                  chunks(chunk)%field%celly,             &
-                                 chunks(chunk)%field%density0,          &
+                                 chunks(chunk)%field%density,           &
                                  chunks(chunk)%field%energy0,           &
                                  chunks(chunk)%field%u,                 &
                                  number_of_states,                      &

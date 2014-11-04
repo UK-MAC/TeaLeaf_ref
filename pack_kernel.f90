@@ -23,7 +23,7 @@ MODULE pack_kernel_module
 
 CONTAINS
 
-SUBROUTINE clover_pack_message_left(x_min,x_max,y_min,y_max,field,                &
+SUBROUTINE tea_pack_message_left(x_min,x_max,y_min,y_max,field,                &
                                     left_snd_buffer,                              &
                                     CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
                                     depth,field_type,                             &
@@ -67,9 +67,9 @@ SUBROUTINE clover_pack_message_left(x_min,x_max,y_min,y_max,field,              
   ENDDO
 !$OMP END PARALLEL DO
 
-END SUBROUTINE clover_pack_message_left
+END SUBROUTINE tea_pack_message_left
 
-SUBROUTINE clover_unpack_message_left(x_min,x_max,y_min,y_max,field,                &
+SUBROUTINE tea_unpack_message_left(x_min,x_max,y_min,y_max,field,                &
                                       left_rcv_buffer,                              &
                                       CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
                                       depth,field_type,                             &
@@ -113,9 +113,9 @@ SUBROUTINE clover_unpack_message_left(x_min,x_max,y_min,y_max,field,            
   ENDDO
 !$OMP END PARALLEL DO
 
-END SUBROUTINE clover_unpack_message_left
+END SUBROUTINE tea_unpack_message_left
 
-SUBROUTINE clover_pack_message_right(x_min,x_max,y_min,y_max,field,                &
+SUBROUTINE tea_pack_message_right(x_min,x_max,y_min,y_max,field,                &
                                      right_snd_buffer,                             &
                                      CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
                                      depth,field_type,                             &
@@ -159,9 +159,9 @@ SUBROUTINE clover_pack_message_right(x_min,x_max,y_min,y_max,field,             
   ENDDO
 !$OMP END PARALLEL DO
 
-END SUBROUTINE clover_pack_message_right
+END SUBROUTINE tea_pack_message_right
 
-SUBROUTINE clover_unpack_message_right(x_min,x_max,y_min,y_max,field,                &
+SUBROUTINE tea_unpack_message_right(x_min,x_max,y_min,y_max,field,                &
                                        right_rcv_buffer,                             &
                                        CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
                                        depth,field_type,                             &
@@ -205,9 +205,9 @@ SUBROUTINE clover_unpack_message_right(x_min,x_max,y_min,y_max,field,           
   ENDDO
 !$OMP END PARALLEL DO
 
-END SUBROUTINE clover_unpack_message_right
+END SUBROUTINE tea_unpack_message_right
 
-SUBROUTINE clover_pack_message_top(x_min,x_max,y_min,y_max,field,                &
+SUBROUTINE tea_pack_message_top(x_min,x_max,y_min,y_max,field,                &
                                    top_snd_buffer,                               &
                                    CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
                                    depth,field_type,                             &
@@ -251,9 +251,9 @@ SUBROUTINE clover_pack_message_top(x_min,x_max,y_min,y_max,field,               
 !$OMP END PARALLEL DO
   ENDDO
 
-END SUBROUTINE clover_pack_message_top
+END SUBROUTINE tea_pack_message_top
 
-SUBROUTINE clover_unpack_message_top(x_min,x_max,y_min,y_max,field,                &
+SUBROUTINE tea_unpack_message_top(x_min,x_max,y_min,y_max,field,                &
                                      top_rcv_buffer,                               &
                                      CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
                                      depth,field_type,                             &
@@ -297,9 +297,9 @@ SUBROUTINE clover_unpack_message_top(x_min,x_max,y_min,y_max,field,             
 !$OMP END PARALLEL DO
   ENDDO
 
-END SUBROUTINE clover_unpack_message_top
+END SUBROUTINE tea_unpack_message_top
 
-SUBROUTINE clover_pack_message_bottom(x_min,x_max,y_min,y_max,field,                &
+SUBROUTINE tea_pack_message_bottom(x_min,x_max,y_min,y_max,field,                &
                                       bottom_snd_buffer,                            &
                                       CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
                                       depth,field_type,                             &
@@ -343,9 +343,9 @@ SUBROUTINE clover_pack_message_bottom(x_min,x_max,y_min,y_max,field,            
   ENDDO
 !$OMP END PARALLEL DO
 
-END SUBROUTINE clover_pack_message_bottom
+END SUBROUTINE tea_pack_message_bottom
 
-SUBROUTINE clover_unpack_message_bottom(x_min,x_max,y_min,y_max,field,                &
+SUBROUTINE tea_unpack_message_bottom(x_min,x_max,y_min,y_max,field,                &
                                         bottom_rcv_buffer,                            &
                                         CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
                                         depth,field_type,                             &
@@ -389,6 +389,6 @@ SUBROUTINE clover_unpack_message_bottom(x_min,x_max,y_min,y_max,field,          
 !$OMP END PARALLEL DO
   ENDDO
 
-END SUBROUTINE clover_unpack_message_bottom
+END SUBROUTINE tea_unpack_message_bottom
 
 END MODULE pack_kernel_module

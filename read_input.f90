@@ -73,9 +73,12 @@ SUBROUTINE read_input()
   tl_ch_cg_errswitch = .false.
   tl_ch_cg_presteps = 30
   tl_ch_cg_epslim = 1e-5
+  tl_check_result = .false.
+  tl_ppcg_inner_steps = 10
 
   tl_use_chebyshev = .false.
   tl_use_cg = .false.
+  tl_use_ppcg = .false.
   tl_use_jacobi = .true.
 
   IF(parallel%boss)WRITE(g_out,*) 'Reading input file'
@@ -153,9 +156,14 @@ SUBROUTINE read_input()
       CASE('tl_ch_cg_presteps')
         tl_ch_cg_presteps=parse_getival(parse_getword(.TRUE.))
         IF(parallel%boss)WRITE(g_out,"(1x,a25,i12)")'tl_ch_cg_presteps',tl_ch_cg_presteps
+      CASE('tl_ppcg_inner_steps')
+        tl_ppcg_inner_steps=parse_getival(parse_getword(.TRUE.))
+        IF(parallel%boss)WRITE(g_out,"(1x,a25,i12)")'tl_ppcg_inner_steps',tl_ppcg_inner_steps
       CASE('tl_ch_cg_epslim')
         tl_ch_cg_epslim=parse_getrval(parse_getword(.TRUE.))
         IF(parallel%boss)WRITE(g_out,"(1x,a25,e12.4)")'tl_ch_cg_epslim',tl_ch_cg_epslim
+      CASE('tl_check_result')
+        tl_check_result = .true.
       CASE('tl_ch_cg_errswitch')
         tl_ch_cg_errswitch = .true.
       CASE('use_fortran_kernels')
@@ -173,14 +181,22 @@ SUBROUTINE read_input()
       CASE('tl_use_jacobi')
         tl_use_chebyshev = .false.
         tl_use_cg = .false.
+        tl_use_ppcg=.false.
         tl_use_jacobi = .true.
       CASE('tl_use_cg')
         tl_use_chebyshev = .false.
         tl_use_cg = .true.
+        tl_use_ppcg=.false.
+        tl_use_jacobi = .false.
+      CASE('tl_use_ppcg')
+        tl_use_chebyshev = .false.
+        tl_use_cg = .false.
+        tl_use_ppcg=.true.
         tl_use_jacobi = .false.
       CASE('tl_use_chebyshev')
         tl_use_chebyshev = .true.
         tl_use_cg = .false.
+        tl_use_ppcg=.false.
         tl_use_jacobi = .false.
       CASE('profile_solver')
         profile_solver=.TRUE.

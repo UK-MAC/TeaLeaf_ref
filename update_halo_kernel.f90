@@ -30,9 +30,8 @@ CONTAINS
                         left,bottom,right,top,                                      &
                         left_boundary,bottom_boundary,right_boundary,top_boundary,  &
                         chunk_neighbours,                                           &
-                        density0,                                                   &
+                        density,                                                    &
                         energy0,                                                    &
-                        density1,                                                   &
                         energy1,                                                    &
                         u,                                                          &
                         p,                                                          &
@@ -45,8 +44,7 @@ CONTAINS
   INTEGER :: left,bottom,right,top
   INTEGER :: left_boundary,bottom_boundary,right_boundary,top_boundary
   INTEGER, DIMENSION(4) :: chunk_neighbours
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: density0,energy0
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: density1,energy1
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: density,energy0,energy1
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: u, p, sd
 
   ! These need to be kept consistent with the data module to avoid use statement
@@ -56,8 +54,7 @@ CONTAINS
                             ,CHUNK_TOP    =4    &
                             ,EXTERNAL_FACE=-1
 
-  INTEGER,      PARAMETER :: FIELD_DENSITY0   = 1         &
-                            ,FIELD_DENSITY1   = 2         &
+  INTEGER,      PARAMETER :: FIELD_DENSITY    = 1         &
                             ,FIELD_ENERGY0    = 3         &
                             ,FIELD_ENERGY1    = 4         &
                             ,FIELD_U          =16         &
@@ -75,12 +72,12 @@ CONTAINS
   ! Even though half of these loops look the wrong way around, it should be noted
   ! that depth is either 1 or 2 so that it is more efficient to always thread
   ! loop along the mesh edge.
-  IF(fields(FIELD_DENSITY0).EQ.1) THEN
+  IF(fields(FIELD_DENSITY).EQ.1) THEN
     IF(chunk_neighbours(CHUNK_BOTTOM).EQ.EXTERNAL_FACE) THEN
 !$OMP DO
       DO j=x_min-depth,x_max+depth
         DO k=1,depth
-          density0(j,1-k)=density0(j,0+k)
+          density(j,1-k)=density(j,0+k)
         ENDDO
       ENDDO
 !$OMP END DO
@@ -89,7 +86,7 @@ CONTAINS
 !$OMP DO
       DO j=x_min-depth,x_max+depth
         DO k=1,depth
-          density0(j,y_max+k)=density0(j,y_max+1-k)
+          density(j,y_max+k)=density(j,y_max+1-k)
         ENDDO
       ENDDO
 !$OMP END DO
@@ -98,7 +95,7 @@ CONTAINS
 !$OMP DO
       DO k=y_min-depth,y_max+depth
         DO j=1,depth
-          density0(1-j,k)=density0(0+j,k)
+          density(1-j,k)=density(0+j,k)
         ENDDO
       ENDDO
 !$OMP END DO
@@ -107,46 +104,7 @@ CONTAINS
 !$OMP DO
       DO k=y_min-depth,y_max+depth
         DO j=1,depth
-          density0(x_max+j,k)=density0(x_max+1-j,k)
-        ENDDO
-      ENDDO
-!$OMP END DO
-    ENDIF
-  ENDIF
-
-  IF(fields(FIELD_DENSITY1).EQ.1) THEN
-    IF(chunk_neighbours(CHUNK_BOTTOM).EQ.EXTERNAL_FACE) THEN
-!$OMP DO
-      DO j=x_min-depth,x_max+depth
-        DO k=1,depth
-          density1(j,1-k)=density1(j,0+k)
-        ENDDO
-      ENDDO
-!$OMP END DO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_TOP).EQ.EXTERNAL_FACE) THEN
-!$OMP DO
-      DO j=x_min-depth,x_max+depth
-        DO k=1,depth
-          density1(j,y_max+k)=density1(j,y_max+1-k)
-        ENDDO
-      ENDDO
-!$OMP END DO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_LEFT).EQ.EXTERNAL_FACE) THEN
-!$OMP DO
-      DO k=y_min-depth,y_max+depth
-        DO j=1,depth
-          density1(1-j,k)=density1(0+j,k)
-        ENDDO
-      ENDDO
-!$OMP END DO
-    ENDIF
-    IF(chunk_neighbours(CHUNK_RIGHT).EQ.EXTERNAL_FACE) THEN
-!$OMP DO
-      DO k=y_min-depth,y_max+depth
-        DO j=1,depth
-          density1(x_max+j,k)=density1(x_max+1-j,k)
+          density(x_max+j,k)=density(x_max+1-j,k)
         ENDDO
       ENDDO
 !$OMP END DO

@@ -59,8 +59,6 @@ MODULE definitions_module
 
    INTEGER      :: step
 
-   LOGICAL      :: advect_x
-
    INTEGER      :: error_condition
 
    INTEGER      :: test_problem
@@ -71,6 +69,7 @@ MODULE definitions_module
    LOGICAL      :: use_OA_kernels
    LOGICAL      :: tl_use_chebyshev
    LOGICAL      :: tl_use_cg
+   LOGICAL      :: tl_use_ppcg
    LOGICAL      :: tl_use_jacobi
    INTEGER      :: max_iters
    REAL(KIND=8) :: eps
@@ -83,6 +82,12 @@ MODULE definitions_module
    REAL(KIND=8) :: tl_ch_cg_epslim
    ! number of steps of cg to run to before switching to ch if tl_ch_cg_errswitch not set
    INTEGER      :: tl_ch_cg_presteps
+   ! do b-Ax after finishing to make sure solver actually converged
+   LOGICAL      :: tl_check_result
+   ! number of inner steps in ppcg solver
+   INTEGER      :: tl_ppcg_inner_steps
+
+   LOGICAL      :: use_vector_loops ! Some loops work better in serial depending on the hardware
 
    LOGICAL      :: profiler_on ! Internal code profiler to make comparisons across systems easier
 
@@ -97,7 +102,9 @@ MODULE definitions_module
      REAL(KIND=8)       :: timestep        &
                           ,visit           &
                           ,summary         &
-                          ,tea             &
+                          ,tea_init        &
+                          ,tea_solve       &
+                          ,tea_reset       &
                           ,set_field       &
                           ,halo_exchange
                      
@@ -118,7 +125,7 @@ MODULE definitions_module
    INTEGER         :: jdt,kdt
 
    TYPE field_type
-     REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: density0,density1
+     REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: density
      REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: energy0,energy1
      REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: u, u0
      REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: work_array1
@@ -128,6 +135,7 @@ MODULE definitions_module
      REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: work_array5
      REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: work_array6
      REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: work_array7
+     REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: work_array8
 
      INTEGER         :: left            &
                        ,right           &

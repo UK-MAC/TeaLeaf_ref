@@ -53,9 +53,8 @@ SUBROUTINE update_halo(fields,depth)
                                 chunks(c)%field%right_boundary, &
                                 chunks(c)%field%top_boundary,   &
                                 chunks(c)%chunk_neighbours,     &
-                                chunks(c)%field%density0,       &
+                                chunks(c)%field%density,        &
                                 chunks(c)%field%energy0,        &
-                                chunks(c)%field%density1,       &
                                 chunks(c)%field%energy1,        &
                                 chunks(c)%field%u,              &
                                 chunks(c)%field%work_array1,    &
@@ -76,9 +75,8 @@ SUBROUTINE update_halo(fields,depth)
                                 chunks(c)%field%right_boundary, &
                                 chunks(c)%field%top_boundary,   &
                                 chunks(c)%chunk_neighbours,     &
-                                chunks(c)%field%density0,       &
+                                chunks(c)%field%density,        &
                                 chunks(c)%field%energy0,        &
-                                chunks(c)%field%density1,       &
                                 chunks(c)%field%energy1,        &
                                 chunks(c)%field%u,              &
                                 chunks(c)%field%work_array1,    &

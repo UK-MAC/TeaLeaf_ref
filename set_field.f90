@@ -44,8 +44,6 @@ SUBROUTINE set_field()
                               chunks(c)%field%x_max,     &
                               chunks(c)%field%y_min,     &
                               chunks(c)%field%y_max,     &
-                              chunks(c)%field%density0,  &
-                              chunks(c)%field%density1,  &
                               chunks(c)%field%energy0,   &
                               chunks(c)%field%energy1)
       ELSEIF(use_C_kernels)THEN
@@ -53,8 +51,6 @@ SUBROUTINE set_field()
                               chunks(c)%field%x_max,     &
                               chunks(c)%field%y_min,     &
                               chunks(c)%field%y_max,     &
-                              chunks(c)%field%density0,  &
-                              chunks(c)%field%density1,  &
                               chunks(c)%field%energy0,   &
                               chunks(c)%field%energy1)
       ENDIF
