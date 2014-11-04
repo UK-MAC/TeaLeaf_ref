@@ -64,8 +64,8 @@ void tea_leaf_kernel_init_c_(
 #pragma omp for 
             for(k = y_min-1; k <= y_max+2; k++) {
                 for(j = x_min-1; j <= x_max+2; j++) {
-                    Kx_tmp[FTNREF2D(j,k,x_max+5,x_min-2,y_min-2)]=1.0/density[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)];
-                    Ky_tmp[FTNREF2D(j,k,x_max+5,x_min-2,y_min-2)]=1.0/density[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)];
+                    Kx_tmp[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)]=1.0/density[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)];
+                    Ky_tmp[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)]=1.0/density[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)];
                 }
             }
         }
@@ -73,8 +73,8 @@ void tea_leaf_kernel_init_c_(
 #pragma omp for
             for(k = y_min-1; k <= y_max+2; k++) {
                 for(j = x_min-1; j <= x_max+2; j++) {
-                    Kx_tmp[FTNREF2D(j,k,x_max+5,x_min-2,y_min-2)]=density[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)];
-                    Ky_tmp[FTNREF2D(j,k,x_max+5,x_min-2,y_min-2)]=density[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)];
+                    Kx_tmp[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)]=density[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)];
+                    Ky_tmp[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)]=density[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)];
                 }
             }
         }
@@ -82,13 +82,13 @@ void tea_leaf_kernel_init_c_(
 #pragma omp for
         for(k = y_min; k <= y_max+1; k++) {
             for(j = x_min; j <= x_max+1; j++) {
-                Kx[FTNREF2D(j,k,x_max+5,x_min-2,y_min-2)] = 
-                    (Kx_tmp[FTNREF2D(j-1,k,x_max+5,x_min-2,y_min-2)]+Kx_tmp[FTNREF2D(j,k,x_max+5,x_min-2,y_min-2)])
-                    /(2.0*Kx_tmp[FTNREF2D(j-1,k,x_max+5,x_min-2,y_min-2)]*Kx_tmp[FTNREF2D(j,k,x_max+5,x_min-2,y_min-2)]);
+                Kx[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)] = 
+                    (Kx_tmp[FTNREF2D(j-1,k,x_max+4,x_min-2,y_min-2)]+Kx_tmp[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)])
+                    /(2.0*Kx_tmp[FTNREF2D(j-1,k,x_max+4,x_min-2,y_min-2)]*Kx_tmp[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)]);
 
-                Ky[FTNREF2D(j,k,x_max+5,x_min-2,y_min-2)] = 
-                    (Ky_tmp[FTNREF2D(j,k-1,x_max+5,x_min-2,y_min-2)]+Ky_tmp[FTNREF2D(j,k,x_max+5,x_min-2,y_min-2)])
-                    /(2.0*Ky_tmp[FTNREF2D(j,k-1,x_max+5,x_min-2,y_min-2)]*Ky_tmp[FTNREF2D(j,k,x_max+5,x_min-2,y_min-2)]);
+                Ky[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)] = 
+                    (Ky_tmp[FTNREF2D(j,k-1,x_max+4,x_min-2,y_min-2)]+Ky_tmp[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)])
+                    /(2.0*Ky_tmp[FTNREF2D(j,k-1,x_max+4,x_min-2,y_min-2)]*Ky_tmp[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)]);
             }
         }
 
@@ -96,7 +96,7 @@ void tea_leaf_kernel_init_c_(
         for(k = y_min-1; k <=  y_max+1; k++) {
             for(j = x_min-1; j <=  x_max+1; j++) {
                 u1[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)] =
-                u0[FTNREF2D(j,k,x_max+5,x_min-2,y_min-2)] =
+                u0[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)] =
                     energy[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)]
                     * density[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)];
             }
@@ -134,7 +134,7 @@ void tea_leaf_kernel_solve_c_(
 #pragma omp for
         for(k = y_min-1; k <=  y_max+1; k++) {
             for(j = x_min-1; j <=  x_max+1; j++) {
-                un[FTNREF2D(j,k,x_max+5,x_min-2,y_min-2)] = u1[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)];
+                un[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)] = u1[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)];
             }
         }
     }
@@ -143,17 +143,17 @@ void tea_leaf_kernel_solve_c_(
 #pragma omp parallel for reduction(max:error)
     for(k = y_min; k <=  y_max; k++) {
         for(j = x_min; j <=  x_max; j++) {
-            u1[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)] = (u0[FTNREF2D(j,k,x_max+5,x_min-2,y_min-2)]
-                + rx*(Kx[FTNREF2D(j+1,k  ,x_max+5,x_min-2,y_min-2)]*un[FTNREF2D(j+1,k  ,x_max+5,x_min-2,y_min-2)]
-                    + Kx[FTNREF2D(j  ,k  ,x_max+5,x_min-2,y_min-2)]*un[FTNREF2D(j-1,k  ,x_max+5,x_min-2,y_min-2)])
-                + ry*(Ky[FTNREF2D(j  ,k+1,x_max+5,x_min-2,y_min-2)]*un[FTNREF2D(j  ,k+1,x_max+5,x_min-2,y_min-2)]
-                    + Ky[FTNREF2D(j  ,k  ,x_max+5,x_min-2,y_min-2)]*un[FTNREF2D(j  ,k-1,x_max+5,x_min-2,y_min-2)]))
+            u1[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)] = (u0[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)]
+                + rx*(Kx[FTNREF2D(j+1,k  ,x_max+4,x_min-2,y_min-2)]*un[FTNREF2D(j+1,k  ,x_max+4,x_min-2,y_min-2)]
+                    + Kx[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)]*un[FTNREF2D(j-1,k  ,x_max+4,x_min-2,y_min-2)])
+                + ry*(Ky[FTNREF2D(j  ,k+1,x_max+4,x_min-2,y_min-2)]*un[FTNREF2D(j  ,k+1,x_max+4,x_min-2,y_min-2)]
+                    + Ky[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)]*un[FTNREF2D(j  ,k-1,x_max+4,x_min-2,y_min-2)]))
                                  /(1.0
-                                    + rx*(Kx[FTNREF2D(j,k,x_max+5,x_min-2,y_min-2)] + Kx[FTNREF2D(j+1,k,x_max+5,x_min-2,y_min-2)])
-                                    + ry*(Ky[FTNREF2D(j,k,x_max+5,x_min-2,y_min-2)] + Ky[FTNREF2D(j,k+1,x_max+5,x_min-2,y_min-2)]));
+                                    + rx*(Kx[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)] + Kx[FTNREF2D(j+1,k,x_max+4,x_min-2,y_min-2)])
+                                    + ry*(Ky[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)] + Ky[FTNREF2D(j,k+1,x_max+4,x_min-2,y_min-2)]));
 
             error = fmax(error,
-                fabs(u1[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)] - un[FTNREF2D(j,k,x_max+5,x_min-2,y_min-2)]));
+                fabs(u1[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)] - un[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)]));
         }
     }
 
@@ -206,7 +206,7 @@ void tea_leaf_kernel_init_cg_c_(
         #pragma omp for 
         for(k = y_min-1; k <= y_max+1; k++) {
             for(j = x_min-1; j <= x_max+1; j++) {
-                w[FTNREF2D(j  ,k  ,x_max+5,x_min-2,y_min-2)]=1.0/density[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)];
+                w[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)]=1.0/density[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)];
             }
         }
     }
@@ -214,7 +214,7 @@ void tea_leaf_kernel_init_cg_c_(
         #pragma omp for
         for(k = y_min-1; k <= y_max+1; k++) {
             for(j = x_min-1; j <= x_max+1; j++) {
-                w[FTNREF2D(j  ,k  ,x_max+5,x_min-2,y_min-2)]=density[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)];
+                w[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)]=density[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)];
             }
         }
     }
@@ -222,8 +222,8 @@ void tea_leaf_kernel_init_cg_c_(
     #pragma omp for
     for(k = y_min; k <= y_max+1; k++) {
         for(j = x_min; j <= x_max+1; j++) {
-            Kx[FTNREF2D(j,k,x_max+5,x_min-2,y_min-2)]=(w[FTNREF2D(j-1,k  ,x_max+4,x_min-2,y_min-2)] + w[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)])/(2.0*w[FTNREF2D(j-1,k  ,x_max+4,x_min-2,y_min-2)]*w[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)]);
-            Ky[FTNREF2D(j,k,x_max+5,x_min-2,y_min-2)]=(w[FTNREF2D(j  ,k-1,x_max+4,x_min-2,y_min-2)] + w[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)])/(2.0*w[FTNREF2D(j  ,k-1,x_max+4,x_min-2,y_min-2)]*w[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)]);
+            Kx[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)]=(w[FTNREF2D(j-1,k  ,x_max+4,x_min-2,y_min-2)] + w[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)])/(2.0*w[FTNREF2D(j-1,k  ,x_max+4,x_min-2,y_min-2)]*w[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)]);
+            Ky[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)]=(w[FTNREF2D(j  ,k-1,x_max+4,x_min-2,y_min-2)] + w[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)])/(2.0*w[FTNREF2D(j  ,k-1,x_max+4,x_min-2,y_min-2)]*w[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)]);
         }
     }
 
@@ -231,22 +231,22 @@ void tea_leaf_kernel_init_cg_c_(
     for(k = y_min; k <=  y_max; k++) {
         for(j = x_min; j <=  x_max; j++) {
             w[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)] = (1.0
-                + ry*(Ky[FTNREF2D(j,k+1,x_max+5,x_min-2,y_min-2)] + Ky[FTNREF2D(j,k,x_max+5,x_min-2,y_min-2)])
-                + rx*(Kx[FTNREF2D(j+1,k,x_max+5,x_min-2,y_min-2)] + Kx[FTNREF2D(j,k,x_max+5,x_min-2,y_min-2)]))*u[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)]
-                - ry*(Ky[FTNREF2D(j,k+1,x_max+5,x_min-2,y_min-2)]*u[FTNREF2D(j,k+1,x_max+4,x_min-2,y_min-2)] + Ky[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)]*u[FTNREF2D(j,k-1,x_max+4,x_min-2,y_min-2)])
-                - rx*(Kx[FTNREF2D(j+1,k,x_max+4,x_min-2,y_min-2)]*u[FTNREF2D(j+1,k,x_max+4,x_min-2,y_min-2)] + Kx[FTNREF2D(j,k,x_max+5,x_min-2,y_min-2)]*u[FTNREF2D(j-1,k,x_max+4,x_min-2,y_min-2)]);
+                + ry*(Ky[FTNREF2D(j,k+1,x_max+4,x_min-2,y_min-2)] + Ky[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)])
+                + rx*(Kx[FTNREF2D(j+1,k,x_max+4,x_min-2,y_min-2)] + Kx[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)]))*u[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)]
+                - ry*(Ky[FTNREF2D(j,k+1,x_max+4,x_min-2,y_min-2)]*u[FTNREF2D(j,k+1,x_max+4,x_min-2,y_min-2)] + Ky[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)]*u[FTNREF2D(j,k-1,x_max+4,x_min-2,y_min-2)])
+                - rx*(Kx[FTNREF2D(j+1,k,x_max+4,x_min-2,y_min-2)]*u[FTNREF2D(j+1,k,x_max+4,x_min-2,y_min-2)] + Kx[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)]*u[FTNREF2D(j-1,k,x_max+4,x_min-2,y_min-2)]);
 
-            r[FTNREF2D(j,k,x_max+5,x_min-2,y_min-2)] = u[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)] - w[FTNREF2D(j,k,x_max+5,x_min-2,y_min-2)];
+            r[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)] = u[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)] - w[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)];
 
             Mi[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)] = (1.0
-                + ry*(Ky[FTNREF2D(j,k+1,x_max+5,x_min-2,y_min-2)] + Ky[FTNREF2D(j,k,x_max+5,x_min-2,y_min-2)])
-                + rx*(Kx[FTNREF2D(j+1,k,x_max+5,x_min-2,y_min-2)] + Kx[FTNREF2D(j,k,x_max+5,x_min-2,y_min-2)]));
-            Mi[FTNREF2D(j,k,x_max+5,x_min-2,y_min-2)] = 1.0/Mi[FTNREF2D(j,k,x_max+5,x_min-2,y_min-2)];
+                + ry*(Ky[FTNREF2D(j,k+1,x_max+4,x_min-2,y_min-2)] + Ky[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)])
+                + rx*(Kx[FTNREF2D(j+1,k,x_max+4,x_min-2,y_min-2)] + Kx[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)]));
+            Mi[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)] = 1.0/Mi[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)];
 
-            z[FTNREF2D(j,k,x_max+5,x_min-2,y_min-2)] = Mi[FTNREF2D(j,k,x_max+5,x_min-2,y_min-2)]*r[FTNREF2D(j,k,x_max+5,x_min-2,y_min-2)];
-            p[FTNREF2D(j,k,x_max+5,x_min-2,y_min-2)] = z[FTNREF2D(j,k,x_max+5,x_min-2,y_min-2)];
+            z[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)] = Mi[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)]*r[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)];
+            p[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)] = z[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)];
 
-            rro = rro + r[FTNREF2D(j,k,x_max+5,x_min-2,y_min-2)]*z[FTNREF2D(j,k,x_max+5,x_min-2,y_min-2)];
+            rro = rro + r[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)]*z[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)];
         }
     }
 }
@@ -279,13 +279,13 @@ void tea_leaf_kernel_solve_cg_c_calc_w_(
     #pragma omp parallel for reduction(+:pw)
     for(k = y_min; k <=  y_max; k++) {
         for(j = x_min; j <=  x_max; j++) {
-            w[FTNREF2D(j,k,x_max+5,x_min-2,y_min-2)] = (1.0
-                + ry*(Ky[FTNREF2D(j,k+1,x_max+5,x_min-2,y_min-2)] + Ky[FTNREF2D(j,k,x_max+5,x_min-2,y_min-2)])
-                + rx*(Kx[FTNREF2D(j+1,k,x_max+5,x_min-2,y_min-2)] + Kx[FTNREF2D(j,k,x_max+5,x_min-2,y_min-2)]))*p[FTNREF2D(j,k,x_max+5,x_min-2,y_min-2)]
-                - ry*(Ky[FTNREF2D(j,k+1,x_max+5,x_min-2,y_min-2)]*p[FTNREF2D(j,k+1,x_max+5,x_min-2,y_min-2)] + Ky[FTNREF2D(j,k,x_max+5,x_min-2,y_min-2)]*p[FTNREF2D(j,k-1,x_max+5,x_min-2,y_min-2)])
-                - rx*(Kx[FTNREF2D(j+1,k,x_max+5,x_min-2,y_min-2)]*p[FTNREF2D(j+1,k,x_max+5,x_min-2,y_min-2)] + Kx[FTNREF2D(j,k,x_max+5,x_min-2,y_min-2)]*p[FTNREF2D(j-1,k,x_max+5,x_min-2,y_min-2)]);
+            w[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)] = (1.0
+                + ry*(Ky[FTNREF2D(j,k+1,x_max+4,x_min-2,y_min-2)] + Ky[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)])
+                + rx*(Kx[FTNREF2D(j+1,k,x_max+4,x_min-2,y_min-2)] + Kx[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)]))*p[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)]
+                - ry*(Ky[FTNREF2D(j,k+1,x_max+4,x_min-2,y_min-2)]*p[FTNREF2D(j,k+1,x_max+4,x_min-2,y_min-2)] + Ky[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)]*p[FTNREF2D(j,k-1,x_max+4,x_min-2,y_min-2)])
+                - rx*(Kx[FTNREF2D(j+1,k,x_max+4,x_min-2,y_min-2)]*p[FTNREF2D(j+1,k,x_max+4,x_min-2,y_min-2)] + Kx[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)]*p[FTNREF2D(j-1,k,x_max+4,x_min-2,y_min-2)]);
 
-            pw = pw + w[FTNREF2D(j,k,x_max+5,x_min-2,y_min-2)]*p[FTNREF2D(j,k,x_max+5,x_min-2,y_min-2)];
+            pw = pw + w[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)]*p[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)];
         }
     }
 
@@ -318,9 +318,9 @@ void tea_leaf_kernel_solve_cg_c_calc_ur_(
     #pragma omp parallel for reduction(+:rrn)
     for(k = y_min; k <=  y_max; k++) {
         for(j = x_min; j <=  x_max; j++) {
-            u[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)] = u[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)] + alpha*p[FTNREF2D(j,k,x_max+5,x_min-2,y_min-2)];
-            r[FTNREF2D(j,k,x_max+5,x_min-2,y_min-2)] = r[FTNREF2D(j,k,x_max+5,x_min-2,y_min-2)] - alpha*w[FTNREF2D(j,k,x_max+5,x_min-2,y_min-2)];
-            z[FTNREF2D(j,k,x_max+5,x_min-2,y_min-2)] = Mi[FTNREF2D(j,k,x_max+5,x_min-2,y_min-2)]*r[FTNREF2D(j,k,x_max+5,x_min-2,y_min-2)];
+            u[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)] = u[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)] + alpha*p[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)];
+            r[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)] = r[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)] - alpha*w[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)];
+            z[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)] = Mi[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)]*r[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)];
 
             rrn = rrn + r[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)]*z[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)];
         }
@@ -350,7 +350,7 @@ void tea_leaf_kernel_solve_cg_c_calc_p_(
     #pragma omp parallel for
     for(k = y_min; k <=  y_max; k++) {
         for(j = x_min; j <=  x_max; j++) {
-            p[FTNREF2D(j,k,x_max+5,x_min-2,y_min-2)] = z[FTNREF2D(j,k,x_max+5,x_min-2,y_min-2)] + beta*p[FTNREF2D(j,k,x_max+5,x_min-2,y_min-2)];
+            p[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)] = z[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)] + beta*p[FTNREF2D(j,k,x_max+4,x_min-2,y_min-2)];
         }
     }
 }

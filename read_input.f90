@@ -76,6 +76,7 @@ SUBROUTINE read_input()
   tl_ch_cg_epslim = 1e-5
   tl_check_result = .false.
   tl_ppcg_inner_steps = 10
+  tl_preconditioner_on = .false.
 
   tl_use_chebyshev = .false.
   tl_use_cg = .false.
@@ -167,6 +168,8 @@ SUBROUTINE read_input()
         tl_check_result = .true.
       CASE('tl_ch_cg_errswitch')
         tl_ch_cg_errswitch = .true.
+      CASE('tl_preconditioner_on')
+        tl_preconditioner_on = .true.
       CASE('use_fortran_kernels')
         use_fortran_kernels=.TRUE.
         use_C_kernels=.FALSE.

@@ -16,7 +16,7 @@ end_time=1.0
 end_step=87
 tl_max_iters=10000
 tl_use_chebyshev
-profiler_on
+tl_preconditioner_on
 tl_eps 1.0e-15
 test_problem 2
 tl_check_result

@@ -109,7 +109,7 @@ SUBROUTINE tea_leaf()
               chunks(c)%field%vector_z,                 &
               chunks(c)%field%vector_Kx,                 &
               chunks(c)%field%vector_Ky,                 &
-              rx, ry, rro, coefficient)
+              rx, ry, rro, coefficient, tl_preconditioner_on)
         ELSEIF(use_C_kernels) THEN
           CALL tea_leaf_kernel_init_cg_c(chunks(c)%field%x_min, &
               chunks(c)%field%x_max,                       &
@@ -268,7 +268,7 @@ SUBROUTINE tea_leaf()
                           chunks(c)%field%vector_Kx,                 &
                           chunks(c)%field%vector_Ky,                 &
                           ch_alphas, ch_betas, max_cheby_iters,        &
-                          rx, ry, cheby_calc_steps)
+                          rx, ry, cheby_calc_steps, tl_preconditioner_on)
                   ENDIF
 
                   ! after estimated number of iterations has passed, calc resid.
@@ -341,7 +341,7 @@ SUBROUTINE tea_leaf()
                   chunks(c)%field%vector_Mi,                 &
                   chunks(c)%field%vector_w,                 &
                   chunks(c)%field%vector_z,                 &
-                  alpha, rrn)
+                  alpha, rrn, tl_preconditioner_on)
             ENDIF
 
             ! not using rrn, so don't do a tea_allsum
@@ -370,7 +370,7 @@ SUBROUTINE tea_leaf()
                   chunks(c)%field%vector_p,                 &
                   chunks(c)%field%vector_r,                 &
                   chunks(c)%field%vector_z,                 &
-                  beta)
+                  beta, tl_preconditioner_on)
             ENDIF
 
             error = rrn
@@ -419,7 +419,7 @@ SUBROUTINE tea_leaf()
                 chunks(c)%field%vector_Mi,                 &
                 chunks(c)%field%vector_w,                 &
                 chunks(c)%field%vector_z,                 &
-                alpha, rrn)
+                alpha, rrn, tl_preconditioner_on)
           ELSEIF(use_c_kernels) THEN
             CALL tea_leaf_kernel_solve_cg_c_calc_ur(chunks(c)%field%x_min,&
                 chunks(c)%field%x_max,                                    &
@@ -446,7 +446,7 @@ SUBROUTINE tea_leaf()
                 chunks(c)%field%vector_p,                                   &
                 chunks(c)%field%vector_r,                                   &
                 chunks(c)%field%vector_z,                                   &
-                beta)
+                beta, tl_preconditioner_on)
           ELSEIF(use_c_kernels) THEN
             CALL tea_leaf_kernel_solve_cg_c_calc_p(chunks(c)%field%x_min,&
                 chunks(c)%field%x_max,                                   &
@@ -695,7 +695,7 @@ SUBROUTINE tea_leaf_cheby_first_step(c, ch_alphas, ch_betas, fields, &
           chunks(c)%field%vector_Kx,                 &
           chunks(c)%field%vector_Ky,                 &
           ch_alphas, ch_betas, max_cheby_iters, &
-          rx, ry, theta, error)
+          rx, ry, theta, error, tl_preconditioner_on)
   ENDIF
 
   CALL update_halo(fields,1)
@@ -715,7 +715,7 @@ SUBROUTINE tea_leaf_cheby_first_step(c, ch_alphas, ch_betas, fields, &
           chunks(c)%field%vector_Kx,                 &
           chunks(c)%field%vector_Ky,                 &
           ch_alphas, ch_betas, max_cheby_iters,        &
-          rx, ry, 1)
+          rx, ry, 1, tl_preconditioner_on)
   ENDIF
 
   IF(use_fortran_kernels) THEN

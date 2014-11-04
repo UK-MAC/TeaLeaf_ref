@@ -72,9 +72,11 @@ SUBROUTINE tea_leaf_kernel_cheby_init(x_min,  &
                            rx,                &
                            ry,                &
                            theta,             &
-                           error              )
+                           error,             &
+                           preconditioner_on)
   IMPLICIT NONE
 
+  LOGICAL :: preconditioner_on
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: u, u0, p
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: w
@@ -86,6 +88,7 @@ SUBROUTINE tea_leaf_kernel_cheby_init(x_min,  &
   REAL(KIND=8), DIMENSION(max_cheby_iters) :: ch_alphas, ch_betas
 
 !$OMP PARALLEL
+  IF (preconditioner_on) THEN
 !$OMP DO
     DO k=y_min,y_max
         DO j=x_min,x_max
@@ -96,14 +99,26 @@ SUBROUTINE tea_leaf_kernel_cheby_init(x_min,  &
                 - rx*(Kx(j+1, k)*u(j+1, k) + Kx(j, k)*u(j-1, k))
             r(j, k) = u0(j, k) - w(j, k)
 
-#if defined(USE_PRECONDITIONER)
             p(j, k) = (Mi(j, k)*r(j, k))/theta
-#else
-            p(j, k) = r(j, k)/theta
-#endif
         ENDDO
     ENDDO
 !$OMP END DO
+  ELSE
+!$OMP DO
+    DO k=y_min,y_max
+        DO j=x_min,x_max
+            w(j, k) = (1.0_8                                      &
+                + ry*(Ky(j, k+1) + Ky(j, k))                      &
+                + rx*(Kx(j+1, k) + Kx(j, k)))*u(j, k)             &
+                - ry*(Ky(j, k+1)*u(j, k+1) + Ky(j, k)*u(j, k-1))  &
+                - rx*(Kx(j+1, k)*u(j+1, k) + Kx(j, k)*u(j-1, k))
+            r(j, k) = u0(j, k) - w(j, k)
+
+            p(j, k) = r(j, k)/theta
+        ENDDO
+    ENDDO
+!$OMP END DO
+  ENDIF
 !$OMP DO
   DO k=y_min,y_max
       DO j=x_min,x_max
@@ -133,10 +148,12 @@ SUBROUTINE tea_leaf_kernel_cheby_iterate(x_min, &
                            max_cheby_iters,     &
                            rx,                  &
                            ry,                  &
-                           step                 )
+                           step,                &
+                           preconditioner_on)
 
   IMPLICIT NONE
 
+  LOGICAL :: preconditioner_on
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: u, u0, p
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: w
@@ -151,6 +168,7 @@ SUBROUTINE tea_leaf_kernel_cheby_iterate(x_min, &
     REAL(KIND=8), DIMENSION(max_cheby_iters) :: ch_alphas, ch_betas
 
 !$OMP PARALLEL
+  IF (preconditioner_on) THEN
 !$OMP DO
     DO k=y_min,y_max
         DO j=x_min,x_max
@@ -160,14 +178,25 @@ SUBROUTINE tea_leaf_kernel_cheby_iterate(x_min, &
                 - ry*(Ky(j, k+1)*u(j, k+1) + Ky(j, k)*u(j, k-1))  &
                 - rx*(Kx(j+1, k)*u(j+1, k) + Kx(j, k)*u(j-1, k))
             r(j, k) = u0(j, k) - w(j, k)
-#if defined(USE_PRECONDITIONER)
             p(j, k) = ch_alphas(step)*p(j, k) + ch_betas(step)*Mi(j, k)*r(j, k)
-#else
-            p(j, k) = ch_alphas(step)*p(j, k) + ch_betas(step)*r(j, k)
-#endif
         ENDDO
     ENDDO
 !$OMP END DO
+  ELSE
+!$OMP DO
+    DO k=y_min,y_max
+        DO j=x_min,x_max
+            w(j, k) = (1.0_8                                      &
+                + ry*(Ky(j, k+1) + Ky(j, k))                      &
+                + rx*(Kx(j+1, k) + Kx(j, k)))*u(j, k)             &
+                - ry*(Ky(j, k+1)*u(j, k+1) + Ky(j, k)*u(j, k-1))  &
+                - rx*(Kx(j+1, k)*u(j+1, k) + Kx(j, k)*u(j-1, k))
+            r(j, k) = u0(j, k) - w(j, k)
+            p(j, k) = ch_alphas(step)*p(j, k) + ch_betas(step)*r(j, k)
+        ENDDO
+    ENDDO
+!$OMP END DO
+  ENDIF
 !$OMP DO
     DO k=y_min,y_max
         DO j=x_min,x_max
