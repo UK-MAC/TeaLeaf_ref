@@ -128,14 +128,14 @@ MODULE definitions_module
      REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: density
      REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: energy0,energy1
      REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: u, u0
-     REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: work_array1
-     REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: work_array2
-     REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: work_array3
-     REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: work_array4
-     REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: work_array5
-     REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: work_array6
-     REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: work_array7
-     REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: work_array8
+     REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: vector_p
+     REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: vector_r
+     REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: vector_Mi
+     REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: vector_w
+     REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: vector_z
+     REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: vector_Kx
+     REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: vector_Ky
+     REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: vector_sd
 
      INTEGER         :: left            &
                        ,right           &

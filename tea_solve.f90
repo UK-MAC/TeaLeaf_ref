@@ -64,7 +64,7 @@ SUBROUTINE tea_leaf()
   cg_calc_steps = 0
   total_solve_time = 0.0_8
 
-  IF(coefficient .nE. RECIP_CONDUCTIVITY .AND. coefficient .ne. conductivity) THEN
+  IF(coefficient .NE. RECIP_CONDUCTIVITY .AND. coefficient .NE. conductivity) THEN
     CALL report_error('tea_leaf', 'unknown coefficient option')
   ENDIF
 
@@ -88,7 +88,7 @@ SUBROUTINE tea_leaf()
         ry = dt/(chunks(c)%field%celldy(chunks(c)%field%y_min)**2)
       ENDIF
 
-      IF(tl_use_cg .OR. tl_use_chebyshev .OR. tl_use_ppcg) then
+      IF(tl_use_cg .OR. tl_use_chebyshev .OR. tl_use_ppcg) THEN
         ! All 3 of these solvers use the CG kernels
         IF(use_fortran_kernels) THEN
           CALL tea_leaf_kernel_init_cg_fortran(chunks(c)%field%x_min, &
@@ -98,13 +98,13 @@ SUBROUTINE tea_leaf()
               chunks(c)%field%density,                     &
               chunks(c)%field%energy1,                     &
               chunks(c)%field%u,                           &
-              chunks(c)%field%work_array1,                 & ! p
-              chunks(c)%field%work_array2,                 & ! r
-              chunks(c)%field%work_array3,                 & ! Mi
-              chunks(c)%field%work_array4,                 & ! w
-              chunks(c)%field%work_array5,                 & ! z
-              chunks(c)%field%work_array6,                 & ! Kx
-              chunks(c)%field%work_array7,                 & ! Ky
+              chunks(c)%field%vector_p,                 &
+              chunks(c)%field%vector_r,                 &
+              chunks(c)%field%vector_Mi,                 &
+              chunks(c)%field%vector_w,                 &
+              chunks(c)%field%vector_z,                 &
+              chunks(c)%field%vector_Kx,                 &
+              chunks(c)%field%vector_Ky,                 &
               rx, ry, rro, coefficient)
         ELSEIF(use_C_kernels) THEN
           CALL tea_leaf_kernel_init_cg_c(chunks(c)%field%x_min, &
@@ -114,18 +114,19 @@ SUBROUTINE tea_leaf()
               chunks(c)%field%density,                     &
               chunks(c)%field%energy1,                     &
               chunks(c)%field%u,                           &
-              chunks(c)%field%work_array1,                 & ! p
-              chunks(c)%field%work_array2,                 & ! r
-              chunks(c)%field%work_array3,                 & ! Mi
-              chunks(c)%field%work_array4,                 & ! w
-              chunks(c)%field%work_array5,                 & ! z
-              chunks(c)%field%work_array6,                 & ! Kx
-              chunks(c)%field%work_array7,                 & ! Ky
+              chunks(c)%field%vector_p,                 &
+              chunks(c)%field%vector_r,                 &
+              chunks(c)%field%vector_Mi,                 &
+              chunks(c)%field%vector_w,                 &
+              chunks(c)%field%vector_z,                 &
+              chunks(c)%field%vector_Kx,                 &
+              chunks(c)%field%vector_Ky,                 &
               rx, ry, rro, coefficient)
         ENDIF
 
         ! need to update p when using CG due to matrix/vector multiplication
         fields=0
+        fields(FIELD_U) = 1
         fields(FIELD_P) = 1
         CALL update_halo(fields,1)
 
@@ -144,11 +145,11 @@ SUBROUTINE tea_leaf()
               chunks(c)%field%energy1,                     &
               chunks(c)%field%u0,                          & !u0
               chunks(c)%field%u,                           & !u1
-              chunks(c)%field%work_array2,                 & !un
-              chunks(c)%field%work_array4,                 & !Kx temp
-              chunks(c)%field%work_array5,                 & !Ky temp
-              chunks(c)%field%work_array6,                 & !Kx
-              chunks(c)%field%work_array7,                 & !Ky
+              chunks(c)%field%vector_r,                 & !un
+              chunks(c)%field%vector_w,                 & !Kx temp
+              chunks(c)%field%vector_z,                 & !Ky temp
+              chunks(c)%field%vector_Kx,                 & !Kx
+              chunks(c)%field%vector_Ky,                 & !Ky
               coefficient)
         ELSEIF(use_C_kernels) THEN
           CALL tea_leaf_kernel_init_c(chunks(c)%field%x_min, &
@@ -162,11 +163,11 @@ SUBROUTINE tea_leaf()
               chunks(c)%field%energy1,                       &
               chunks(c)%field%u0,                            & !u0
               chunks(c)%field%u,                             & !u1
-              chunks(c)%field%work_array2,                   & !un
-              chunks(c)%field%work_array4,                   & !Kx temp
-              chunks(c)%field%work_array5,                   & !Ky temp
-              chunks(c)%field%work_array6,                   & !Kx
-              chunks(c)%field%work_array7,                   & !Ky
+              chunks(c)%field%vector_r,                   & !un
+              chunks(c)%field%vector_w,                   & !Kx temp
+              chunks(c)%field%vector_z,                   & !Ky temp
+              chunks(c)%field%vector_Kx,                   & !Kx
+              chunks(c)%field%vector_Ky,                   & !Ky
               coefficient)
         ENDIF
 
@@ -175,7 +176,7 @@ SUBROUTINE tea_leaf()
       ENDIF
 
       IF(use_fortran_kernels) THEN
-        call tea_leaf_kernel_cheby_copy_u(chunks(c)%field%x_min,&
+        CALL tea_leaf_kernel_cheby_copy_u(chunks(c)%field%x_min,&
           chunks(c)%field%x_max,                       &
           chunks(c)%field%y_min,                       &
           chunks(c)%field%y_max,                       &
@@ -192,10 +193,10 @@ SUBROUTINE tea_leaf()
             ch_switch_check = (cheby_calc_steps .GT. 0) .OR. (error .LE. tl_ch_cg_epslim)
         ELSE
             ! enough steps have passed and error < 1, otherwise it's nowhere near converging on eigenvalues
-            ch_switch_check = (n .ge. tl_ch_cg_presteps) .and. (error .le. 1.0_8)
+            ch_switch_check = (n .GE. tl_ch_cg_presteps) .AND. (error .le. 1.0_8)
         ENDIF
 
-        IF ((tl_use_chebyshev .OR. tl_use_ppcg) .and. ch_switch_check) then
+        IF ((tl_use_chebyshev .OR. tl_use_ppcg) .AND. ch_switch_check) THEN
           ! on the first chebyshev steps, find the eigenvalues, coefficients,
           ! and expected number of iterations
           IF (cheby_calc_steps .EQ. 0) THEN
@@ -207,7 +208,7 @@ SUBROUTINE tea_leaf()
             CALL tea_calc_eigenvalues(cg_alphas, cg_betas, eigmin, eigmax, &
                 max_iters, n-1, info)
 
-            if (info .ne. 0) CALL report_error('tea_leaf', 'Error in calculating eigenvalues')
+            IF (info .NE. 0) CALL report_error('tea_leaf', 'Error in calculating eigenvalues')
 
             eigmin = eigmin*0.95
             eigmax = eigmax*1.05
@@ -217,7 +218,7 @@ SUBROUTINE tea_leaf()
               CALL tea_calc_ch_coefs(ch_alphas, ch_betas, eigmin, eigmax, &
                   theta, max_cheby_iters)
             ELSE IF (tl_use_ppcg) THEN
-              ! also calculate chebyshev coefficients
+              ! currently also calculate chebyshev coefficients
               ! TODO least squares
               CALL tea_calc_ch_coefs(ch_alphas, ch_betas, eigmin, eigmax, &
                   theta, tl_ppcg_inner_steps)
@@ -225,42 +226,42 @@ SUBROUTINE tea_leaf()
 
             cn = eigmax/eigmin
 
-            if (parallel%boss) then
-              write(g_out,'(a,i3,a,e15.7)') "Switching after ",n," steps, error ",rro
-              write(g_out,'(4a11)')"eigmin", "eigmax", "cn", "error"
-              write(g_out,'(2f11.5,2e11.4)')eigmin, eigmax, cn, error
-              write(0,'(a,i3,a,e15.7)') "Switching after ",n," steps, error ",rro
-              write(0,'(4a11)')"eigmin", "eigmax", "cn", "error"
-              write(0,'(2f11.5,2e11.4)')eigmin, eigmax, cn, error
-            endif
-          endif
+            IF (parallel%boss) THEN
+              WRITE(g_out,'(a,i3,a,e15.7)') "Switching after ",n," steps, error ",rro
+              WRITE(g_out,'(4a11)')"eigmin", "eigmax", "cn", "error"
+              WRITE(g_out,'(2f11.5,2e11.4)')eigmin, eigmax, cn, error
+              WRITE(0,'(a,i3,a,e15.7)') "Switching after ",n," steps, error ",rro
+              WRITE(0,'(4a11)')"eigmin", "eigmax", "cn", "error"
+              WRITE(0,'(2f11.5,2e11.4)')eigmin, eigmax, cn, error
+            ENDIF
+          ENDIF
 
-          if (tl_use_chebyshev) then
+          IF (tl_use_chebyshev) THEN
               ! don't need to update p any more
               fields(FIELD_P) = 0
 
-              if (cheby_calc_steps .eq. 0) then
-                call tea_leaf_cheby_first_step(c, ch_alphas, ch_betas, fields, &
+              IF (cheby_calc_steps .EQ. 0) THEN
+                CALL tea_leaf_cheby_first_step(c, ch_alphas, ch_betas, fields, &
                     error, rx, ry, theta, cn, max_cheby_iters, est_itc)
 
                 cheby_calc_steps = 2
 
                 switch_step = n
-              else
+              ELSE
                   IF(use_fortran_kernels) THEN
-                      call tea_leaf_kernel_cheby_iterate(chunks(c)%field%x_min,&
+                      CALL tea_leaf_kernel_cheby_iterate(chunks(c)%field%x_min,&
                           chunks(c)%field%x_max,                       &
                           chunks(c)%field%y_min,                       &
                           chunks(c)%field%y_max,                       &
                           chunks(c)%field%u,                           &
                           chunks(c)%field%u0,                          &
-                          chunks(c)%field%work_array1,                 &
-                          chunks(c)%field%work_array2,                 &
-                          chunks(c)%field%work_array3,                 &
-                          chunks(c)%field%work_array4,                 &
-                          chunks(c)%field%work_array5,                 &
-                          chunks(c)%field%work_array6,                 &
-                          chunks(c)%field%work_array7,                 &
+                          chunks(c)%field%vector_p,                 &
+                          chunks(c)%field%vector_r,                 &
+                          chunks(c)%field%vector_Mi,                 &
+                          chunks(c)%field%vector_w,                 &
+                          chunks(c)%field%vector_z,                 &
+                          chunks(c)%field%vector_Kx,                 &
+                          chunks(c)%field%vector_Ky,                 &
                           ch_alphas, ch_betas, max_cheby_iters,        &
                           rx, ry, cheby_calc_steps)
                   ENDIF
@@ -270,19 +271,19 @@ SUBROUTINE tea_leaf()
                   ! total time spent much if at all (number of steps spent in
                   ! chebyshev is typically O(300+)) but will greatly reduce global
                   ! synchronisations needed
-                  if ((n .ge. est_itc) .and. (mod(n, 10) .eq. 0)) then
+                  IF ((n .GE. est_itc) .AND. (mod(n, 10) .eq. 0)) THEN
                     IF(use_fortran_kernels) THEN
-                      call tea_leaf_calc_2norm_kernel(chunks(c)%field%x_min,        &
+                      CALL tea_leaf_calc_2norm_kernel(chunks(c)%field%x_min,        &
                             chunks(c)%field%x_max,                       &
                             chunks(c)%field%y_min,                       &
                             chunks(c)%field%y_max,                       &
-                            chunks(c)%field%work_array2,                 &
+                            chunks(c)%field%vector_r,                 &
                             error)
                     ENDIF
 
-                    call tea_allsum(error)
-                  endif
-              endif
+                    CALL tea_allsum(error)
+                  ENDIF
+              ENDIF
           ELSE IF (tl_use_ppcg) THEN
             IF (cheby_calc_steps .EQ. 0) THEN
               cheby_calc_steps = 1
@@ -294,9 +295,9 @@ SUBROUTINE tea_leaf()
                     chunks(c)%field%y_max,                       &
                     chunks(c)%field%u,                           &
                     chunks(c)%field%u0,                 &
-                    chunks(c)%field%work_array2,                 &
-                    chunks(c)%field%work_array6,                 &
-                    chunks(c)%field%work_array7,                 &
+                    chunks(c)%field%vector_r,                 &
+                    chunks(c)%field%vector_Kx,                 &
+                    chunks(c)%field%vector_Ky,                 &
                     rx, ry)
               ENDIF
 
@@ -311,10 +312,10 @@ SUBROUTINE tea_leaf()
                   chunks(c)%field%x_max,                       &
                   chunks(c)%field%y_min,                       &
                   chunks(c)%field%y_max,                       &
-                  chunks(c)%field%work_array1,                 &
-                  chunks(c)%field%work_array4,                 &
-                  chunks(c)%field%work_array6,                 &
-                  chunks(c)%field%work_array7,                 &
+                  chunks(c)%field%vector_p,                 &
+                  chunks(c)%field%vector_w,                 &
+                  chunks(c)%field%vector_Kx,                 &
+                  chunks(c)%field%vector_Ky,                 &
                   rx, ry, pw)
             ENDIF
 
@@ -322,30 +323,30 @@ SUBROUTINE tea_leaf()
             alpha = rro/pw
 
             IF(use_fortran_kernels) THEN
-              call tea_leaf_kernel_solve_cg_fortran_calc_ur(chunks(c)%field%x_min,&
+              CALL tea_leaf_kernel_solve_cg_fortran_calc_ur(chunks(c)%field%x_min,&
                   chunks(c)%field%x_max,                       &
                   chunks(c)%field%y_min,                       &
                   chunks(c)%field%y_max,                       &
                   chunks(c)%field%u,                           &
-                  chunks(c)%field%work_array1,                 &
-                  chunks(c)%field%work_array2,                 &
-                  chunks(c)%field%work_array3,                 &
-                  chunks(c)%field%work_array4,                 &
-                  chunks(c)%field%work_array5,                 &
+                  chunks(c)%field%vector_p,                 &
+                  chunks(c)%field%vector_r,                 &
+                  chunks(c)%field%vector_Mi,                 &
+                  chunks(c)%field%vector_w,                 &
+                  chunks(c)%field%vector_z,                 &
                   alpha, rrn)
             ENDIF
 
             ! not using rrn, so don't do a tea_allsum
 
-            call tea_leaf_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
+            CALL tea_leaf_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
                 rx, ry, tl_ppcg_inner_steps, c)
 
             IF(use_fortran_kernels) THEN
-              call tea_leaf_calc_2norm_kernel(chunks(c)%field%x_min,        &
+              CALL tea_leaf_calc_2norm_kernel(chunks(c)%field%x_min,        &
                     chunks(c)%field%x_max,                       &
                     chunks(c)%field%y_min,                       &
                     chunks(c)%field%y_max,                       &
-                    chunks(c)%field%work_array2,                 &
+                    chunks(c)%field%vector_r,                 &
                     rrn)
             ENDIF
 
@@ -358,9 +359,9 @@ SUBROUTINE tea_leaf()
                   chunks(c)%field%x_max,                       &
                   chunks(c)%field%y_min,                       &
                   chunks(c)%field%y_max,                       &
-                  chunks(c)%field%work_array1,                 &
-                  chunks(c)%field%work_array2,                 &
-                  chunks(c)%field%work_array5,                 &
+                  chunks(c)%field%vector_p,                 &
+                  chunks(c)%field%vector_r,                 &
+                  chunks(c)%field%vector_z,                 &
                   beta)
             ENDIF
 
@@ -378,38 +379,38 @@ SUBROUTINE tea_leaf()
                 chunks(c)%field%x_max,                                         &
                 chunks(c)%field%y_min,                                         &
                 chunks(c)%field%y_max,                                         &
-                chunks(c)%field%work_array1,                                   & ! p
-                chunks(c)%field%work_array4,                                   & ! w
-                chunks(c)%field%work_array6,                                   & ! Kx
-                chunks(c)%field%work_array7,                                   & ! Ky
+                chunks(c)%field%vector_p,                                   &
+                chunks(c)%field%vector_w,                                   &
+                chunks(c)%field%vector_Kx,                                   &
+                chunks(c)%field%vector_Ky,                                   &
                 rx, ry, pw)
           ELSEIF(use_c_kernels) THEN
             CALL tea_leaf_kernel_solve_cg_c_calc_w(chunks(c)%field%x_min,&
                 chunks(c)%field%x_max,                                   &
                 chunks(c)%field%y_min,                                   &
                 chunks(c)%field%y_max,                                   &
-                chunks(c)%field%work_array1,                             &
-                chunks(c)%field%work_array4,                             &
-                chunks(c)%field%work_array6,                             &
-                chunks(c)%field%work_array7,                             &
+                chunks(c)%field%vector_p,                             &
+                chunks(c)%field%vector_w,                             &
+                chunks(c)%field%vector_Kx,                             &
+                chunks(c)%field%vector_Ky,                             &
                 rx, ry, pw)
           ENDIF
 
           CALL tea_allsum(pw)
           alpha = rro/pw
-          if(tl_use_chebyshev .OR. tl_use_ppcg) cg_alphas(n) = alpha
+          IF(tl_use_chebyshev .OR. tl_use_ppcg) cg_alphas(n) = alpha
 
           IF(use_fortran_kernels) THEN
-            call tea_leaf_kernel_solve_cg_fortran_calc_ur(chunks(c)%field%x_min,&
+            CALL tea_leaf_kernel_solve_cg_fortran_calc_ur(chunks(c)%field%x_min,&
                 chunks(c)%field%x_max,                       &
                 chunks(c)%field%y_min,                       &
                 chunks(c)%field%y_max,                       &
                 chunks(c)%field%u,                           &
-                chunks(c)%field%work_array1,                 &
-                chunks(c)%field%work_array2,                 &
-                chunks(c)%field%work_array3,                 &
-                chunks(c)%field%work_array4,                 &
-                chunks(c)%field%work_array5,                 &
+                chunks(c)%field%vector_p,                 &
+                chunks(c)%field%vector_r,                 &
+                chunks(c)%field%vector_Mi,                 &
+                chunks(c)%field%vector_w,                 &
+                chunks(c)%field%vector_z,                 &
                 alpha, rrn)
           ELSEIF(use_c_kernels) THEN
             CALL tea_leaf_kernel_solve_cg_c_calc_ur(chunks(c)%field%x_min,&
@@ -417,35 +418,35 @@ SUBROUTINE tea_leaf()
                 chunks(c)%field%y_min,                                    &
                 chunks(c)%field%y_max,                                    &
                 chunks(c)%field%u,                                        &
-                chunks(c)%field%work_array1,                              & ! p
-                chunks(c)%field%work_array2,                              & ! r
-                chunks(c)%field%work_array3,                              & ! Mi
-                chunks(c)%field%work_array4,                              & ! w
-                chunks(c)%field%work_array5,                              & ! z
+                chunks(c)%field%vector_p,                              &
+                chunks(c)%field%vector_r,                              &
+                chunks(c)%field%vector_Mi,                              &
+                chunks(c)%field%vector_w,                              &
+                chunks(c)%field%vector_z,                              &
                 alpha, rrn)
           ENDIF
 
           CALL tea_allsum(rrn)
           beta = rrn/rro
-          if(tl_use_chebyshev .OR. tl_use_ppcg) cg_betas(n) = beta
+          IF(tl_use_chebyshev .OR. tl_use_ppcg) cg_betas(n) = beta
 
           IF(use_fortran_kernels) THEN
             CALL tea_leaf_kernel_solve_cg_fortran_calc_p(chunks(c)%field%x_min,&
                 chunks(c)%field%x_max,                                         &
                 chunks(c)%field%y_min,                                         &
                 chunks(c)%field%y_max,                                         &
-                chunks(c)%field%work_array1,                                   & ! p
-                chunks(c)%field%work_array2,                                   & ! r
-                chunks(c)%field%work_array5,                                   & ! z
+                chunks(c)%field%vector_p,                                   &
+                chunks(c)%field%vector_r,                                   &
+                chunks(c)%field%vector_z,                                   &
                 beta)
           ELSEIF(use_c_kernels) THEN
             CALL tea_leaf_kernel_solve_cg_c_calc_p(chunks(c)%field%x_min,&
                 chunks(c)%field%x_max,                                   &
                 chunks(c)%field%y_min,                                   &
                 chunks(c)%field%y_max,                                   &
-                chunks(c)%field%work_array1,                             & ! p
-                chunks(c)%field%work_array2,                             & ! r
-                chunks(c)%field%work_array5,                             & ! z
+                chunks(c)%field%vector_p,                             &
+                chunks(c)%field%vector_r,                             &
+                chunks(c)%field%vector_z,                             &
                 beta)
           ENDIF
 
@@ -459,12 +460,12 @@ SUBROUTINE tea_leaf()
                 chunks(c)%field%y_max,                       &
                 rx,                                          &
                 ry,                                          &
-                chunks(c)%field%work_array6,                 & ! Kx
-                chunks(c)%field%work_array7,                 & ! Ky
+                chunks(c)%field%vector_Kx,                 &
+                chunks(c)%field%vector_Ky,                 &
                 error,                                       &
-                chunks(c)%field%u0,                          & ! u0
-                chunks(c)%field%u,                           & ! u1
-                chunks(c)%field%work_array2)                   ! un
+                chunks(c)%field%u0,                          &
+                chunks(c)%field%u,                           &
+                chunks(c)%field%vector_r)
           ELSEIF(use_C_kernels) THEN
             CALL tea_leaf_kernel_solve_c(chunks(c)%field%x_min,&
                 chunks(c)%field%x_max,                         &
@@ -472,12 +473,12 @@ SUBROUTINE tea_leaf()
                 chunks(c)%field%y_max,                         &
                 rx,                                            &
                 ry,                                            &
-                chunks(c)%field%work_array6,                   & ! Kx
-                chunks(c)%field%work_array7,                   & ! Ky
+                chunks(c)%field%vector_Kx,                   &
+                chunks(c)%field%vector_Ky,                   &
                 error,                                         &
-                chunks(c)%field%u0,                            & ! u0
-                chunks(c)%field%u,                             & ! u1  
-                chunks(c)%field%work_array2)                     ! un
+                chunks(c)%field%u0,                            &
+                chunks(c)%field%u,                             &
+                chunks(c)%field%vector_r)
           ENDIF
 
           CALL tea_allsum(error)
@@ -499,7 +500,7 @@ SUBROUTINE tea_leaf()
 
       ENDDO
 
-      if (tl_check_result) then
+      IF (tl_check_result) THEN
         IF(use_fortran_kernels) THEN
           CALL tea_leaf_calc_residual(chunks(c)%field%x_min,&
               chunks(c)%field%x_max,                       &
@@ -507,19 +508,19 @@ SUBROUTINE tea_leaf()
               chunks(c)%field%y_max,                       &
               chunks(c)%field%u,                           &
               chunks(c)%field%u0,                 &
-              chunks(c)%field%work_array2,                 &
-              chunks(c)%field%work_array6,                 &
-              chunks(c)%field%work_array7,                 &
+              chunks(c)%field%vector_r,                 &
+              chunks(c)%field%vector_Kx,                 &
+              chunks(c)%field%vector_Ky,                 &
               rx, ry)
-          call tea_leaf_calc_2norm_kernel(chunks(c)%field%x_min,        &
+          CALL tea_leaf_calc_2norm_kernel(chunks(c)%field%x_min,        &
               chunks(c)%field%x_max,                       &
               chunks(c)%field%y_min,                       &
               chunks(c)%field%y_max,                       &
-              chunks(c)%field%work_array2,                 &
+              chunks(c)%field%vector_r,                 &
               exact_error)
         ENDIF
 
-        call tea_allsum(exact_error)
+        CALL tea_allsum(exact_error)
       ENDIF
 
       IF (parallel%boss) THEN
@@ -565,41 +566,41 @@ SUBROUTINE tea_leaf()
   ENDDO
   IF(profile_solver) profiler%tea_init=profiler%tea_init+(timer()-kernel_time)
 
-  IF (profile_solver .and. parallel%boss) then
-    write(0, "(a16, a7, a16)") "Time", "Steps", "Per it"
-    write(0, "(f16.10, i7, f16.10, f7.2)") total_solve_time, n, total_solve_time/n
-    write(g_out, "(a16, a7, a16)") "Time", "Steps", "Per it"
-    write(g_out, "(f16.10, i7, f16.10, f7.2)") total_solve_time, n, total_solve_time/n
-  endif
+  IF (profile_solver .AND. parallel%boss) THEN
+    WRITE(0, "(a16, a7, a16)") "Time", "Steps", "Per it"
+    WRITE(0, "(f16.10, i7, f16.10, f7.2)") total_solve_time, n, total_solve_time/n
+    WRITE(g_out, "(a16, a7, a16)") "Time", "Steps", "Per it"
+    WRITE(g_out, "(f16.10, i7, f16.10, f7.2)") total_solve_time, n, total_solve_time/n
+  ENDIF
 
-  IF (profile_solver .and. tl_use_chebyshev) THEN
-    call tea_sum(ch_time)
-    call tea_sum(cg_time)
-    if (parallel%boss) then
-      cg_per_it = merge((cg_time/cg_calc_steps)/parallel%max_task, 0.0_8, cg_calc_steps .gt. 0)
-      ch_per_it = merge((ch_time/cheby_calc_steps)/parallel%max_task, 0.0_8, cheby_calc_steps .gt. 0)
+  IF (profile_solver .AND. tl_use_chebyshev) THEN
+    CALL tea_sum(ch_time)
+    CALL tea_sum(cg_time)
+    IF (parallel%boss) THEN
+      cg_per_it = MERGE((cg_time/cg_calc_steps)/parallel%max_task, 0.0_8, cg_calc_steps .GT. 0)
+      ch_per_it = MERGE((ch_time/cheby_calc_steps)/parallel%max_task, 0.0_8, cheby_calc_steps .GT. 0)
 
-      write(0, "(a3, a16, a7, a16, a7)") "", "Time", "Steps", "Per it", "Ratio"
-      write(0, "(a3, f16.10, i7, f16.10, f7.2)") &
+      WRITE(0, "(a3, a16, a7, a16, a7)") "", "Time", "Steps", "Per it", "Ratio"
+      WRITE(0, "(a3, f16.10, i7, f16.10, f7.2)") &
           "CG", cg_time + 0.0_8, cg_calc_steps, cg_per_it, 1.0_8
-      write(0, "(a3, f16.10, i7, f16.10, f7.2)") "CH", ch_time + 0.0_8, cheby_calc_steps, &
-          ch_per_it, merge(ch_per_it/cg_per_it, 0.0_8, cheby_calc_steps .gt. 0)
-      write(0, "('Chebyshev actually took ', i6, ' (' i6, ' off guess)')") &
+      WRITE(0, "(a3, f16.10, i7, f16.10, f7.2)") "CH", ch_time + 0.0_8, cheby_calc_steps, &
+          ch_per_it, MERGE(ch_per_it/cg_per_it, 0.0_8, cheby_calc_steps .GT. 0)
+      WRITE(0, "('Chebyshev actually took ', i6, ' (' i6, ' off guess)')") &
           cheby_calc_steps, cheby_calc_steps-est_itc
 
-      write(g_out, "(a3, a16, a7, a16, a7)") "", "Time", "Steps", "Per it", "Ratio"
-      write(g_out, "(a3, f16.10, i7, f16.10, f7.2)") &
+      WRITE(g_out, "(a3, a16, a7, a16, a7)") "", "Time", "Steps", "Per it", "Ratio"
+      WRITE(g_out, "(a3, f16.10, i7, f16.10, f7.2)") &
           "CG", cg_time + 0.0_8, cg_calc_steps, cg_per_it, 1.0_8
-      write(g_out, "(a3, f16.10, i7, f16.10, f7.2)") "CH", ch_time + 0.0_8, cheby_calc_steps, &
-          ch_per_it, merge(ch_per_it/cg_per_it, 0.0_8, cheby_calc_steps .gt. 0)
-      write(g_out, "('Chebyshev actually took ', i6, ' (' i6, ' off guess)')") &
+      WRITE(g_out, "(a3, f16.10, i7, f16.10, f7.2)") "CH", ch_time + 0.0_8, cheby_calc_steps, &
+          ch_per_it, MERGE(ch_per_it/cg_per_it, 0.0_8, cheby_calc_steps .GT. 0)
+      WRITE(g_out, "('Chebyshev actually took ', i6, ' (' i6, ' off guess)')") &
           cheby_calc_steps, cheby_calc_steps-est_itc
-    endif
-  endif
+    ENDIF
+  ENDIF
 
 END SUBROUTINE tea_leaf
 
-subroutine tea_leaF_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
+SUBROUTINE tea_leaF_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
     rx, ry, tl_ppcg_inner_steps, c)
 
   INTEGER :: fields(NUM_FIELDS)
@@ -608,12 +609,12 @@ subroutine tea_leaF_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
   REAL(KIND=8), DIMENSION(max_iters) :: ch_alphas, ch_betas
 
   IF(use_fortran_kernels) THEN
-    call tea_leaf_kernel_ppcg_init_sd(chunks(c)%field%x_min,&
+    CALL tea_leaf_kernel_ppcg_init_sd(chunks(c)%field%x_min,&
         chunks(c)%field%x_max,                       &
         chunks(c)%field%y_min,                       &
         chunks(c)%field%y_max,                       &
-        chunks(c)%field%work_array2,                 &
-        chunks(c)%field%work_array8,                 &
+        chunks(c)%field%vector_r,                 &
+        chunks(c)%field%vector_sd,                 &
         theta)
   ENDIF
 
@@ -625,7 +626,7 @@ subroutine tea_leaF_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
     CALL update_halo(fields,1)
 
     IF(use_fortran_kernels) THEN
-      call tea_leaf_kernel_ppcg_inner(chunks(c)%field%x_min,&
+      CALL tea_leaf_kernel_ppcg_inner(chunks(c)%field%x_min,&
           chunks(c)%field%x_max,                       &
           chunks(c)%field%y_min,                       &
           chunks(c)%field%y_max,                       &
@@ -633,18 +634,18 @@ subroutine tea_leaF_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
           ch_alphas, ch_betas, &
           rx, ry, &
           chunks(c)%field%u,                           &
-          chunks(c)%field%work_array2,                 &
-          chunks(c)%field%work_array6,                 &
-          chunks(c)%field%work_array7,                 &
-          chunks(c)%field%work_array8)
+          chunks(c)%field%vector_r,                 &
+          chunks(c)%field%vector_Kx,                 &
+          chunks(c)%field%vector_Ky,                 &
+          chunks(c)%field%vector_sd)
     ENDIF
   ENDDO
 
   fields = 0
   fields(FIELD_P) = 1
-end subroutine
+END SUBROUTINE
 
-subroutine tea_leaf_cheby_first_step(c, ch_alphas, ch_betas, fields, &
+SUBROUTINE tea_leaf_cheby_first_step(c, ch_alphas, ch_betas, fields, &
     error, rx, ry, theta, cn, max_cheby_iters, est_itc)
 
   IMPLICIT NONE
@@ -656,7 +657,7 @@ subroutine tea_leaf_cheby_first_step(c, ch_alphas, ch_betas, fields, &
 
   ! calculate 2 norm of u0
   IF(use_fortran_kernels) THEN
-    call tea_leaf_calc_2norm_kernel(chunks(c)%field%x_min,        &
+    CALL tea_leaf_calc_2norm_kernel(chunks(c)%field%x_min,        &
           chunks(c)%field%x_max,                       &
           chunks(c)%field%y_min,                       &
           chunks(c)%field%y_max,                       &
@@ -664,23 +665,23 @@ subroutine tea_leaf_cheby_first_step(c, ch_alphas, ch_betas, fields, &
           bb)
   ENDIF
 
-  call tea_allsum(bb)
+  CALL tea_allsum(bb)
 
   ! initialise 'p' array
   IF(use_fortran_kernels) THEN
-    call tea_leaf_kernel_cheby_init(chunks(c)%field%x_min,&
+    CALL tea_leaf_kernel_cheby_init(chunks(c)%field%x_min,&
           chunks(c)%field%x_max,                       &
           chunks(c)%field%y_min,                       &
           chunks(c)%field%y_max,                       &
           chunks(c)%field%u,                           &
           chunks(c)%field%u0,                 &
-          chunks(c)%field%work_array1,                 &
-          chunks(c)%field%work_array2,                 &
-          chunks(c)%field%work_array3,                 &
-          chunks(c)%field%work_array4,                 &
-          chunks(c)%field%work_array5,                 &
-          chunks(c)%field%work_array6,                 &
-          chunks(c)%field%work_array7,                 &
+          chunks(c)%field%vector_p,                 &
+          chunks(c)%field%vector_r,                 &
+          chunks(c)%field%vector_Mi,                 &
+          chunks(c)%field%vector_w,                 &
+          chunks(c)%field%vector_z,                 &
+          chunks(c)%field%vector_Kx,                 &
+          chunks(c)%field%vector_Ky,                 &
           ch_alphas, ch_betas, max_cheby_iters, &
           rx, ry, theta, error)
   ENDIF
@@ -688,45 +689,45 @@ subroutine tea_leaf_cheby_first_step(c, ch_alphas, ch_betas, fields, &
   CALL update_halo(fields,1)
 
   IF(use_fortran_kernels) THEN
-      call tea_leaf_kernel_cheby_iterate(chunks(c)%field%x_min,&
+      CALL tea_leaf_kernel_cheby_iterate(chunks(c)%field%x_min,&
           chunks(c)%field%x_max,                       &
           chunks(c)%field%y_min,                       &
           chunks(c)%field%y_max,                       &
           chunks(c)%field%u,                           &
           chunks(c)%field%u0,                          &
-          chunks(c)%field%work_array1,                 &
-          chunks(c)%field%work_array2,                 &
-          chunks(c)%field%work_array3,                 &
-          chunks(c)%field%work_array4,                 &
-          chunks(c)%field%work_array5,                 &
-          chunks(c)%field%work_array6,                 &
-          chunks(c)%field%work_array7,                 &
+          chunks(c)%field%vector_p,                 &
+          chunks(c)%field%vector_r,                 &
+          chunks(c)%field%vector_Mi,                 &
+          chunks(c)%field%vector_w,                 &
+          chunks(c)%field%vector_z,                 &
+          chunks(c)%field%vector_Kx,                 &
+          chunks(c)%field%vector_Ky,                 &
           ch_alphas, ch_betas, max_cheby_iters,        &
           rx, ry, 1)
   ENDIF
 
   IF(use_fortran_kernels) THEN
-    call tea_leaf_calc_2norm_kernel(chunks(c)%field%x_min,        &
+    CALL tea_leaf_calc_2norm_kernel(chunks(c)%field%x_min,        &
           chunks(c)%field%x_max,                       &
           chunks(c)%field%y_min,                       &
           chunks(c)%field%y_max,                       &
-          chunks(c)%field%work_array2,                 &
+          chunks(c)%field%vector_r,                 &
           error)
   ENDIF
 
-  call tea_allsum(error)
+  CALL tea_allsum(error)
 
-  it_alpha = epsilon(1.0_8)*bb/(4.0_8*error)
-  gamm = (sqrt(cn) - 1.0_8)/(sqrt(cn) + 1.0_8)
-  est_itc = nint(log(it_alpha)/(2.0_8*log(gamm)))
+  it_alpha = EPSILON(1.0_8)*bb/(4.0_8*error)
+  gamm = (SQRT(cn) - 1.0_8)/(SQRT(cn) + 1.0_8)
+  est_itc = NINT(LOG(it_alpha)/(2.0_8*LOG(gamm)))
 
-  if (parallel%boss) then
-      write(g_out,'(a11)')"est itc"
-      write(g_out,'(11i11)')est_itc
-      write(0,'(a11)')"est itc"
-      write(0,'(11i11)')est_itc
-  endif
+  IF (parallel%boss) THEN
+      WRITE(g_out,'(a11)')"est itc"
+      WRITE(g_out,'(11i11)')est_itc
+      WRITE(0,'(a11)')"est itc"
+      WRITE(0,'(11i11)')est_itc
+  ENDIF
 
-end subroutine tea_leaf_cheby_first_step
+END SUBROUTINE tea_leaf_cheby_first_step
 
 END MODULE tea_leaf_module

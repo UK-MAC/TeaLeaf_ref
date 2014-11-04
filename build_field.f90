@@ -46,22 +46,22 @@ SUBROUTINE build_field(chunk,x_cells,y_cells)
    ALLOCATE(chunks(chunk)%field%u         (chunks(chunk)%field%x_min-2:chunks(chunk)%field%x_max+2, &
                    chunks(chunk)%field%y_min-2:chunks(chunk)%field%y_max+2))
 
-   ALLOCATE(chunks(chunk)%field%work_array1(chunks(chunk)%field%x_min-2:chunks(chunk)%field%x_max+3, &
-                                            chunks(chunk)%field%y_min-2:chunks(chunk)%field%y_max+3))
-   ALLOCATE(chunks(chunk)%field%work_array2(chunks(chunk)%field%x_min-2:chunks(chunk)%field%x_max+3, &
-                                            chunks(chunk)%field%y_min-2:chunks(chunk)%field%y_max+3))
-   ALLOCATE(chunks(chunk)%field%work_array3(chunks(chunk)%field%x_min-2:chunks(chunk)%field%x_max+3, &
-                                            chunks(chunk)%field%y_min-2:chunks(chunk)%field%y_max+3))
-   ALLOCATE(chunks(chunk)%field%work_array4(chunks(chunk)%field%x_min-2:chunks(chunk)%field%x_max+3, &
-                                            chunks(chunk)%field%y_min-2:chunks(chunk)%field%y_max+3))
-   ALLOCATE(chunks(chunk)%field%work_array5(chunks(chunk)%field%x_min-2:chunks(chunk)%field%x_max+3, &
-                                            chunks(chunk)%field%y_min-2:chunks(chunk)%field%y_max+3))
-   ALLOCATE(chunks(chunk)%field%work_array6(chunks(chunk)%field%x_min-2:chunks(chunk)%field%x_max+3, &
-                                            chunks(chunk)%field%y_min-2:chunks(chunk)%field%y_max+3))
-   ALLOCATE(chunks(chunk)%field%work_array7(chunks(chunk)%field%x_min-2:chunks(chunk)%field%x_max+3, &
-                                            chunks(chunk)%field%y_min-2:chunks(chunk)%field%y_max+3))
-   ALLOCATE(chunks(chunk)%field%work_array8(chunks(chunk)%field%x_min-2:chunks(chunk)%field%x_max+3, &
-                                            chunks(chunk)%field%y_min-2:chunks(chunk)%field%y_max+3))
+   ALLOCATE(chunks(chunk)%field%vector_p(chunks(chunk)%field%x_min-2:chunks(chunk)%field%x_max+2, &
+                                            chunks(chunk)%field%y_min-2:chunks(chunk)%field%y_max+2))
+   ALLOCATE(chunks(chunk)%field%vector_r(chunks(chunk)%field%x_min-2:chunks(chunk)%field%x_max+2, &
+                                            chunks(chunk)%field%y_min-2:chunks(chunk)%field%y_max+2))
+   ALLOCATE(chunks(chunk)%field%vector_Mi(chunks(chunk)%field%x_min-2:chunks(chunk)%field%x_max+2, &
+                                            chunks(chunk)%field%y_min-2:chunks(chunk)%field%y_max+2))
+   ALLOCATE(chunks(chunk)%field%vector_w(chunks(chunk)%field%x_min-2:chunks(chunk)%field%x_max+2, &
+                                            chunks(chunk)%field%y_min-2:chunks(chunk)%field%y_max+2))
+   ALLOCATE(chunks(chunk)%field%vector_z(chunks(chunk)%field%x_min-2:chunks(chunk)%field%x_max+2, &
+                                            chunks(chunk)%field%y_min-2:chunks(chunk)%field%y_max+2))
+   ALLOCATE(chunks(chunk)%field%vector_Kx(chunks(chunk)%field%x_min-2:chunks(chunk)%field%x_max+2, &
+                                            chunks(chunk)%field%y_min-2:chunks(chunk)%field%y_max+2))
+   ALLOCATE(chunks(chunk)%field%vector_Ky(chunks(chunk)%field%x_min-2:chunks(chunk)%field%x_max+2, &
+                                            chunks(chunk)%field%y_min-2:chunks(chunk)%field%y_max+2))
+   ALLOCATE(chunks(chunk)%field%vector_sd(chunks(chunk)%field%x_min-2:chunks(chunk)%field%x_max+2, &
+                                            chunks(chunk)%field%y_min-2:chunks(chunk)%field%y_max+2))
 
    ALLOCATE(chunks(chunk)%field%cellx   (chunks(chunk)%field%x_min-2:chunks(chunk)%field%x_max+2))
    ALLOCATE(chunks(chunk)%field%celly   (chunks(chunk)%field%y_min-2:chunks(chunk)%field%y_max+2))
@@ -82,13 +82,13 @@ SUBROUTINE build_field(chunk,x_cells,y_cells)
    ! are allocated. This prevents first touch overheads in the main code
    ! cycle which can skew timings in the first step
 !$OMP PARALLEL
-   chunks(chunk)%field%work_array1=0.0
-   chunks(chunk)%field%work_array2=0.0
-   chunks(chunk)%field%work_array3=0.0
-   chunks(chunk)%field%work_array4=0.0
-   chunks(chunk)%field%work_array5=0.0
-   chunks(chunk)%field%work_array6=0.0
-   chunks(chunk)%field%work_array7=0.0
+   chunks(chunk)%field%vector_p=0.0
+   chunks(chunk)%field%vector_r=0.0
+   chunks(chunk)%field%vector_Mi=0.0
+   chunks(chunk)%field%vector_w=0.0
+   chunks(chunk)%field%vector_z=0.0
+   chunks(chunk)%field%vector_Kx=0.0
+   chunks(chunk)%field%vector_Ky=0.0
 
    chunks(chunk)%field%density=0.0
    chunks(chunk)%field%energy0=0.0

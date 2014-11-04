@@ -2,17 +2,17 @@
 !
 ! This file is part of TeaLeaf.
 !
-! TeaLeaf is free software: you can redistribute it and/or modify it under 
-! the terms of the GNU General Public License as published by the 
-! Free Software Foundation, either version 3 of the License, or (at your option) 
+! TeaLeaf is free software: you can redistribute it and/or modify it under
+! the terms of the GNU General Public License as published by the
+! Free Software Foundation, either version 3 of the License, or (at your option)
 ! any later version.
 !
-! TeaLeaf is distributed in the hope that it will be useful, but 
-! WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
-! FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more 
+! TeaLeaf is distributed in the hope that it will be useful, but
+! WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+! FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
 ! details.
 !
-! You should have received a copy of the GNU General Public License along with 
+! You should have received a copy of the GNU General Public License along with
 ! TeaLeaf. If not, see http://www.gnu.org/licenses/.
 
 !>  @brief Communication Utilities
@@ -21,7 +21,7 @@
 !>  environment, including initialisation, mesh decompostion, reductions and
 !>  halo exchange using explicit buffers.
 !>
-!>  Note the halo exchange is currently coded as simply as possible and no 
+!>  Note the halo exchange is currently coded as simply as possible and no
 !>  optimisations have been implemented, such as post receives before sends or packing
 !>  buffers with multiple data fields. This is intentional so the effect of these
 !>  optimisations can be measured on large systems, as and when they are added.
@@ -76,10 +76,10 @@ SUBROUTINE tea_init_comms
   rank=0
   size=1
 
-  CALL MPI_INIT(err) 
+  CALL MPI_INIT(err)
 
-  CALL MPI_COMM_RANK(MPI_COMM_WORLD,rank,err) 
-  CALL MPI_COMM_SIZE(MPI_COMM_WORLD,size,err) 
+  CALL MPI_COMM_RANK(MPI_COMM_WORLD,rank,err)
+  CALL MPI_COMM_SIZE(MPI_COMM_WORLD,size,err)
 
   parallel%parallel=.TRUE.
   parallel%task=rank
@@ -209,7 +209,10 @@ SUBROUTINE tea_allocate_buffers(chunk)
   IMPLICIT NONE
 
   INTEGER      :: chunk
-  
+
+  lr_pack_buffer_size = (chunks(chunk)%field%y_max+5)
+  bt_pack_buffer_size = (chunks(chunk)%field%x_max+5)
+
   ! Unallocated buffers for external boundaries caused issues on some systems so they are now
   !  all allocated
   IF(parallel%task.EQ.chunks(chunk)%task)THEN
@@ -249,7 +252,7 @@ SUBROUTINE tea_exchange(fields,depth)
     request=0
     message_count=0
 
-    chunk = 1 
+    chunk = 1
 
     end_pack_index_left_right=0
     end_pack_index_bottom_top=0
@@ -297,7 +300,7 @@ SUBROUTINE tea_exchange(fields,depth)
     IF(chunks(chunk)%chunk_neighbours(chunk_left).NE.external_face) THEN
         CALL tea_unpack_left(fields, chunk, depth,                      &
                                 chunks(chunk)%left_rcv_buffer,                      &
-                                left_right_offset)                  
+                                left_right_offset)
     ENDIF
 
 
@@ -434,6 +437,75 @@ SUBROUTINE tea_pack_left(chunk, fields, depth, left_right_offset)
                                       left_right_offset(FIELD_ENERGY1))
     ENDIF
   ENDIF
+  IF(fields(FIELD_P).EQ.1) THEN
+    IF(use_fortran_kernels) THEN
+      CALL tea_pack_message_left(chunks(chunk)%field%x_min,                    &
+                                    chunks(chunk)%field%x_max,                    &
+                                    chunks(chunk)%field%y_min,                    &
+                                    chunks(chunk)%field%y_max,                    &
+                                    chunks(chunk)%field%vector_p,                  &
+                                    chunks(chunk)%left_snd_buffer,                &
+                                    CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
+                                    depth, CELL_DATA,                             &
+                                    left_right_offset(FIELD_P))
+    ELSE
+      CALL tea_pack_message_left_c(chunks(chunk)%field%x_min,                    &
+                                      chunks(chunk)%field%x_max,                    &
+                                      chunks(chunk)%field%y_min,                    &
+                                      chunks(chunk)%field%y_max,                    &
+                                      chunks(chunk)%field%vector_p,                  &
+                                      chunks(chunk)%left_snd_buffer,                &
+                                      CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
+                                      depth, CELL_DATA,                             &
+                                      left_right_offset(FIELD_P))
+    ENDIF
+  ENDIF
+  IF(fields(FIELD_U).EQ.1) THEN
+    IF(use_fortran_kernels) THEN
+      CALL tea_pack_message_left(chunks(chunk)%field%x_min,                    &
+                                    chunks(chunk)%field%x_max,                    &
+                                    chunks(chunk)%field%y_min,                    &
+                                    chunks(chunk)%field%y_max,                    &
+                                    chunks(chunk)%field%u,                  &
+                                    chunks(chunk)%left_snd_buffer,                &
+                                    CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
+                                    depth, CELL_DATA,                             &
+                                    left_right_offset(FIELD_U))
+    ELSE
+      CALL tea_pack_message_left_c(chunks(chunk)%field%x_min,                    &
+                                      chunks(chunk)%field%x_max,                    &
+                                      chunks(chunk)%field%y_min,                    &
+                                      chunks(chunk)%field%y_max,                    &
+                                      chunks(chunk)%field%u,                  &
+                                      chunks(chunk)%left_snd_buffer,                &
+                                      CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
+                                      depth, CELL_DATA,                             &
+                                      left_right_offset(FIELD_U))
+    ENDIF
+  ENDIF
+  IF(fields(FIELD_SD).EQ.1) THEN
+    IF(use_fortran_kernels) THEN
+      CALL tea_pack_message_left(chunks(chunk)%field%x_min,                    &
+                                    chunks(chunk)%field%x_max,                    &
+                                    chunks(chunk)%field%y_min,                    &
+                                    chunks(chunk)%field%y_max,                    &
+                                    chunks(chunk)%field%vector_sd,                  &
+                                    chunks(chunk)%left_snd_buffer,                &
+                                    CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
+                                    depth, CELL_DATA,                             &
+                                    left_right_offset(FIELD_SD))
+    ELSE
+      CALL tea_pack_message_left_c(chunks(chunk)%field%x_min,                    &
+                                      chunks(chunk)%field%x_max,                    &
+                                      chunks(chunk)%field%y_min,                    &
+                                      chunks(chunk)%field%y_max,                    &
+                                      chunks(chunk)%field%vector_sd,                  &
+                                      chunks(chunk)%left_snd_buffer,                &
+                                      CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
+                                      depth, CELL_DATA,                             &
+                                      left_right_offset(FIELD_SD))
+    ENDIF
+  ENDIF
 
 END SUBROUTINE tea_pack_left
 
@@ -540,6 +612,75 @@ SUBROUTINE tea_unpack_left(fields, chunk, depth,                         &
                                         left_right_offset(FIELD_ENERGY1))
     ENDIF
   ENDIF
+  IF(fields(FIELD_P).EQ.1) THEN
+    IF(use_fortran_kernels) THEN
+      CALL tea_unpack_message_left(chunks(chunk)%field%x_min,                    &
+                                      chunks(chunk)%field%x_max,                    &
+                                      chunks(chunk)%field%y_min,                    &
+                                      chunks(chunk)%field%y_max,                    &
+                                      chunks(chunk)%field%vector_p,                  &
+                                      chunks(chunk)%left_rcv_buffer,                &
+                                      CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
+                                      depth, CELL_DATA,                             &
+                                      left_right_offset(FIELD_P))
+    ELSE
+      CALL tea_unpack_message_left_c(chunks(chunk)%field%x_min,                    &
+                                        chunks(chunk)%field%x_max,                    &
+                                        chunks(chunk)%field%y_min,                    &
+                                        chunks(chunk)%field%y_max,                    &
+                                        chunks(chunk)%field%vector_p,                  &
+                                        chunks(chunk)%left_rcv_buffer,                &
+                                        CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
+                                        depth, CELL_DATA,                             &
+                                        left_right_offset(FIELD_P))
+    ENDIF
+  ENDIF
+  IF(fields(FIELD_U).EQ.1) THEN
+    IF(use_fortran_kernels) THEN
+      CALL tea_unpack_message_left(chunks(chunk)%field%x_min,                    &
+                                      chunks(chunk)%field%x_max,                    &
+                                      chunks(chunk)%field%y_min,                    &
+                                      chunks(chunk)%field%y_max,                    &
+                                      chunks(chunk)%field%u,                  &
+                                      chunks(chunk)%left_rcv_buffer,                &
+                                      CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
+                                      depth, CELL_DATA,                             &
+                                      left_right_offset(FIELD_U))
+    ELSE
+      CALL tea_unpack_message_left_c(chunks(chunk)%field%x_min,                    &
+                                        chunks(chunk)%field%x_max,                    &
+                                        chunks(chunk)%field%y_min,                    &
+                                        chunks(chunk)%field%y_max,                    &
+                                        chunks(chunk)%field%u,                  &
+                                        chunks(chunk)%left_rcv_buffer,                &
+                                        CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
+                                        depth, CELL_DATA,                             &
+                                        left_right_offset(FIELD_U))
+    ENDIF
+  ENDIF
+  IF(fields(FIELD_SD).EQ.1) THEN
+    IF(use_fortran_kernels) THEN
+      CALL tea_unpack_message_left(chunks(chunk)%field%x_min,                    &
+                                      chunks(chunk)%field%x_max,                    &
+                                      chunks(chunk)%field%y_min,                    &
+                                      chunks(chunk)%field%y_max,                    &
+                                      chunks(chunk)%field%vector_sd,                  &
+                                      chunks(chunk)%left_rcv_buffer,                &
+                                      CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
+                                      depth, CELL_DATA,                             &
+                                      left_right_offset(FIELD_SD))
+    ELSE
+      CALL tea_unpack_message_left_c(chunks(chunk)%field%x_min,                    &
+                                        chunks(chunk)%field%x_max,                    &
+                                        chunks(chunk)%field%y_min,                    &
+                                        chunks(chunk)%field%y_max,                    &
+                                        chunks(chunk)%field%vector_sd,                  &
+                                        chunks(chunk)%left_rcv_buffer,                &
+                                        CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
+                                        depth, CELL_DATA,                             &
+                                        left_right_offset(FIELD_SD))
+    ENDIF
+  ENDIF
 
 END SUBROUTINE tea_unpack_left
 
@@ -618,6 +759,75 @@ SUBROUTINE tea_pack_right(chunk, fields, depth, left_right_offset)
                                        CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
                                        depth, CELL_DATA,                             &
                                        left_right_offset(FIELD_ENERGY1))
+    ENDIF
+  ENDIF
+  IF(fields(FIELD_P).EQ.1) THEN
+    IF(use_fortran_kernels) THEN
+      CALL tea_pack_message_right(chunks(chunk)%field%x_min,                    &
+                                     chunks(chunk)%field%x_max,                    &
+                                     chunks(chunk)%field%y_min,                    &
+                                     chunks(chunk)%field%y_max,                    &
+                                     chunks(chunk)%field%vector_p,                  &
+                                     chunks(chunk)%right_snd_buffer,               &
+                                     CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
+                                     depth, CELL_DATA,                             &
+                                     left_right_offset(FIELD_P))
+    ELSE
+      CALL tea_pack_message_right_c(chunks(chunk)%field%x_min,                    &
+                                       chunks(chunk)%field%x_max,                    &
+                                       chunks(chunk)%field%y_min,                    &
+                                       chunks(chunk)%field%y_max,                    &
+                                       chunks(chunk)%field%vector_p,                  &
+                                       chunks(chunk)%right_snd_buffer,               &
+                                       CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
+                                       depth, CELL_DATA,                             &
+                                       left_right_offset(FIELD_P))
+    ENDIF
+  ENDIF
+  IF(fields(FIELD_U).EQ.1) THEN
+    IF(use_fortran_kernels) THEN
+      CALL tea_pack_message_right(chunks(chunk)%field%x_min,                    &
+                                     chunks(chunk)%field%x_max,                    &
+                                     chunks(chunk)%field%y_min,                    &
+                                     chunks(chunk)%field%y_max,                    &
+                                     chunks(chunk)%field%u,                  &
+                                     chunks(chunk)%right_snd_buffer,               &
+                                     CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
+                                     depth, CELL_DATA,                             &
+                                     left_right_offset(FIELD_U))
+    ELSE
+      CALL tea_pack_message_right_c(chunks(chunk)%field%x_min,                    &
+                                       chunks(chunk)%field%x_max,                    &
+                                       chunks(chunk)%field%y_min,                    &
+                                       chunks(chunk)%field%y_max,                    &
+                                       chunks(chunk)%field%u,                  &
+                                       chunks(chunk)%right_snd_buffer,               &
+                                       CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
+                                       depth, CELL_DATA,                             &
+                                       left_right_offset(FIELD_U))
+    ENDIF
+  ENDIF
+  IF(fields(FIELD_SD).EQ.1) THEN
+    IF(use_fortran_kernels) THEN
+      CALL tea_pack_message_right(chunks(chunk)%field%x_min,                    &
+                                     chunks(chunk)%field%x_max,                    &
+                                     chunks(chunk)%field%y_min,                    &
+                                     chunks(chunk)%field%y_max,                    &
+                                     chunks(chunk)%field%vector_sd,                  &
+                                     chunks(chunk)%right_snd_buffer,               &
+                                     CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
+                                     depth, CELL_DATA,                             &
+                                     left_right_offset(FIELD_SD))
+    ELSE
+      CALL tea_pack_message_right_c(chunks(chunk)%field%x_min,                    &
+                                       chunks(chunk)%field%x_max,                    &
+                                       chunks(chunk)%field%y_min,                    &
+                                       chunks(chunk)%field%y_max,                    &
+                                       chunks(chunk)%field%vector_sd,                  &
+                                       chunks(chunk)%right_snd_buffer,               &
+                                       CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
+                                       depth, CELL_DATA,                             &
+                                       left_right_offset(FIELD_SD))
     ENDIF
   ENDIF
 
@@ -726,6 +936,75 @@ SUBROUTINE tea_unpack_right(fields, chunk, depth,                          &
                                          left_right_offset(FIELD_ENERGY1))
     ENDIF
   ENDIF
+  IF(fields(FIELD_P).EQ.1) THEN
+    IF(use_fortran_kernels) THEN
+      CALL tea_unpack_message_right(chunks(chunk)%field%x_min,                    &
+                                       chunks(chunk)%field%x_max,                    &
+                                       chunks(chunk)%field%y_min,                    &
+                                       chunks(chunk)%field%y_max,                    &
+                                       chunks(chunk)%field%vector_p,                  &
+                                       chunks(chunk)%right_rcv_buffer,               &
+                                       CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
+                                       depth, CELL_DATA,                             &
+                                       left_right_offset(FIELD_P))
+    ELSE
+      CALL tea_unpack_message_right_c(chunks(chunk)%field%x_min,                    &
+                                         chunks(chunk)%field%x_max,                    &
+                                         chunks(chunk)%field%y_min,                    &
+                                         chunks(chunk)%field%y_max,                    &
+                                         chunks(chunk)%field%vector_p,                  &
+                                         chunks(chunk)%right_rcv_buffer,               &
+                                         CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
+                                         depth, CELL_DATA,                             &
+                                         left_right_offset(FIELD_P))
+    ENDIF
+  ENDIF
+  IF(fields(FIELD_U).EQ.1) THEN
+    IF(use_fortran_kernels) THEN
+      CALL tea_unpack_message_right(chunks(chunk)%field%x_min,                    &
+                                       chunks(chunk)%field%x_max,                    &
+                                       chunks(chunk)%field%y_min,                    &
+                                       chunks(chunk)%field%y_max,                    &
+                                       chunks(chunk)%field%u,                  &
+                                       chunks(chunk)%right_rcv_buffer,               &
+                                       CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
+                                       depth, CELL_DATA,                             &
+                                       left_right_offset(FIELD_U))
+    ELSE
+      CALL tea_unpack_message_right_c(chunks(chunk)%field%x_min,                    &
+                                         chunks(chunk)%field%x_max,                    &
+                                         chunks(chunk)%field%y_min,                    &
+                                         chunks(chunk)%field%y_max,                    &
+                                         chunks(chunk)%field%u,                  &
+                                         chunks(chunk)%right_rcv_buffer,               &
+                                         CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
+                                         depth, CELL_DATA,                             &
+                                         left_right_offset(FIELD_U))
+    ENDIF
+  ENDIF
+  IF(fields(FIELD_SD).EQ.1) THEN
+    IF(use_fortran_kernels) THEN
+      CALL tea_unpack_message_right(chunks(chunk)%field%x_min,                    &
+                                       chunks(chunk)%field%x_max,                    &
+                                       chunks(chunk)%field%y_min,                    &
+                                       chunks(chunk)%field%y_max,                    &
+                                       chunks(chunk)%field%vector_sd,                  &
+                                       chunks(chunk)%right_rcv_buffer,               &
+                                       CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
+                                       depth, CELL_DATA,                             &
+                                       left_right_offset(FIELD_SD))
+    ELSE
+      CALL tea_unpack_message_right_c(chunks(chunk)%field%x_min,                    &
+                                         chunks(chunk)%field%x_max,                    &
+                                         chunks(chunk)%field%y_min,                    &
+                                         chunks(chunk)%field%y_max,                    &
+                                         chunks(chunk)%field%vector_sd,                  &
+                                         chunks(chunk)%right_rcv_buffer,               &
+                                         CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
+                                         depth, CELL_DATA,                             &
+                                         left_right_offset(FIELD_SD))
+    ENDIF
+  ENDIF
 
 END SUBROUTINE tea_unpack_right
 
@@ -804,6 +1083,75 @@ SUBROUTINE tea_pack_top(chunk, fields, depth, bottom_top_offset)
                                      CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
                                      depth, CELL_DATA,                             &
                                      bottom_top_offset(FIELD_ENERGY1))
+    ENDIF
+  ENDIF
+  IF(fields(FIELD_P).EQ.1) THEN
+    IF(use_fortran_kernels) THEN
+      CALL tea_pack_message_top(chunks(chunk)%field%x_min,                    &
+                                   chunks(chunk)%field%x_max,                    &
+                                   chunks(chunk)%field%y_min,                    &
+                                   chunks(chunk)%field%y_max,                    &
+                                   chunks(chunk)%field%vector_p,                  &
+                                   chunks(chunk)%top_snd_buffer,                 &
+                                   CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
+                                   depth, CELL_DATA,                             &
+                                   bottom_top_offset(FIELD_P))
+    ELSE
+      CALL tea_pack_message_top_c(chunks(chunk)%field%x_min,                    &
+                                     chunks(chunk)%field%x_max,                    &
+                                     chunks(chunk)%field%y_min,                    &
+                                     chunks(chunk)%field%y_max,                    &
+                                     chunks(chunk)%field%vector_p,                  &
+                                     chunks(chunk)%top_snd_buffer,                 &
+                                     CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
+                                     depth, CELL_DATA,                             &
+                                     bottom_top_offset(FIELD_P))
+    ENDIF
+  ENDIF
+  IF(fields(FIELD_U).EQ.1) THEN
+    IF(use_fortran_kernels) THEN
+      CALL tea_pack_message_top(chunks(chunk)%field%x_min,                    &
+                                   chunks(chunk)%field%x_max,                    &
+                                   chunks(chunk)%field%y_min,                    &
+                                   chunks(chunk)%field%y_max,                    &
+                                   chunks(chunk)%field%u,                  &
+                                   chunks(chunk)%top_snd_buffer,                 &
+                                   CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
+                                   depth, CELL_DATA,                             &
+                                   bottom_top_offset(FIELD_U))
+    ELSE
+      CALL tea_pack_message_top_c(chunks(chunk)%field%x_min,                    &
+                                     chunks(chunk)%field%x_max,                    &
+                                     chunks(chunk)%field%y_min,                    &
+                                     chunks(chunk)%field%y_max,                    &
+                                     chunks(chunk)%field%u,                  &
+                                     chunks(chunk)%top_snd_buffer,                 &
+                                     CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
+                                     depth, CELL_DATA,                             &
+                                     bottom_top_offset(FIELD_U))
+    ENDIF
+  ENDIF
+  IF(fields(FIELD_SD).EQ.1) THEN
+    IF(use_fortran_kernels) THEN
+      CALL tea_pack_message_top(chunks(chunk)%field%x_min,                    &
+                                   chunks(chunk)%field%x_max,                    &
+                                   chunks(chunk)%field%y_min,                    &
+                                   chunks(chunk)%field%y_max,                    &
+                                   chunks(chunk)%field%vector_sd,                  &
+                                   chunks(chunk)%top_snd_buffer,                 &
+                                   CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
+                                   depth, CELL_DATA,                             &
+                                   bottom_top_offset(FIELD_SD))
+    ELSE
+      CALL tea_pack_message_top_c(chunks(chunk)%field%x_min,                    &
+                                     chunks(chunk)%field%x_max,                    &
+                                     chunks(chunk)%field%y_min,                    &
+                                     chunks(chunk)%field%y_max,                    &
+                                     chunks(chunk)%field%vector_sd,                  &
+                                     chunks(chunk)%top_snd_buffer,                 &
+                                     CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
+                                     depth, CELL_DATA,                             &
+                                     bottom_top_offset(FIELD_SD))
     ENDIF
   ENDIF
 
@@ -913,6 +1261,75 @@ SUBROUTINE tea_unpack_top(fields, chunk, depth,                        &
                                        bottom_top_offset(FIELD_ENERGY1))
     ENDIF
   ENDIF
+  IF(fields(FIELD_P).EQ.1) THEN
+    IF(use_fortran_kernels) THEN
+      CALL tea_unpack_message_top(chunks(chunk)%field%x_min,                    &
+                                     chunks(chunk)%field%x_max,                    &
+                                     chunks(chunk)%field%y_min,                    &
+                                     chunks(chunk)%field%y_max,                    &
+                                     chunks(chunk)%field%vector_p,                  &
+                                     chunks(chunk)%top_rcv_buffer,                 &
+                                     CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
+                                     depth, CELL_DATA,                             &
+                                     bottom_top_offset(FIELD_P))
+    ELSE
+      CALL tea_unpack_message_top_c(chunks(chunk)%field%x_min,                    &
+                                       chunks(chunk)%field%x_max,                    &
+                                       chunks(chunk)%field%y_min,                    &
+                                       chunks(chunk)%field%y_max,                    &
+                                       chunks(chunk)%field%vector_p,                  &
+                                       chunks(chunk)%top_rcv_buffer,                 &
+                                       CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
+                                       depth, CELL_DATA,                             &
+                                       bottom_top_offset(FIELD_P))
+    ENDIF
+  ENDIF
+  IF(fields(FIELD_U).EQ.1) THEN
+    IF(use_fortran_kernels) THEN
+      CALL tea_unpack_message_top(chunks(chunk)%field%x_min,                    &
+                                     chunks(chunk)%field%x_max,                    &
+                                     chunks(chunk)%field%y_min,                    &
+                                     chunks(chunk)%field%y_max,                    &
+                                     chunks(chunk)%field%u,                  &
+                                     chunks(chunk)%top_rcv_buffer,                 &
+                                     CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
+                                     depth, CELL_DATA,                             &
+                                     bottom_top_offset(FIELD_U))
+    ELSE
+      CALL tea_unpack_message_top_c(chunks(chunk)%field%x_min,                    &
+                                       chunks(chunk)%field%x_max,                    &
+                                       chunks(chunk)%field%y_min,                    &
+                                       chunks(chunk)%field%y_max,                    &
+                                       chunks(chunk)%field%u,                  &
+                                       chunks(chunk)%top_rcv_buffer,                 &
+                                       CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
+                                       depth, CELL_DATA,                             &
+                                       bottom_top_offset(FIELD_U))
+    ENDIF
+  ENDIF
+  IF(fields(FIELD_SD).EQ.1) THEN
+    IF(use_fortran_kernels) THEN
+      CALL tea_unpack_message_top(chunks(chunk)%field%x_min,                    &
+                                     chunks(chunk)%field%x_max,                    &
+                                     chunks(chunk)%field%y_min,                    &
+                                     chunks(chunk)%field%y_max,                    &
+                                     chunks(chunk)%field%vector_sd,                  &
+                                     chunks(chunk)%top_rcv_buffer,                 &
+                                     CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
+                                     depth, CELL_DATA,                             &
+                                     bottom_top_offset(FIELD_SD))
+    ELSE
+      CALL tea_unpack_message_top_c(chunks(chunk)%field%x_min,                    &
+                                       chunks(chunk)%field%x_max,                    &
+                                       chunks(chunk)%field%y_min,                    &
+                                       chunks(chunk)%field%y_max,                    &
+                                       chunks(chunk)%field%vector_sd,                  &
+                                       chunks(chunk)%top_rcv_buffer,                 &
+                                       CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
+                                       depth, CELL_DATA,                             &
+                                       bottom_top_offset(FIELD_SD))
+    ENDIF
+  ENDIF
 
 END SUBROUTINE tea_unpack_top
 
@@ -993,11 +1410,80 @@ SUBROUTINE tea_pack_bottom(chunk, fields, depth, bottom_top_offset)
                                         bottom_top_offset(FIELD_ENERGY1))
     ENDIF
   ENDIF
+  IF(fields(FIELD_P).EQ.1) THEN
+    IF(use_fortran_kernels) THEN
+      CALL tea_pack_message_bottom(chunks(chunk)%field%x_min,                    &
+                                      chunks(chunk)%field%x_max,                    &
+                                      chunks(chunk)%field%y_min,                    &
+                                      chunks(chunk)%field%y_max,                    &
+                                      chunks(chunk)%field%vector_p,                  &
+                                      chunks(chunk)%bottom_snd_buffer,              &
+                                      CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
+                                      depth, CELL_DATA,                             &
+                                      bottom_top_offset(FIELD_P))
+    ELSE
+      CALL tea_pack_message_bottom_c(chunks(chunk)%field%x_min,                    &
+                                        chunks(chunk)%field%x_max,                    &
+                                        chunks(chunk)%field%y_min,                    &
+                                        chunks(chunk)%field%y_max,                    &
+                                        chunks(chunk)%field%vector_p,                  &
+                                        chunks(chunk)%bottom_snd_buffer,              &
+                                        CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
+                                        depth, CELL_DATA,                             &
+                                        bottom_top_offset(FIELD_P))
+    ENDIF
+  ENDIF
+  IF(fields(FIELD_U).EQ.1) THEN
+    IF(use_fortran_kernels) THEN
+      CALL tea_pack_message_bottom(chunks(chunk)%field%x_min,                    &
+                                      chunks(chunk)%field%x_max,                    &
+                                      chunks(chunk)%field%y_min,                    &
+                                      chunks(chunk)%field%y_max,                    &
+                                      chunks(chunk)%field%u,                  &
+                                      chunks(chunk)%bottom_snd_buffer,              &
+                                      CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
+                                      depth, CELL_DATA,                             &
+                                      bottom_top_offset(FIELD_U))
+    ELSE
+      CALL tea_pack_message_bottom_c(chunks(chunk)%field%x_min,                    &
+                                        chunks(chunk)%field%x_max,                    &
+                                        chunks(chunk)%field%y_min,                    &
+                                        chunks(chunk)%field%y_max,                    &
+                                        chunks(chunk)%field%u,                  &
+                                        chunks(chunk)%bottom_snd_buffer,              &
+                                        CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
+                                        depth, CELL_DATA,                             &
+                                        bottom_top_offset(FIELD_U))
+    ENDIF
+  ENDIF
+  IF(fields(FIELD_SD).EQ.1) THEN
+    IF(use_fortran_kernels) THEN
+      CALL tea_pack_message_bottom(chunks(chunk)%field%x_min,                    &
+                                      chunks(chunk)%field%x_max,                    &
+                                      chunks(chunk)%field%y_min,                    &
+                                      chunks(chunk)%field%y_max,                    &
+                                      chunks(chunk)%field%vector_sd,                  &
+                                      chunks(chunk)%bottom_snd_buffer,              &
+                                      CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
+                                      depth, CELL_DATA,                             &
+                                      bottom_top_offset(FIELD_SD))
+    ELSE
+      CALL tea_pack_message_bottom_c(chunks(chunk)%field%x_min,                    &
+                                        chunks(chunk)%field%x_max,                    &
+                                        chunks(chunk)%field%y_min,                    &
+                                        chunks(chunk)%field%y_max,                    &
+                                        chunks(chunk)%field%vector_sd,                  &
+                                        chunks(chunk)%bottom_snd_buffer,              &
+                                        CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
+                                        depth, CELL_DATA,                             &
+                                        bottom_top_offset(FIELD_SD))
+    ENDIF
+  ENDIF
 
 END SUBROUTINE tea_pack_bottom
 
 SUBROUTINE tea_send_recv_message_bottom(bottom_snd_buffer, bottom_rcv_buffer,        &
-                                           chunk, total_size,                           &   
+                                           chunk, total_size,                           &
                                            tag_send, tag_recv,                          &
                                            req_send, req_recv)
 
@@ -1099,6 +1585,75 @@ SUBROUTINE tea_unpack_bottom(fields, chunk, depth,                        &
                                           CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
                                           depth, CELL_DATA,                             &
                                           bottom_top_offset(FIELD_ENERGY1))
+    ENDIF
+  ENDIF
+  IF(fields(FIELD_P).EQ.1) THEN
+    IF(use_fortran_kernels) THEN
+      CALL tea_unpack_message_bottom(chunks(chunk)%field%x_min,                    &
+                                        chunks(chunk)%field%x_max,                    &
+                                        chunks(chunk)%field%y_min,                    &
+                                        chunks(chunk)%field%y_max,                    &
+                                        chunks(chunk)%field%vector_p,                  &
+                                        chunks(chunk)%bottom_rcv_buffer,              &
+                                        CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
+                                        depth, CELL_DATA,                             &
+                                        bottom_top_offset(FIELD_P))
+    ELSE
+      CALL tea_unpack_message_bottom_c(chunks(chunk)%field%x_min,                    &
+                                          chunks(chunk)%field%x_max,                    &
+                                          chunks(chunk)%field%y_min,                    &
+                                          chunks(chunk)%field%y_max,                    &
+                                          chunks(chunk)%field%vector_p,                  &
+                                          chunks(chunk)%bottom_rcv_buffer,              &
+                                          CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
+                                          depth, CELL_DATA,                             &
+                                          bottom_top_offset(FIELD_P))
+    ENDIF
+  ENDIF
+  IF(fields(FIELD_U).EQ.1) THEN
+    IF(use_fortran_kernels) THEN
+      CALL tea_unpack_message_bottom(chunks(chunk)%field%x_min,                    &
+                                        chunks(chunk)%field%x_max,                    &
+                                        chunks(chunk)%field%y_min,                    &
+                                        chunks(chunk)%field%y_max,                    &
+                                        chunks(chunk)%field%u,                  &
+                                        chunks(chunk)%bottom_rcv_buffer,              &
+                                        CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
+                                        depth, CELL_DATA,                             &
+                                        bottom_top_offset(FIELD_U))
+    ELSE
+      CALL tea_unpack_message_bottom_c(chunks(chunk)%field%x_min,                    &
+                                          chunks(chunk)%field%x_max,                    &
+                                          chunks(chunk)%field%y_min,                    &
+                                          chunks(chunk)%field%y_max,                    &
+                                          chunks(chunk)%field%u,                  &
+                                          chunks(chunk)%bottom_rcv_buffer,              &
+                                          CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
+                                          depth, CELL_DATA,                             &
+                                          bottom_top_offset(FIELD_U))
+    ENDIF
+  ENDIF
+  IF(fields(FIELD_SD).EQ.1) THEN
+    IF(use_fortran_kernels) THEN
+      CALL tea_unpack_message_bottom(chunks(chunk)%field%x_min,                    &
+                                        chunks(chunk)%field%x_max,                    &
+                                        chunks(chunk)%field%y_min,                    &
+                                        chunks(chunk)%field%y_max,                    &
+                                        chunks(chunk)%field%vector_sd,                  &
+                                        chunks(chunk)%bottom_rcv_buffer,              &
+                                        CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
+                                        depth, CELL_DATA,                             &
+                                        bottom_top_offset(FIELD_SD))
+    ELSE
+      CALL tea_unpack_message_bottom_c(chunks(chunk)%field%x_min,                    &
+                                          chunks(chunk)%field%x_max,                    &
+                                          chunks(chunk)%field%y_min,                    &
+                                          chunks(chunk)%field%y_max,                    &
+                                          chunks(chunk)%field%vector_sd,                  &
+                                          chunks(chunk)%bottom_rcv_buffer,              &
+                                          CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
+                                          depth, CELL_DATA,                             &
+                                          bottom_top_offset(FIELD_SD))
     ENDIF
   ENDIF
 
