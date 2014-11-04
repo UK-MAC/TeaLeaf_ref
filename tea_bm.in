@@ -12,10 +12,9 @@ xmax=10.0
 ymax=10.0
 initial_timestep=0.004
 max_timestep=0.004
-end_time=1.0
-end_step=87
+end_step=1000
 tl_max_iters=10000
 tl_use_cg
 tl_eps 1.0e-15
-test_problem 2
+test_problem 4
 *endtea

@@ -2,7 +2,7 @@
 
 ## Compling
 
-- In many cases just typing `make` in the required software version will work. 
+In many cases just typing `make` in the required software version will work. This is the case when the mpif90 and mpicc scripts point to the correct compilers.
 
 If the MPI compilers have different names then the build process needs to 
 notified of this by defining two environment variables, `MPI_COMPILER` and 
@@ -15,6 +15,10 @@ For example on some Intel systems:
 Or on Cray systems:
 
 `make MPI_COMPILER=ftn C_MPI_COMPILER=cc`
+
+Or on GNU:
+
+`make MPI_COMPILER=gfortran C_MPI_COMPILER=gcc`
 
 ### OpenMP Build
 
@@ -47,7 +51,7 @@ The default flags for each of these is show below:-
 * XL: -O5
 * PATHSCLE: -O3
 * PGI: -O3 -Minline
-* CRAY: -em  _Note: that by default the Cray compiler with pick the optimum 
+* CRAY: -em  Note: that by default the Cray compiler with pick the optimum 
 options for performance.
 
 ### Other Flags
@@ -97,7 +101,7 @@ environment variable.
 So on a system without the standard MPI wrappers, for a build that requires 
 OpenMP, IEEE and AVX this would look like so:-
 
-```
+
 make COMPILER=INTEL MPI_COMPILER=mpiifort C_MPI_COMPILER=mpiicc IEEE=1 \
 OPTIONS="-xavx" C_OPTIONS="-xavx"
-```
+
