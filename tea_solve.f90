@@ -142,7 +142,7 @@ SUBROUTINE tea_leaf()
               chunks(c)%field%volume,                      &
               chunks(c)%field%density,                     &
               chunks(c)%field%energy1,                     &
-              chunks(c)%field%work_array1,                 & !u0
+              chunks(c)%field%u0,                          & !u0
               chunks(c)%field%u,                           & !u1
               chunks(c)%field%work_array2,                 & !un
               chunks(c)%field%work_array4,                 & !Kx temp
@@ -160,7 +160,7 @@ SUBROUTINE tea_leaf()
               chunks(c)%field%volume,                        &
               chunks(c)%field%density,                       &
               chunks(c)%field%energy1,                       &
-              chunks(c)%field%work_array1,                   & !u0
+              chunks(c)%field%u0,                            & !u0
               chunks(c)%field%u,                             & !u1
               chunks(c)%field%work_array2,                   & !un
               chunks(c)%field%work_array4,                   & !Kx temp
@@ -169,10 +169,10 @@ SUBROUTINE tea_leaf()
               chunks(c)%field%work_array7,                   & !Ky
               coefficient)
         ENDIF
-      ENDIF
 
-      fields=0
-      fields(FIELD_U) = 1
+        fields=0
+        fields(FIELD_U) = 1
+      ENDIF
 
       IF(use_fortran_kernels) THEN
         call tea_leaf_kernel_cheby_copy_u(chunks(c)%field%x_min,&
@@ -283,8 +283,8 @@ SUBROUTINE tea_leaf()
                     call tea_allsum(error)
                   endif
               endif
-          else if (tl_use_ppcg) then
-            if (cheby_calc_steps .eq. 0) then
+          ELSE IF (tl_use_ppcg) THEN
+            IF (cheby_calc_steps .EQ. 0) THEN
               cheby_calc_steps = 1
 
               IF(use_fortran_kernels) THEN
@@ -451,7 +451,7 @@ SUBROUTINE tea_leaf()
 
           error = rrn
           rro = rrn
-        ELSE
+        ELSEIF(tl_use_jacobi) THEN
           IF(use_fortran_kernels) THEN
             CALL tea_leaf_kernel_solve(chunks(c)%field%x_min,&
                 chunks(c)%field%x_max,                       &
@@ -462,7 +462,7 @@ SUBROUTINE tea_leaf()
                 chunks(c)%field%work_array6,                 & ! Kx
                 chunks(c)%field%work_array7,                 & ! Ky
                 error,                                       &
-                chunks(c)%field%work_array1,                 & ! u0
+                chunks(c)%field%u0,                          & ! u0
                 chunks(c)%field%u,                           & ! u1
                 chunks(c)%field%work_array2)                   ! un
           ELSEIF(use_C_kernels) THEN
@@ -475,7 +475,7 @@ SUBROUTINE tea_leaf()
                 chunks(c)%field%work_array6,                   & ! Kx
                 chunks(c)%field%work_array7,                   & ! Ky
                 error,                                         &
-                chunks(c)%field%work_array1,                   & ! u0
+                chunks(c)%field%u0,                            & ! u0
                 chunks(c)%field%u,                             & ! u1  
                 chunks(c)%field%work_array2)                     ! un
           ENDIF

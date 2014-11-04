@@ -38,6 +38,7 @@ void update_halo_kernel_c_(int *xmin,int *xmax,int *ymin,int *ymax,
                         double *energy1,
                         double *u,
                         double *p,
+                        double *sd,
                         int *fields,
                         int *dpth)
 {
@@ -64,7 +65,8 @@ void update_halo_kernel_c_(int *xmin,int *xmax,int *ymin,int *ymax,
   int FIELD_ENERGY1    = 4;
   int FIELD_U          =16;
   int FIELD_P          =17;
-  int NUM_FIELDS       =17;
+  int FIELD_SD          =17;
+  int NUM_FIELDS       =18;
 
   int j,k;
 
@@ -277,6 +279,48 @@ void update_halo_kernel_c_(int *xmin,int *xmax,int *ymin,int *ymax,
 #pragma ivdep
         for (j=1;j<=depth;j++) {
           p[FTNREF2D(x_max+j,k,x_max+4,x_min-2,y_min-2)]=p[FTNREF2D(x_max+1-j,k,x_max+4,x_min-2,y_min-2)];
+	}
+      }
+    }
+  }
+
+  if(fields[FTNREF1D(FIELD_SD,1)]==1) {
+    if(chunk_neighbours[FTNREF1D(CHUNK_BOTTOM,1)]==EXTERNAL_FACE) {
+#pragma omp for private(j,k)
+      for (j=x_min-depth;j<=x_max+depth;j++) {
+#pragma ivdep
+        for (k=1;k<=depth;k++) {
+          sd[FTNREF2D(j  ,1-k,x_max+4,x_min-2,y_min-2)]=sd[FTNREF2D(j  ,0+k,x_max+4,x_min-2,y_min-2)];
+	}
+      }
+    }
+
+    if(chunk_neighbours[FTNREF1D(CHUNK_TOP,1)]==EXTERNAL_FACE) {
+#pragma omp for private(j,k)
+      for (j=x_min-depth;j<=x_max+depth;j++) {
+#pragma ivdep
+        for (k=1;k<=depth;k++) {
+          sd[FTNREF2D(j  ,y_max+k,x_max+4,x_min-2,y_min-2)]=sd[FTNREF2D(j  ,y_max+1-k,x_max+4,x_min-2,y_min-2)];
+	}
+      }
+    }
+
+    if(chunk_neighbours[FTNREF1D(CHUNK_LEFT,1)]==EXTERNAL_FACE) {
+#pragma omp for private(j,k)
+      for (k=y_min-depth;k<=y_max+depth;k++) {
+#pragma ivdep
+        for (j=1;j<=depth;j++) {
+          sd[FTNREF2D(1-j,k,x_max+4,x_min-2,y_min-2)]=sd[FTNREF2D(0+j,k,x_max+4,x_min-2,y_min-2)];
+        }
+      }
+    }
+
+    if(chunk_neighbours[FTNREF1D(CHUNK_RIGHT,1)]==EXTERNAL_FACE) {
+#pragma omp for private(j,k)
+      for (k=y_min-depth;k<=y_max+depth;k++) {
+#pragma ivdep
+        for (j=1;j<=depth;j++) {
+          sd[FTNREF2D(x_max+j,k,x_max+4,x_min-2,y_min-2)]=sd[FTNREF2D(x_max+1-j,k,x_max+4,x_min-2,y_min-2)];
 	}
       }
     }

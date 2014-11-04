@@ -80,6 +80,7 @@ SUBROUTINE update_halo(fields,depth)
                                 chunks(c)%field%energy1,        &
                                 chunks(c)%field%u,              &
                                 chunks(c)%field%work_array1,    &
+                                chunks(c)%field%work_array8,    &
                                 fields,                         &
                                 depth                           )
       ENDIF
