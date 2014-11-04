@@ -91,13 +91,6 @@ MODULE definitions_module
 
    LOGICAL      :: profiler_on ! Internal code profiler to make comparisons across systems easier
 
-   ! Profile execution time per iteration of lienar solver.
-   ! Want to know the time taken per step, but turning profiling on
-   ! interferes with GPU based solvers as profiling requires
-   ! waiting for each kernel to finish execution
-   LOGICAL      :: profile_solver
-                                
-
    TYPE profiler_type
      REAL(KIND=8)       :: timestep        &
                           ,visit           &

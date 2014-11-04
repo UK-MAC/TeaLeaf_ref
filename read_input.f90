@@ -61,14 +61,15 @@ SUBROUTINE read_input()
 
   use_fortran_kernels=.TRUE.
   use_C_kernels=.FALSE.
-  use_OA_kernels=.FALSE.
   coefficient = CONDUCTIVITY
   profiler_on=.FALSE.
-  profile_solver=.false.
   profiler%timestep=0.0
   profiler%visit=0.0
   profiler%summary=0.0
   profiler%halo_exchange=0.0
+  profiler%tea_init=0.0
+  profiler%tea_solve=0.0
+  profiler%tea_reset=0.0
 
   tl_ch_cg_errswitch = .false.
   tl_ch_cg_presteps = 30
@@ -169,15 +170,9 @@ SUBROUTINE read_input()
       CASE('use_fortran_kernels')
         use_fortran_kernels=.TRUE.
         use_C_kernels=.FALSE.
-        use_OA_kernels=.FALSE.
       CASE('use_c_kernels')
         use_fortran_kernels=.FALSE.
         use_C_kernels=.TRUE.
-        use_OA_kernels=.FALSE.
-      CASE('use_oa_kernels')
-        use_fortran_kernels=.FALSE.
-        use_C_kernels=.FALSE.
-        use_OA_kernels=.TRUE.
       CASE('tl_use_jacobi')
         tl_use_chebyshev = .false.
         tl_use_cg = .false.
@@ -198,9 +193,6 @@ SUBROUTINE read_input()
         tl_use_cg = .false.
         tl_use_ppcg=.false.
         tl_use_jacobi = .false.
-      CASE('profile_solver')
-        profile_solver=.TRUE.
-        IF(parallel%boss)WRITE(g_out,"(1x,a25)")'Timing iteration time of linear solver'
       CASE('profiler_on')
         profiler_on=.TRUE.
         IF(parallel%boss)WRITE(g_out,"(1x,a25)")'Profiler on'
@@ -279,8 +271,6 @@ SUBROUTINE read_input()
       WRITE(g_out,"(1x,a)")'Using Fortran Kernels'
     ELSEIF(use_c_kernels) THEN
       WRITE(g_out,"(1x,a)")'Using C Kernels'
-    ELSEIF(use_oa_kernels) THEN
-      WRITE(g_out,"(1x,a)")'Using OpenAcc Kernels'
     ENDIF
     WRITE(g_out,*)
     WRITE(g_out,*) 'Input read finished.'

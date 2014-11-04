@@ -43,7 +43,7 @@ SUBROUTINE tea_leaf()
 
   INTEGER :: fields(NUM_FIELDS)
 
-  REAL(KIND=8) :: kernel_time,timer
+  REAL(KIND=8) :: timer,halo_time, solve_time, init_time
 
   ! For CG solver
   REAL(KIND=8) :: rro, pw, rrn, alpha, beta
@@ -57,12 +57,16 @@ SUBROUTINE tea_leaf()
 
   INTEGER :: cg_calc_steps
 
-  REAL(KIND=8) :: cg_time, ch_time, solve_timer, total_solve_time, ch_per_it, cg_per_it
+  REAL(KIND=8) :: cg_time, ch_time, total_solve_time, ch_per_it, cg_per_it
 
   cg_time = 0.0_8
   ch_time = 0.0_8
   cg_calc_steps = 0
+
   total_solve_time = 0.0_8
+  init_time = 0.0_8
+  halo_time = 0.0_8
+  solve_time = 0.0_8
 
   IF(coefficient .NE. RECIP_CONDUCTIVITY .AND. coefficient .NE. conductivity) THEN
     CALL report_error('tea_leaf', 'unknown coefficient option')
@@ -75,13 +79,13 @@ SUBROUTINE tea_leaf()
 
     IF(chunks(c)%task.EQ.parallel%task) THEN
 
+      ! INIT
+      IF (profiler_on) init_time=timer()
+
       fields=0
       fields(FIELD_ENERGY1) = 1
       fields(FIELD_DENSITY) = 1
       CALL update_halo(fields,2)
-
-      ! INIT
-      IF(profiler_on) kernel_time=timer()
 
       IF (use_fortran_kernels .OR. use_c_kernels) THEN
         rx = dt/(chunks(c)%field%celldx(chunks(c)%field%x_min)**2)
@@ -184,9 +188,10 @@ SUBROUTINE tea_leaf()
           chunks(c)%field%u)
       ENDIF
 
-      DO n=1,max_iters
+      IF (profiler_on) profiler%tea_init = profiler%tea_init + (timer() - init_time)
+      IF (profiler_on) solve_time = timer()
 
-        IF (profile_solver) solve_timer=timer()
+      DO n=1,max_iters
 
         IF (tl_ch_cg_errswitch) THEN
             ! either the error has got below tolerance, or it's already going
@@ -301,8 +306,11 @@ SUBROUTINE tea_leaf()
                     rx, ry)
               ENDIF
 
+              IF (profiler_on) halo_time = timer()
               ! update p
               CALL update_halo(fields,1)
+              IF (profiler_on) profiler%halo_exchange = profiler%halo_exchange + (timer() - halo_time)
+              IF (profiler_on) solve_time = solve_time - halo_time
 
               CALL tea_allsum(rro)
             ENDIF
@@ -485,20 +493,25 @@ SUBROUTINE tea_leaf()
         ENDIF
 
         ! updates u and possibly p
+        IF (profiler_on) halo_time = timer()
         CALL update_halo(fields,1)
+        IF (profiler_on) profiler%halo_exchange = profiler%halo_exchange + (timer() - halo_time)
+        IF (profiler_on) solve_time = solve_time - halo_time
 
-        IF (profile_solver) THEN
+        IF (profiler_on) THEN
           IF (tl_use_chebyshev .AND. ch_switch_check) THEN
-              ch_time=ch_time+(timer()-solve_timer)
+              ch_time=ch_time+(timer()-profiler%tea_solve)
           ELSE
-              cg_time=cg_time+(timer()-solve_timer)
+              cg_time=cg_time+(timer()-profiler%tea_solve)
           ENDIF
-          total_solve_time = total_solve_time + (timer() - solve_timer)
+          total_solve_time = total_solve_time + (timer() - profiler%tea_solve)
         ENDIF
 
         IF (abs(error) .LT. eps) EXIT
 
       ENDDO
+
+      IF (profiler_on) profiler%tea_solve = profiler%tea_solve + (timer() - solve_time)
 
       IF (tl_check_result) THEN
         IF(use_fortran_kernels) THEN
@@ -564,16 +577,15 @@ SUBROUTINE tea_leaf()
     ENDIF
 
   ENDDO
-  IF(profile_solver) profiler%tea_init=profiler%tea_init+(timer()-kernel_time)
 
-  IF (profile_solver .AND. parallel%boss) THEN
+  IF (profiler_on .AND. parallel%boss) THEN
     WRITE(0, "(a16, a7, a16)") "Time", "Steps", "Per it"
     WRITE(0, "(f16.10, i7, f16.10, f7.2)") total_solve_time, n, total_solve_time/n
     WRITE(g_out, "(a16, a7, a16)") "Time", "Steps", "Per it"
     WRITE(g_out, "(f16.10, i7, f16.10, f7.2)") total_solve_time, n, total_solve_time/n
   ENDIF
 
-  IF (profile_solver .AND. tl_use_chebyshev) THEN
+  IF (profiler_on .AND. tl_use_chebyshev) THEN
     CALL tea_sum(ch_time)
     CALL tea_sum(cg_time)
     IF (parallel%boss) THEN
