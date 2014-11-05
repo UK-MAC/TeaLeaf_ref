@@ -65,7 +65,7 @@ void update_halo_kernel_c_(int *xmin,int *xmax,int *ymin,int *ymax,
   int FIELD_ENERGY1    = 4;
   int FIELD_U          =16;
   int FIELD_P          =17;
-  int FIELD_SD          =17;
+  int FIELD_SD         =17;
   int NUM_FIELDS       =18;
 
   int j,k;
