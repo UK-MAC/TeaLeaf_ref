@@ -11,8 +11,6 @@ ymin=0.0
 xmax=10.0
 ymax=10.0
 initial_timestep=0.004
-max_timestep=0.004
-end_time=1.0
 end_step=87
 tl_max_iters=10000
 tl_use_cg
