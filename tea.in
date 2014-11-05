@@ -11,7 +11,6 @@ ymin=0.0
 xmax=10.0
 ymax=10.0
 initial_timestep=0.004
-end_time=0.04
 end_step=10
 tl_max_iters=1000
  test_problem 1
