@@ -70,6 +70,22 @@ SUBROUTINE diffuse
     IF(step.EQ.1) first_step=(timer() - step_time)
     IF(step.EQ.2) second_step=(timer() - step_time)
 
+    IF (parallel%boss) THEN
+      wall_clock=timer()-timerstart
+      step_clock=timer()-step_time
+      WRITE(g_out,*)"Wall clock ",wall_clock
+      WRITE(0    ,*)"Wall clock ",wall_clock
+      cells = grid%x_cells * grid%y_cells
+      rstep = step
+      grind_time   = wall_clock/(rstep * cells)
+      step_grind   = step_clock/cells
+      WRITE(0    ,*)"Average time per cell ",grind_time
+      WRITE(g_out,*)"Average time per cell ",grind_time
+      WRITE(0    ,*)"Step time per cell    ",step_grind
+      WRITE(g_out,*)"Step time per cell    ",step_grind
+
+    END IF
+
     IF(time+g_small.GT.end_time.OR.step.GE.end_step) THEN
 
       complete=.TRUE.
@@ -87,72 +103,58 @@ SUBROUTINE diffuse
         WRITE(    0,*) 'First step overhead', first_step-second_step
       ENDIF
 
-      IF ( profiler_on ) THEN
-        ! First we need to find the maximum kernel time for each task. This
-        ! seems to work better than finding the maximum time for each kernel and
-        ! adding it up, which always gives over 100%. I think this is because it
-        ! does not take into account compute overlaps before syncronisations
-        ! caused by halo exhanges.
-        kernel_total=profiler%timestep+profiler%halo_exchange+profiler%summary+profiler%visit+&
-            profiler%tea_init+profiler%set_field+profiler%tea_solve+profiler%tea_reset
-        CALL tea_allgather(kernel_total,totals)
-        ! So then what I do is use the individual kernel times for the
-        ! maximum kernel time task for the profile print
-        loc=MAXLOC(totals)
-        kernel_total=totals(loc(1))
-        CALL tea_allgather(profiler%timestep,totals)
-        profiler%timestep=totals(loc(1))
-        CALL tea_allgather(profiler%halo_exchange,totals)
-        profiler%halo_exchange=totals(loc(1))
-        CALL tea_allgather(profiler%summary,totals)
-        profiler%summary=totals(loc(1))
-        CALL tea_allgather(profiler%visit,totals)
-        profiler%visit=totals(loc(1))
-        CALL tea_allgather(profiler%tea_init,totals)
-        profiler%tea_init=totals(loc(1))
-        CALL tea_allgather(profiler%tea_solve,totals)
-        profiler%tea_solve=totals(loc(1))
-        CALL tea_allgather(profiler%tea_reset,totals)
-        profiler%tea_reset=totals(loc(1))
-        CALL tea_allgather(profiler%set_field,totals)
-        profiler%set_field=totals(loc(1))
+      EXIT
 
-        IF ( parallel%boss ) THEN
-          WRITE(g_out,*)
-          WRITE(g_out,'(a58,2f16.4)')"Profiler Output                 Time            Percentage"
-          WRITE(g_out,'(a23,2f16.4)')"Timestep              :",profiler%timestep,100.0*(profiler%timestep/wall_clock)
-          WRITE(g_out,'(a23,2f16.4)')"Halo Exchange         :",profiler%halo_exchange,100.0*(profiler%halo_exchange/wall_clock)
-          WRITE(g_out,'(a23,2f16.4)')"Summary               :",profiler%summary,100.0*(profiler%summary/wall_clock)
-          WRITE(g_out,'(a23,2f16.4)')"Visit                 :",profiler%visit,100.0*(profiler%visit/wall_clock)
-          WRITE(g_out,'(a23,2f16.4)')"Tea Init              :",profiler%tea_init,100.0*(profiler%tea_init/wall_clock)
-          WRITE(g_out,'(a23,2f16.4)')"Tea Solve             :",profiler%tea_solve,100.0*(profiler%tea_solve/wall_clock)
-          WRITE(g_out,'(a23,2f16.4)')"Tea Reset             :",profiler%tea_reset,100.0*(profiler%tea_reset/wall_clock)
-          WRITE(g_out,'(a23,2f16.4)')"Set Field             :",profiler%set_field,100.0*(profiler%set_field/wall_clock)
-          WRITE(g_out,'(a23,2f16.4)')"Total                 :",kernel_total,100.0*(kernel_total/wall_clock)
-          WRITE(g_out,'(a23,2f16.4)')"The Rest              :",wall_clock-kernel_total,100.0*(wall_clock-kernel_total)/wall_clock
-        ENDIF
-      ENDIF
+    ENDIF
+  ENDDO
 
-      CALL tea_finalize
+  IF ( profiler_on ) THEN
+    ! First we need to find the maximum kernel time for each task. This
+    ! seems to work better than finding the maximum time for each kernel and
+    ! adding it up, which always gives over 100%. I think this is because it
+    ! does not take into account compute overlaps before syncronisations
+    ! caused by halo exhanges.
+    kernel_total=profiler%timestep+profiler%halo_exchange+profiler%summary+profiler%visit+&
+        profiler%tea_init+profiler%set_field+profiler%tea_solve+profiler%tea_reset
+    CALL tea_allgather(kernel_total,totals)
+    ! So then what I do is use the individual kernel times for the
+    ! maximum kernel time task for the profile print
+    loc=MAXLOC(totals)
+    kernel_total=totals(loc(1))
+    CALL tea_allgather(profiler%timestep,totals)
+    profiler%timestep=totals(loc(1))
+    CALL tea_allgather(profiler%halo_exchange,totals)
+    profiler%halo_exchange=totals(loc(1))
+    CALL tea_allgather(profiler%summary,totals)
+    profiler%summary=totals(loc(1))
+    CALL tea_allgather(profiler%visit,totals)
+    profiler%visit=totals(loc(1))
+    CALL tea_allgather(profiler%tea_init,totals)
+    profiler%tea_init=totals(loc(1))
+    CALL tea_allgather(profiler%tea_solve,totals)
+    profiler%tea_solve=totals(loc(1))
+    CALL tea_allgather(profiler%tea_reset,totals)
+    profiler%tea_reset=totals(loc(1))
+    CALL tea_allgather(profiler%set_field,totals)
+    profiler%set_field=totals(loc(1))
 
-    END IF
+    IF ( parallel%boss ) THEN
+      WRITE(g_out,*)
+      WRITE(g_out,'(a58,2f16.4)')"Profiler Output                 Time            Percentage"
+      WRITE(g_out,'(a23,2f16.4)')"Timestep              :",profiler%timestep,100.0*(profiler%timestep/wall_clock)
+      WRITE(g_out,'(a23,2f16.4)')"Halo Exchange         :",profiler%halo_exchange,100.0*(profiler%halo_exchange/wall_clock)
+      WRITE(g_out,'(a23,2f16.4)')"Summary               :",profiler%summary,100.0*(profiler%summary/wall_clock)
+      WRITE(g_out,'(a23,2f16.4)')"Visit                 :",profiler%visit,100.0*(profiler%visit/wall_clock)
+      WRITE(g_out,'(a23,2f16.4)')"Tea Init              :",profiler%tea_init,100.0*(profiler%tea_init/wall_clock)
+      WRITE(g_out,'(a23,2f16.4)')"Tea Solve             :",profiler%tea_solve,100.0*(profiler%tea_solve/wall_clock)
+      WRITE(g_out,'(a23,2f16.4)')"Tea Reset             :",profiler%tea_reset,100.0*(profiler%tea_reset/wall_clock)
+      WRITE(g_out,'(a23,2f16.4)')"Set Field             :",profiler%set_field,100.0*(profiler%set_field/wall_clock)
+      WRITE(g_out,'(a23,2f16.4)')"Total                 :",kernel_total,100.0*(kernel_total/wall_clock)
+      WRITE(g_out,'(a23,2f16.4)')"The Rest              :",wall_clock-kernel_total,100.0*(wall_clock-kernel_total)/wall_clock
+    ENDIF
 
-    IF (parallel%boss) THEN
-      wall_clock=timer()-timerstart
-      step_clock=timer()-step_time
-      WRITE(g_out,*)"Wall clock ",wall_clock
-      WRITE(0    ,*)"Wall clock ",wall_clock
-      cells = grid%x_cells * grid%y_cells
-      rstep = step
-      grind_time   = wall_clock/(rstep * cells)
-      step_grind   = step_clock/cells
-      WRITE(0    ,*)"Average time per cell ",grind_time
-      WRITE(g_out,*)"Average time per cell ",grind_time
-      WRITE(0    ,*)"Step time per cell    ",step_grind
-      WRITE(g_out,*)"Step time per cell    ",step_grind
+  ENDIF
 
-     END IF
-
-  END DO
+  CALL tea_finalize
 
 END SUBROUTINE diffuse
