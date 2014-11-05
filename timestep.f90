@@ -39,8 +39,6 @@ SUBROUTINE timestep()
 
   REAL(KIND=8)    :: kernel_time,timer
 
-  INTEGER :: fields(NUM_FIELDS)
-
 !$ INTEGER :: OMP_GET_THREAD_NUM
 
   IF(profiler_on) kernel_time=timer()

@@ -35,7 +35,7 @@ CONTAINS
                         energy1,                                                    &
                         u,                                                          &
                         p,                                                          &
-                        sd, &
+                        sd,                                                         &
                         fields,                                                     &
                         depth                                                       )
   IMPLICIT NONE

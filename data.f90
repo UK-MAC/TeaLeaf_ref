@@ -44,17 +44,6 @@ MODULE data_module
    INTEGER,         PARAMETER :: FIELD_DENSITY    = 1         &
                                 ,FIELD_ENERGY0    = 3         &
                                 ,FIELD_ENERGY1    = 4         &
-                                ,FIELD_PRESSURE   = 5         &
-                                ,FIELD_VISCOSITY  = 6         &
-                                ,FIELD_SOUNDSPEED = 7         &
-                                ,FIELD_XVEL0      = 8         &
-                                ,FIELD_XVEL1      = 9         &
-                                ,FIELD_YVEL0      =10         &
-                                ,FIELD_YVEL1      =11         &
-                                ,FIELD_VOL_FLUX_X =12         &
-                                ,FIELD_VOL_FLUX_Y =13         &
-                                ,FIELD_MASS_FLUX_X=14         &
-                                ,FIELD_MASS_FLUX_Y=15         &
                                 ,FIELD_U          =16         &
                                 ,FIELD_P          =17         &
                                 ,FIELD_SD         =18         &
@@ -67,14 +56,11 @@ MODULE data_module
 
 
    ! Time step control constants
-   INTEGER,        PARAMETER ::  SOUND = 1     &
-                                ,X_VEL = 2     &
-                                ,Y_VEL = 3     &
-                                ,DIVERG= 4
+   INTEGER,        PARAMETER ::  FIXED = 1
 
    INTEGER,                      PARAMETER :: g_rect=1 &
-                                ,g_circ=2 &
-                                ,g_point=3
+                                             ,g_circ=2 &
+                                             ,g_point=3
 
    INTEGER         ::            g_in           & ! File for input data.
                                 ,g_out

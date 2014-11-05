@@ -32,13 +32,13 @@ SUBROUTINE tea_leaf_kernel_init_cg_fortran(x_min,  &
                            density,                &
                            energy,                 &
                            u,                      &
-                           p,                      & ! 1
-                           r,                      & ! 2
-                           Mi,                     & ! 3
-                           w,                      & ! 4
-                           z,                      & ! 5
-                           Kx,                     & ! 6
-                           Ky,                     & ! 7
+                           p,                      &
+                           r,                      &
+                           Mi,                     &
+                           w,                      &
+                           z,                      &
+                           Kx,                     &
+                           Ky,                     &
                            rx,                     &
                            ry,                     &
                            rro,                    &

@@ -87,7 +87,6 @@ SUBROUTINE initialise
       WRITE(out_unit,'(A)')'xmax=10.0'
       WRITE(out_unit,'(A)')'ymax=10.0'
       WRITE(out_unit,'(A)')'initial_timestep=0.004'
-      WRITE(out_unit,'(A)')'end_time=0.04'
       WRITE(out_unit,'(A)')'end_step=10'
       WRITE(out_unit,'(A)')'tl_max_iters=1000'
       WRITE(out_unit,'(A)')' test_problem 1'

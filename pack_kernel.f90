@@ -24,10 +24,10 @@ MODULE pack_kernel_module
 CONTAINS
 
 SUBROUTINE tea_pack_message_left(x_min,x_max,y_min,y_max,field,                &
-                                    left_snd_buffer,                              &
-                                    CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
-                                    depth,field_type,                             &
-                                    buffer_offset)
+                                 left_snd_buffer,                              &
+                                 CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
+                                 depth,field_type,                             &
+                                 buffer_offset)
 
   IMPLICIT NONE
 
@@ -70,10 +70,10 @@ SUBROUTINE tea_pack_message_left(x_min,x_max,y_min,y_max,field,                &
 END SUBROUTINE tea_pack_message_left
 
 SUBROUTINE tea_unpack_message_left(x_min,x_max,y_min,y_max,field,                &
-                                      left_rcv_buffer,                              &
-                                      CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
-                                      depth,field_type,                             &
-                                      buffer_offset)
+                                   left_rcv_buffer,                              &
+                                   CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
+                                   depth,field_type,                             &
+                                   buffer_offset)
 
   IMPLICIT NONE
 
@@ -116,10 +116,10 @@ SUBROUTINE tea_unpack_message_left(x_min,x_max,y_min,y_max,field,               
 END SUBROUTINE tea_unpack_message_left
 
 SUBROUTINE tea_pack_message_right(x_min,x_max,y_min,y_max,field,                &
-                                     right_snd_buffer,                             &
-                                     CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
-                                     depth,field_type,                             &
-                                     buffer_offset)
+                                  right_snd_buffer,                             &
+                                  CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
+                                  depth,field_type,                             &
+                                  buffer_offset)
 
   IMPLICIT NONE
 
@@ -162,10 +162,10 @@ SUBROUTINE tea_pack_message_right(x_min,x_max,y_min,y_max,field,                
 END SUBROUTINE tea_pack_message_right
 
 SUBROUTINE tea_unpack_message_right(x_min,x_max,y_min,y_max,field,                &
-                                       right_rcv_buffer,                             &
-                                       CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
-                                       depth,field_type,                             &
-                                       buffer_offset)
+                                    right_rcv_buffer,                             &
+                                    CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
+                                    depth,field_type,                             &
+                                    buffer_offset)
 
   IMPLICIT NONE
 
@@ -208,10 +208,10 @@ SUBROUTINE tea_unpack_message_right(x_min,x_max,y_min,y_max,field,              
 END SUBROUTINE tea_unpack_message_right
 
 SUBROUTINE tea_pack_message_top(x_min,x_max,y_min,y_max,field,                &
-                                   top_snd_buffer,                               &
-                                   CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
-                                   depth,field_type,                             &
-                                   buffer_offset)
+                                top_snd_buffer,                               &
+                                CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
+                                depth,field_type,                             &
+                                buffer_offset)
 
   IMPLICIT NONE
 
@@ -254,10 +254,10 @@ SUBROUTINE tea_pack_message_top(x_min,x_max,y_min,y_max,field,                &
 END SUBROUTINE tea_pack_message_top
 
 SUBROUTINE tea_unpack_message_top(x_min,x_max,y_min,y_max,field,                &
-                                     top_rcv_buffer,                               &
-                                     CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
-                                     depth,field_type,                             &
-                                     buffer_offset)
+                                  top_rcv_buffer,                               &
+                                  CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
+                                  depth,field_type,                             &
+                                  buffer_offset)
 
   IMPLICIT NONE
 
@@ -300,10 +300,10 @@ SUBROUTINE tea_unpack_message_top(x_min,x_max,y_min,y_max,field,                
 END SUBROUTINE tea_unpack_message_top
 
 SUBROUTINE tea_pack_message_bottom(x_min,x_max,y_min,y_max,field,                &
-                                      bottom_snd_buffer,                            &
-                                      CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
-                                      depth,field_type,                             &
-                                      buffer_offset)
+                                   bottom_snd_buffer,                            &
+                                   CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
+                                   depth,field_type,                             &
+                                   buffer_offset)
 
   IMPLICIT NONE
 
@@ -346,10 +346,10 @@ SUBROUTINE tea_pack_message_bottom(x_min,x_max,y_min,y_max,field,               
 END SUBROUTINE tea_pack_message_bottom
 
 SUBROUTINE tea_unpack_message_bottom(x_min,x_max,y_min,y_max,field,                &
-                                        bottom_rcv_buffer,                            &
-                                        CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
-                                        depth,field_type,                             &
-                                        buffer_offset)
+                                     bottom_rcv_buffer,                            &
+                                     CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
+                                     depth,field_type,                             &
+                                     buffer_offset)
 
   IMPLICIT NONE
 

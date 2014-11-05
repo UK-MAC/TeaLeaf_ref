@@ -71,17 +71,17 @@ SUBROUTINE read_input()
   profiler%tea_solve=0.0
   profiler%tea_reset=0.0
 
-  tl_ch_cg_errswitch = .false.
+  tl_ch_cg_errswitch = .FALSE.
   tl_ch_cg_presteps = 30
   tl_ch_cg_epslim = 1e-5
-  tl_check_result = .false.
+  tl_check_result = .FALSE.
   tl_ppcg_inner_steps = 10
-  tl_preconditioner_on = .false.
+  tl_preconditioner_on = .FALSE.
 
-  tl_use_chebyshev = .false.
-  tl_use_cg = .false.
-  tl_use_ppcg = .false.
-  tl_use_jacobi = .true.
+  tl_use_chebyshev = .FALSE.
+  tl_use_cg = .FALSE.
+  tl_use_ppcg = .FALSE.
+  tl_use_jacobi = .TRUE.
 
   IF(parallel%boss)WRITE(g_out,*) 'Reading input file'
   IF(parallel%boss)WRITE(g_out,*)
@@ -165,11 +165,11 @@ SUBROUTINE read_input()
         tl_ch_cg_epslim=parse_getrval(parse_getword(.TRUE.))
         IF(parallel%boss)WRITE(g_out,"(1x,a25,e12.4)")'tl_ch_cg_epslim',tl_ch_cg_epslim
       CASE('tl_check_result')
-        tl_check_result = .true.
+        tl_check_result = .TRUE.
       CASE('tl_ch_cg_errswitch')
-        tl_ch_cg_errswitch = .true.
+        tl_ch_cg_errswitch = .TRUE.
       CASE('tl_preconditioner_on')
-        tl_preconditioner_on = .true.
+        tl_preconditioner_on = .TRUE.
       CASE('use_fortran_kernels')
         use_fortran_kernels=.TRUE.
         use_C_kernels=.FALSE.
@@ -177,25 +177,25 @@ SUBROUTINE read_input()
         use_fortran_kernels=.FALSE.
         use_C_kernels=.TRUE.
       CASE('tl_use_jacobi')
-        tl_use_chebyshev = .false.
-        tl_use_cg = .false.
-        tl_use_ppcg=.false.
-        tl_use_jacobi = .true.
+        tl_use_chebyshev = .FALSE.
+        tl_use_cg = .FALSE.
+        tl_use_ppcg=.FALSE.
+        tl_use_jacobi = .TRUE.
       CASE('tl_use_cg')
-        tl_use_chebyshev = .false.
-        tl_use_cg = .true.
-        tl_use_ppcg=.false.
-        tl_use_jacobi = .false.
+        tl_use_chebyshev = .FALSE.
+        tl_use_cg = .TRUE.
+        tl_use_ppcg=.FALSE.
+        tl_use_jacobi = .FALSE.
       CASE('tl_use_ppcg')
-        tl_use_chebyshev = .false.
-        tl_use_cg = .false.
-        tl_use_ppcg=.true.
-        tl_use_jacobi = .false.
+        tl_use_chebyshev = .FALSE.
+        tl_use_cg = .FALSE.
+        tl_use_ppcg=.TRUE.
+        tl_use_jacobi = .FALSE.
       CASE('tl_use_chebyshev')
-        tl_use_chebyshev = .true.
-        tl_use_cg = .false.
-        tl_use_ppcg=.false.
-        tl_use_jacobi = .false.
+        tl_use_chebyshev = .TRUE.
+        tl_use_cg = .FALSE.
+        tl_use_ppcg=.FALSE.
+        tl_use_jacobi = .FALSE.
       CASE('profiler_on')
         profiler_on=.TRUE.
         IF(parallel%boss)WRITE(g_out,"(1x,a25)")'Profiler on'

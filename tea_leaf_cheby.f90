@@ -284,7 +284,7 @@ SUBROUTINE tqli(d,e,n, info)
 END SUBROUTINE tqli
 
 SUBROUTINE tea_calc_eigenvalues(cg_alphas, cg_betas, eigmin, eigmax, &
-    max_iters, tl_ch_cg_presteps, info)
+                                max_iters, tl_ch_cg_presteps, info)
 
   INTEGER :: tl_ch_cg_presteps, max_iters
   REAL(KIND=8), DIMENSION(max_iters) :: cg_alphas, cg_betas
@@ -297,11 +297,11 @@ SUBROUTINE tea_calc_eigenvalues(cg_alphas, cg_betas, eigmin, eigmax, &
   diag = 0
   offdiag = 0
 
-  do n=1,tl_ch_cg_presteps
+  DO n=1,tl_ch_cg_presteps
     diag(n) = 1.0_8/cg_alphas(n)
-    if (n .gt. 1) diag(n) = diag(n) + cg_betas(n-1)/cg_alphas(n-1)
-    if (n .lt. tl_ch_cg_presteps) offdiag(n+1) = sqrt(cg_betas(n))/cg_alphas(n)
-  enddo
+    IF (n .GT. 1) diag(n) = diag(n) + cg_betas(n-1)/cg_alphas(n-1)
+    IF (n .LT. tl_ch_cg_presteps) offdiag(n+1) = SQRT(cg_betas(n))/cg_alphas(n)
+  ENDDO
 
   CALL tqli(diag, offdiag, tl_ch_cg_presteps, info)
 
@@ -309,26 +309,26 @@ SUBROUTINE tea_calc_eigenvalues(cg_alphas, cg_betas, eigmin, eigmax, &
   !offdiag(:)=eoshift(offdiag(:),1)
   !CALL dsterf(tl_ch_cg_presteps, diag, offdiag, info)
 
-  if (info .ne. 0) return
+  IF (info .NE. 0) RETURN
 
   ! bubble sort eigenvalues
-  do
-    do n=1,tl_ch_cg_presteps-1
-      if (diag(n) .ge. diag(n+1)) then
+  DO
+    DO n=1,tl_ch_cg_presteps-1
+      IF (diag(n) .GE. diag(n+1)) THEN
         tmp = diag(n)
         diag(n) = diag(n+1)
         diag(n+1) = tmp
-        swapped = .true.
-      endif
-    enddo
-    if (.not. swapped) exit
-    swapped = .false.
-  enddo
+        swapped = .TRUE.
+      ENDIF
+    ENDDO
+    IF (.NOT. swapped) EXIT
+    swapped = .FALSE.
+  ENDDO
 
   eigmin = diag(1)
   eigmax = diag(tl_ch_cg_presteps)
 
-  if (eigmin .lt. 0.0_8 .or. eigmax .lt. 0.0_8) info = 1
+  IF (eigmin .LT. 0.0_8 .OR. eigmax .LT. 0.0_8) info = 1
 
 END SUBROUTINE tea_calc_eigenvalues
 
@@ -347,7 +347,7 @@ SUBROUTINE tea_calc_ch_coefs(ch_alphas, ch_betas, eigmin, eigmax, &
 
   rho_old = 1.0_8/sigma
 
-  do n=1,max_cheby_iters
+  DO n=1,max_cheby_iters
     rho_new = 1.0_8/(2.0_8*sigma - rho_old)
     cur_alpha = rho_new*rho_old
     cur_beta = 2.0_8*rho_new/delta
@@ -356,9 +356,9 @@ SUBROUTINE tea_calc_ch_coefs(ch_alphas, ch_betas, eigmin, eigmax, &
     ch_betas(n) = cur_beta
 
     rho_old = rho_new
-  enddo
+  ENDDO
 
 END SUBROUTINE tea_calc_ch_coefs
 
-end module
+END MODULE
 

@@ -1,19 +1,19 @@
 MODULE tea_leaf_kernel_ppcg_module
 
-use tea_leaf_kernel_module
-use tea_leaf_kernel_cheby_module
+USE tea_leaf_kernel_module
+USE tea_leaf_kernel_cheby_module
 
 IMPLICIT NONE
 
 CONTAINS
 
 SUBROUTINE tea_leaf_kernel_ppcg_init_sd(x_min,             &
-                           x_max,             &
-                           y_min,             &
-                           y_max,             &
-                           r,            &
-                           sd, &
-                           theta)
+                                        x_max,             &
+                                        y_min,             &
+                                        y_max,             &
+                                        r,                 &
+                                        sd,                &
+                                        theta              )
 
   IMPLICIT NONE
 
@@ -36,33 +36,33 @@ SUBROUTINE tea_leaf_kernel_ppcg_init_sd(x_min,             &
 END SUBROUTINE tea_leaf_kernel_ppcg_init_sd
 
 SUBROUTINE tea_leaf_kernel_ppcg_inner(x_min,             &
-                           x_max,             &
-                           y_min,             &
-                           y_max,             &
-                           step, &
-                           alpha, &
-                           beta, &
-                           rx, ry, &
-                           u, &
-                           r, &
-                           Kx, &
-                           Ky, &
-                           sd)
+                                      x_max,             &
+                                      y_min,             &
+                                      y_max,             &
+                                      step,              &
+                                      alpha,             &
+                                      beta,              &
+                                      rx, ry,            &
+                                      u,                 &
+                                      r,                 &
+                                      Kx,                &
+                                      Ky,                &
+                                      sd                 )
   IMPLICIT NONE
 
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: u, r, Kx, Ky, sd
   INTEGER(KIND=4) :: j,k, step
-  REAL(KIND=8), dimension(:) :: alpha, beta
+  REAL(KIND=8), DIMENSION(:) :: alpha, beta
   REAL(KIND=8) :: smvp, rx, ry
 
 !$OMP PARALLEL
 !$OMP DO
     DO k=y_min,y_max
         DO j=x_min,x_max
-            smvp = (1.0_8                                      &
-                + ry*(Ky(j, k+1) + Ky(j, k))                      &
-                + rx*(Kx(j+1, k) + Kx(j, k)))*sd(j, k)             &
+            smvp = (1.0_8                                           &
+                + ry*(Ky(j, k+1) + Ky(j, k))                        &
+                + rx*(Kx(j+1, k) + Kx(j, k)))*sd(j, k)              &
                 - ry*(Ky(j, k+1)*sd(j, k+1) + Ky(j, k)*sd(j, k-1))  &
                 - rx*(Kx(j+1, k)*sd(j+1, k) + Kx(j, k)*sd(j-1, k))
             r(j, k) = r(j, k) - smvp
@@ -79,15 +79,15 @@ SUBROUTINE tea_leaf_kernel_ppcg_inner(x_min,             &
 !$OMP END DO
 !$OMP END PARALLEL
 
-end SUBROUTINE
+END SUBROUTINE
 
 SUBROUTINE tea_leaf_kernel_ppcg_init_p(x_min,             &
-                           x_max,             &
-                           y_min,             &
-                           y_max,             &
-                           p,                &
-                           r,            &
-                           rro)
+                                       x_max,             &
+                                       y_min,             &
+                                       y_max,             &
+                                       p,                 &
+                                       r,                 &
+                                       rro                )
 
   IMPLICIT NONE
 
@@ -100,7 +100,7 @@ SUBROUTINE tea_leaf_kernel_ppcg_init_p(x_min,             &
   rro = 0.0_8
 
 !$OMP PARALLEL
-!$OMP DO reduction(+:rro)
+!$OMP DO REDUCTION(+:rro)
   DO k=y_min,y_max
     DO j=x_min,x_max
       p(j, k) = r(j, k)
@@ -114,7 +114,7 @@ END SUBROUTINE
 
 ! TODO move into another file with fortran implementations of kernels
 SUBROUTINE tea_calc_ls_coefs(ch_alphas, ch_betas, eigmin, eigmax, &
-    theta, ppcg_inner_steps)
+                             theta, ppcg_inner_steps)
 
   INTEGER :: n, ppcg_inner_steps
   REAL(KIND=8), DIMENSION(ppcg_inner_steps) :: ch_alphas, ch_betas
@@ -124,10 +124,10 @@ SUBROUTINE tea_calc_ls_coefs(ch_alphas, ch_betas, eigmin, eigmax, &
 
   ! TODO
   call tea_calc_ch_coefs(ch_alphas, ch_betas, eigmin, eigmax, &
-    theta, ppcg_inner_steps)
+                         theta, ppcg_inner_steps)
 
-end subroutine
+END SUBROUTINE
 
-end module
+END MODULE
 
 

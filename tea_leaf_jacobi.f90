@@ -157,7 +157,7 @@ SUBROUTINE tea_leaf_kernel_solve(x_min,       &
 !$OMP DO REDUCTION(+:error)
     DO k=y_min, y_max
       DO j=x_min, x_max
-        u1(j,k) = (u0(j,k) + rx*(Kx(j+1,k  )*un(j+1,k  ) + Kx(j  ,k  )*un(j-1,k  )) &
+        u1(j,k) = (u0(j,k) + rx*(Kx(j+1,k  )*un(j+1,k  ) + Kx(j  ,k  )*un(j-1,k  ))  &
                            + ry*(Ky(j  ,k+1)*un(j  ,k+1) + Ky(j  ,k  )*un(j  ,k-1))) &
                              /(1.0_8 &
                                 + rx*(Kx(j,k)+Kx(j+1,k)) &
@@ -200,15 +200,15 @@ SUBROUTINE tea_leaf_kernel_finalise(x_min,    &
 END SUBROUTINE tea_leaf_kernel_finalise
 
 SUBROUTINE tea_leaf_calc_residual(x_min,       &
-                           x_max,             &
-                           y_min,             &
-                           y_max,             &
-                           u ,                &
-                           u0,                &
-                           r,                &
-                           Kx,                &
-                           Ky,                &
-                           rx, ry)
+                                  x_max,       &
+                                  y_min,       &
+                                  y_max,       &
+                                  u ,          &
+                                  u0,          &
+                                  r,           &
+                                  Kx,          &
+                                  Ky,          &
+                                  rx, ry       )
 
   IMPLICIT NONE
 
@@ -225,7 +225,7 @@ SUBROUTINE tea_leaf_calc_residual(x_min,       &
 !$OMP DO private(smvp)
     DO k=y_min, y_max
       DO j=x_min, x_max
-        smvp = (1.0_8                                      &
+        smvp = (1.0_8                                         &
             + ry*(Ky(j, k+1) + Ky(j, k))                      &
             + rx*(Kx(j+1, k) + Kx(j, k)))*u(j, k)             &
             - ry*(Ky(j, k+1)*u(j, k+1) + Ky(j, k)*u(j, k-1))  &

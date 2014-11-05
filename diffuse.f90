@@ -125,8 +125,8 @@ SUBROUTINE diffuse
           WRITE(g_out,'(a23,2f16.4)')"Summary               :",profiler%summary,100.0*(profiler%summary/wall_clock)
           WRITE(g_out,'(a23,2f16.4)')"Visit                 :",profiler%visit,100.0*(profiler%visit/wall_clock)
           WRITE(g_out,'(a23,2f16.4)')"Tea Init              :",profiler%tea_init,100.0*(profiler%tea_init/wall_clock)
+          WRITE(g_out,'(a23,2f16.4)')"Tea Solve             :",profiler%tea_solve,100.0*(profiler%tea_solve/wall_clock)
           WRITE(g_out,'(a23,2f16.4)')"Tea Reset             :",profiler%tea_reset,100.0*(profiler%tea_reset/wall_clock)
-          WRITE(g_out,'(a23,2f16.4)')"Tea solve             :",profiler%tea_solve,100.0*(profiler%tea_solve/wall_clock)
           WRITE(g_out,'(a23,2f16.4)')"Set Field             :",profiler%set_field,100.0*(profiler%set_field/wall_clock)
           WRITE(g_out,'(a23,2f16.4)')"Total                 :",kernel_total,100.0*(kernel_total/wall_clock)
           WRITE(g_out,'(a23,2f16.4)')"The Rest              :",wall_clock-kernel_total,100.0*(wall_clock-kernel_total)/wall_clock
@@ -134,8 +134,6 @@ SUBROUTINE diffuse
       ENDIF
 
       CALL tea_finalize
-
-      EXIT
 
     END IF
 
