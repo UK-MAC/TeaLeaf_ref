@@ -138,7 +138,7 @@ SUBROUTINE tea_leaf()
         IF (profiler_on) halo_time=timer()
         CALL update_halo(fields,1)
         IF (profiler_on) profiler%halo_exchange = profiler%halo_exchange + (timer() - halo_time)
-        init_time=init_time+(timer()+halo_time)
+        init_time=init_time+(timer()-halo_time)
 
         ! and globally sum rro
         CALL tea_allsum(rro)
@@ -316,7 +316,7 @@ SUBROUTINE tea_leaf()
               ! update p
               CALL update_halo(fields,1)
               IF (profiler_on) profiler%halo_exchange = profiler%halo_exchange + (timer() - halo_time)
-              IF (profiler_on) solve_time = solve_time + halo_time
+              IF (profiler_on) solve_time = solve_time + (timer()-halo_time)
 
               CALL tea_allsum(rro)
             ENDIF
@@ -506,9 +506,9 @@ SUBROUTINE tea_leaf()
 
         IF (profiler_on) THEN
           IF (tl_use_chebyshev .AND. ch_switch_check) THEN
-              ch_time=ch_time+(timer()-profiler%tea_solve)
+            ch_time=ch_time+(timer()-profiler%tea_solve)
           ELSE
-              cg_time=cg_time+(timer()-profiler%tea_solve)
+            cg_time=cg_time+(timer()-profiler%tea_solve)
           ENDIF
           total_solve_time = total_solve_time + (timer() - profiler%tea_solve)
         ENDIF
