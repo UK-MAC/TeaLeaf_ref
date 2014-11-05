@@ -123,7 +123,7 @@ SUBROUTINE tea_calc_ls_coefs(ch_alphas, ch_betas, eigmin, eigmax, &
   REAL(KIND=8) :: theta, delta, sigma, rho_old, rho_new, cur_alpha, cur_beta
 
   ! TODO
-  call tea_calc_ch_coefs(ch_alphas, ch_betas, eigmin, eigmax, &
+  CALL tea_calc_ch_coefs(ch_alphas, ch_betas, eigmin, eigmax, &
                          theta, ppcg_inner_steps)
 
 END SUBROUTINE

@@ -80,12 +80,15 @@ SUBROUTINE tea_leaf()
     IF(chunks(c)%task.EQ.parallel%task) THEN
 
       ! INIT
-      IF (profiler_on) init_time=timer()
 
+      IF (profiler_on) halo_time=timer()
       fields=0
       fields(FIELD_ENERGY1) = 1
       fields(FIELD_DENSITY) = 1
       CALL update_halo(fields,2)
+      IF (profiler_on) profiler%halo_exchange = profiler%halo_exchange + (timer() - halo_time)
+
+      IF (profiler_on) init_time=timer()
 
       IF (use_fortran_kernels .OR. use_c_kernels) THEN
         rx = dt/(chunks(c)%field%celldx(chunks(c)%field%x_min)**2)
@@ -96,35 +99,35 @@ SUBROUTINE tea_leaf()
         ! All 3 of these solvers use the CG kernels
         IF(use_fortran_kernels) THEN
           CALL tea_leaf_kernel_init_cg_fortran(chunks(c)%field%x_min, &
-              chunks(c)%field%x_max,                       &
-              chunks(c)%field%y_min,                       &
-              chunks(c)%field%y_max,                       &
-              chunks(c)%field%density,                     &
-              chunks(c)%field%energy1,                     &
-              chunks(c)%field%u,                           &
-              chunks(c)%field%vector_p,                 &
-              chunks(c)%field%vector_r,                 &
-              chunks(c)%field%vector_Mi,                 &
-              chunks(c)%field%vector_w,                 &
-              chunks(c)%field%vector_z,                 &
-              chunks(c)%field%vector_Kx,                 &
-              chunks(c)%field%vector_Ky,                 &
+              chunks(c)%field%x_max,                                  &
+              chunks(c)%field%y_min,                                  &
+              chunks(c)%field%y_max,                                  &
+              chunks(c)%field%density,                                &
+              chunks(c)%field%energy1,                                &
+              chunks(c)%field%u,                                      &
+              chunks(c)%field%vector_p,                               &
+              chunks(c)%field%vector_r,                               &
+              chunks(c)%field%vector_Mi,                              &
+              chunks(c)%field%vector_w,                               &
+              chunks(c)%field%vector_z,                               &
+              chunks(c)%field%vector_Kx,                              &
+              chunks(c)%field%vector_Ky,                              &
               rx, ry, rro, coefficient, tl_preconditioner_on)
         ELSEIF(use_C_kernels) THEN
           CALL tea_leaf_kernel_init_cg_c(chunks(c)%field%x_min, &
-              chunks(c)%field%x_max,                       &
-              chunks(c)%field%y_min,                       &
-              chunks(c)%field%y_max,                       &
-              chunks(c)%field%density,                     &
-              chunks(c)%field%energy1,                     &
-              chunks(c)%field%u,                           &
-              chunks(c)%field%vector_p,                 &
-              chunks(c)%field%vector_r,                 &
-              chunks(c)%field%vector_Mi,                 &
-              chunks(c)%field%vector_w,                 &
-              chunks(c)%field%vector_z,                 &
-              chunks(c)%field%vector_Kx,                 &
-              chunks(c)%field%vector_Ky,                 &
+              chunks(c)%field%x_max,                            &
+              chunks(c)%field%y_min,                            &
+              chunks(c)%field%y_max,                            &
+              chunks(c)%field%density,                          &
+              chunks(c)%field%energy1,                          &
+              chunks(c)%field%u,                                &
+              chunks(c)%field%vector_p,                         &
+              chunks(c)%field%vector_r,                         &
+              chunks(c)%field%vector_Mi,                        &
+              chunks(c)%field%vector_w,                         &
+              chunks(c)%field%vector_z,                         &
+              chunks(c)%field%vector_Kx,                        &
+              chunks(c)%field%vector_Ky,                        &
               rx, ry, rro, coefficient)
         ENDIF
 
@@ -132,7 +135,9 @@ SUBROUTINE tea_leaf()
         fields=0
         fields(FIELD_U) = 1
         fields(FIELD_P) = 1
+        IF (profiler_on) halo_time=timer()
         CALL update_halo(fields,1)
+        IF (profiler_on) profiler%halo_exchange = profiler%halo_exchange + (timer() - halo_time)
 
         ! and globally sum rro
         CALL tea_allsum(rro)
@@ -147,13 +152,13 @@ SUBROUTINE tea_leaf()
               chunks(c)%field%volume,                      &
               chunks(c)%field%density,                     &
               chunks(c)%field%energy1,                     &
-              chunks(c)%field%u0,                          & !u0
-              chunks(c)%field%u,                           & !u1
-              chunks(c)%field%vector_r,                 & !un
-              chunks(c)%field%vector_w,                 & !Kx temp
-              chunks(c)%field%vector_z,                 & !Ky temp
-              chunks(c)%field%vector_Kx,                 & !Kx
-              chunks(c)%field%vector_Ky,                 & !Ky
+              chunks(c)%field%u0,                          &
+              chunks(c)%field%u,                           &
+              chunks(c)%field%vector_r,                    &
+              chunks(c)%field%vector_w,                    &
+              chunks(c)%field%vector_z,                    &
+              chunks(c)%field%vector_Kx,                   &
+              chunks(c)%field%vector_Ky,                   &
               coefficient)
         ELSEIF(use_C_kernels) THEN
           CALL tea_leaf_kernel_init_c(chunks(c)%field%x_min, &
@@ -165,13 +170,13 @@ SUBROUTINE tea_leaf()
               chunks(c)%field%volume,                        &
               chunks(c)%field%density,                       &
               chunks(c)%field%energy1,                       &
-              chunks(c)%field%u0,                            & !u0
-              chunks(c)%field%u,                             & !u1
-              chunks(c)%field%vector_r,                   & !un
-              chunks(c)%field%vector_w,                   & !Kx temp
-              chunks(c)%field%vector_z,                   & !Ky temp
-              chunks(c)%field%vector_Kx,                   & !Kx
-              chunks(c)%field%vector_Ky,                   & !Ky
+              chunks(c)%field%u0,                            &
+              chunks(c)%field%u,                             &
+              chunks(c)%field%vector_r,                      &
+              chunks(c)%field%vector_w,                      &
+              chunks(c)%field%vector_z,                      &
+              chunks(c)%field%vector_Kx,                     &
+              chunks(c)%field%vector_Ky,                     &
               coefficient)
         ENDIF
 
@@ -181,10 +186,10 @@ SUBROUTINE tea_leaf()
 
       IF(use_fortran_kernels) THEN
         CALL tea_leaf_kernel_cheby_copy_u(chunks(c)%field%x_min,&
-          chunks(c)%field%x_max,                       &
-          chunks(c)%field%y_min,                       &
-          chunks(c)%field%y_max,                       &
-          chunks(c)%field%u0,                &
+          chunks(c)%field%x_max,                                &
+          chunks(c)%field%y_min,                                &
+          chunks(c)%field%y_max,                                &
+          chunks(c)%field%u0,                                   &
           chunks(c)%field%u)
       ENDIF
 
@@ -310,7 +315,7 @@ SUBROUTINE tea_leaf()
               ! update p
               CALL update_halo(fields,1)
               IF (profiler_on) profiler%halo_exchange = profiler%halo_exchange + (timer() - halo_time)
-              IF (profiler_on) solve_time = solve_time - halo_time
+              !IF (profiler_on) solve_time = solve_time - halo_time
 
               CALL tea_allsum(rro)
             ENDIF
@@ -496,7 +501,7 @@ SUBROUTINE tea_leaf()
         IF (profiler_on) halo_time = timer()
         CALL update_halo(fields,1)
         IF (profiler_on) profiler%halo_exchange = profiler%halo_exchange + (timer() - halo_time)
-        IF (profiler_on) solve_time = solve_time - halo_time
+        !IF (profiler_on) solve_time = solve_time - halo_time
 
         IF (profiler_on) THEN
           IF (tl_use_chebyshev .AND. ch_switch_check) THEN

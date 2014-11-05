@@ -240,46 +240,46 @@ SUBROUTINE tqli(d,e,n, info)
     e(:)=eoshift(e(:),1)
     info = 0
     DO l=1,n
-        iter=0
-        iterate: do
-            do m=l,n-1
-                dd=abs(d(m))+abs(d(m+1))
-                if (abs(e(m))+dd == dd) exit
-            end do
-            if (m == l) exit iterate
-            if (iter == 30) then
-                info=1
-                return
-            endif
-            iter=iter+1
-            g=(d(l+1)-d(l))/(2.0_8*e(l))
-            r=SQRT(g**2.0_8+1.0_8**2.0_8)
-            g=d(m)-d(l)+e(l)/(g+sign(r,g))
-            s=1.0_8
-            c=1.0_8
-            p=0.0_8
-            DO i=m-1,l,-1
-                f=s*e(i)
-                b=c*e(i)
-                r=SQRT(f**2.0_8+g**2.0_8)
-                e(i+1)=r
-                if (r == 0.0_8) then
-                    d(i+1)=d(i+1)-p
-                    e(m)=0.0_8
-                    cycle iterate
-                end if
-                s=f/r
-                c=g/r
-                g=d(i+1)-p
-                r=(d(i)-g)*s+2.0_8*c*b
-                p=s*r
-                d(i+1)=g+p
-                g=c*r-b
-            end do
-            d(l)=d(l)-p
-            e(l)=g
+      iter=0
+      iterate: DO
+        DO m=l,n-1
+          dd=ABS(d(m))+ABS(d(m+1))
+          IF (ABS(e(m))+dd == dd) EXIT
+        ENDDO
+        IF (m == l) EXIT iterate
+        IF (iter == 30) THEN
+          info=1
+          RETURN
+        ENDIF
+        iter=iter+1
+        g=(d(l+1)-d(l))/(2.0_8*e(l))
+        r=SQRT(g**2.0_8+1.0_8**2.0_8)
+        g=d(m)-d(l)+e(l)/(g+SIGN(r,g))
+        s=1.0_8
+        c=1.0_8
+        p=0.0_8
+        DO i=m-1,l,-1
+          f=s*e(i)
+          b=c*e(i)
+          r=SQRT(f**2.0_8+g**2.0_8)
+          e(i+1)=r
+          IF (r == 0.0_8) THEN
+            d(i+1)=d(i+1)-p
             e(m)=0.0_8
-        END DO iterate
+            CYCLE iterate
+          ENDIF
+          s=f/r
+          c=g/r
+          g=d(i+1)-p
+          r=(d(i)-g)*s+2.0_8*c*b
+          p=s*r
+          d(i+1)=g+p
+          g=c*r-b
+        ENDDO
+        d(l)=d(l)-p
+        e(l)=g
+        e(m)=0.0_8
+      END DO iterate
     END DO
 END SUBROUTINE tqli
 
