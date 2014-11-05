@@ -63,9 +63,9 @@ ifndef COMPILER
   MESSAGE=select a compiler to compile in OpenMP, e.g. make COMPILER=INTEL
 endif
 
-OMP_INTEL     = -openmp -fpp
+OMP_INTEL     = -openmp
 OMP_SUN       = -xopenmp=parallel -vpara
-OMP_GNU       = -fopenmp -cpp
+OMP_GNU       = -fopenmp
 OMP_CRAY      = -e Z
 OMP_PGI       = -mp=nonuma
 OMP_PATHSCALE = -mp
