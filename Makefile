@@ -170,7 +170,7 @@ tea_leaf: c_lover *.f90 Makefile
 
 c_lover: *.c Makefile
 	$(C_MPI_COMPILER) $(CFLAGS)     \
-	set_field_kernel_c.c          \
+	set_field_kernel_c.c            \
 	calc_dt_kernel_c.c		\
 	field_summary_kernel_c.c	\
 	update_halo_kernel_c.c		\
