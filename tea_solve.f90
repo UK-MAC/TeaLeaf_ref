@@ -39,11 +39,11 @@ SUBROUTINE tea_leaf()
 
 !$ INTEGER :: OMP_GET_THREAD_NUM
   INTEGER :: c, n
-  REAL(KIND=8) :: ry,rx, error, exact_error
+  REAL(KIND=8) :: ry,rx,error,exact_error
 
   INTEGER :: fields(NUM_FIELDS)
 
-  REAL(KIND=8) :: timer,halo_time, solve_time, init_time
+  REAL(KIND=8) :: timer,halo_time,solve_time,init_time,reset_time
 
   ! For CG solver
   REAL(KIND=8) :: rro, pw, rrn, alpha, beta
@@ -138,6 +138,7 @@ SUBROUTINE tea_leaf()
         IF (profiler_on) halo_time=timer()
         CALL update_halo(fields,1)
         IF (profiler_on) profiler%halo_exchange = profiler%halo_exchange + (timer() - halo_time)
+        init_time=init_time+(timer()+halo_time)
 
         ! and globally sum rro
         CALL tea_allsum(rro)
@@ -315,7 +316,7 @@ SUBROUTINE tea_leaf()
               ! update p
               CALL update_halo(fields,1)
               IF (profiler_on) profiler%halo_exchange = profiler%halo_exchange + (timer() - halo_time)
-              !IF (profiler_on) solve_time = solve_time - halo_time
+              IF (profiler_on) solve_time = solve_time + halo_time
 
               CALL tea_allsum(rro)
             ENDIF
@@ -501,7 +502,7 @@ SUBROUTINE tea_leaf()
         IF (profiler_on) halo_time = timer()
         CALL update_halo(fields,1)
         IF (profiler_on) profiler%halo_exchange = profiler%halo_exchange + (timer() - halo_time)
-        !IF (profiler_on) solve_time = solve_time - halo_time
+        IF (profiler_on) solve_time = solve_time + (timer()-halo_time)
 
         IF (profiler_on) THEN
           IF (tl_use_chebyshev .AND. ch_switch_check) THEN
@@ -515,8 +516,6 @@ SUBROUTINE tea_leaf()
         IF (abs(error) .LT. eps) EXIT
 
       ENDDO
-
-      IF (profiler_on) profiler%tea_solve = profiler%tea_solve + (timer() - solve_time)
 
       IF (tl_check_result) THEN
         IF(use_fortran_kernels) THEN
@@ -541,6 +540,8 @@ SUBROUTINE tea_leaf()
         CALL tea_allsum(exact_error)
       ENDIF
 
+      IF (profiler_on) profiler%tea_solve = profiler%tea_solve + (timer() - solve_time)
+
       IF (parallel%boss) THEN
 !$      IF(OMP_GET_THREAD_NUM().EQ.0) THEN
           WRITE(g_out,"('Conduction error ',e14.7)") error
@@ -557,6 +558,7 @@ SUBROUTINE tea_leaf()
       ENDIF
 
       ! RESET
+      reset_time=timer()
       IF(use_fortran_kernels) THEN
           CALL tea_leaf_kernel_finalise(chunks(c)%field%x_min, &
               chunks(c)%field%x_max,                           &
@@ -574,10 +576,13 @@ SUBROUTINE tea_leaf()
               chunks(c)%field%density,                          &
               chunks(c)%field%u)
       ENDIF
+      IF (profiler_on) profiler%tea_reset = profiler%tea_reset + (timer() - halo_time)
 
+      halo_time=timer()
       fields=0
       fields(FIELD_ENERGY1) = 1
       CALL update_halo(fields,1)
+      IF (profiler_on) profiler%halo_exchange = profiler%halo_exchange + (timer() - halo_time)
 
     ENDIF
 
@@ -660,7 +665,7 @@ SUBROUTINE tea_leaF_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
 
   fields = 0
   fields(FIELD_P) = 1
-END SUBROUTINE
+END SUBROUTINE tea_leaF_run_ppcg_inner_steps
 
 SUBROUTINE tea_leaf_cheby_first_step(c, ch_alphas, ch_betas, fields, &
     error, rx, ry, theta, cn, max_cheby_iters, est_itc)
