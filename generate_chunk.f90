@@ -68,30 +68,6 @@ SUBROUTINE generate_chunk(chunk)
                                g_rect,                                &
                                g_circ,                                &
                                g_point)
-      ELSEIF(use_C_kernels)THEN
-        CALL generate_chunk_kernel_c(chunks(chunk)%field%x_min,         &
-                                 chunks(chunk)%field%x_max,             &
-                                 chunks(chunk)%field%y_min,             &
-                                 chunks(chunk)%field%y_max,             &
-                                 chunks(chunk)%field%vertexx,           &
-                                 chunks(chunk)%field%vertexy,           &
-                                 chunks(chunk)%field%cellx,             &
-                                 chunks(chunk)%field%celly,             &
-                                 chunks(chunk)%field%density,           &
-                                 chunks(chunk)%field%energy0,           &
-                                 chunks(chunk)%field%u,                 &
-                                 number_of_states,                      &
-                                 state_density,                         &
-                                 state_energy,                          &
-                                 state_xmin,                            &
-                                 state_xmax,                            &
-                                 state_ymin,                            &
-                                 state_ymax,                            &
-                                 state_radius,                          &
-                                 state_geometry,                        &
-                                 g_rect,                                &
-                                 g_circ,                                &
-                                 g_point)
       ENDIF
 
 END SUBROUTINE generate_chunk

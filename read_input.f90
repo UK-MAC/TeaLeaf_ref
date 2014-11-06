@@ -60,7 +60,6 @@ SUBROUTINE read_input()
   eps=1.0e-10
 
   use_fortran_kernels=.TRUE.
-  use_C_kernels=.FALSE.
   coefficient = CONDUCTIVITY
   profiler_on=.FALSE.
   profiler%timestep=0.0
@@ -172,10 +171,6 @@ SUBROUTINE read_input()
         tl_preconditioner_on = .TRUE.
       CASE('use_fortran_kernels')
         use_fortran_kernels=.TRUE.
-        use_C_kernels=.FALSE.
-      CASE('use_c_kernels')
-        use_fortran_kernels=.FALSE.
-        use_C_kernels=.TRUE.
       CASE('tl_use_jacobi')
         tl_use_chebyshev = .FALSE.
         tl_use_cg = .FALSE.
@@ -272,8 +267,6 @@ SUBROUTINE read_input()
     WRITE(g_out,*)
     IF(use_fortran_kernels) THEN
       WRITE(g_out,"(1x,a)")'Using Fortran Kernels'
-    ELSEIF(use_c_kernels) THEN
-      WRITE(g_out,"(1x,a)")'Using C Kernels'
     ENDIF
     WRITE(g_out,*)
     WRITE(g_out,*) 'Input read finished.'

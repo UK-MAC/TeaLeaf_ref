@@ -157,28 +157,12 @@ tea_leaf: c_lover *.f90 Makefile
 	visit.f90			\
 	tea_leaf.f90			\
 	diffuse.f90			\
-	set_field_kernel_c.o          	\
-	calc_dt_kernel_c.o		\
-	field_summary_kernel_c.o	\
-	update_halo_kernel_c.o		\
 	timer_c.o                       \
-	pack_kernel_c.o			\
-	generate_chunk_kernel_c.o	\
-	initialise_chunk_kernel_c.o	\
-	tea_leaf_kernel_c.o             \
 	-o tea_leaf; echo $(MESSAGE)
 
 c_lover: *.c Makefile
 	$(C_MPI_COMPILER) $(CFLAGS)     \
-	set_field_kernel_c.c            \
-	calc_dt_kernel_c.c		\
-	field_summary_kernel_c.c	\
-	update_halo_kernel_c.c		\
-	pack_kernel_c.c			\
-	generate_chunk_kernel_c.c	\
-	initialise_chunk_kernel_c.c	\
-	timer_c.c                       \
-	tea_leaf_kernel_c.c
+	timer_c.c
 
 clean:
 	rm -f *.o *.mod *genmod* *.lst *.cub *.ptx tea_leaf

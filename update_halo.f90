@@ -38,31 +38,8 @@ SUBROUTINE update_halo(fields,depth)
   DO c=1,chunks_per_task
 
     IF(chunks(c)%task.EQ.parallel%task) THEN
-
       IF(use_fortran_kernels)THEN
         CALL update_halo_kernel(chunks(c)%field%x_min,          &
-                                chunks(c)%field%x_max,          &
-                                chunks(c)%field%y_min,          &
-                                chunks(c)%field%y_max,          &
-                                chunks(c)%field%left,           &
-                                chunks(c)%field%bottom,         &
-                                chunks(c)%field%right,          &
-                                chunks(c)%field%top,            &
-                                chunks(c)%field%left_boundary,  &
-                                chunks(c)%field%bottom_boundary,&
-                                chunks(c)%field%right_boundary, &
-                                chunks(c)%field%top_boundary,   &
-                                chunks(c)%chunk_neighbours,     &
-                                chunks(c)%field%density,        &
-                                chunks(c)%field%energy0,        &
-                                chunks(c)%field%energy1,        &
-                                chunks(c)%field%u,              &
-                                chunks(c)%field%vector_p,       &
-                                chunks(c)%field%vector_sd,      &
-                                fields,                         &
-                                depth                           )
-      ELSEIF(use_C_kernels)THEN
-        CALL update_halo_kernel_c(chunks(c)%field%x_min,        &
                                 chunks(c)%field%x_max,          &
                                 chunks(c)%field%y_min,          &
                                 chunks(c)%field%y_max,          &

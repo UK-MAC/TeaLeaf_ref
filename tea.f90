@@ -379,16 +379,6 @@ SUBROUTINE tea_pack_left(chunk, fields, depth, left_right_offset)
                                     CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
                                     depth, CELL_DATA,                             &
                                     left_right_offset(FIELD_DENSITY))
-    ELSE
-      CALL tea_pack_message_left_c(chunks(chunk)%field%x_min,                    &
-                                      chunks(chunk)%field%x_max,                    &
-                                      chunks(chunk)%field%y_min,                    &
-                                      chunks(chunk)%field%y_max,                    &
-                                      chunks(chunk)%field%density,                 &
-                                      chunks(chunk)%left_snd_buffer,                &
-                                      CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
-                                      depth, CELL_DATA,                             &
-                                      left_right_offset(FIELD_DENSITY))
     ENDIF
   ENDIF
   IF(fields(FIELD_ENERGY0).EQ.1) THEN
@@ -402,16 +392,6 @@ SUBROUTINE tea_pack_left(chunk, fields, depth, left_right_offset)
                                     CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
                                     depth, CELL_DATA,                             &
                                     left_right_offset(FIELD_ENERGY0))
-    ELSE
-      CALL tea_pack_message_left_c(chunks(chunk)%field%x_min,                    &
-                                      chunks(chunk)%field%x_max,                    &
-                                      chunks(chunk)%field%y_min,                    &
-                                      chunks(chunk)%field%y_max,                    &
-                                      chunks(chunk)%field%energy0,                  &
-                                      chunks(chunk)%left_snd_buffer,                &
-                                      CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
-                                      depth, CELL_DATA,                             &
-                                      left_right_offset(FIELD_ENERGY0))
     ENDIF
   ENDIF
   IF(fields(FIELD_ENERGY1).EQ.1) THEN
@@ -425,16 +405,6 @@ SUBROUTINE tea_pack_left(chunk, fields, depth, left_right_offset)
                                     CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
                                     depth, CELL_DATA,                             &
                                     left_right_offset(FIELD_ENERGY1))
-    ELSE
-      CALL tea_pack_message_left_c(chunks(chunk)%field%x_min,                    &
-                                      chunks(chunk)%field%x_max,                    &
-                                      chunks(chunk)%field%y_min,                    &
-                                      chunks(chunk)%field%y_max,                    &
-                                      chunks(chunk)%field%energy1,                  &
-                                      chunks(chunk)%left_snd_buffer,                &
-                                      CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
-                                      depth, CELL_DATA,                             &
-                                      left_right_offset(FIELD_ENERGY1))
     ENDIF
   ENDIF
   IF(fields(FIELD_P).EQ.1) THEN
@@ -448,16 +418,6 @@ SUBROUTINE tea_pack_left(chunk, fields, depth, left_right_offset)
                                     CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
                                     depth, CELL_DATA,                             &
                                     left_right_offset(FIELD_P))
-    ELSE
-      CALL tea_pack_message_left_c(chunks(chunk)%field%x_min,                    &
-                                      chunks(chunk)%field%x_max,                    &
-                                      chunks(chunk)%field%y_min,                    &
-                                      chunks(chunk)%field%y_max,                    &
-                                      chunks(chunk)%field%vector_p,                  &
-                                      chunks(chunk)%left_snd_buffer,                &
-                                      CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
-                                      depth, CELL_DATA,                             &
-                                      left_right_offset(FIELD_P))
     ENDIF
   ENDIF
   IF(fields(FIELD_U).EQ.1) THEN
@@ -471,16 +431,6 @@ SUBROUTINE tea_pack_left(chunk, fields, depth, left_right_offset)
                                     CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
                                     depth, CELL_DATA,                             &
                                     left_right_offset(FIELD_U))
-    ELSE
-      CALL tea_pack_message_left_c(chunks(chunk)%field%x_min,                    &
-                                      chunks(chunk)%field%x_max,                    &
-                                      chunks(chunk)%field%y_min,                    &
-                                      chunks(chunk)%field%y_max,                    &
-                                      chunks(chunk)%field%u,                  &
-                                      chunks(chunk)%left_snd_buffer,                &
-                                      CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
-                                      depth, CELL_DATA,                             &
-                                      left_right_offset(FIELD_U))
     ENDIF
   ENDIF
   IF(fields(FIELD_SD).EQ.1) THEN
@@ -494,16 +444,6 @@ SUBROUTINE tea_pack_left(chunk, fields, depth, left_right_offset)
                                     CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
                                     depth, CELL_DATA,                             &
                                     left_right_offset(FIELD_SD))
-    ELSE
-      CALL tea_pack_message_left_c(chunks(chunk)%field%x_min,                    &
-                                      chunks(chunk)%field%x_max,                    &
-                                      chunks(chunk)%field%y_min,                    &
-                                      chunks(chunk)%field%y_max,                    &
-                                      chunks(chunk)%field%vector_sd,                  &
-                                      chunks(chunk)%left_snd_buffer,                &
-                                      CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
-                                      depth, CELL_DATA,                             &
-                                      left_right_offset(FIELD_SD))
     ENDIF
   ENDIF
 
@@ -554,16 +494,6 @@ SUBROUTINE tea_unpack_left(fields, chunk, depth,                         &
                                       CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
                                       depth, CELL_DATA,                             &
                                       left_right_offset(FIELD_DENSITY))
-    ELSE
-      CALL tea_unpack_message_left_c(chunks(chunk)%field%x_min,                    &
-                                        chunks(chunk)%field%x_max,                    &
-                                        chunks(chunk)%field%y_min,                    &
-                                        chunks(chunk)%field%y_max,                    &
-                                        chunks(chunk)%field%density,                 &
-                                        chunks(chunk)%left_rcv_buffer,                &
-                                        CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
-                                        depth, CELL_DATA,                             &
-                                        left_right_offset(FIELD_DENSITY))
     ENDIF
   ENDIF
   IF(fields(FIELD_ENERGY0).EQ.1) THEN
@@ -577,16 +507,6 @@ SUBROUTINE tea_unpack_left(fields, chunk, depth,                         &
                                       CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
                                       depth, CELL_DATA,                             &
                                       left_right_offset(FIELD_ENERGY0))
-    ELSE
-      CALL tea_unpack_message_left_c(chunks(chunk)%field%x_min,                    &
-                                        chunks(chunk)%field%x_max,                    &
-                                        chunks(chunk)%field%y_min,                    &
-                                        chunks(chunk)%field%y_max,                    &
-                                        chunks(chunk)%field%energy0,                  &
-                                        chunks(chunk)%left_rcv_buffer,                &
-                                        CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
-                                        depth, CELL_DATA,                             &
-                                        left_right_offset(FIELD_ENERGY0))
     ENDIF
   ENDIF
   IF(fields(FIELD_ENERGY1).EQ.1) THEN
@@ -600,16 +520,6 @@ SUBROUTINE tea_unpack_left(fields, chunk, depth,                         &
                                       CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
                                       depth, CELL_DATA,                             &
                                       left_right_offset(FIELD_ENERGY1))
-    ELSE
-      CALL tea_unpack_message_left_c(chunks(chunk)%field%x_min,                    &
-                                        chunks(chunk)%field%x_max,                    &
-                                        chunks(chunk)%field%y_min,                    &
-                                        chunks(chunk)%field%y_max,                    &
-                                        chunks(chunk)%field%energy1,                  &
-                                        chunks(chunk)%left_rcv_buffer,                &
-                                        CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
-                                        depth, CELL_DATA,                             &
-                                        left_right_offset(FIELD_ENERGY1))
     ENDIF
   ENDIF
   IF(fields(FIELD_P).EQ.1) THEN
@@ -623,16 +533,6 @@ SUBROUTINE tea_unpack_left(fields, chunk, depth,                         &
                                       CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
                                       depth, CELL_DATA,                             &
                                       left_right_offset(FIELD_P))
-    ELSE
-      CALL tea_unpack_message_left_c(chunks(chunk)%field%x_min,                    &
-                                        chunks(chunk)%field%x_max,                    &
-                                        chunks(chunk)%field%y_min,                    &
-                                        chunks(chunk)%field%y_max,                    &
-                                        chunks(chunk)%field%vector_p,                  &
-                                        chunks(chunk)%left_rcv_buffer,                &
-                                        CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
-                                        depth, CELL_DATA,                             &
-                                        left_right_offset(FIELD_P))
     ENDIF
   ENDIF
   IF(fields(FIELD_U).EQ.1) THEN
@@ -646,16 +546,6 @@ SUBROUTINE tea_unpack_left(fields, chunk, depth,                         &
                                       CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
                                       depth, CELL_DATA,                             &
                                       left_right_offset(FIELD_U))
-    ELSE
-      CALL tea_unpack_message_left_c(chunks(chunk)%field%x_min,                    &
-                                        chunks(chunk)%field%x_max,                    &
-                                        chunks(chunk)%field%y_min,                    &
-                                        chunks(chunk)%field%y_max,                    &
-                                        chunks(chunk)%field%u,                  &
-                                        chunks(chunk)%left_rcv_buffer,                &
-                                        CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
-                                        depth, CELL_DATA,                             &
-                                        left_right_offset(FIELD_U))
     ENDIF
   ENDIF
   IF(fields(FIELD_SD).EQ.1) THEN
@@ -669,16 +559,6 @@ SUBROUTINE tea_unpack_left(fields, chunk, depth,                         &
                                       CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
                                       depth, CELL_DATA,                             &
                                       left_right_offset(FIELD_SD))
-    ELSE
-      CALL tea_unpack_message_left_c(chunks(chunk)%field%x_min,                    &
-                                        chunks(chunk)%field%x_max,                    &
-                                        chunks(chunk)%field%y_min,                    &
-                                        chunks(chunk)%field%y_max,                    &
-                                        chunks(chunk)%field%vector_sd,                  &
-                                        chunks(chunk)%left_rcv_buffer,                &
-                                        CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
-                                        depth, CELL_DATA,                             &
-                                        left_right_offset(FIELD_SD))
     ENDIF
   ENDIF
 
@@ -703,16 +583,6 @@ SUBROUTINE tea_pack_right(chunk, fields, depth, left_right_offset)
                                      CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
                                      depth, CELL_DATA,                             &
                                      left_right_offset(FIELD_DENSITY))
-    ELSE
-      CALL tea_pack_message_right_c(chunks(chunk)%field%x_min,                    &
-                                       chunks(chunk)%field%x_max,                    &
-                                       chunks(chunk)%field%y_min,                    &
-                                       chunks(chunk)%field%y_max,                    &
-                                       chunks(chunk)%field%density,                 &
-                                       chunks(chunk)%right_snd_buffer,               &
-                                       CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
-                                       depth, CELL_DATA,                             &
-                                       left_right_offset(FIELD_DENSITY))
     ENDIF
   ENDIF
   IF(fields(FIELD_ENERGY0).EQ.1) THEN
@@ -726,16 +596,6 @@ SUBROUTINE tea_pack_right(chunk, fields, depth, left_right_offset)
                                      CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
                                      depth, CELL_DATA,                             &
                                      left_right_offset(FIELD_ENERGY0))
-    ELSE
-      CALL tea_pack_message_right_c(chunks(chunk)%field%x_min,                    &
-                                       chunks(chunk)%field%x_max,                    &
-                                       chunks(chunk)%field%y_min,                    &
-                                       chunks(chunk)%field%y_max,                    &
-                                       chunks(chunk)%field%energy0,                  &
-                                       chunks(chunk)%right_snd_buffer,               &
-                                       CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
-                                       depth, CELL_DATA,                             &
-                                       left_right_offset(FIELD_ENERGY0))
     ENDIF
   ENDIF
   IF(fields(FIELD_ENERGY1).EQ.1) THEN
@@ -749,16 +609,6 @@ SUBROUTINE tea_pack_right(chunk, fields, depth, left_right_offset)
                                      CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
                                      depth, CELL_DATA,                             &
                                      left_right_offset(FIELD_ENERGY1))
-    ELSE
-      CALL tea_pack_message_right_c(chunks(chunk)%field%x_min,                    &
-                                       chunks(chunk)%field%x_max,                    &
-                                       chunks(chunk)%field%y_min,                    &
-                                       chunks(chunk)%field%y_max,                    &
-                                       chunks(chunk)%field%energy1,                  &
-                                       chunks(chunk)%right_snd_buffer,               &
-                                       CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
-                                       depth, CELL_DATA,                             &
-                                       left_right_offset(FIELD_ENERGY1))
     ENDIF
   ENDIF
   IF(fields(FIELD_P).EQ.1) THEN
@@ -772,16 +622,6 @@ SUBROUTINE tea_pack_right(chunk, fields, depth, left_right_offset)
                                      CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
                                      depth, CELL_DATA,                             &
                                      left_right_offset(FIELD_P))
-    ELSE
-      CALL tea_pack_message_right_c(chunks(chunk)%field%x_min,                    &
-                                       chunks(chunk)%field%x_max,                    &
-                                       chunks(chunk)%field%y_min,                    &
-                                       chunks(chunk)%field%y_max,                    &
-                                       chunks(chunk)%field%vector_p,                  &
-                                       chunks(chunk)%right_snd_buffer,               &
-                                       CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
-                                       depth, CELL_DATA,                             &
-                                       left_right_offset(FIELD_P))
     ENDIF
   ENDIF
   IF(fields(FIELD_U).EQ.1) THEN
@@ -795,16 +635,6 @@ SUBROUTINE tea_pack_right(chunk, fields, depth, left_right_offset)
                                      CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
                                      depth, CELL_DATA,                             &
                                      left_right_offset(FIELD_U))
-    ELSE
-      CALL tea_pack_message_right_c(chunks(chunk)%field%x_min,                    &
-                                       chunks(chunk)%field%x_max,                    &
-                                       chunks(chunk)%field%y_min,                    &
-                                       chunks(chunk)%field%y_max,                    &
-                                       chunks(chunk)%field%u,                  &
-                                       chunks(chunk)%right_snd_buffer,               &
-                                       CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
-                                       depth, CELL_DATA,                             &
-                                       left_right_offset(FIELD_U))
     ENDIF
   ENDIF
   IF(fields(FIELD_SD).EQ.1) THEN
@@ -818,16 +648,6 @@ SUBROUTINE tea_pack_right(chunk, fields, depth, left_right_offset)
                                      CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
                                      depth, CELL_DATA,                             &
                                      left_right_offset(FIELD_SD))
-    ELSE
-      CALL tea_pack_message_right_c(chunks(chunk)%field%x_min,                    &
-                                       chunks(chunk)%field%x_max,                    &
-                                       chunks(chunk)%field%y_min,                    &
-                                       chunks(chunk)%field%y_max,                    &
-                                       chunks(chunk)%field%vector_sd,                  &
-                                       chunks(chunk)%right_snd_buffer,               &
-                                       CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
-                                       depth, CELL_DATA,                             &
-                                       left_right_offset(FIELD_SD))
     ENDIF
   ENDIF
 
@@ -878,16 +698,6 @@ SUBROUTINE tea_unpack_right(fields, chunk, depth,                          &
                                        CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
                                        depth, CELL_DATA,                             &
                                        left_right_offset(FIELD_DENSITY))
-    ELSE
-      CALL tea_unpack_message_right_c(chunks(chunk)%field%x_min,                    &
-                                         chunks(chunk)%field%x_max,                    &
-                                         chunks(chunk)%field%y_min,                    &
-                                         chunks(chunk)%field%y_max,                    &
-                                         chunks(chunk)%field%density,                 &
-                                         chunks(chunk)%right_rcv_buffer,               &
-                                         CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
-                                         depth, CELL_DATA,                             &
-                                         left_right_offset(FIELD_DENSITY))
     ENDIF
   ENDIF
   IF(fields(FIELD_ENERGY0).EQ.1) THEN
@@ -901,16 +711,6 @@ SUBROUTINE tea_unpack_right(fields, chunk, depth,                          &
                                        CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
                                        depth, CELL_DATA,                             &
                                        left_right_offset(FIELD_ENERGY0))
-    ELSE
-      CALL tea_unpack_message_right_c(chunks(chunk)%field%x_min,                    &
-                                         chunks(chunk)%field%x_max,                    &
-                                         chunks(chunk)%field%y_min,                    &
-                                         chunks(chunk)%field%y_max,                    &
-                                         chunks(chunk)%field%energy0,                  &
-                                         chunks(chunk)%right_rcv_buffer,               &
-                                         CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
-                                         depth, CELL_DATA,                             &
-                                         left_right_offset(FIELD_ENERGY0))
     ENDIF
   ENDIF
   IF(fields(FIELD_ENERGY1).EQ.1) THEN
@@ -924,16 +724,6 @@ SUBROUTINE tea_unpack_right(fields, chunk, depth,                          &
                                        CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
                                        depth, CELL_DATA,                             &
                                        left_right_offset(FIELD_ENERGY1))
-    ELSE
-      CALL tea_unpack_message_right_c(chunks(chunk)%field%x_min,                    &
-                                         chunks(chunk)%field%x_max,                    &
-                                         chunks(chunk)%field%y_min,                    &
-                                         chunks(chunk)%field%y_max,                    &
-                                         chunks(chunk)%field%energy1,                  &
-                                         chunks(chunk)%right_rcv_buffer,               &
-                                         CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
-                                         depth, CELL_DATA,                             &
-                                         left_right_offset(FIELD_ENERGY1))
     ENDIF
   ENDIF
   IF(fields(FIELD_P).EQ.1) THEN
@@ -947,16 +737,6 @@ SUBROUTINE tea_unpack_right(fields, chunk, depth,                          &
                                        CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
                                        depth, CELL_DATA,                             &
                                        left_right_offset(FIELD_P))
-    ELSE
-      CALL tea_unpack_message_right_c(chunks(chunk)%field%x_min,                    &
-                                         chunks(chunk)%field%x_max,                    &
-                                         chunks(chunk)%field%y_min,                    &
-                                         chunks(chunk)%field%y_max,                    &
-                                         chunks(chunk)%field%vector_p,                  &
-                                         chunks(chunk)%right_rcv_buffer,               &
-                                         CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
-                                         depth, CELL_DATA,                             &
-                                         left_right_offset(FIELD_P))
     ENDIF
   ENDIF
   IF(fields(FIELD_U).EQ.1) THEN
@@ -970,16 +750,6 @@ SUBROUTINE tea_unpack_right(fields, chunk, depth,                          &
                                        CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
                                        depth, CELL_DATA,                             &
                                        left_right_offset(FIELD_U))
-    ELSE
-      CALL tea_unpack_message_right_c(chunks(chunk)%field%x_min,                    &
-                                         chunks(chunk)%field%x_max,                    &
-                                         chunks(chunk)%field%y_min,                    &
-                                         chunks(chunk)%field%y_max,                    &
-                                         chunks(chunk)%field%u,                  &
-                                         chunks(chunk)%right_rcv_buffer,               &
-                                         CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
-                                         depth, CELL_DATA,                             &
-                                         left_right_offset(FIELD_U))
     ENDIF
   ENDIF
   IF(fields(FIELD_SD).EQ.1) THEN
@@ -993,16 +763,6 @@ SUBROUTINE tea_unpack_right(fields, chunk, depth,                          &
                                        CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
                                        depth, CELL_DATA,                             &
                                        left_right_offset(FIELD_SD))
-    ELSE
-      CALL tea_unpack_message_right_c(chunks(chunk)%field%x_min,                    &
-                                         chunks(chunk)%field%x_max,                    &
-                                         chunks(chunk)%field%y_min,                    &
-                                         chunks(chunk)%field%y_max,                    &
-                                         chunks(chunk)%field%vector_sd,                  &
-                                         chunks(chunk)%right_rcv_buffer,               &
-                                         CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
-                                         depth, CELL_DATA,                             &
-                                         left_right_offset(FIELD_SD))
     ENDIF
   ENDIF
 
@@ -1027,16 +787,6 @@ SUBROUTINE tea_pack_top(chunk, fields, depth, bottom_top_offset)
                                    CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
                                    depth, CELL_DATA,                             &
                                    bottom_top_offset(FIELD_DENSITY))
-    ELSE
-      CALL tea_pack_message_top_c(chunks(chunk)%field%x_min,                    &
-                                     chunks(chunk)%field%x_max,                    &
-                                     chunks(chunk)%field%y_min,                    &
-                                     chunks(chunk)%field%y_max,                    &
-                                     chunks(chunk)%field%density,                 &
-                                     chunks(chunk)%top_snd_buffer,                 &
-                                     CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
-                                     depth, CELL_DATA,                             &
-                                     bottom_top_offset(FIELD_DENSITY))
     ENDIF
   ENDIF
   IF(fields(FIELD_ENERGY0).EQ.1) THEN
@@ -1050,16 +800,6 @@ SUBROUTINE tea_pack_top(chunk, fields, depth, bottom_top_offset)
                                    CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
                                    depth, CELL_DATA,                             &
                                    bottom_top_offset(FIELD_ENERGY0))
-    ELSE
-      CALL tea_pack_message_top_c(chunks(chunk)%field%x_min,                    &
-                                     chunks(chunk)%field%x_max,                    &
-                                     chunks(chunk)%field%y_min,                    &
-                                     chunks(chunk)%field%y_max,                    &
-                                     chunks(chunk)%field%energy0,                  &
-                                     chunks(chunk)%top_snd_buffer,                 &
-                                     CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
-                                     depth, CELL_DATA,                             &
-                                     bottom_top_offset(FIELD_ENERGY0))
     ENDIF
   ENDIF
   IF(fields(FIELD_ENERGY1).EQ.1) THEN
@@ -1073,16 +813,6 @@ SUBROUTINE tea_pack_top(chunk, fields, depth, bottom_top_offset)
                                    CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
                                    depth, CELL_DATA,                             &
                                    bottom_top_offset(FIELD_ENERGY1))
-    ELSE
-      CALL tea_pack_message_top_c(chunks(chunk)%field%x_min,                    &
-                                     chunks(chunk)%field%x_max,                    &
-                                     chunks(chunk)%field%y_min,                    &
-                                     chunks(chunk)%field%y_max,                    &
-                                     chunks(chunk)%field%energy1,                  &
-                                     chunks(chunk)%top_snd_buffer,                 &
-                                     CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
-                                     depth, CELL_DATA,                             &
-                                     bottom_top_offset(FIELD_ENERGY1))
     ENDIF
   ENDIF
   IF(fields(FIELD_P).EQ.1) THEN
@@ -1096,16 +826,6 @@ SUBROUTINE tea_pack_top(chunk, fields, depth, bottom_top_offset)
                                    CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
                                    depth, CELL_DATA,                             &
                                    bottom_top_offset(FIELD_P))
-    ELSE
-      CALL tea_pack_message_top_c(chunks(chunk)%field%x_min,                    &
-                                     chunks(chunk)%field%x_max,                    &
-                                     chunks(chunk)%field%y_min,                    &
-                                     chunks(chunk)%field%y_max,                    &
-                                     chunks(chunk)%field%vector_p,                  &
-                                     chunks(chunk)%top_snd_buffer,                 &
-                                     CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
-                                     depth, CELL_DATA,                             &
-                                     bottom_top_offset(FIELD_P))
     ENDIF
   ENDIF
   IF(fields(FIELD_U).EQ.1) THEN
@@ -1119,16 +839,6 @@ SUBROUTINE tea_pack_top(chunk, fields, depth, bottom_top_offset)
                                    CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
                                    depth, CELL_DATA,                             &
                                    bottom_top_offset(FIELD_U))
-    ELSE
-      CALL tea_pack_message_top_c(chunks(chunk)%field%x_min,                    &
-                                     chunks(chunk)%field%x_max,                    &
-                                     chunks(chunk)%field%y_min,                    &
-                                     chunks(chunk)%field%y_max,                    &
-                                     chunks(chunk)%field%u,                  &
-                                     chunks(chunk)%top_snd_buffer,                 &
-                                     CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
-                                     depth, CELL_DATA,                             &
-                                     bottom_top_offset(FIELD_U))
     ENDIF
   ENDIF
   IF(fields(FIELD_SD).EQ.1) THEN
@@ -1142,16 +852,6 @@ SUBROUTINE tea_pack_top(chunk, fields, depth, bottom_top_offset)
                                    CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
                                    depth, CELL_DATA,                             &
                                    bottom_top_offset(FIELD_SD))
-    ELSE
-      CALL tea_pack_message_top_c(chunks(chunk)%field%x_min,                    &
-                                     chunks(chunk)%field%x_max,                    &
-                                     chunks(chunk)%field%y_min,                    &
-                                     chunks(chunk)%field%y_max,                    &
-                                     chunks(chunk)%field%vector_sd,                  &
-                                     chunks(chunk)%top_snd_buffer,                 &
-                                     CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
-                                     depth, CELL_DATA,                             &
-                                     bottom_top_offset(FIELD_SD))
     ENDIF
   ENDIF
 
@@ -1203,16 +903,6 @@ SUBROUTINE tea_unpack_top(fields, chunk, depth,                        &
                                      CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
                                      depth, CELL_DATA,                             &
                                      bottom_top_offset(FIELD_DENSITY))
-    ELSE
-      CALL tea_unpack_message_top_c(chunks(chunk)%field%x_min,                    &
-                                       chunks(chunk)%field%x_max,                    &
-                                       chunks(chunk)%field%y_min,                    &
-                                       chunks(chunk)%field%y_max,                    &
-                                       chunks(chunk)%field%density,                 &
-                                       chunks(chunk)%top_rcv_buffer,                 &
-                                       CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
-                                       depth, CELL_DATA,                             &
-                                       bottom_top_offset(FIELD_DENSITY))
     ENDIF
   ENDIF
   IF(fields(FIELD_ENERGY0).EQ.1) THEN
@@ -1226,16 +916,6 @@ SUBROUTINE tea_unpack_top(fields, chunk, depth,                        &
                                      CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
                                      depth, CELL_DATA,                             &
                                      bottom_top_offset(FIELD_ENERGY0))
-    ELSE
-      CALL tea_unpack_message_top_c(chunks(chunk)%field%x_min,                    &
-                                       chunks(chunk)%field%x_max,                    &
-                                       chunks(chunk)%field%y_min,                    &
-                                       chunks(chunk)%field%y_max,                    &
-                                       chunks(chunk)%field%energy0,                  &
-                                       chunks(chunk)%top_rcv_buffer,                 &
-                                       CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
-                                       depth, CELL_DATA,                             &
-                                       bottom_top_offset(FIELD_ENERGY0))
     ENDIF
   ENDIF
   IF(fields(FIELD_ENERGY1).EQ.1) THEN
@@ -1249,16 +929,6 @@ SUBROUTINE tea_unpack_top(fields, chunk, depth,                        &
                                      CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
                                      depth, CELL_DATA,                             &
                                      bottom_top_offset(FIELD_ENERGY1))
-    ELSE
-      CALL tea_unpack_message_top_c(chunks(chunk)%field%x_min,                    &
-                                       chunks(chunk)%field%x_max,                    &
-                                       chunks(chunk)%field%y_min,                    &
-                                       chunks(chunk)%field%y_max,                    &
-                                       chunks(chunk)%field%energy1,                  &
-                                       chunks(chunk)%top_rcv_buffer,                 &
-                                       CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
-                                       depth, CELL_DATA,                             &
-                                       bottom_top_offset(FIELD_ENERGY1))
     ENDIF
   ENDIF
   IF(fields(FIELD_P).EQ.1) THEN
@@ -1272,16 +942,6 @@ SUBROUTINE tea_unpack_top(fields, chunk, depth,                        &
                                      CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
                                      depth, CELL_DATA,                             &
                                      bottom_top_offset(FIELD_P))
-    ELSE
-      CALL tea_unpack_message_top_c(chunks(chunk)%field%x_min,                    &
-                                       chunks(chunk)%field%x_max,                    &
-                                       chunks(chunk)%field%y_min,                    &
-                                       chunks(chunk)%field%y_max,                    &
-                                       chunks(chunk)%field%vector_p,                  &
-                                       chunks(chunk)%top_rcv_buffer,                 &
-                                       CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
-                                       depth, CELL_DATA,                             &
-                                       bottom_top_offset(FIELD_P))
     ENDIF
   ENDIF
   IF(fields(FIELD_U).EQ.1) THEN
@@ -1295,16 +955,6 @@ SUBROUTINE tea_unpack_top(fields, chunk, depth,                        &
                                      CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
                                      depth, CELL_DATA,                             &
                                      bottom_top_offset(FIELD_U))
-    ELSE
-      CALL tea_unpack_message_top_c(chunks(chunk)%field%x_min,                    &
-                                       chunks(chunk)%field%x_max,                    &
-                                       chunks(chunk)%field%y_min,                    &
-                                       chunks(chunk)%field%y_max,                    &
-                                       chunks(chunk)%field%u,                  &
-                                       chunks(chunk)%top_rcv_buffer,                 &
-                                       CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
-                                       depth, CELL_DATA,                             &
-                                       bottom_top_offset(FIELD_U))
     ENDIF
   ENDIF
   IF(fields(FIELD_SD).EQ.1) THEN
@@ -1318,16 +968,6 @@ SUBROUTINE tea_unpack_top(fields, chunk, depth,                        &
                                      CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
                                      depth, CELL_DATA,                             &
                                      bottom_top_offset(FIELD_SD))
-    ELSE
-      CALL tea_unpack_message_top_c(chunks(chunk)%field%x_min,                    &
-                                       chunks(chunk)%field%x_max,                    &
-                                       chunks(chunk)%field%y_min,                    &
-                                       chunks(chunk)%field%y_max,                    &
-                                       chunks(chunk)%field%vector_sd,                  &
-                                       chunks(chunk)%top_rcv_buffer,                 &
-                                       CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
-                                       depth, CELL_DATA,                             &
-                                       bottom_top_offset(FIELD_SD))
     ENDIF
   ENDIF
 
@@ -1352,16 +992,6 @@ SUBROUTINE tea_pack_bottom(chunk, fields, depth, bottom_top_offset)
                                       CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
                                       depth, CELL_DATA,                             &
                                       bottom_top_offset(FIELD_DENSITY))
-    ELSE
-      CALL tea_pack_message_bottom_c(chunks(chunk)%field%x_min,                    &
-                                        chunks(chunk)%field%x_max,                    &
-                                        chunks(chunk)%field%y_min,                    &
-                                        chunks(chunk)%field%y_max,                    &
-                                        chunks(chunk)%field%density,                 &
-                                        chunks(chunk)%bottom_snd_buffer,              &
-                                        CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
-                                        depth, CELL_DATA,                             &
-                                        bottom_top_offset(FIELD_DENSITY))
     ENDIF
   ENDIF
   IF(fields(FIELD_ENERGY0).EQ.1) THEN
@@ -1375,16 +1005,6 @@ SUBROUTINE tea_pack_bottom(chunk, fields, depth, bottom_top_offset)
                                       CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
                                       depth, CELL_DATA,                             &
                                       bottom_top_offset(FIELD_ENERGY0))
-    ELSE
-      CALL tea_pack_message_bottom_c(chunks(chunk)%field%x_min,                    &
-                                        chunks(chunk)%field%x_max,                    &
-                                        chunks(chunk)%field%y_min,                    &
-                                        chunks(chunk)%field%y_max,                    &
-                                        chunks(chunk)%field%energy0,                  &
-                                        chunks(chunk)%bottom_snd_buffer,              &
-                                        CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
-                                        depth, CELL_DATA,                             &
-                                        bottom_top_offset(FIELD_ENERGY0))
     ENDIF
   ENDIF
   IF(fields(FIELD_ENERGY1).EQ.1) THEN
@@ -1398,16 +1018,6 @@ SUBROUTINE tea_pack_bottom(chunk, fields, depth, bottom_top_offset)
                                       CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
                                       depth, CELL_DATA,                             &
                                       bottom_top_offset(FIELD_ENERGY1))
-    ELSE
-      CALL tea_pack_message_bottom_c(chunks(chunk)%field%x_min,                    &
-                                        chunks(chunk)%field%x_max,                    &
-                                        chunks(chunk)%field%y_min,                    &
-                                        chunks(chunk)%field%y_max,                    &
-                                        chunks(chunk)%field%energy1,                  &
-                                        chunks(chunk)%bottom_snd_buffer,              &
-                                        CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
-                                        depth, CELL_DATA,                             &
-                                        bottom_top_offset(FIELD_ENERGY1))
     ENDIF
   ENDIF
   IF(fields(FIELD_P).EQ.1) THEN
@@ -1421,16 +1031,6 @@ SUBROUTINE tea_pack_bottom(chunk, fields, depth, bottom_top_offset)
                                       CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
                                       depth, CELL_DATA,                             &
                                       bottom_top_offset(FIELD_P))
-    ELSE
-      CALL tea_pack_message_bottom_c(chunks(chunk)%field%x_min,                    &
-                                        chunks(chunk)%field%x_max,                    &
-                                        chunks(chunk)%field%y_min,                    &
-                                        chunks(chunk)%field%y_max,                    &
-                                        chunks(chunk)%field%vector_p,                  &
-                                        chunks(chunk)%bottom_snd_buffer,              &
-                                        CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
-                                        depth, CELL_DATA,                             &
-                                        bottom_top_offset(FIELD_P))
     ENDIF
   ENDIF
   IF(fields(FIELD_U).EQ.1) THEN
@@ -1444,16 +1044,6 @@ SUBROUTINE tea_pack_bottom(chunk, fields, depth, bottom_top_offset)
                                       CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
                                       depth, CELL_DATA,                             &
                                       bottom_top_offset(FIELD_U))
-    ELSE
-      CALL tea_pack_message_bottom_c(chunks(chunk)%field%x_min,                    &
-                                        chunks(chunk)%field%x_max,                    &
-                                        chunks(chunk)%field%y_min,                    &
-                                        chunks(chunk)%field%y_max,                    &
-                                        chunks(chunk)%field%u,                  &
-                                        chunks(chunk)%bottom_snd_buffer,              &
-                                        CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
-                                        depth, CELL_DATA,                             &
-                                        bottom_top_offset(FIELD_U))
     ENDIF
   ENDIF
   IF(fields(FIELD_SD).EQ.1) THEN
@@ -1467,16 +1057,6 @@ SUBROUTINE tea_pack_bottom(chunk, fields, depth, bottom_top_offset)
                                       CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
                                       depth, CELL_DATA,                             &
                                       bottom_top_offset(FIELD_SD))
-    ELSE
-      CALL tea_pack_message_bottom_c(chunks(chunk)%field%x_min,                    &
-                                        chunks(chunk)%field%x_max,                    &
-                                        chunks(chunk)%field%y_min,                    &
-                                        chunks(chunk)%field%y_max,                    &
-                                        chunks(chunk)%field%vector_sd,                  &
-                                        chunks(chunk)%bottom_snd_buffer,              &
-                                        CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
-                                        depth, CELL_DATA,                             &
-                                        bottom_top_offset(FIELD_SD))
     ENDIF
   ENDIF
 
@@ -1527,16 +1107,6 @@ SUBROUTINE tea_unpack_bottom(fields, chunk, depth,                        &
                                         CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
                                         depth, CELL_DATA,                             &
                                         bottom_top_offset(FIELD_DENSITY))
-    ELSE
-      CALL tea_unpack_message_bottom_c(chunks(chunk)%field%x_min,                    &
-                                          chunks(chunk)%field%x_max,                    &
-                                          chunks(chunk)%field%y_min,                    &
-                                          chunks(chunk)%field%y_max,                    &
-                                          chunks(chunk)%field%density,                 &
-                                          chunks(chunk)%bottom_rcv_buffer,              &
-                                          CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
-                                          depth, CELL_DATA,                             &
-                                          bottom_top_offset(FIELD_DENSITY))
     ENDIF
   ENDIF
 
@@ -1551,16 +1121,6 @@ SUBROUTINE tea_unpack_bottom(fields, chunk, depth,                        &
                                         CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
                                         depth, CELL_DATA,                             &
                                         bottom_top_offset(FIELD_ENERGY0))
-    ELSE
-      CALL tea_unpack_message_bottom_c(chunks(chunk)%field%x_min,                    &
-                                          chunks(chunk)%field%x_max,                    &
-                                          chunks(chunk)%field%y_min,                    &
-                                          chunks(chunk)%field%y_max,                    &
-                                          chunks(chunk)%field%energy0,                  &
-                                          chunks(chunk)%bottom_rcv_buffer,              &
-                                          CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
-                                          depth, CELL_DATA,                             &
-                                          bottom_top_offset(FIELD_ENERGY0))
     ENDIF
   ENDIF
 
@@ -1575,16 +1135,6 @@ SUBROUTINE tea_unpack_bottom(fields, chunk, depth,                        &
                                         CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
                                         depth, CELL_DATA,                             &
                                         bottom_top_offset(FIELD_ENERGY1))
-    ELSE
-      CALL tea_unpack_message_bottom_c(chunks(chunk)%field%x_min,                    &
-                                          chunks(chunk)%field%x_max,                    &
-                                          chunks(chunk)%field%y_min,                    &
-                                          chunks(chunk)%field%y_max,                    &
-                                          chunks(chunk)%field%energy1,                  &
-                                          chunks(chunk)%bottom_rcv_buffer,              &
-                                          CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
-                                          depth, CELL_DATA,                             &
-                                          bottom_top_offset(FIELD_ENERGY1))
     ENDIF
   ENDIF
   IF(fields(FIELD_P).EQ.1) THEN
@@ -1598,16 +1148,6 @@ SUBROUTINE tea_unpack_bottom(fields, chunk, depth,                        &
                                         CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
                                         depth, CELL_DATA,                             &
                                         bottom_top_offset(FIELD_P))
-    ELSE
-      CALL tea_unpack_message_bottom_c(chunks(chunk)%field%x_min,                    &
-                                          chunks(chunk)%field%x_max,                    &
-                                          chunks(chunk)%field%y_min,                    &
-                                          chunks(chunk)%field%y_max,                    &
-                                          chunks(chunk)%field%vector_p,                  &
-                                          chunks(chunk)%bottom_rcv_buffer,              &
-                                          CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
-                                          depth, CELL_DATA,                             &
-                                          bottom_top_offset(FIELD_P))
     ENDIF
   ENDIF
   IF(fields(FIELD_U).EQ.1) THEN
@@ -1621,16 +1161,6 @@ SUBROUTINE tea_unpack_bottom(fields, chunk, depth,                        &
                                         CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
                                         depth, CELL_DATA,                             &
                                         bottom_top_offset(FIELD_U))
-    ELSE
-      CALL tea_unpack_message_bottom_c(chunks(chunk)%field%x_min,                    &
-                                          chunks(chunk)%field%x_max,                    &
-                                          chunks(chunk)%field%y_min,                    &
-                                          chunks(chunk)%field%y_max,                    &
-                                          chunks(chunk)%field%u,                  &
-                                          chunks(chunk)%bottom_rcv_buffer,              &
-                                          CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
-                                          depth, CELL_DATA,                             &
-                                          bottom_top_offset(FIELD_U))
     ENDIF
   ENDIF
   IF(fields(FIELD_SD).EQ.1) THEN
@@ -1644,16 +1174,6 @@ SUBROUTINE tea_unpack_bottom(fields, chunk, depth,                        &
                                         CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
                                         depth, CELL_DATA,                             &
                                         bottom_top_offset(FIELD_SD))
-    ELSE
-      CALL tea_unpack_message_bottom_c(chunks(chunk)%field%x_min,                    &
-                                          chunks(chunk)%field%x_max,                    &
-                                          chunks(chunk)%field%y_min,                    &
-                                          chunks(chunk)%field%y_max,                    &
-                                          chunks(chunk)%field%vector_sd,                  &
-                                          chunks(chunk)%bottom_rcv_buffer,              &
-                                          CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
-                                          depth, CELL_DATA,                             &
-                                          bottom_top_offset(FIELD_SD))
     ENDIF
   ENDIF
 

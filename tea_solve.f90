@@ -93,7 +93,7 @@ SUBROUTINE tea_leaf()
 
       IF (profiler_on) init_time=timer()
 
-      IF (use_fortran_kernels .OR. use_c_kernels) THEN
+      IF (use_fortran_kernels) THEN
         rx = dt/(chunks(c)%field%celldx(chunks(c)%field%x_min)**2)
         ry = dt/(chunks(c)%field%celldy(chunks(c)%field%y_min)**2)
       ENDIF
@@ -116,22 +116,6 @@ SUBROUTINE tea_leaf()
               chunks(c)%field%vector_Kx,                              &
               chunks(c)%field%vector_Ky,                              &
               rx, ry, rro, coefficient, tl_preconditioner_on)
-        ELSEIF(use_C_kernels) THEN
-          CALL tea_leaf_kernel_init_cg_c(chunks(c)%field%x_min, &
-              chunks(c)%field%x_max,                            &
-              chunks(c)%field%y_min,                            &
-              chunks(c)%field%y_max,                            &
-              chunks(c)%field%density,                          &
-              chunks(c)%field%energy1,                          &
-              chunks(c)%field%u,                                &
-              chunks(c)%field%vector_p,                         &
-              chunks(c)%field%vector_r,                         &
-              chunks(c)%field%vector_Mi,                        &
-              chunks(c)%field%vector_w,                         &
-              chunks(c)%field%vector_z,                         &
-              chunks(c)%field%vector_Kx,                        &
-              chunks(c)%field%vector_Ky,                        &
-              rx, ry, rro, coefficient)
         ENDIF
 
         ! need to update p when using CG due to matrix/vector multiplication
@@ -163,24 +147,6 @@ SUBROUTINE tea_leaf()
               chunks(c)%field%vector_z,                    &
               chunks(c)%field%vector_Kx,                   &
               chunks(c)%field%vector_Ky,                   &
-              coefficient)
-        ELSEIF(use_C_kernels) THEN
-          CALL tea_leaf_kernel_init_c(chunks(c)%field%x_min, &
-              chunks(c)%field%x_max,                         &
-              chunks(c)%field%y_min,                         &
-              chunks(c)%field%y_max,                         &
-              chunks(c)%field%celldx,                        &
-              chunks(c)%field%celldy,                        &
-              chunks(c)%field%volume,                        &
-              chunks(c)%field%density,                       &
-              chunks(c)%field%energy1,                       &
-              chunks(c)%field%u0,                            &
-              chunks(c)%field%u,                             &
-              chunks(c)%field%vector_r,                      &
-              chunks(c)%field%vector_w,                      &
-              chunks(c)%field%vector_z,                      &
-              chunks(c)%field%vector_Kx,                     &
-              chunks(c)%field%vector_Ky,                     &
               coefficient)
         ENDIF
 
@@ -404,16 +370,6 @@ SUBROUTINE tea_leaf()
                 chunks(c)%field%vector_Kx,                                     &
                 chunks(c)%field%vector_Ky,                                     &
                 rx, ry, pw)
-          ELSEIF(use_c_kernels) THEN
-            CALL tea_leaf_kernel_solve_cg_c_calc_w(chunks(c)%field%x_min,&
-                chunks(c)%field%x_max,                                   &
-                chunks(c)%field%y_min,                                   &
-                chunks(c)%field%y_max,                                   &
-                chunks(c)%field%vector_p,                                &
-                chunks(c)%field%vector_w,                                &
-                chunks(c)%field%vector_Kx,                               &
-                chunks(c)%field%vector_Ky,                               &
-                rx, ry, pw)
           ENDIF
 
           CALL tea_allsum(pw)
@@ -432,18 +388,6 @@ SUBROUTINE tea_leaf()
                 chunks(c)%field%vector_w,                                       &
                 chunks(c)%field%vector_z,                                       &
                 alpha, rrn, tl_preconditioner_on)
-          ELSEIF(use_c_kernels) THEN
-            CALL tea_leaf_kernel_solve_cg_c_calc_ur(chunks(c)%field%x_min,&
-                chunks(c)%field%x_max,                                    &
-                chunks(c)%field%y_min,                                    &
-                chunks(c)%field%y_max,                                    &
-                chunks(c)%field%u,                                        &
-                chunks(c)%field%vector_p,                                 &
-                chunks(c)%field%vector_r,                                 &
-                chunks(c)%field%vector_Mi,                                &
-                chunks(c)%field%vector_w,                                 &
-                chunks(c)%field%vector_z,                                 &
-                alpha, rrn)
           ENDIF
 
           CALL tea_allsum(rrn)
@@ -459,15 +403,6 @@ SUBROUTINE tea_leaf()
                 chunks(c)%field%vector_r,                                      &
                 chunks(c)%field%vector_z,                                      &
                 beta, tl_preconditioner_on)
-          ELSEIF(use_c_kernels) THEN
-            CALL tea_leaf_kernel_solve_cg_c_calc_p(chunks(c)%field%x_min,&
-                chunks(c)%field%x_max,                                   &
-                chunks(c)%field%y_min,                                   &
-                chunks(c)%field%y_max,                                   &
-                chunks(c)%field%vector_p,                                &
-                chunks(c)%field%vector_r,                                &
-                chunks(c)%field%vector_z,                                &
-                beta)
           ENDIF
 
           error = rrn
@@ -485,19 +420,6 @@ SUBROUTINE tea_leaf()
                 error,                                       &
                 chunks(c)%field%u0,                          &
                 chunks(c)%field%u,                           &
-                chunks(c)%field%vector_r)
-          ELSEIF(use_C_kernels) THEN
-            CALL tea_leaf_kernel_solve_c(chunks(c)%field%x_min,&
-                chunks(c)%field%x_max,                         &
-                chunks(c)%field%y_min,                         &
-                chunks(c)%field%y_max,                         &
-                rx,                                            &
-                ry,                                            &
-                chunks(c)%field%vector_Kx,                     &
-                chunks(c)%field%vector_Ky,                     &
-                error,                                         &
-                chunks(c)%field%u0,                            &
-                chunks(c)%field%u,                             &
                 chunks(c)%field%vector_r)
           ENDIF
 
@@ -571,14 +493,6 @@ SUBROUTINE tea_leaf()
               chunks(c)%field%y_max,                           &
               chunks(c)%field%energy1,                         &
               chunks(c)%field%density,                         &
-              chunks(c)%field%u)
-      ELSEIF(use_C_kernels) THEN
-          CALL tea_leaf_kernel_finalise_c(chunks(c)%field%x_min,&
-              chunks(c)%field%x_max,                            &
-              chunks(c)%field%y_min,                            &
-              chunks(c)%field%y_max,                            &
-              chunks(c)%field%energy1,                          &
-              chunks(c)%field%density,                          &
               chunks(c)%field%u)
       ENDIF
       IF (profiler_on) profiler%tea_reset = profiler%tea_reset + (timer() - halo_time)
