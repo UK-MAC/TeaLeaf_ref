@@ -57,7 +57,7 @@ SUBROUTINE tea_leaf()
 
   INTEGER :: cg_calc_steps
 
-  REAL(KIND=8) :: cg_time, ch_time, total_solve_time, ch_per_it, cg_per_it
+  REAL(KIND=8) :: cg_time, ch_time, total_solve_time, ch_per_it, cg_per_it, iteration_time
 
   cg_time = 0.0_8
   ch_time = 0.0_8
@@ -74,6 +74,9 @@ SUBROUTINE tea_leaf()
 
   error = 1e10
   cheby_calc_steps = 0
+  cg_calc_steps = 0
+
+  total_solve_time = timer()
 
   DO c=1,chunks_per_task
 
@@ -199,9 +202,11 @@ SUBROUTINE tea_leaf()
 
       DO n=1,max_iters
 
+        iteration_time = timer()
+
         IF (tl_ch_cg_errswitch) THEN
-            ! either the error has got below tolerance, or it's already going
-            ch_switch_check = (cheby_calc_steps .GT. 0) .OR. (error .LE. tl_ch_cg_epslim)
+            ! either the error has got below tolerance, or it's already going - minimum 20 steps to converge eigenvalues
+            ch_switch_check = (cheby_calc_steps .GT. 0) .OR. (error .LE. tl_ch_cg_epslim) .AND. (n .GE. 20)
         ELSE
             ! enough steps have passed and error < 1, otherwise it's nowhere near converging on eigenvalues
             ch_switch_check = (n .GE. tl_ch_cg_presteps) .AND. (error .le. 1.0_8)
@@ -228,6 +233,10 @@ SUBROUTINE tea_leaf()
               ! calculate chebyshev coefficients
               CALL tea_calc_ch_coefs(ch_alphas, ch_betas, eigmin, eigmax, &
                   theta, max_cheby_iters)
+
+              ! don't need to update p any more
+              fields = 0
+              fields(FIELD_U) = 1
             ELSE IF (tl_use_ppcg) THEN
               ! currently also calculate chebyshev coefficients
               ! TODO least squares
@@ -248,14 +257,11 @@ SUBROUTINE tea_leaf()
           ENDIF
 
           IF (tl_use_chebyshev) THEN
-              ! don't need to update p any more
-              fields(FIELD_P) = 0
-
               IF (cheby_calc_steps .EQ. 0) THEN
                 CALL tea_leaf_cheby_first_step(c, ch_alphas, ch_betas, fields, &
                     error, rx, ry, theta, cn, max_cheby_iters, est_itc)
 
-                cheby_calc_steps = 2
+                cheby_calc_steps = 1
 
                 switch_step = n
               ELSE
@@ -282,7 +288,7 @@ SUBROUTINE tea_leaf()
                   ! total time spent much if at all (number of steps spent in
                   ! chebyshev is typically O(300+)) but will greatly reduce global
                   ! synchronisations needed
-                  IF ((n .GE. est_itc) .AND. (mod(n, 10) .eq. 0)) THEN
+                  IF ((n .GE. est_itc) .AND. (MOD(n, 10) .eq. 0)) THEN
                     IF(use_fortran_kernels) THEN
                       CALL tea_leaf_calc_2norm_kernel(chunks(c)%field%x_min,&
                             chunks(c)%field%x_max,                          &
@@ -506,11 +512,10 @@ SUBROUTINE tea_leaf()
 
         IF (profiler_on) THEN
           IF (tl_use_chebyshev .AND. ch_switch_check) THEN
-            ch_time=ch_time+(timer()-profiler%tea_solve)
+            ch_time=ch_time+(timer()-iteration_time)
           ELSE
-            cg_time=cg_time+(timer()-profiler%tea_solve)
+            cg_time=cg_time+(timer()-iteration_time)
           ENDIF
-          total_solve_time = total_solve_time + (timer() - profiler%tea_solve)
         ENDIF
 
         IF (abs(error) .LT. eps) EXIT
@@ -589,6 +594,7 @@ SUBROUTINE tea_leaf()
   ENDDO
 
   IF (profiler_on .AND. parallel%boss) THEN
+    total_solve_time = (timer() - total_solve_time)
     WRITE(0, "(a16, a7, a16)") "Time", "Steps", "Per it"
     WRITE(0, "(f16.10, i7, f16.10, f7.2)") total_solve_time, n, total_solve_time/n
     WRITE(g_out, "(a16, a7, a16)") "Time", "Steps", "Per it"
