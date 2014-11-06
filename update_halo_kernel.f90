@@ -55,12 +55,12 @@ CONTAINS
                             ,EXTERNAL_FACE=-1
 
   INTEGER,      PARAMETER :: FIELD_DENSITY    = 1         &
-                            ,FIELD_ENERGY0    = 3         &
-                            ,FIELD_ENERGY1    = 4         &
-                            ,FIELD_U          =16         &
-                            ,FIELD_P          =17         &
-                            ,FIELD_SD         =18         &
-                            ,NUM_FIELDS       =18
+                            ,FIELD_ENERGY0    = 2         &
+                            ,FIELD_ENERGY1    = 3         &
+                            ,FIELD_U          = 4         &
+                            ,FIELD_P          = 5         &
+                            ,FIELD_SD         = 6         &
+                            ,NUM_FIELDS       = 6
 
   INTEGER :: fields(NUM_FIELDS),depth
 
