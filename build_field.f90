@@ -85,19 +85,19 @@ SUBROUTINE build_field(chunk,x_cells,y_cells)
 !$OMP DO 
    DO k=chunks(chunk)%field%y_min-2,chunks(chunk)%field%y_max+2
      DO j=chunks(chunk)%field%x_min-2,chunks(chunk)%field%x_max+2
-       chunks(chunk)%field%vector_p=0.0
-       chunks(chunk)%field%vector_r=0.0
-       chunks(chunk)%field%vector_Mi=0.0
-       chunks(chunk)%field%vector_w=0.0
-       chunks(chunk)%field%vector_z=0.0
-       chunks(chunk)%field%vector_Kx=0.0
-       chunks(chunk)%field%vector_Ky=0.0
+       chunks(chunk)%field%vector_p(j,k)=0.0
+       chunks(chunk)%field%vector_r(j,k)=0.0
+       chunks(chunk)%field%vector_Mi(j,k)=0.0
+       chunks(chunk)%field%vector_w(j,k)=0.0
+       chunks(chunk)%field%vector_z(j,k)=0.0
+       chunks(chunk)%field%vector_Kx(j,k)=0.0
+       chunks(chunk)%field%vector_Ky(j,k)=0.0
 
-       chunks(chunk)%field%density=0.0
-       chunks(chunk)%field%energy0=0.0
-       chunks(chunk)%field%energy1=0.0
-       chunks(chunk)%field%u=0.0
-       chunks(chunk)%field%u0=0.0
+       chunks(chunk)%field%density(j,k)=0.0
+       chunks(chunk)%field%energy0(j,k)=0.0
+       chunks(chunk)%field%energy1(j,k)=0.0
+       chunks(chunk)%field%u(j,k)=0.0
+       chunks(chunk)%field%u0(j,k)=0.0
      ENDDO
    ENDDO
 !$OMP ENDDO 
