@@ -15,5 +15,5 @@ end_step=100
 tl_max_iters=10000
 tl_use_cg
 tl_eps 1.0e-15
-test_problem 3
+test_problem 5
 *endtea
