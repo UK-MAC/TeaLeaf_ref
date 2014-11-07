@@ -26,7 +26,7 @@ SUBROUTINE build_field(chunk,x_cells,y_cells)
 
    IMPLICIT NONE
 
-   INTEGER :: chunk,x_cells,y_cells
+   INTEGER :: chunk,x_cells,y_cells,j,k
 
    chunks(chunk)%field%x_min=1
    chunks(chunk)%field%y_min=1
@@ -82,31 +82,65 @@ SUBROUTINE build_field(chunk,x_cells,y_cells)
    ! are allocated. This prevents first touch overheads in the main code
    ! cycle which can skew timings in the first step
 !$OMP PARALLEL
-   chunks(chunk)%field%vector_p=0.0
-   chunks(chunk)%field%vector_r=0.0
-   chunks(chunk)%field%vector_Mi=0.0
-   chunks(chunk)%field%vector_w=0.0
-   chunks(chunk)%field%vector_z=0.0
-   chunks(chunk)%field%vector_Kx=0.0
-   chunks(chunk)%field%vector_Ky=0.0
+!$OMP DO 
+   DO k=chunks(chunk)%field%y_min-2,chunks(chunk)%field%y_max+2
+     DO j=chunks(chunk)%field%x_min-2,chunks(chunk)%field%x_max+2
+       chunks(chunk)%field%vector_p=0.0
+       chunks(chunk)%field%vector_r=0.0
+       chunks(chunk)%field%vector_Mi=0.0
+       chunks(chunk)%field%vector_w=0.0
+       chunks(chunk)%field%vector_z=0.0
+       chunks(chunk)%field%vector_Kx=0.0
+       chunks(chunk)%field%vector_Ky=0.0
 
-   chunks(chunk)%field%density=0.0
-   chunks(chunk)%field%energy0=0.0
-   chunks(chunk)%field%energy1=0.0
-   chunks(chunk)%field%u=0.0
-   chunks(chunk)%field%u0=0.0
-   
-   chunks(chunk)%field%cellx=0.0
-   chunks(chunk)%field%celly=0.0
-   chunks(chunk)%field%vertexx=0.0
-   chunks(chunk)%field%vertexy=0.0
-   chunks(chunk)%field%celldx=0.0
-   chunks(chunk)%field%celldy=0.0
-   chunks(chunk)%field%vertexdx=0.0
-   chunks(chunk)%field%vertexdy=0.0
-   chunks(chunk)%field%volume=0.0
-   chunks(chunk)%field%xarea=0.0
-   chunks(chunk)%field%yarea=0.0
+       chunks(chunk)%field%density=0.0
+       chunks(chunk)%field%energy0=0.0
+       chunks(chunk)%field%energy1=0.0
+       chunks(chunk)%field%u=0.0
+       chunks(chunk)%field%u0=0.0
+     ENDDO
+   ENDDO
+!$OMP ENDDO 
+!$OMP DO 
+    DO k=chunks(chunk)%field%y_min-2,chunks(chunk)%field%y_max+2
+        DO j=chunks(chunk)%field%x_min-2,chunks(chunk)%field%x_max+3
+            chunks(chunk)%field%xarea(j,k)=0.0
+        ENDDO
+    ENDDO
+!$OMP END DO
+!$OMP DO 
+    DO k=chunks(chunk)%field%y_min-2,chunks(chunk)%field%y_max+3
+        DO j=chunks(chunk)%field%x_min-2,chunks(chunk)%field%x_max+2
+            chunks(chunk)%field%yarea(j,k)=0.0
+        ENDDO
+    ENDDO
+!$OMP END DO
+
+!$OMP DO 
+    DO j=chunks(chunk)%field%x_min-2,chunks(chunk)%field%x_max+2
+        chunks(chunk)%field%cellx(j)=0.0
+        chunks(chunk)%field%celldx(j)=0.0
+    ENDDO
+!$OMP END DO
+!$OMP DO 
+    DO k=chunks(chunk)%field%y_min-2,chunks(chunk)%field%y_max+2
+        chunks(chunk)%field%celly(k)=0.0
+        chunks(chunk)%field%celldy(k)=0.0
+    ENDDO
+!$OMP END DO
+
+!$OMP DO 
+    DO j=chunks(chunk)%field%x_min-2,chunks(chunk)%field%x_max+3
+        chunks(chunk)%field%vertexx(j)=0.0
+        chunks(chunk)%field%vertexdx(j)=0.0
+    ENDDO
+!$OMP END DO
+!$OMP DO 
+    DO k=chunks(chunk)%field%y_min-2,chunks(chunk)%field%y_max+3
+        chunks(chunk)%field%vertexy(k)=0.0
+        chunks(chunk)%field%vertexdy(k)=0.0
+    ENDDO
+!$OMP END DO
 !$OMP END PARALLEL
   
 END SUBROUTINE build_field
