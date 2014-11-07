@@ -97,10 +97,10 @@ SUBROUTINE diffuse
         WRITE(g_out,*)
         WRITE(g_out,*) 'Calculation complete'
         WRITE(g_out,*) 'Tea is finishing'
-        WRITE(g_out,*) 'Wall clock ', wall_clock
         WRITE(g_out,*) 'First step overhead', first_step-second_step
-        WRITE(    0,*) 'Wall clock ', wall_clock
+        WRITE(g_out,*) 'Wall clock ', wall_clock
         WRITE(    0,*) 'First step overhead', first_step-second_step
+        WRITE(    0,*) 'Wall clock ', wall_clock
       ENDIF
 
       EXIT

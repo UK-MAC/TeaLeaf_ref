@@ -81,6 +81,8 @@ SUBROUTINE build_field(chunk,x_cells,y_cells)
    ! Zeroing isn't strictly neccessary but it ensures physical pages
    ! are allocated. This prevents first touch overheads in the main code
    ! cycle which can skew timings in the first step
+   ! Explicit loop limits ensures correct NUMA access, which array syntax does
+   ! not
 !$OMP PARALLEL
 !$OMP DO 
    DO k=chunks(chunk)%field%y_min-2,chunks(chunk)%field%y_max+2
