@@ -109,7 +109,7 @@ OPTIONS="-xavx" C_OPTIONS="-xavx"
 
 The contents of tea.in defines the geometric and run time information, apart from task and thread counts.
 
-A complete list of options is given below, where <R> shows the option takes a real number as an argument. Similarly <I> is an integer argument.
+A complete list of options is given below, where `<R>` shows the option takes a real number as an argument. Similarly `<I>` is an integer argument.
 
 `initial_timestep <R>`
 
@@ -119,7 +119,7 @@ Set the initial time step for TeaLeaf. This time step stays constant through the
 
 Sets the end time for the simulation. When the simulation time is greater than this number the simulation will stop.
 
-`end_step`
+`end_step <I>`
 
 Sets the end step for the simulation. When the simulation step is equal to this then simulation will stop.
 
@@ -132,8 +132,8 @@ In the event that both the above options are set, the simulation will terminate 
 
 The above four options set the size of the computational domain. The default domain size is a 10cm square. 
 
-`x_cells <I>`
-`y_cells <I>`
+`x_cells <I>
+y_cells <I>`
 
 The two options above set the cell count for each coordinate direction. The default is 10 cells in each direction.
 
