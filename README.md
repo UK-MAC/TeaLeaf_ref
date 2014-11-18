@@ -125,19 +125,19 @@ Sets the end step for the simulation. When the simulation step is equal to this 
 
 In the event that both the above options are set, the simulation will terminate on whichever completes first.
 
-`xmin <R>
+`xmin <R>`
 
-xmax <R>
+`xmax <R>`
 
-ymin <R>
+`ymin <R>`
 
-ymax <R>`
+`ymax <R>`
 
 The above four options set the size of the computational domain. The default domain size is a 10cm square. 
 
-`x_cells <I>
+`x_cells <I>`
 
-y_cells <I>`
+`y_cells <I>`
 
 The two options above set the cell count for each coordinate direction. The default is 10 cells in each direction.
 
