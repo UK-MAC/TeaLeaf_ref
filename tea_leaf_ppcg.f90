@@ -112,7 +112,6 @@ SUBROUTINE tea_leaf_kernel_ppcg_init_p(x_min,             &
 
 END SUBROUTINE
 
-! TODO move into another file with fortran implementations of kernels
 SUBROUTINE tea_calc_ls_coefs(ch_alphas, ch_betas, eigmin, eigmax, &
                              theta, ppcg_inner_steps)
 

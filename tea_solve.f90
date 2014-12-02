@@ -585,6 +585,7 @@ SUBROUTINE tea_leaF_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
 
   fields = 0
   fields(FIELD_P) = 1
+
 END SUBROUTINE tea_leaF_run_ppcg_inner_steps
 
 SUBROUTINE tea_leaf_cheby_first_step(c, ch_alphas, ch_betas, fields, &
