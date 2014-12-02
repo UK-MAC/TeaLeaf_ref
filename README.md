@@ -171,19 +171,19 @@ This option specifies the number of Conjugate Gradient iterations completed befo
 
 `tl_ppcg_inner_steps <I>`
 
-The default value is 10.
-
-`tl_ch_cg_epslim`
-
-The default value is 1e-5.
-
-`tl_check_result`
-
-The default for this option is off.
+Number of inner steps to run when using the PPCG solver. The default value is 10.
 
 `tl_ch_cg_errswitch`
 
-The default for this is off.
+If enabled alongside Chebshev/PPCG solver, switch when a certain error is reached instead of when a certain number of steps is reached. The default for this is off.
+
+`tl_ch_cg_epslim`
+
+Default error to switch from CG to Chebyshev when using Chebyshev solver with the tl_cg_ch_errswitch option enabled. The default value is 1e-5.
+
+`tl_check_result`
+
+After the solver reaches convergence, calculate ||b-Ax|| to make sure the solver has actually converged. The default for this option is off.
 
 `tl_preconditioner_on`
 
