@@ -207,7 +207,12 @@ This keyword selects the Chebyshev method to solve the linear system.
 
 `profiler_on`
 
+
 This option turns the code's coarse grained internal profiler end. Timing information is reported at the end of the simulation in the tea.out file. The default is no profiling.
+
+`verbose_on`
+
+The option prints out extra information such as residual per iteration of a solve.
 
 `tl_max_iters <I>`
 
