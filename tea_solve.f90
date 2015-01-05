@@ -203,6 +203,8 @@ SUBROUTINE tea_leaf()
                   max_iters, n-1, info)
               first=.FALSE.
               IF (info .NE. 0) CALL report_error('tea_leaf', 'Error in calculating eigenvalues')
+              eigmin = eigmin * 0.95
+              eigmax = eigmax * 1.05
             ENDIF
 
             IF (tl_use_chebyshev) THEN
