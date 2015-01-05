@@ -115,7 +115,7 @@ SUBROUTINE diffuse
     ! does not take into account compute overlaps before syncronisations
     ! caused by halo exhanges.
     kernel_total=profiler%timestep+profiler%halo_exchange+profiler%summary+profiler%visit+&
-        profiler%tea_init+profiler%set_field+profiler%tea_solve+profiler%tea_reset
+        profiler%tea_init+profiler%set_field+profiler%tea_solve+profiler%tea_reset+profiler%dot_product
     CALL tea_allgather(kernel_total,totals)
     ! So then what I do is use the individual kernel times for the
     ! maximum kernel time task for the profile print
@@ -127,6 +127,8 @@ SUBROUTINE diffuse
     profiler%halo_exchange=totals(loc(1))
     CALL tea_allgather(profiler%summary,totals)
     profiler%summary=totals(loc(1))
+    CALL tea_allgather(profiler%dot_product,totals)
+    profiler%dot_product=totals(loc(1))
     CALL tea_allgather(profiler%visit,totals)
     profiler%visit=totals(loc(1))
     CALL tea_allgather(profiler%tea_init,totals)
@@ -146,6 +148,7 @@ SUBROUTINE diffuse
       WRITE(g_out,'(a23,2f16.4)')"Summary               :",profiler%summary,100.0*(profiler%summary/wall_clock)
       WRITE(g_out,'(a23,2f16.4)')"Visit                 :",profiler%visit,100.0*(profiler%visit/wall_clock)
       WRITE(g_out,'(a23,2f16.4)')"Tea Init              :",profiler%tea_init,100.0*(profiler%tea_init/wall_clock)
+      WRITE(g_out,'(a23,2f16.4)')"Dot Product           :",profiler%dot_product,100.0*(profiler%dot_product/wall_clock)
       WRITE(g_out,'(a23,2f16.4)')"Tea Solve             :",profiler%tea_solve,100.0*(profiler%tea_solve/wall_clock)
       WRITE(g_out,'(a23,2f16.4)')"Tea Reset             :",profiler%tea_reset,100.0*(profiler%tea_reset/wall_clock)
       WRITE(g_out,'(a23,2f16.4)')"Set Field             :",profiler%set_field,100.0*(profiler%set_field/wall_clock)
