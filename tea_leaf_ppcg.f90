@@ -19,15 +19,17 @@ SUBROUTINE tea_leaf_kernel_ppcg_init_sd(x_min,             &
 
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: r, sd
-  REAL(KIND=8) :: theta
+  REAL(KIND=8) :: theta, theta_r
 
   INTEGER :: j,k
+
+  theta_r = 1.0_8/theta
 
 !$OMP PARALLEL
 !$OMP DO
     DO k=y_min,y_max
         DO j=x_min,x_max
-            sd(j, k) = r(j, k)/theta
+            sd(j, k) = r(j, k)*theta_r
         ENDDO
     ENDDO
 !$OMP END DO
