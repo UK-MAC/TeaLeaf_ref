@@ -225,9 +225,11 @@ SUBROUTINE tea_leaf()
             IF (parallel%boss) THEN
 !$            IF(OMP_GET_THREAD_NUM().EQ.0) THEN
                 WRITE(g_out,'(a,i3,a,e15.7)') "Switching after ",n," CG its, error ",rro
-                WRITE(g_out,'(a,f11.5,a,e11.4,a,f11.5,a,f11.5)')"Eigen min",eigmin," Eigen max",eigmax,"Condition number ",cn,"Error ",error
+                WRITE(g_out,'(a,f11.5,a,e11.4,a,f11.5,a,f11.5)')"Eigen min",eigmin," Eigen max",eigmax,"Condition number ",cn, &
+                                                                "Error ",error
                 WRITE(0,'(a,i3,a,e15.7)') "Switching after ",n," CG its, error ",rro
-                WRITE(0,'(a,f11.5,a,e11.4,a,f11.5,a,f11.5)')"Eigen min",eigmin," Eigen max",eigmax,"Condition number ",cn,"Error ",error
+                WRITE(0,'(a,f11.5,a,e11.4,a,f11.5,a,f11.5)')"Eigen min",eigmin," Eigen max",eigmax,"Condition number ",cn, &
+                                                            "Error ",error
 !$            ENDIF
             ENDIF
           ENDIF

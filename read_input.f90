@@ -173,7 +173,7 @@ SUBROUTINE read_input()
         tl_preconditioner_on = .TRUE.
       CASE('use_fortran_kernels')
         use_fortran_kernels=.TRUE.
-      CASE('verbose_on")
+      CASE('verbose_on')
         verbose_on=.TRUE.
       CASE('tl_use_jacobi')
         tl_use_chebyshev = .FALSE.
