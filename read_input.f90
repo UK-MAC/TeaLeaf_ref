@@ -69,18 +69,20 @@ SUBROUTINE read_input()
   profiler%tea_init=0.0
   profiler%tea_solve=0.0
   profiler%tea_reset=0.0
+  profiler%dot_product=0.0
 
   tl_ch_cg_errswitch = .FALSE.
   tl_ch_cg_presteps = 30
   tl_ch_cg_epslim = 1e-5
   tl_check_result = .FALSE.
-  tl_ppcg_inner_steps = 10
+  tl_ppcg_inner_steps = 10 ! Ideally this should be the root of the condition number (usually +10%)
   tl_preconditioner_on = .FALSE.
 
   tl_use_chebyshev = .FALSE.
   tl_use_cg = .FALSE.
   tl_use_ppcg = .FALSE.
   tl_use_jacobi = .TRUE.
+  verbose_on = .FALSE.
 
   IF(parallel%boss)WRITE(g_out,*) 'Reading input file'
   IF(parallel%boss)WRITE(g_out,*)
@@ -171,6 +173,8 @@ SUBROUTINE read_input()
         tl_preconditioner_on = .TRUE.
       CASE('use_fortran_kernels')
         use_fortran_kernels=.TRUE.
+      CASE('verbose_on")
+        verbose_on=.TRUE.
       CASE('tl_use_jacobi')
         tl_use_chebyshev = .FALSE.
         tl_use_cg = .FALSE.
@@ -201,7 +205,7 @@ SUBROUTINE read_input()
       CASE('tl_coefficient_density')
         coefficient = CONDUCTIVITY
         IF(parallel%boss)WRITE(g_out,"(1x,a29)")'Diffusion coefficient density'
-      CASE('tl_coefficient_inverrse_density')
+      CASE('tl_coefficient_inverse_density')
         coefficient = RECIP_CONDUCTIVITY
         IF(parallel%boss)WRITE(g_out,"(1x,a40)")'Diffusion coefficient reciprocal density'
       CASE('test_problem')
