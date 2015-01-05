@@ -72,7 +72,7 @@ OMP_PATHSCALE = -mp
 OMP_XL        = -qsmp=omp -qthreaded
 OMP=$(OMP_$(COMPILER))
 
-FLAGS_INTEL     = -O3 -ipo -no-prec-div
+FLAGS_INTEL     = -O3 -no-prec-div
 FLAGS_SUN       = -fast -xipo=2 -Xlistv4
 FLAGS_GNU       = -O3 -march=native -funroll-loops
 FLAGS_CRAY      = -em -ra -h acc_model=fast_addr:no_deep_copy:auto_async_all
@@ -80,7 +80,7 @@ FLAGS_PGI       = -fastsse -gopt -Mipa=fast -Mlist
 FLAGS_PATHSCALE = -O3
 FLAGS_XL       = -O5 -qipa=partition=large -g -qfullpath -Q -qsigtrap -qextname=flush:timer_c:unpack_top_bottom_buffers_c:pack_top_bottom_buffers_c:unpack_left_right_buffers_c:pack_left_right_buffers_c:field_summary_kernel_c:update_halo_kernel_c:generate_chunk_kernel_c:initialise_chunk_kernel_c:calc_dt_kernel_c -qlistopt -qattr=full -qlist -qreport -qxref=full -qsource -qsuppress=1506-224:1500-036
 FLAGS_          = -O3
-CFLAGS_INTEL     = -O3 -ipo -no-prec-div -restrict -fno-alias
+CFLAGS_INTEL     = -O3 -no-prec-div -restrict -fno-alias
 CFLAGS_SUN       = -fast -xipo=2
 CFLAGS_GNU       = -O3 -march=native -funroll-loops
 CFLAGS_CRAY      = -em -h list=a

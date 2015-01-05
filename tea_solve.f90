@@ -39,11 +39,11 @@ SUBROUTINE tea_leaf()
 
 !$ INTEGER :: OMP_GET_THREAD_NUM
   INTEGER :: c, n
-  REAL(KIND=8) :: ry,rx,error,exact_error
+  REAL(KIND=8) :: ry,rx,error,exact_error,initial_residual
 
   INTEGER :: fields(NUM_FIELDS)
 
-  REAL(KIND=8) :: timer,halo_time,solve_time,init_time,reset_time
+  REAL(KIND=8) :: timer,halo_time,solve_time,init_time,reset_time,dot_product_time
 
   ! For CG solver
   REAL(KIND=8) :: rro, pw, rrn, alpha, beta
@@ -51,9 +51,10 @@ SUBROUTINE tea_leaf()
   ! For chebyshev solver
   REAL(KIND=8), DIMENSION(max_iters) :: cg_alphas, cg_betas
   REAL(KIND=8), DIMENSION(max_iters) :: ch_alphas, ch_betas
-  REAL(KIND=8) :: eigmin, eigmax, theta, cn
+  REAL(KIND=8),SAVE :: eigmin, eigmax, theta, cn
   INTEGER :: est_itc, cheby_calc_steps, max_cheby_iters, info, switch_step
   LOGICAL :: ch_switch_check
+  LOGICAL, SAVE :: first=.TRUE.
 
   INTEGER :: cg_calc_steps
 
@@ -67,6 +68,7 @@ SUBROUTINE tea_leaf()
   init_time = 0.0_8
   halo_time = 0.0_8
   solve_time = 0.0_8
+  dot_product_time = 0.0_8
 
   IF(coefficient .NE. RECIP_CONDUCTIVITY .AND. coefficient .NE. conductivity) THEN
     CALL report_error('tea_leaf', 'unknown coefficient option')
@@ -125,10 +127,19 @@ SUBROUTINE tea_leaf()
         IF (profiler_on) halo_time=timer()
         CALL update_halo(fields,1)
         IF (profiler_on) profiler%halo_exchange = profiler%halo_exchange + (timer() - halo_time)
-        init_time=init_time+(timer()-halo_time)
+        halo_time=init_time+(timer()-halo_time)
 
         ! and globally sum rro
+        IF (profiler_on) dot_product_time=timer()
         CALL tea_allsum(rro)
+        IF (profiler_on) profiler%dot_product= profiler%dot_product+ (timer() - dot_product_time)
+        IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
+        initial_residual=SQRT(rro)
+        IF(parallel%boss.AND.verbose_on) THEN
+!$        IF(OMP_GET_THREAD_NUM().EQ.0) THEN
+            WRITE(g_out,*)"Initial residual ",initial_residual
+!$        ENDIF
+        ENDIF
       ELSEIF(tl_use_jacobi) THEN
         IF (use_fortran_kernels) THEN
           CALL tea_leaf_kernel_init(chunks(c)%field%x_min, &
@@ -186,14 +197,13 @@ SUBROUTINE tea_leaf()
             max_cheby_iters = max_iters - n + 2
             rro = error
 
-            ! calculate eigenvalues
-            CALL tea_calc_eigenvalues(cg_alphas, cg_betas, eigmin, eigmax, &
-                max_iters, n-1, info)
-
-            IF (info .NE. 0) CALL report_error('tea_leaf', 'Error in calculating eigenvalues')
-
-            eigmin = eigmin*0.95
-            eigmax = eigmax*1.05
+            IF(first) THEN
+              ! calculate eigenvalues
+              CALL tea_calc_eigenvalues(cg_alphas, cg_betas, eigmin, eigmax, &
+                  max_iters, n-1, info)
+              first=.FALSE.
+              IF (info .NE. 0) CALL report_error('tea_leaf', 'Error in calculating eigenvalues')
+            ENDIF
 
             IF (tl_use_chebyshev) THEN
               ! calculate chebyshev coefficients
@@ -213,12 +223,12 @@ SUBROUTINE tea_leaf()
             cn = eigmax/eigmin
 
             IF (parallel%boss) THEN
-              WRITE(g_out,'(a,i3,a,e15.7)') "Switching after ",n," steps, error ",rro
-              WRITE(g_out,'(4a11)')"eigmin", "eigmax", "cn", "error"
-              WRITE(g_out,'(2f11.5,2e11.4)')eigmin, eigmax, cn, error
-              WRITE(0,'(a,i3,a,e15.7)') "Switching after ",n," steps, error ",rro
-              WRITE(0,'(4a11)')"eigmin", "eigmax", "cn", "error"
-              WRITE(0,'(2f11.5,2e11.4)')eigmin, eigmax, cn, error
+!$            IF(OMP_GET_THREAD_NUM().EQ.0) THEN
+                WRITE(g_out,'(a,i3,a,e15.7)') "Switching after ",n," CG its, error ",rro
+                WRITE(g_out,'(a,f11.5,a,e11.4,a,f11.5,a,f11.5)')"Eigen min",eigmin," Eigen max",eigmax,"Condition number ",cn,"Error ",error
+                WRITE(0,'(a,i3,a,e15.7)') "Switching after ",n," CG its, error ",rro
+                WRITE(0,'(a,f11.5,a,e11.4,a,f11.5,a,f11.5)')"Eigen min",eigmin," Eigen max",eigmax,"Condition number ",cn,"Error ",error
+!$            ENDIF
             ENDIF
           ENDIF
 
@@ -264,7 +274,10 @@ SUBROUTINE tea_leaf()
                             error                                           )
                     ENDIF
 
+                    IF (profiler_on) dot_product_time=timer()
                     CALL tea_allsum(error)
+                    IF (profiler_on) profiler%dot_product= profiler%dot_product+ (timer() - dot_product_time)
+                    IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
                   ENDIF
               ENDIF
           ELSE IF (tl_use_ppcg) THEN
@@ -290,7 +303,10 @@ SUBROUTINE tea_leaf()
               IF (profiler_on) profiler%halo_exchange = profiler%halo_exchange + (timer() - halo_time)
               IF (profiler_on) solve_time = solve_time + (timer()-halo_time)
 
+              IF (profiler_on) dot_product_time=timer()
               CALL tea_allsum(rro)
+              IF (profiler_on) profiler%dot_product= profiler%dot_product+ (timer() - dot_product_time)
+              IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
             ENDIF
 
             IF(use_fortran_kernels) THEN
@@ -305,7 +321,10 @@ SUBROUTINE tea_leaf()
                   rx, ry, pw)
             ENDIF
 
+            IF (profiler_on) dot_product_time=timer()
             CALL tea_allsum(pw)
+            IF (profiler_on) profiler%dot_product= profiler%dot_product+ (timer() - dot_product_time)
+            IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
             alpha = rro/pw
 
             IF(use_fortran_kernels) THEN
@@ -336,7 +355,10 @@ SUBROUTINE tea_leaf()
                     rrn)
             ENDIF
 
+            IF (profiler_on) dot_product_time=timer()
             CALL tea_allsum(rrn)
+            IF (profiler_on) profiler%dot_product= profiler%dot_product+ (timer() - dot_product_time)
+            IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
 
             beta = rrn/rro
 
@@ -372,7 +394,10 @@ SUBROUTINE tea_leaf()
                 rx, ry, pw)
           ENDIF
 
+          IF (profiler_on) dot_product_time=timer()
           CALL tea_allsum(pw)
+          IF (profiler_on) profiler%dot_product= profiler%dot_product+ (timer() - dot_product_time)
+          IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
           alpha = rro/pw
           IF(tl_use_chebyshev .OR. tl_use_ppcg) cg_alphas(n) = alpha
 
@@ -390,7 +415,10 @@ SUBROUTINE tea_leaf()
                 alpha, rrn, tl_preconditioner_on)
           ENDIF
 
+          IF (profiler_on) dot_product_time=timer()
           CALL tea_allsum(rrn)
+          IF (profiler_on) profiler%dot_product= profiler%dot_product+ (timer() - dot_product_time)
+          IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
           beta = rrn/rro
           IF(tl_use_chebyshev .OR. tl_use_ppcg) cg_betas(n) = beta
 
@@ -423,7 +451,10 @@ SUBROUTINE tea_leaf()
                 chunks(c)%field%vector_r)
           ENDIF
 
+          IF (profiler_on) dot_product_time=timer()
           CALL tea_allsum(error)
+          IF (profiler_on) profiler%dot_product= profiler%dot_product+ (timer() - dot_product_time)
+          IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
         ENDIF
 
         ! updates u and possibly p
@@ -440,7 +471,13 @@ SUBROUTINE tea_leaf()
           ENDIF
         ENDIF
 
-        IF (abs(error) .LT. eps) EXIT
+        error=SQRT(error)
+        IF(parallel%boss.AND.verbose_on) THEN
+!$        IF(OMP_GET_THREAD_NUM().EQ.0) THEN
+            WRITE(g_out,*)"Residual ",error
+!$        ENDIF
+        ENDIF
+        IF (abs(error) .LT. eps*initial_residual) EXIT
 
       ENDDO
 
@@ -464,15 +501,18 @@ SUBROUTINE tea_leaf()
               exact_error)
         ENDIF
 
+        IF (profiler_on) dot_product_time=timer()
         CALL tea_allsum(exact_error)
+        IF (profiler_on) profiler%dot_product= profiler%dot_product+ (timer() - dot_product_time)
+        IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
       ENDIF
 
       IF (profiler_on) profiler%tea_solve = profiler%tea_solve + (timer() - solve_time)
 
       IF (parallel%boss) THEN
 !$      IF(OMP_GET_THREAD_NUM().EQ.0) THEN
-          WRITE(g_out,"('Conduction error ',e14.7)") error
-          WRITE(0,"('Conduction error ',e14.7)") error
+          WRITE(g_out,"('Conduction error ',e14.7)") error/initial_residual
+          WRITE(0,"('Conduction error ',e14.7)") error/initial_residual
 
           IF (tl_check_result) THEN
             WRITE(0,"('EXACT error calculated as', e14.7)") exact_error
@@ -481,6 +521,8 @@ SUBROUTINE tea_leaf()
 
           WRITE(g_out,"('Iteration count ',i8)") n-1
           WRITE(0,"('Iteration count ', i8)") n-1
+          IF(tl_use_ppcg) WRITE(g_out,"('Total Iteration count ',i8)") (n-1)*tl_ppcg_inner_steps
+          IF(tl_use_ppcg) WRITE(0,"('Total Iteration count ', i8)") (n-1)*tl_ppcg_inner_steps
 !$      ENDIF
       ENDIF
 
@@ -509,10 +551,8 @@ SUBROUTINE tea_leaf()
 
   IF (profiler_on .AND. parallel%boss) THEN
     total_solve_time = (timer() - total_solve_time)
-    WRITE(0, "(a16, a7, a16)") "Time", "Steps", "Per it"
-    WRITE(0, "(f16.10, i7, f16.10, f7.2)") total_solve_time, n, total_solve_time/n
-    WRITE(g_out, "(a16, a7, a16)") "Time", "Steps", "Per it"
-    WRITE(g_out, "(f16.10, i7, f16.10, f7.2)") total_solve_time, n, total_solve_time/n
+    WRITE(0, "(a16,f16.10,a7,i7,a16,f16.10)") "Solve Time",total_solve_time,"Its",n,"Time Per It",total_solve_time/n
+    WRITE(g_out, "(a16,f16.10,a7,i7,a16,f16.10)") "Solve Time",total_solve_time,"Its",n,"Time Per It",total_solve_time/n
   ENDIF
 
   IF (profiler_on .AND. tl_use_chebyshev) THEN
@@ -608,7 +648,10 @@ SUBROUTINE tea_leaf_cheby_first_step(c, ch_alphas, ch_betas, fields, &
           bb)
   ENDIF
 
+  !IF (profiler_on) dot_product_time=timer()
   CALL tea_allsum(bb)
+  !IF (profiler_on) profiler%dot_product= profiler%dot_product+ (timer() - dot_product_time)
+  !IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
 
   ! initialise 'p' array
   IF(use_fortran_kernels) THEN
@@ -658,7 +701,10 @@ SUBROUTINE tea_leaf_cheby_first_step(c, ch_alphas, ch_betas, fields, &
           error)
   ENDIF
 
+  !IF (profiler_on) dot_product_time=timer()
   CALL tea_allsum(error)
+  !IF (profiler_on) profiler%dot_product= profiler%dot_product+ (timer() - dot_product_time)
+  !IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
 
   it_alpha = EPSILON(1.0_8)*bb/(4.0_8*error)
   gamm = (SQRT(cn) - 1.0_8)/(SQRT(cn) + 1.0_8)
