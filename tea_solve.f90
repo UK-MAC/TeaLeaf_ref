@@ -227,10 +227,10 @@ SUBROUTINE tea_leaf()
             IF (parallel%boss) THEN
 !$            IF(OMP_GET_THREAD_NUM().EQ.0) THEN
                 WRITE(g_out,'(a,i3,a,e15.7)') "Switching after ",n," CG its, error ",rro
-                WRITE(g_out,'(a,f11.5,a,e11.4,a,f11.5,a,f11.5)')"Eigen min ",eigmin," Eigen max ",eigmax," Condition number ",cn, &
+                WRITE(g_out,'(a,e14.6,a,e14.6,a,e14.6,a,e14.6)')"Eigen min ",eigmin," Eigen max ",eigmax," Condition number ",cn, &
                                                                 " Error ",error
                 WRITE(0,'(a,i3,a,e15.7)') "Switching after ",n," CG its, error ",rro
-                WRITE(0,'(a,f11.5,a,e11.4,a,f11.5,a,f11.5)')"Eigen min ",eigmin," Eigen max ",eigmax," Condition number ",cn, &
+                WRITE(0,'(a,e14.6,a,e14.6,a,e14.6,a,e14.6)')"Eigen min ",eigmin," Eigen max ",eigmax," Condition number ",cn, &
                                                             " Error ",error
 !$            ENDIF
             ENDIF
@@ -541,7 +541,7 @@ SUBROUTINE tea_leaf()
               chunks(c)%field%density,                         &
               chunks(c)%field%u)
       ENDIF
-      IF (profiler_on) profiler%tea_reset = profiler%tea_reset + (timer() - halo_time)
+      IF (profiler_on) profiler%tea_reset = profiler%tea_reset + (timer() - reset_time)
 
       halo_time=timer()
       fields=0
@@ -566,7 +566,7 @@ SUBROUTINE tea_leaf()
       cg_per_it = MERGE((cg_time/cg_calc_steps)/parallel%max_task, 0.0_8, cg_calc_steps .GT. 0)
       ch_per_it = MERGE((ch_time/cheby_calc_steps)/parallel%max_task, 0.0_8, cheby_calc_steps .GT. 0)
 
-      WRITE(0, "(a3, a16, a7, a16, a7)") "", "Time", "Steps", "Per it", "Ratio"
+      WRITE(0, "(a3, a16, a7, a16, a7)") "", "Time", "Its", "Per it", "Ratio"
       WRITE(0, "(a3, f16.10, i7, f16.10, f7.2)") &
           "CG", cg_time + 0.0_8, cg_calc_steps, cg_per_it, 1.0_8
       WRITE(0, "(a3, f16.10, i7, f16.10, f7.2)") "CH", ch_time + 0.0_8, cheby_calc_steps, &
@@ -574,7 +574,7 @@ SUBROUTINE tea_leaf()
       WRITE(0, "('Chebyshev actually took ', i6, ' (' i6, ' off guess)')") &
           cheby_calc_steps, cheby_calc_steps-est_itc
 
-      WRITE(g_out, "(a3, a16, a7, a16, a7)") "", "Time", "Steps", "Per it", "Ratio"
+      WRITE(g_out, "(a3, a16, a7, a16, a7)") "", "Time", "Its", "Per it", "Ratio"
       WRITE(g_out, "(a3, f16.10, i7, f16.10, f7.2)") &
           "CG", cg_time + 0.0_8, cg_calc_steps, cg_per_it, 1.0_8
       WRITE(g_out, "(a3, f16.10, i7, f16.10, f7.2)") "CH", ch_time + 0.0_8, cheby_calc_steps, &
