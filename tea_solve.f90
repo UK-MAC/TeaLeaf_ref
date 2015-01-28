@@ -100,7 +100,7 @@ SUBROUTINE tea_leaf()
         ry = dt/(chunks(c)%field%celldy(chunks(c)%field%y_min)**2)
       ENDIF
 
-      IF(tl_use_cg .OR. tl_use_chebyshev .OR. tl_use_ppcg) THEN
+      IF(tl_use_cg .OR. tl_use_chebyshev .OR. tl_use_ppcg .OR. tl_use_jacobi) THEN
         ! All 3 of these solvers use the CG kernels
         IF(use_fortran_kernels) THEN
           CALL tea_leaf_kernel_init_cg_fortran(chunks(c)%field%x_min, &

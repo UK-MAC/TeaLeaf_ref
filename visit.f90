@@ -45,12 +45,14 @@ SUBROUTINE visit
 
   IF(first_call) THEN
 
-    nblocks=number_of_chunks
-    filename = "tea.visit"
-    u=get_unit(dummy)
-    OPEN(UNIT=u,FILE=filename,STATUS='UNKNOWN',IOSTAT=err)
-    WRITE(u,'(a,i5)')'!NBLOCKS ',nblocks
-    CLOSE(u)
+    IF ( parallel%boss ) THEN
+      nblocks=number_of_chunks
+      filename = "tea.visit"
+      u=get_unit(dummy)
+      OPEN(UNIT=u,FILE=filename,STATUS='UNKNOWN',IOSTAT=err)
+      WRITE(u,'(a,i5)')'!NBLOCKS ',nblocks
+      CLOSE(u)
+    ENDIF
 
     first_call=.FALSE.
 
@@ -62,7 +64,7 @@ SUBROUTINE visit
     u=get_unit(dummy)
     OPEN(UNIT=u,FILE=filename,STATUS='UNKNOWN',POSITION='APPEND',IOSTAT=err)
 
-    DO c = 1, chunks_per_task
+    DO c = 1, number_of_chunks
       WRITE(chunk_name, '(i6)') c+100000
       chunk_name(1:1) = "."
       WRITE(step_name, '(i6)') step+100000
@@ -81,7 +83,7 @@ SUBROUTINE visit
       nyc=chunks(c)%field%y_max-chunks(c)%field%y_min+1
       nxv=nxc+1
       nyv=nyc+1
-      WRITE(chunk_name, '(i6)') c+100000
+      WRITE(chunk_name, '(i6)') parallel%task+100001
       chunk_name(1:1) = "."
       WRITE(step_name, '(i6)') step+100000
       step_name(1:1) = "."
