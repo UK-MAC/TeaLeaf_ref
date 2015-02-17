@@ -78,30 +78,6 @@ SUBROUTINE build_field(chunk,x_cells,y_cells)
    ALLOCATE(chunks(chunk)%field%yarea   (chunks(chunk)%field%x_min-2:chunks(chunk)%field%x_max+2, &
                                          chunks(chunk)%field%y_min-2:chunks(chunk)%field%y_max+3))
 
-     !  chunks(chunk)%field%vector_p=0.0
-     !  chunks(chunk)%field%vector_r=0.0
-     !  chunks(chunk)%field%vector_Mi=0.0
-     !  chunks(chunk)%field%vector_w=0.0
-     !  chunks(chunk)%field%vector_z=0.0
-     !  chunks(chunk)%field%vector_Kx=0.0
-     !  chunks(chunk)%field%vector_Ky=0.0
-     !  chunks(chunk)%field%density=0.0
-     !  chunks(chunk)%field%energy0=0.0
-     !  chunks(chunk)%field%energy1=0.0
-     !  chunks(chunk)%field%u=0.0
-     !  chunks(chunk)%field%u0=0.0
-     !       chunks(chunk)%field%xarea=0.0
-     !       chunks(chunk)%field%yarea=0.0
-     !   chunks(chunk)%field%cellx=0.0
-     !   chunks(chunk)%field%celldx=0.0
-     !   chunks(chunk)%field%celly=0.0
-     !   chunks(chunk)%field%celldy=0.0
-     !   chunks(chunk)%field%vertexx=0.0
-     !   chunks(chunk)%field%vertexdx=0.0
-     !   chunks(chunk)%field%vertexy=0.0
-     !   chunks(chunk)%field%vertexdy=0.0
-     !   return
-
    ! Zeroing isn't strictly neccessary but it ensures physical pages
    ! are allocated. This prevents first touch overheads in the main code
    ! cycle which can skew timings in the first step
