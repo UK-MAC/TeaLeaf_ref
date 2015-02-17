@@ -200,7 +200,7 @@ SUBROUTINE tea_leaf_kernel_solve_cg_fortran_calc_w(x_min,             &
             pw = pw + w(j, k)*p(j, k)
         ENDDO
     ENDDO
-!$OMP END DO NOWAIT
+!$OMP END DO
 !$OMP END PARALLEL
 
 END SUBROUTINE tea_leaf_kernel_solve_cg_fortran_calc_w
@@ -246,7 +246,7 @@ SUBROUTINE tea_leaf_kernel_solve_cg_fortran_calc_ur(x_min,             &
             rrn = rrn + r(j, k)*z(j, k)
         ENDDO
     ENDDO
-!$OMP END DO NOWAIT
+!$OMP END DO
   ELSE
 !$OMP DO REDUCTION(+:rrn)
     DO k=y_min,y_max
@@ -256,7 +256,7 @@ SUBROUTINE tea_leaf_kernel_solve_cg_fortran_calc_ur(x_min,             &
             rrn = rrn + r(j, k)*r(j, k)
         ENDDO
     ENDDO
-!$OMP END DO NOWAIT
+!$OMP END DO
   ENDIF
 !$OMP END PARALLEL
 
