@@ -110,6 +110,8 @@ SUBROUTINE tea_leaf_kernel_init_cg_fortran(x_min,  &
    ENDDO
 !$OMP END DO
 
+!$OMP BARRIER
+
 !$OMP DO
     DO k=y_min,y_max
         DO j=x_min,x_max

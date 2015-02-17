@@ -80,7 +80,7 @@ CONTAINS
           density(j,1-k)=density(j,0+k)
         ENDDO
       ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
     ENDIF
     IF(chunk_neighbours(CHUNK_TOP).EQ.EXTERNAL_FACE) THEN
 !$OMP DO
@@ -89,8 +89,9 @@ CONTAINS
           density(j,y_max+k)=density(j,y_max+1-k)
         ENDDO
       ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
     ENDIF
+!$OMP BARRIER
     IF(chunk_neighbours(CHUNK_LEFT).EQ.EXTERNAL_FACE) THEN
 !$OMP DO
       DO k=y_min-depth,y_max+depth
@@ -98,7 +99,7 @@ CONTAINS
           density(1-j,k)=density(0+j,k)
         ENDDO
       ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
     ENDIF
     IF(chunk_neighbours(CHUNK_RIGHT).EQ.EXTERNAL_FACE) THEN
 !$OMP DO
@@ -107,7 +108,7 @@ CONTAINS
           density(x_max+j,k)=density(x_max+1-j,k)
         ENDDO
       ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
     ENDIF
   ENDIF
 
@@ -119,7 +120,7 @@ CONTAINS
           energy0(j,1-k)=energy0(j,0+k)
         ENDDO
       ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
     ENDIF
     IF(chunk_neighbours(CHUNK_TOP).EQ.EXTERNAL_FACE) THEN
 !$OMP DO
@@ -128,8 +129,9 @@ CONTAINS
           energy0(j,y_max+k)=energy0(j,y_max+1-k)
         ENDDO
       ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
     ENDIF
+!$OMP BARRIER
     IF(chunk_neighbours(CHUNK_LEFT).EQ.EXTERNAL_FACE) THEN
 !$OMP DO
       DO k=y_min-depth,y_max+depth
@@ -137,7 +139,7 @@ CONTAINS
           energy0(1-j,k)=energy0(0+j,k)
         ENDDO
       ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
     ENDIF
     IF(chunk_neighbours(CHUNK_RIGHT).EQ.EXTERNAL_FACE) THEN
 !$OMP DO
@@ -146,7 +148,7 @@ CONTAINS
           energy0(x_max+j,k)=energy0(x_max+1-j,k)
         ENDDO
       ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
     ENDIF
   ENDIF
 
@@ -158,7 +160,7 @@ CONTAINS
           energy1(j,1-k)=energy1(j,0+k)
         ENDDO
       ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
     ENDIF
     IF(chunk_neighbours(CHUNK_TOP).EQ.EXTERNAL_FACE) THEN
 !$OMP DO
@@ -167,8 +169,9 @@ CONTAINS
           energy1(j,y_max+k)=energy1(j,y_max+1-k)
         ENDDO
       ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
     ENDIF
+!$OMP BARRIER
     IF(chunk_neighbours(CHUNK_LEFT).EQ.EXTERNAL_FACE) THEN
 !$OMP DO
       DO k=y_min-depth,y_max+depth
@@ -176,7 +179,7 @@ CONTAINS
           energy1(1-j,k)=energy1(0+j,k)
         ENDDO
       ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
     ENDIF
     IF(chunk_neighbours(CHUNK_RIGHT).EQ.EXTERNAL_FACE) THEN
 !$OMP DO
@@ -185,7 +188,7 @@ CONTAINS
           energy1(x_max+j,k)=energy1(x_max+1-j,k)
         ENDDO
       ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
     ENDIF
   ENDIF
 
@@ -197,7 +200,7 @@ CONTAINS
           u(j,1-k)=u(j,0+k)
         ENDDO
       ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
     ENDIF
     IF(chunk_neighbours(CHUNK_TOP).EQ.EXTERNAL_FACE) THEN
 !$OMP DO
@@ -206,8 +209,9 @@ CONTAINS
           u(j,y_max+k)=u(j,y_max+1-k)
         ENDDO
       ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
     ENDIF
+!$OMP BARRIER
     IF(chunk_neighbours(CHUNK_LEFT).EQ.EXTERNAL_FACE) THEN
 !$OMP DO
       DO k=y_min-depth,y_max+depth
@@ -215,7 +219,7 @@ CONTAINS
           u(1-j,k)=u(0+j,k)
         ENDDO
       ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
     ENDIF
     IF(chunk_neighbours(CHUNK_RIGHT).EQ.EXTERNAL_FACE) THEN
 !$OMP DO
@@ -224,7 +228,7 @@ CONTAINS
           u(x_max+j,k)=u(x_max+1-j,k)
         ENDDO
       ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
     ENDIF
   ENDIF
 
@@ -236,7 +240,7 @@ CONTAINS
           p(j,1-k)=p(j,0+k)
         ENDDO
       ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
     ENDIF
     IF(chunk_neighbours(CHUNK_TOP).EQ.EXTERNAL_FACE) THEN
 !$OMP DO
@@ -245,8 +249,9 @@ CONTAINS
           p(j,y_max+k)=p(j,y_max+1-k)
         ENDDO
       ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
     ENDIF
+!$OMP BARRIER
     IF(chunk_neighbours(CHUNK_LEFT).EQ.EXTERNAL_FACE) THEN
 !$OMP DO
       DO k=y_min-depth,y_max+depth
@@ -254,7 +259,7 @@ CONTAINS
           p(1-j,k)=p(0+j,k)
         ENDDO
       ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
     ENDIF
     IF(chunk_neighbours(CHUNK_RIGHT).EQ.EXTERNAL_FACE) THEN
 !$OMP DO
@@ -263,7 +268,7 @@ CONTAINS
           p(x_max+j,k)=p(x_max+1-j,k)
         ENDDO
       ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
     ENDIF
   ENDIF
 
@@ -275,7 +280,7 @@ CONTAINS
           sd(j,1-k)=sd(j,0+k)
         ENDDO
       ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
     ENDIF
     IF(chunk_neighbours(CHUNK_TOP).EQ.EXTERNAL_FACE) THEN
 !$OMP DO
@@ -284,8 +289,9 @@ CONTAINS
           sd(j,y_max+k)=sd(j,y_max+1-k)
         ENDDO
       ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
     ENDIF
+!$OMP BARRIER
     IF(chunk_neighbours(CHUNK_LEFT).EQ.EXTERNAL_FACE) THEN
 !$OMP DO
       DO k=y_min-depth,y_max+depth
@@ -293,7 +299,7 @@ CONTAINS
           sd(1-j,k)=sd(0+j,k)
         ENDDO
       ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
     ENDIF
     IF(chunk_neighbours(CHUNK_RIGHT).EQ.EXTERNAL_FACE) THEN
 !$OMP DO
@@ -302,7 +308,7 @@ CONTAINS
           sd(x_max+j,k)=sd(x_max+1-j,k)
         ENDDO
       ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
     ENDIF
   ENDIF
 
