@@ -80,7 +80,7 @@ SUBROUTINE tea_leaf_kernel_init_cg_fortran(x_min,  &
       u(j,k) = energy(j,k)*density(j,k)
     ENDDO
   ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
 
   IF(coef .EQ. RECIP_CONDUCTIVITY) THEN
 !$OMP DO 
@@ -142,7 +142,7 @@ SUBROUTINE tea_leaf_kernel_init_cg_fortran(x_min,  &
             rro = rro + r(j, k)*p(j, k);
         ENDDO
     ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
   ELSE
 !$OMP DO REDUCTION(+:rro)
     DO k=y_min,y_max
@@ -152,7 +152,7 @@ SUBROUTINE tea_leaf_kernel_init_cg_fortran(x_min,  &
             rro = rro + r(j, k)*p(j, k);
         ENDDO
     ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
   ENDIF
 !$OMP END PARALLEL
 
@@ -198,7 +198,7 @@ SUBROUTINE tea_leaf_kernel_solve_cg_fortran_calc_w(x_min,             &
             pw = pw + w(j, k)*p(j, k)
         ENDDO
     ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
 !$OMP END PARALLEL
 
 END SUBROUTINE tea_leaf_kernel_solve_cg_fortran_calc_w
@@ -244,7 +244,7 @@ SUBROUTINE tea_leaf_kernel_solve_cg_fortran_calc_ur(x_min,             &
             rrn = rrn + r(j, k)*z(j, k)
         ENDDO
     ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
   ELSE
 !$OMP DO REDUCTION(+:rrn)
     DO k=y_min,y_max
@@ -254,7 +254,7 @@ SUBROUTINE tea_leaf_kernel_solve_cg_fortran_calc_ur(x_min,             &
             rrn = rrn + r(j, k)*r(j, k)
         ENDDO
     ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
   ENDIF
 !$OMP END PARALLEL
 
@@ -291,7 +291,7 @@ SUBROUTINE tea_leaf_kernel_solve_cg_fortran_calc_p(x_min,             &
             p(j, k) = z(j, k) + beta*p(j, k)
         ENDDO
     ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
   ELSE
 !$OMP DO
     DO k=y_min,y_max
@@ -299,7 +299,7 @@ SUBROUTINE tea_leaf_kernel_solve_cg_fortran_calc_p(x_min,             &
             p(j, k) = r(j, k) + beta*p(j, k)
         ENDDO
     ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
   ENDIF
 !$OMP END PARALLEL
 

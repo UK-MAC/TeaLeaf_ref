@@ -1,0 +1,52 @@
+build_field.o: build_field.f90 tea_module.mod
+calc_dt.o calc_dt_module.mod: calc_dt.f90 tea_module.mod
+data.o data_module.mod: data.f90
+definitions.o definitions_module.mod: definitions.f90 data_module.mod
+diffuse.o: diffuse.f90 tea_module.mod timestep_module.mod \
+ tea_leaf_module.mod set_field_module.mod
+field_summary.o: field_summary.f90 tea_module.mod \
+ field_summary_kernel_module.mod
+field_summary_kernel.o field_summary_kernel_module.mod: \
+ field_summary_kernel.f90
+generate_chunk.o: generate_chunk.f90 tea_module.mod \
+ generate_chunk_kernel_module.mod
+generate_chunk_kernel.o generate_chunk_kernel_module.mod: \
+ generate_chunk_kernel.f90
+initialise_chunk.o: initialise_chunk.f90 tea_module.mod \
+ initialise_chunk_kernel_module.mod
+initialise_chunk_kernel.o initialise_chunk_kernel_module.mod: \
+ initialise_chunk_kernel.f90
+initialise.o: initialise.f90 tea_module.mod parse_module.mod \
+ report_module.mod
+pack_kernel.o pack_kernel_module.mod: pack_kernel.f90
+parse.o tea_case_change.mod tea_isitanint_mod.mod parse_module.mod: \
+ parse.f90 data_module.mod data_module.mod report_module.mod \
+ tea_module.mod tea_module.mod tea_module.mod
+read_input.o: read_input.f90 tea_module.mod parse_module.mod \
+ report_module.mod
+report.o report_module.mod: report.f90 data_module.mod tea_module.mod
+set_field.o set_field_module.mod: set_field.f90 tea_module.mod \
+ set_field_kernel_module.mod
+set_field_kernel.o set_field_kernel_module.mod: set_field_kernel.f90
+start.o: start.f90 tea_module.mod parse_module.mod update_halo_module.mod
+tea.o tea_module.mod: tea.f90 \
+ pack_kernel_module.mod
+tea_leaf_cg.o tea_leaf_kernel_cg_module.mod: tea_leaf_cg.f90
+tea_leaf_cheby.o tea_leaf_kernel_cheby_module.mod: tea_leaf_cheby.f90
+tea_leaf.o: tea_leaf.f90 tea_module.mod
+tea_leaf_jacobi.o tea_leaf_kernel_module.mod: tea_leaf_jacobi.f90
+tea_leaf_ppcg.o tea_leaf_kernel_ppcg_module.mod: tea_leaf_ppcg.f90 \
+ tea_leaf_kernel_module.mod tea_leaf_kernel_cheby_module.mod
+tea_solve.o tea_leaf_module.mod: tea_solve.f90 report_module.mod \
+ data_module.mod tea_leaf_kernel_module.mod tea_leaf_kernel_cg_module.mod \
+ tea_leaf_kernel_ppcg_module.mod tea_leaf_kernel_cheby_module.mod \
+ update_halo_module.mod
+timer.o: timer.f90
+timestep.o timestep_module.mod: timestep.f90 tea_module.mod \
+ report_module.mod update_halo_module.mod calc_dt_module.mod \
+ definitions_module.mod
+update_halo.o update_halo_module.mod: update_halo.f90 tea_module.mod \
+ update_halo_kernel_module.mod
+update_halo_kernel.o update_halo_kernel_module.mod: \
+ update_halo_kernel.f90
+visit.o: visit.f90 tea_module.mod update_halo_module.mod
