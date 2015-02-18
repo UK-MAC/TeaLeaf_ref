@@ -24,6 +24,7 @@ MODULE tea_leaf_kernel_cg_module
 IMPLICIT NONE
 
     integer::stride
+!#define stride 4
 
 CONTAINS
 
@@ -82,15 +83,19 @@ SUBROUTINE tea_leaf_kernel_init_cg_fortran(x_min,  &
   dp = 0.0_8
   bfp = 0.0_8
 
+#if !defined(stride)
   stride = 4
-
   do
     if (mod(x_max, stride) .eq. 0) then
         exit
     endif
     stride = stride/2
   enddo
-  if (stride .lt. 4) preconditioner_on = .false.
+#endif
+  if (stride .lt. 4) then
+    write(0,*) "Preconditioner turned off - too small to be of use"
+    preconditioner_on = .false.
+  endif
 
 #define COEF_A (-Kx(j, k)*rx)
 #define COEF_B (1.0_8 + ry*(Ky(j, k+1) + Ky(j, k)) + rx*(Kx(j+1, k) + Kx(j, k)))
@@ -131,7 +136,7 @@ SUBROUTINE tea_leaf_kernel_init_cg_fortran(x_min,  &
             rro = rro + r(j, k)*p(j, k);
         ENDDO
     ENDDO
-!$OMP END DO NOWAIT
+!$OMP END DO
   ELSE
 !$OMP DO REDUCTION(+:rro)
     DO k=y_min,y_max
@@ -141,7 +146,7 @@ SUBROUTINE tea_leaf_kernel_init_cg_fortran(x_min,  &
             rro = rro + r(j, k)*p(j, k);
         ENDDO
     ENDDO
-!$OMP END DO NOWAIT
+!$OMP END DO
   ENDIF
 !$OMP END PARALLEL
 
@@ -203,36 +208,63 @@ subroutine tea_block_solve(x_min,             &
                            dp,                     &
                            Kx, Ky, rx, ry)
 
-  INTEGER(KIND=4):: j, k, s, bottom, top
+  INTEGER(KIND=4):: j, jo, k, s, bottom, top
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: cp, dp, bfp, Kx, Ky, r, z
   REAL(KIND=8) :: rx, ry
+!$ INTEGER :: OMP_GET_THREAD_NUM
 
-!$OMP DO
-    DO k=y_min,y_max
+!$OMP DO PRIVATE(j, bottom, top, jo, k)
+    DO jo=x_min,x_max-stride,stride
+
 !DIR$ SIMD
-      do s=0,x_max/stride - 1
-        bottom = s*stride + 1
-        top = (s+1)*stride
+      do k=y_min, y_max
+        bottom = jo
+        top = jo+stride -1
 
         j = bottom
 
         dp(j, k) = r(j, k)/COEF_B
-
+  
         DO j=bottom+1,top
-            dp(j, k) = (r(j, k) - COEF_A*dp(j-1, k))/bfp(j, k)
+          dp(j, k) = (r(j, k) - COEF_A*dp(j-1, k))/bfp(j, k)
         ENDDO
-
+  
         !j = j - 1
         j = top
         z(j, k) = dp(j, k)
-
+  
         DO j=top-1, bottom, -1
-            z(j, k) = dp(j, k) - cp(j, k)*z(j+1, k)
+          z(j, k) = dp(j, k) - cp(j, k)*z(j+1, k)
         ENDDO
       enddo
     ENDDO
 !$OMP END DO
+
+!!$OMP DO
+!    DO k=y_min,y_max
+!      do s=0,x_max/stride - 1
+!        bottom = s*stride + 1
+!        top = (s+1)*stride
+!
+!        j = bottom
+!
+!        dp(j, k) = r(j, k)/COEF_B
+!
+!        DO j=bottom+1,top
+!            dp(j, k) = (r(j, k) - COEF_A*dp(j-1, k))/bfp(j, k)
+!        ENDDO
+!
+!        !j = j - 1
+!        j = top
+!        z(j, k) = dp(j, k)
+!
+!        DO j=top-1, bottom, -1
+!            z(j, k) = dp(j, k) - cp(j, k)*z(j+1, k)
+!        ENDDO
+!      enddo
+!    ENDDO
+!!$OMP END DO NOWAIT
 
 end subroutine
 
@@ -246,10 +278,10 @@ SUBROUTINE tea_leaf_kernel_solve_cg_fortran_calc_ur(x_min,             &
                                                     Mi,                &
                                                     w,                 &
                                                     z,                 &
-                           cp,                     &
-                           bfp,                     &
-                           dp,                     &
-                           Kx, Ky, rx, ry, &
+                                                    cp,                     &
+                                                    bfp,                     &
+                                                    dp,                     &
+                                                    Kx, Ky, rx, ry, &
                                                     alpha,             &
                                                     rrn,               &
                                                     preconditioner_on)
@@ -278,6 +310,12 @@ SUBROUTINE tea_leaf_kernel_solve_cg_fortran_calc_ur(x_min,             &
     DO k=y_min,y_max
         DO j=x_min,x_max
             u(j, k) = u(j, k) + alpha*p(j, k)
+        ENDDO
+    ENDDO
+!$OMP END DO NOWAIT
+!$OMP DO
+    DO k=y_min,y_max
+        DO j=x_min,x_max
             r(j, k) = r(j, k) - alpha*w(j, k)
         ENDDO
     ENDDO
@@ -287,10 +325,10 @@ SUBROUTINE tea_leaf_kernel_solve_cg_fortran_calc_ur(x_min,             &
 
     call tea_block_solve(x_min, x_max, y_min, y_max,             &
                         r, z,                 &
-                           cp,                     &
-                           bfp,                     &
-                           dp,                     &
-                           Kx, Ky, rx, ry)
+                        cp,                     &
+                        bfp,                     &
+                        dp,                     &
+                        Kx, Ky, rx, ry)
 
 !$OMP DO REDUCTION(+:rrn)
     DO k=y_min,y_max
