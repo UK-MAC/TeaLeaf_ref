@@ -272,6 +272,9 @@ SUBROUTINE tea_leaf()
                                   chunks(c)%field%vector_z,                    &
                                   chunks(c)%field%vector_Kx,                   &
                                   chunks(c)%field%vector_Ky,                   &
+                                  chunks(c)%field%tri_cp,   &
+                                  chunks(c)%field%tri_bfp,    &
+                                  chunks(c)%field%tri_dp,                              &
                                   ch_alphas, ch_betas, max_cheby_iters,        &
                                   rx, ry, cheby_calc_steps, tl_preconditioner_on)
                   ENDIF
@@ -697,6 +700,9 @@ SUBROUTINE tea_leaf_cheby_first_step(c, ch_alphas, ch_betas, fields, &
           chunks(c)%field%vector_z,                       &
           chunks(c)%field%vector_Kx,                      &
           chunks(c)%field%vector_Ky,                      &
+          chunks(c)%field%tri_cp,   &
+          chunks(c)%field%tri_bfp,    &
+          chunks(c)%field%tri_dp,                              &
           ch_alphas, ch_betas, max_cheby_iters,           &
           rx, ry, theta, error, tl_preconditioner_on)
   ENDIF
@@ -717,6 +723,9 @@ SUBROUTINE tea_leaf_cheby_first_step(c, ch_alphas, ch_betas, fields, &
           chunks(c)%field%vector_z,                            &
           chunks(c)%field%vector_Kx,                           &
           chunks(c)%field%vector_Ky,                           &
+          chunks(c)%field%tri_cp,   &
+          chunks(c)%field%tri_bfp,    &
+          chunks(c)%field%tri_dp,                              &
           ch_alphas, ch_betas, max_cheby_iters,                &
           rx, ry, 1, tl_preconditioner_on)
   ENDIF

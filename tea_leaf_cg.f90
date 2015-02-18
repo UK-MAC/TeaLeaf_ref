@@ -21,9 +21,7 @@
 
 MODULE tea_leaf_kernel_cg_module
 
-IMPLICIT NONE
-
-    integer, parameter::stride = 4
+USE tea_leaf_kernel_common_module
 
 CONTAINS
 
@@ -68,7 +66,7 @@ SUBROUTINE tea_leaf_kernel_init_cg_fortran(x_min,  &
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: cp, dp, bfp
 
   INTEGER(KIND=4) :: coef
-  INTEGER(KIND=4) :: j,k,n,s,bottom,top,ko
+  INTEGER(KIND=4) :: j,k,n,s
 
   REAL(kind=8) :: rro
   REAL(KIND=8) ::  rx, ry
@@ -78,38 +76,14 @@ SUBROUTINE tea_leaf_kernel_init_cg_fortran(x_min,  &
 
   rro = 0.0_8
   p = 0.0_8
-  cp = 0.0_8
-  dp = 0.0_8
-  bfp = 0.0_8
-
-  if (mod(y_max, stride) .ne. 0) then
-    write(0,*) "Preconditioner turned off - does not divide evenly"
-    preconditioner_on = .false.
-  endif
-
-#define COEF_A (-Ky(j, k)*ry)
-#define COEF_B (1.0_8 + ry*(Ky(j, k+1) + Ky(j, k)) + rx*(Kx(j+1, k) + Kx(j, k)))
-#define COEF_C (-Ky(j, k+1)*ry)
 
 !$OMP PARALLEL
   IF (preconditioner_on) then
-!$OMP DO private(j, bottom, top, ko, k)
-    DO ko=y_min,y_max,stride
 
-      bottom = ko
-      top = ko + stride - 1
-
-      do j=x_min, x_max
-        k = bottom
-        cp(j,k) = COEF_C/COEF_B
-
-        DO k=bottom+1,top
-            bfp(j, k) = 1.0_8/(COEF_B - COEF_A*cp(j, k-1))
-            cp(j, k) = COEF_C*bfp(j, k)
-        ENDDO
-      enddo
-    ENDDO
-!$OMP END DO
+    call tea_block_init(x_min, x_max, y_min, y_max,             &
+                           cp,                     &
+                           bfp,                     &
+                           Kx, Ky, rx, ry)
 
     call tea_block_solve(x_min, x_max, y_min, y_max,             &
                         r, z,                 &
@@ -186,49 +160,6 @@ SUBROUTINE tea_leaf_kernel_solve_cg_fortran_calc_w(x_min,             &
 !$OMP END PARALLEL
 
 END SUBROUTINE tea_leaf_kernel_solve_cg_fortran_calc_w
-
-subroutine tea_block_solve(x_min,             &
-                           x_max,             &
-                           y_min,             &
-                           y_max,             &
-                           r,                 &
-                           z,                 &
-                           cp,                     &
-                           bfp,                     &
-                           dp,                     &
-                           Kx, Ky, rx, ry)
-
-  INTEGER(KIND=4):: j, ko, k, s, bottom, top
-  INTEGER(KIND=4):: x_min,x_max,y_min,y_max
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: cp, dp, bfp, Kx, Ky, r, z
-  REAL(KIND=8) :: rx, ry
-
-!$OMP DO PRIVATE(j, bottom, top, ko, k)
-    DO ko=y_min,y_max,stride
-
-      bottom = ko
-      top = ko + stride - 1
-
-!DIR$ SIMD
-      do j=x_min, x_max
-        k = bottom
-        dp(j, k) = r(j, k)/COEF_B
-
-        DO k=bottom+1,top
-          dp(j, k) = (r(j, k) - COEF_A*dp(j, k-1))*bfp(j, k)
-        ENDDO
-
-        k = top
-        z(j, k) = dp(j, k)
-
-        DO k=top-1, bottom, -1
-          z(j, k) = dp(j, k) - cp(j, k)*z(j, k+1)
-        ENDDO
-      enddo
-    ENDDO
-!$OMP END DO
-
-end subroutine
 
 SUBROUTINE tea_leaf_kernel_solve_cg_fortran_calc_ur(x_min,             &
                                                     x_max,             &

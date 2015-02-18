@@ -21,6 +21,8 @@
 
 MODULE tea_leaf_kernel_cheby_module
 
+USE tea_leaf_kernel_common_module
+
 IMPLICIT NONE
 
 CONTAINS
@@ -38,6 +40,9 @@ SUBROUTINE tea_leaf_kernel_cheby_init(x_min,  &
                            z,                 &
                            Kx,                &
                            Ky,                &
+                           cp,                     &
+                           bfp,                     &
+                           dp,                     &
                            ch_alphas,         &
                            ch_betas,          &
                            max_cheby_iters,   &
@@ -54,6 +59,7 @@ SUBROUTINE tea_leaf_kernel_cheby_init(x_min,  &
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: w
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: r, Mi, z
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: Kx, Ky
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: cp, dp, bfp
 
   INTEGER :: j,k, max_cheby_iters
   REAL(KIND=8) ::  rx, ry, error, theta
@@ -70,11 +76,30 @@ SUBROUTINE tea_leaf_kernel_cheby_init(x_min,  &
                 - ry*(Ky(j, k+1)*u(j, k+1) + Ky(j, k)*u(j, k-1))  &
                 - rx*(Kx(j+1, k)*u(j+1, k) + Kx(j, k)*u(j-1, k))
             r(j, k) = u0(j, k) - w(j, k)
-
-            p(j, k) = (Mi(j, k)*r(j, k))/theta
         ENDDO
     ENDDO
 !$OMP END DO
+
+    call tea_block_init(x_min, x_max, y_min, y_max,             &
+                           cp,                     &
+                           bfp,                     &
+                           Kx, Ky, rx, ry)
+
+    call tea_block_solve(x_min, x_max, y_min, y_max,             &
+                        r, z,                 &
+                           cp,                     &
+                           bfp,                     &
+                           dp,                     &
+                           Kx, Ky, rx, ry)
+
+!$OMP DO
+    DO k=y_min,y_max
+      DO j=x_min,x_max
+        p(j, k) = z(j, k)/theta
+      ENDDO
+    ENDDO
+!$OMP END DO
+
   ELSE
 !$OMP DO
     DO k=y_min,y_max
@@ -115,6 +140,9 @@ SUBROUTINE tea_leaf_kernel_cheby_iterate(x_min, &
                            z,                   &
                            Kx,                  &
                            Ky,                  &
+                           cp,   &
+                           bfp,    &
+                           dp,                              &
                            ch_alphas,           &
                            ch_betas,            &
                            max_cheby_iters,     &
@@ -131,6 +159,7 @@ SUBROUTINE tea_leaf_kernel_cheby_iterate(x_min, &
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: w
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: r, Mi, z
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: Kx, Ky
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: cp, dp, bfp
 
   INTEGER :: j,k
 
@@ -150,7 +179,21 @@ SUBROUTINE tea_leaf_kernel_cheby_iterate(x_min, &
                 - ry*(Ky(j, k+1)*u(j, k+1) + Ky(j, k)*u(j, k-1))  &
                 - rx*(Kx(j+1, k)*u(j+1, k) + Kx(j, k)*u(j-1, k))
             r(j, k) = u0(j, k) - w(j, k)
-            p(j, k) = ch_alphas(step)*p(j, k) + ch_betas(step)*Mi(j, k)*r(j, k)
+        ENDDO
+    ENDDO
+!$OMP END DO
+
+    call tea_block_solve(x_min, x_max, y_min, y_max,             &
+                        r, z,                 &
+                           cp,                     &
+                           bfp,                     &
+                           dp,                     &
+                           Kx, Ky, rx, ry)
+
+!$OMP DO
+    DO k=y_min,y_max
+        DO j=x_min,x_max
+            p(j, k) = ch_alphas(step)*p(j, k) + ch_betas(step)*z(j, k)
         ENDDO
     ENDDO
 !$OMP END DO

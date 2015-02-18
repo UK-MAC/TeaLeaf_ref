@@ -13,12 +13,12 @@ generate_chunk.o: generate_chunk.f90 tea_module.mod \
  generate_chunk_kernel_module.mod
 generate_chunk_kernel.o generate_chunk_kernel_module.mod: \
  generate_chunk_kernel.f90
+initialise.o: initialise.f90 tea_module.mod parse_module.mod \
+ report_module.mod
 initialise_chunk.o: initialise_chunk.f90 tea_module.mod \
  initialise_chunk_kernel_module.mod
 initialise_chunk_kernel.o initialise_chunk_kernel_module.mod: \
  initialise_chunk_kernel.f90
-initialise.o: initialise.f90 tea_module.mod parse_module.mod \
- report_module.mod
 pack_kernel.o pack_kernel_module.mod: pack_kernel.f90
 parse.o tea_case_change.mod tea_isitanint_mod.mod parse_module.mod: \
  parse.f90 data_module.mod data_module.mod report_module.mod \
@@ -35,11 +35,14 @@ tea.o tea_module.mod: tea.f90 \
  pack_kernel_module.mod pack_kernel_module.mod pack_kernel_module.mod \
  pack_kernel_module.mod pack_kernel_module.mod pack_kernel_module.mod \
  pack_kernel_module.mod
-tea_leaf_cg.o tea_leaf_kernel_cg_module.mod: tea_leaf_cg.f90
-tea_leaf_cheby.o tea_leaf_kernel_cheby_module.mod: tea_leaf_cheby.f90
+tea_block.o: tea_block.f90
+tea_leaf.o: tea_leaf.f90 tea_module.mod
+tea_leaf_cg.o tea_leaf_kernel_cg_module.mod: tea_leaf_cg.f90 \
+ tea_leaf_kernel_common_module.mod
+tea_leaf_cheby.o tea_leaf_kernel_cheby_module.mod: tea_leaf_cheby.f90 \
+ tea_leaf_kernel_common_module.mod
 tea_leaf_common_kernels.o tea_leaf_kernel_common_module.mod: \
  tea_leaf_common_kernels.f90
-tea_leaf.o: tea_leaf.f90 tea_module.mod
 tea_leaf_jacobi.o tea_leaf_kernel_jacobi_module.mod: tea_leaf_jacobi.f90
 tea_leaf_ppcg.o tea_leaf_kernel_ppcg_module.mod: tea_leaf_ppcg.f90 \
  tea_leaf_kernel_common_module.mod tea_leaf_kernel_cheby_module.mod
