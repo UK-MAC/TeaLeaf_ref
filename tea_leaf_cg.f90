@@ -104,8 +104,8 @@ SUBROUTINE tea_leaf_kernel_init_cg_fortran(x_min,  &
         cp(j,k) = COEF_C/COEF_B
 
         DO k=bottom+1,top
-            bfp(j, k) = COEF_B - COEF_A*cp(j, k-1)
-            cp(j, k) = COEF_C/bfp(j, k)
+            bfp(j, k) = 1.0_8/(COEF_B - COEF_A*cp(j, k-1))
+            cp(j, k) = COEF_C*bfp(j, k)
         ENDDO
       enddo
     ENDDO
@@ -212,10 +212,10 @@ subroutine tea_block_solve(x_min,             &
 !DIR$ SIMD
       do j=x_min, x_max
         k = bottom
-        dp(j, k) = r(j, k)/COEF_B
+        dp(j, k) = r(j, k)*/COEF_B
 
         DO k=bottom+1,top
-          dp(j, k) = (r(j, k) - COEF_A*dp(j, k-1))/bfp(j, k)
+          dp(j, k) = (r(j, k) - COEF_A*dp(j, k-1))*bfp(j, k)
         ENDDO
 
         k = top
@@ -272,12 +272,6 @@ SUBROUTINE tea_leaf_kernel_solve_cg_fortran_calc_ur(x_min,             &
     DO k=y_min,y_max
         DO j=x_min,x_max
             u(j, k) = u(j, k) + alpha*p(j, k)
-        ENDDO
-    ENDDO
-!$OMP END DO NOWAIT
-!$OMP DO
-    DO k=y_min,y_max
-        DO j=x_min,x_max
             r(j, k) = r(j, k) - alpha*w(j, k)
         ENDDO
     ENDDO
