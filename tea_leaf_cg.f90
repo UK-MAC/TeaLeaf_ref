@@ -82,7 +82,7 @@ SUBROUTINE tea_leaf_kernel_init_cg_fortran(x_min,  &
   dp = 0.0_8
   bfp = 0.0_8
 
-  stride = 8
+  stride = 4
 
   do
     if (mod(x_max, stride) .eq. 0) then
@@ -193,11 +193,11 @@ SUBROUTINE tea_leaf_kernel_solve_cg_fortran_calc_w(x_min,             &
 END SUBROUTINE tea_leaf_kernel_solve_cg_fortran_calc_w
 
 subroutine tea_block_solve(x_min,             &
-                                                    x_max,             &
-                                                    y_min,             &
-                                                    y_max,             &
-                                                    r,                 &
-                                                    z,                 &
+                           x_max,             &
+                           y_min,             &
+                           y_max,             &
+                           r,                 &
+                           z,                 &
                            cp,                     &
                            bfp,                     &
                            dp,                     &
@@ -210,6 +210,7 @@ subroutine tea_block_solve(x_min,             &
 
 !$OMP DO
     DO k=y_min,y_max
+!DIR$ SIMD
       do s=0,x_max/stride - 1
         bottom = s*stride + 1
         top = (s+1)*stride

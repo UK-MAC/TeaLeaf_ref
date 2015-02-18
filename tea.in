@@ -15,5 +15,6 @@ end_step=10
 tl_max_iters=1000
  test_problem 6
 tl_use_cg
+tl_preconditioner_on
 tl_eps=1.0e-15
 *endtea
