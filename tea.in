@@ -12,7 +12,7 @@ xmax=10.0
 ymax=10.0
 initial_timestep=0.004
 end_step=1
-tl_max_iters=3000
+tl_max_iters=5000
  test_problem 6
 tl_use_cg
 tl_preconditioner_on
