@@ -2,17 +2,17 @@
 !
 ! This file is part of TeaLeaf.
 !
-! TeaLeaf is free software: you can redistribute it and/or modify it under 
-! the terms of the GNU General Public License as published by the 
-! Free Software Foundation, either version 3 of the License, or (at your option) 
+! TeaLeaf is free software: you can redistribute it and/or modify it under
+! the terms of the GNU General Public License as published by the
+! Free Software Foundation, either version 3 of the License, or (at your option)
 ! any later version.
 !
-! TeaLeaf is distributed in the hope that it will be useful, but 
-! WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
-! FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more 
+! TeaLeaf is distributed in the hope that it will be useful, but
+! WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+! FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
 ! details.
 !
-! You should have received a copy of the GNU General Public License along with 
+! You should have received a copy of the GNU General Public License along with
 ! TeaLeaf. If not, see http://www.gnu.org/licenses/.
 
 !>  @brief Fortran heat conduction kernel
@@ -212,30 +212,32 @@ subroutine tea_block_solve(x_min,             &
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: cp, dp, bfp, Kx, Ky, r, z
   REAL(KIND=8) :: rx, ry
-!$ INTEGER :: OMP_GET_THREAD_NUM
+  REAL(KIND=8), dimension(0:stride-1, y_min:y_max) :: dp_l, z_l
 
-!$OMP DO PRIVATE(j, bottom, top, jo, k)
-    DO jo=x_min,x_max-stride,stride
+!$OMP DO PRIVATE(j, bottom, top, jo, k, dp_l, z_l)
+    DO jo=x_min,x_max,stride
+
+      bottom = jo
+      top = jo+stride -1
 
 !DIR$ SIMD
       do k=y_min, y_max
-        bottom = jo
-        top = jo+stride -1
-
         j = bottom
+        dp_l(j-bottom, k) = r(j, k)/COEF_B
 
-        dp(j, k) = r(j, k)/COEF_B
-  
         DO j=bottom+1,top
-          dp(j, k) = (r(j, k) - COEF_A*dp(j-1, k))/bfp(j, k)
+          dp_l(j-bottom, k) = (r(j, k) - COEF_A*dp_l(j-bottom-1, k))/bfp(j, k)
         ENDDO
-  
-        !j = j - 1
+
         j = top
-        z(j, k) = dp(j, k)
-  
+        z_l(j-bottom, k) = dp_l(j-bottom, k)
+
         DO j=top-1, bottom, -1
-          z(j, k) = dp(j, k) - cp(j, k)*z(j+1, k)
+          z_l(j-bottom, k) = dp_l(j-bottom, k) - cp(j, k)*z_l(j-bottom+1, k)
+        ENDDO
+
+        DO j=bottom, top
+          z(j, k) = z_l(j-bottom, k)
         ENDDO
       enddo
     ENDDO
@@ -243,6 +245,7 @@ subroutine tea_block_solve(x_min,             &
 
 !!$OMP DO
 !    DO k=y_min,y_max
+!!DIR$ SIMD
 !      do s=0,x_max/stride - 1
 !        bottom = s*stride + 1
 !        top = (s+1)*stride
