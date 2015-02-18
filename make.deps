@@ -1,5 +1,6 @@
 build_field.o: build_field.f90 tea_module.mod
 calc_dt.o calc_dt_module.mod: calc_dt.f90 tea_module.mod
+calc_dt_kernel.o calc_dt_kernel_module.mod: calc_dt_kernel.f90
 data.o data_module.mod: data.f90
 definitions.o definitions_module.mod: definitions.f90 data_module.mod
 diffuse.o: diffuse.f90 tea_module.mod timestep_module.mod \
@@ -30,15 +31,21 @@ set_field.o set_field_module.mod: set_field.f90 tea_module.mod \
 set_field_kernel.o set_field_kernel_module.mod: set_field_kernel.f90
 start.o: start.f90 tea_module.mod parse_module.mod update_halo_module.mod
 tea.o tea_module.mod: tea.f90 \
+ data_module.mod definitions_module.mod pack_kernel_module.mod \
+ pack_kernel_module.mod pack_kernel_module.mod pack_kernel_module.mod \
+ pack_kernel_module.mod pack_kernel_module.mod pack_kernel_module.mod \
  pack_kernel_module.mod
 tea_leaf_cg.o tea_leaf_kernel_cg_module.mod: tea_leaf_cg.f90
 tea_leaf_cheby.o tea_leaf_kernel_cheby_module.mod: tea_leaf_cheby.f90
+tea_leaf_common_kernels.o tea_leaf_kernel_common_module.mod: \
+ tea_leaf_common_kernels.f90
 tea_leaf.o: tea_leaf.f90 tea_module.mod
-tea_leaf_jacobi.o tea_leaf_kernel_module.mod: tea_leaf_jacobi.f90
+tea_leaf_jacobi.o tea_leaf_kernel_jacobi_module.mod: tea_leaf_jacobi.f90
 tea_leaf_ppcg.o tea_leaf_kernel_ppcg_module.mod: tea_leaf_ppcg.f90 \
- tea_leaf_kernel_module.mod tea_leaf_kernel_cheby_module.mod
+ tea_leaf_kernel_common_module.mod tea_leaf_kernel_cheby_module.mod
 tea_solve.o tea_leaf_module.mod: tea_solve.f90 report_module.mod \
- data_module.mod tea_leaf_kernel_module.mod tea_leaf_kernel_cg_module.mod \
+ data_module.mod tea_leaf_kernel_common_module.mod \
+ tea_leaf_kernel_jacobi_module.mod tea_leaf_kernel_cg_module.mod \
  tea_leaf_kernel_ppcg_module.mod tea_leaf_kernel_cheby_module.mod \
  update_halo_module.mod
 timer.o: timer.f90

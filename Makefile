@@ -63,7 +63,7 @@ ifndef COMPILER
   MESSAGE=select a compiler to compile in OpenMP, e.g. make COMPILER=INTEL
 endif
 
-OMP_INTEL     = -openmp -fpp -mmic
+OMP_INTEL     = -openmp -fpp -xhost #-mmic
 OMP_SUN       = -xopenmp=parallel -vpara
 OMP_GNU       = -fopenmp -cpp
 OMP_CRAY      = -e Z
@@ -150,6 +150,7 @@ FORTRAN_FILES=\
 	timestep.o			\
 	set_field_kernel.o            \
 	set_field.o                   \
+	tea_leaf_common_kernels.o             \
 	tea_leaf_jacobi.o             \
 	tea_leaf_cg.o             	\
 	tea_leaf_cheby.o             	\

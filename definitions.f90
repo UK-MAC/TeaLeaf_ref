@@ -131,6 +131,7 @@ MODULE definitions_module
      REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: vector_Kx
      REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: vector_Ky
      REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: vector_sd
+     REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: tri_cp, tri_bfp, tri_dp
 
      INTEGER         :: left            &
                        ,right           &

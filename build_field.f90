@@ -63,6 +63,14 @@ SUBROUTINE build_field(chunk,x_cells,y_cells)
    ALLOCATE(chunks(chunk)%field%vector_sd(chunks(chunk)%field%x_min-2:chunks(chunk)%field%x_max+2, &
                                             chunks(chunk)%field%y_min-2:chunks(chunk)%field%y_max+2))
 
+   ! TODO possible way to reduce memory usage?
+   ALLOCATE(chunks(chunk)%field%tri_cp(chunks(chunk)%field%x_min-2:chunks(chunk)%field%x_max+2, &
+                                            chunks(chunk)%field%y_min-2:chunks(chunk)%field%y_max+2))
+   ALLOCATE(chunks(chunk)%field%tri_bfp(chunks(chunk)%field%x_min-2:chunks(chunk)%field%x_max+2, &
+                                            chunks(chunk)%field%y_min-2:chunks(chunk)%field%y_max+2))
+   ALLOCATE(chunks(chunk)%field%tri_dp(chunks(chunk)%field%x_min-2:chunks(chunk)%field%x_max+2, &
+                                            chunks(chunk)%field%y_min-2:chunks(chunk)%field%y_max+2))
+
    ALLOCATE(chunks(chunk)%field%cellx   (chunks(chunk)%field%x_min-2:chunks(chunk)%field%x_max+2))
    ALLOCATE(chunks(chunk)%field%celly   (chunks(chunk)%field%y_min-2:chunks(chunk)%field%y_max+2))
    ALLOCATE(chunks(chunk)%field%vertexx (chunks(chunk)%field%x_min-2:chunks(chunk)%field%x_max+3))

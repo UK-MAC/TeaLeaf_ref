@@ -23,7 +23,8 @@ MODULE tea_leaf_module
 
   USE report_module
   USE data_module
-  USE tea_leaf_kernel_module
+  USE tea_leaf_kernel_common_module
+  USE tea_leaf_kernel_jacobi_module
   USE tea_leaf_kernel_cg_module
   USE tea_leaf_kernel_ppcg_module
   USE tea_leaf_kernel_cheby_module
@@ -98,9 +99,23 @@ SUBROUTINE tea_leaf()
       IF (use_fortran_kernels) THEN
         rx = dt/(chunks(c)%field%celldx(chunks(c)%field%x_min)**2)
         ry = dt/(chunks(c)%field%celldy(chunks(c)%field%y_min)**2)
+
+        CALL tea_leaf_kernel_init_common(chunks(c)%field%x_min, &
+            chunks(c)%field%x_max,                                  &
+            chunks(c)%field%y_min,                                  &
+            chunks(c)%field%y_max,                                  &
+            chunks(c)%field%density,                                &
+            chunks(c)%field%energy1,                                &
+            chunks(c)%field%u,                                      &
+            chunks(c)%field%u0,                                      &
+            chunks(c)%field%vector_r,                               &
+            chunks(c)%field%vector_w,                               &
+            chunks(c)%field%vector_Kx,                              &
+            chunks(c)%field%vector_Ky,                              &
+            rx, ry, coefficient)
       ENDIF
 
-      IF(tl_use_cg .OR. tl_use_chebyshev .OR. tl_use_ppcg .OR. tl_use_jacobi) THEN
+      IF (tl_use_cg .OR. tl_use_chebyshev .OR. tl_use_ppcg) THEN
         ! All 3 of these solvers use the CG kernels
         IF(use_fortran_kernels) THEN
           CALL tea_leaf_kernel_init_cg_fortran(chunks(c)%field%x_min, &
@@ -117,6 +132,9 @@ SUBROUTINE tea_leaf()
               chunks(c)%field%vector_z,                               &
               chunks(c)%field%vector_Kx,                              &
               chunks(c)%field%vector_Ky,                              &
+              chunks(c)%field%tri_cp,   &
+              chunks(c)%field%tri_bfp,    &
+              chunks(c)%field%tri_dp,                              &
               rx, ry, rro, coefficient, tl_preconditioner_on)
         ENDIF
 
@@ -134,44 +152,39 @@ SUBROUTINE tea_leaf()
         CALL tea_allsum(rro)
         IF (profiler_on) profiler%dot_product= profiler%dot_product+ (timer() - dot_product_time)
         IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
-        initial_residual=SQRT(rro)
-        IF(parallel%boss.AND.verbose_on) THEN
-!$        IF(OMP_GET_THREAD_NUM().EQ.0) THEN
-            WRITE(g_out,*)"Initial residual ",initial_residual
-!$        ENDIF
-        ENDIF
-      ELSEIF(tl_use_jacobi) THEN
-        IF (use_fortran_kernels) THEN
-          CALL tea_leaf_kernel_init(chunks(c)%field%x_min, &
-              chunks(c)%field%x_max,                       &
-              chunks(c)%field%y_min,                       &
-              chunks(c)%field%y_max,                       &
-              chunks(c)%field%celldx,                      &
-              chunks(c)%field%celldy,                      &
-              chunks(c)%field%volume,                      &
-              chunks(c)%field%density,                     &
-              chunks(c)%field%energy1,                     &
-              chunks(c)%field%u0,                          &
-              chunks(c)%field%u,                           &
-              chunks(c)%field%vector_r,                    &
-              chunks(c)%field%vector_w,                    &
-              chunks(c)%field%vector_z,                    &
-              chunks(c)%field%vector_Kx,                   &
-              chunks(c)%field%vector_Ky,                   &
-              coefficient)
-        ENDIF
-
+      ELSEIF (tl_use_jacobi) THEN
         fields=0
         fields(FIELD_U) = 1
       ENDIF
 
       IF(use_fortran_kernels) THEN
-        CALL tea_leaf_kernel_cheby_copy_u(chunks(c)%field%x_min,&
-          chunks(c)%field%x_max,                                &
-          chunks(c)%field%y_min,                                &
-          chunks(c)%field%y_max,                                &
-          chunks(c)%field%u0,                                   &
-          chunks(c)%field%u)
+        CALL tea_leaf_calc_residual(chunks(c)%field%x_min,&
+            chunks(c)%field%x_max,                        &
+            chunks(c)%field%y_min,                        &
+            chunks(c)%field%y_max,                        &
+            chunks(c)%field%u,                            &
+            chunks(c)%field%u0,                           &
+            chunks(c)%field%vector_r,                     &
+            chunks(c)%field%vector_Kx,                    &
+            chunks(c)%field%vector_Ky,                    &
+            rx, ry)
+        CALL tea_leaf_calc_2norm_kernel(chunks(c)%field%x_min,        &
+            chunks(c)%field%x_max,                                    &
+            chunks(c)%field%y_min,                                    &
+            chunks(c)%field%y_max,                                    &
+            chunks(c)%field%vector_r,                                 &
+            initial_residual)
+      ENDIF
+
+      IF (profiler_on) dot_product_time=timer()
+      CALL tea_allsum(initial_residual)
+      IF (profiler_on) profiler%dot_product= profiler%dot_product+ (timer() - dot_product_time)
+      IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
+      initial_residual=SQRT(initial_residual)
+      IF(parallel%boss.AND.verbose_on) THEN
+!$      IF(OMP_GET_THREAD_NUM().EQ.0) THEN
+          WRITE(g_out,*)"Initial residual ",initial_residual
+!$      ENDIF
       ENDIF
 
       IF (profiler_on) profiler%tea_init = profiler%tea_init + (timer() - init_time)
@@ -342,6 +355,12 @@ SUBROUTINE tea_leaf()
                   chunks(c)%field%vector_Mi,                                      &
                   chunks(c)%field%vector_w,                                       &
                   chunks(c)%field%vector_z,                                       &
+              chunks(c)%field%tri_cp,   &
+              chunks(c)%field%tri_bfp,    &
+              chunks(c)%field%tri_dp,                              &
+              chunks(c)%field%vector_Kx,                              &
+              chunks(c)%field%vector_Ky,                              &
+              rx, ry, &
                   alpha, rrn, tl_preconditioner_on)
             ENDIF
 
@@ -416,6 +435,12 @@ SUBROUTINE tea_leaf()
                 chunks(c)%field%vector_Mi,                                      &
                 chunks(c)%field%vector_w,                                       &
                 chunks(c)%field%vector_z,                                       &
+              chunks(c)%field%tri_cp,   &
+              chunks(c)%field%tri_bfp,    &
+              chunks(c)%field%tri_dp,                              &
+              chunks(c)%field%vector_Kx,                              &
+              chunks(c)%field%vector_Ky,                              &
+              rx, ry, &
                 alpha, rrn, tl_preconditioner_on)
           ENDIF
 
@@ -441,7 +466,7 @@ SUBROUTINE tea_leaf()
           rro = rrn
         ELSEIF(tl_use_jacobi) THEN
           IF(use_fortran_kernels) THEN
-            CALL tea_leaf_kernel_solve(chunks(c)%field%x_min,&
+            CALL tea_leaf_kernel_jacobi_solve(chunks(c)%field%x_min,&
                 chunks(c)%field%x_max,                       &
                 chunks(c)%field%y_min,                       &
                 chunks(c)%field%y_max,                       &
