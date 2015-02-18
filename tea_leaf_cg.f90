@@ -212,7 +212,7 @@ subroutine tea_block_solve(x_min,             &
 !DIR$ SIMD
       do j=x_min, x_max
         k = bottom
-        dp(j, k) = r(j, k)*/COEF_B
+        dp(j, k) = r(j, k)/COEF_B
 
         DO k=bottom+1,top
           dp(j, k) = (r(j, k) - COEF_A*dp(j, k-1))*bfp(j, k)
