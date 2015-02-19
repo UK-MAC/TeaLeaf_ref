@@ -249,6 +249,7 @@ subroutine tea_block_solve(x_min,             &
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: cp, dp, bfp, Kx, Ky, r, z
   REAL(KIND=8) :: rx, ry
+  REAL(KIND=8), dimension(0:stride-1) :: dp_l, z_l
 
 !$OMP DO PRIVATE(j, bottom, top, ko, k)
     DO ko=y_min,y_max,stride
@@ -256,20 +257,24 @@ subroutine tea_block_solve(x_min,             &
       bottom = ko
       top = ko + stride - 1
 
-!DIR$ SIMD
+!$OMP SIMD PRIVATE(dp_l, z_l)
       do j=x_min, x_max
         k = bottom
-        dp(j, k) = r(j, k)/COEF_B
+        dp_l(k-bottom) = r(j, k)/COEF_B
 
         DO k=bottom+1,top
-          dp(j, k) = (r(j, k) - COEF_A*dp(j, k-1))*bfp(j, k)
+          dp_l(k-bottom) = (r(j, k) - COEF_A*dp_l(k-bottom-1))*bfp(j, k)
         ENDDO
 
         k = top
-        z(j, k) = dp(j, k)
+        z_l(k-bottom) = dp_l(k-bottom)
 
         DO k=top-1, bottom, -1
-          z(j, k) = dp(j, k) - cp(j, k)*z(j, k+1)
+          z_l(k-bottom) = dp_l(k-bottom) - cp(j, k)*z_l(k-bottom+1)
+        ENDDO
+
+        DO k=bottom,top
+          z(j, k) = z_l(k-bottom)
         ENDDO
       enddo
     ENDDO

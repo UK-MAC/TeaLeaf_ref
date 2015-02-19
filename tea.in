@@ -12,9 +12,10 @@ xmax=10.0
 ymax=10.0
 initial_timestep=0.004
 end_step=1
-tl_max_iters=10000
+tl_max_iters=2000
  test_problem 6
 tl_use_cg
 tl_preconditioner_on
+tl_check_result
 tl_eps=1.0e-12
 *endtea
