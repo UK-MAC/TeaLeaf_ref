@@ -218,6 +218,7 @@ subroutine tea_block_init(x_min,             &
       bottom = ko
       top = ko + stride - 1
 
+!$OMP SIMD
       do j=x_min, x_max
         k = bottom
         cp(j,k) = COEF_C/COEF_B
