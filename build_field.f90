@@ -108,6 +108,10 @@ SUBROUTINE build_field(chunk,x_cells,y_cells)
        chunks(chunk)%field%energy1(j,k)=0.0
        chunks(chunk)%field%u(j,k)=0.0
        chunks(chunk)%field%u0(j,k)=0.0
+
+       chunks(chunk)%field%tri_cp(j,k)=0.0
+       chunks(chunk)%field%tri_bfp(j,k)=0.0
+       chunks(chunk)%field%tri_dp(j,k)=0.0
      ENDDO
    ENDDO
 !$OMP ENDDO 

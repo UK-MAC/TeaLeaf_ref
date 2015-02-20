@@ -425,7 +425,7 @@ SUBROUTINE tea_leaf()
           IF (profiler_on) profiler%dot_product= profiler%dot_product+ (timer() - dot_product_time)
           IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
           alpha = rro/pw
-          IF(tl_use_chebyshev .OR. tl_use_ppcg) cg_alphas(n) = alpha
+          cg_alphas(n) = alpha
 
           IF(use_fortran_kernels) THEN
             CALL tea_leaf_kernel_solve_cg_fortran_calc_ur(chunks(c)%field%x_min,&
@@ -452,7 +452,7 @@ SUBROUTINE tea_leaf()
           IF (profiler_on) profiler%dot_product= profiler%dot_product+ (timer() - dot_product_time)
           IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
           beta = rrn/rro
-          IF(tl_use_chebyshev .OR. tl_use_ppcg) cg_betas(n) = beta
+          cg_betas(n) = beta
 
           IF(use_fortran_kernels) THEN
             CALL tea_leaf_kernel_solve_cg_fortran_calc_p(chunks(c)%field%x_min,&
