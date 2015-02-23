@@ -77,6 +77,9 @@ SUBROUTINE tea_leaf_kernel_init_cg_fortran(x_min,  &
   rro = 0.0_8
   p = 0.0_8
 
+  cp = 0.0_8
+  bfp = 0.0_8
+
 !$OMP PARALLEL
   IF (preconditioner_on) then
 

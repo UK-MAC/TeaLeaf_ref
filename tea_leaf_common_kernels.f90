@@ -209,9 +209,6 @@ subroutine tea_block_init(x_min,             &
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: cp, bfp, Kx, Ky
   REAL(KIND=8) :: rx, ry
 
-  cp = 0.0_8
-  bfp = 0.0_8
-
 !$OMP DO PRIVATE(j, bottom, top, ko, k)
     DO ko=y_min,y_max,stride
 
@@ -229,7 +226,7 @@ subroutine tea_block_init(x_min,             &
         ENDDO
       enddo
     ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
 
 end subroutine
 
