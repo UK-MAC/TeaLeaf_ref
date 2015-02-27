@@ -2,7 +2,7 @@ MODULE tea_leaf_kernel_common_module
 
 IMPLICIT NONE
 
-    integer, parameter::stride = 4
+    integer, private, parameter::stride = 4
 
 CONTAINS
 
@@ -226,7 +226,7 @@ subroutine tea_block_init(x_min,             &
         ENDDO
       enddo
     ENDDO
-!$OMP END DO NOWAIT
+!$OMP END DO
 
 end subroutine
 
@@ -243,37 +243,43 @@ subroutine tea_block_solve(x_min,             &
 
   IMPLICIT NONE
 
-  INTEGER(KIND=4):: j, ko, k, s, bottom, top
+  INTEGER(KIND=4):: j, ko, k, s, bottom, top, jo, ki
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: cp, dp, bfp, Kx, Ky, r, z
   REAL(KIND=8) :: rx, ry
   REAL(KIND=8), dimension(0:stride-1) :: dp_l, z_l
 
-!$OMP DO PRIVATE(j, bottom, top, ko, k)
-    DO ko=y_min,y_max,stride
+  INTEGER(KIND=4), parameter :: block_size=8
 
-      bottom = ko
-      top = ko + stride - 1
+!$OMP DO PRIVATE(j, bottom, top, ko, k, ki, jo)
+    DO ko=y_min,y_max,stride*block_size
+      do ki=ko,ko + stride*block_size - 1,stride
+        bottom = ki
+        top = ki + stride - 1
 
+        do jo=x_min,x_max,block_size
 !$OMP SIMD PRIVATE(dp_l, z_l)
-      do j=x_min, x_max
-        k = bottom
-        dp_l(k-bottom) = r(j, k)/COEF_B
+          do j=jo,jo+block_size - 1
+            if (j .gt. x_max .or. k .gt. y_max) continue
+            k = bottom
+            dp_l(k-bottom) = r(j, k)/COEF_B
 
-        DO k=bottom+1,top
-          dp_l(k-bottom) = (r(j, k) - COEF_A*dp_l(k-bottom-1))*bfp(j, k)
-        ENDDO
+            DO k=bottom+1,top
+              dp_l(k-bottom) = (r(j, k) - COEF_A*dp_l(k-bottom-1))*bfp(j, k)
+            ENDDO
 
-        k = top
-        z_l(k-bottom) = dp_l(k-bottom)
+            k = top
+            z_l(k-bottom) = dp_l(k-bottom)
 
-        DO k=top-1, bottom, -1
-          z_l(k-bottom) = dp_l(k-bottom) - cp(j, k)*z_l(k-bottom+1)
-        ENDDO
+            DO k=top-1, bottom, -1
+              z_l(k-bottom) = dp_l(k-bottom) - cp(j, k)*z_l(k-bottom+1)
+            ENDDO
 
-        DO k=bottom,top
-          z(j, k) = z_l(k-bottom)
-        ENDDO
+            DO k=bottom,top
+              z(j, k) = z_l(k-bottom)
+            ENDDO
+          enddo
+        enddo
       enddo
     ENDDO
 !$OMP END DO

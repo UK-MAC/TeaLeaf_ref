@@ -408,6 +408,8 @@ SUBROUTINE tea_leaf()
           fields(FIELD_P) = 1
           cg_calc_steps = cg_calc_steps + 1
 
+          pw = 0.0_08
+
           IF(use_fortran_kernels) THEN
             CALL tea_leaf_kernel_solve_cg_fortran_calc_w(chunks(c)%field%x_min,&
                 chunks(c)%field%x_max,                                         &
@@ -425,6 +427,7 @@ SUBROUTINE tea_leaf()
           IF (profiler_on) profiler%dot_product= profiler%dot_product+ (timer() - dot_product_time)
           IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
           alpha = rro/pw
+          rrn = 0.0_08
           cg_alphas(n) = alpha
 
           IF(use_fortran_kernels) THEN

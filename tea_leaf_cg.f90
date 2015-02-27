@@ -144,8 +144,6 @@ SUBROUTINE tea_leaf_kernel_solve_cg_fortran_calc_w(x_min,             &
     INTEGER(KIND=4) :: j,k,n
     REAL(kind=8) :: pw
 
-    pw = 0.0_08
-
 !$OMP PARALLEL
 !$OMP DO REDUCTION(+:pw)
     DO k=y_min,y_max
@@ -199,13 +197,17 @@ SUBROUTINE tea_leaf_kernel_solve_cg_fortran_calc_ur(x_min,             &
     INTEGER(KIND=4) :: j,k,n
     REAL(kind=8) :: alpha, rrn
 
-    rrn = 0.0_08
-
 !$OMP PARALLEL
 !$OMP DO
     DO k=y_min,y_max
         DO j=x_min,x_max
             u(j, k) = u(j, k) + alpha*p(j, k)
+        ENDDO
+    ENDDO
+!$OMP END DO NOWAIT
+!$OMP DO
+    DO k=y_min,y_max
+        DO j=x_min,x_max
             r(j, k) = r(j, k) - alpha*w(j, k)
         ENDDO
     ENDDO
@@ -256,9 +258,7 @@ SUBROUTINE tea_leaf_kernel_solve_cg_fortran_calc_p(x_min,             &
 
   LOGICAL :: preconditioner_on
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: p
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: r
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: z
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: p, r, z
 
     REAL(kind=8) :: error
 
