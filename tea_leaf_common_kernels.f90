@@ -260,7 +260,7 @@ subroutine tea_block_solve(x_min,             &
         top = ki + stride - 1
 
         do jo=x_min,x_max - jstep,jstep
-!!$OMP SIMD PRIVATE(dp_l, z_l)
+!$OMP SIMD PRIVATE(dp_l, z_l)
           do j=jo,jo+jstep - 1
             k = bottom
             if (j .gt. x_max .or. k .gt. y_max) continue
