@@ -95,26 +95,29 @@ SUBROUTINE tea_leaf_kernel_init_cg_fortran(x_min,  &
                            dp,                     &
                            Kx, Ky, rx, ry)
 
-!$OMP DO REDUCTION(+:rro)
+!$OMP DO
     DO k=y_min,y_max
         DO j=x_min,x_max
             p(j, k) = z(j, k)
-
-            rro = rro + r(j, k)*p(j, k);
         ENDDO
     ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
   ELSE
-!$OMP DO REDUCTION(+:rro)
+!$OMP DO
     DO k=y_min,y_max
         DO j=x_min,x_max
             p(j, k) = r(j, k)
-
+        ENDDO
+    ENDDO
+!$OMP END DO NOWAIT
+  ENDIF
+!$OMP DO REDUCTION(+:rro)
+    DO k=y_min,y_max
+        DO j=x_min,x_max
             rro = rro + r(j, k)*p(j, k);
         ENDDO
     ENDDO
 !$OMP END DO
-  ENDIF
 !$OMP END PARALLEL
 
 END SUBROUTINE tea_leaf_kernel_init_cg_fortran

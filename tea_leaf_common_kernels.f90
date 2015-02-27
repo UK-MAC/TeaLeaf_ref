@@ -2,7 +2,7 @@ MODULE tea_leaf_kernel_common_module
 
 IMPLICIT NONE
 
-    integer, private, parameter::stride = 4
+    integer, parameter::stride = 4
 
 CONTAINS
 
@@ -250,18 +250,20 @@ subroutine tea_block_solve(x_min,             &
   REAL(KIND=8), dimension(0:stride-1) :: dp_l, z_l
 
   INTEGER(KIND=4), parameter :: block_size=8
+  INTEGER(KIND=4), parameter :: kstep = block_size*stride
+  INTEGER(KIND=4), parameter :: jstep = block_size
 
 !$OMP DO PRIVATE(j, bottom, top, ko, k, ki, jo)
-    DO ko=y_min,y_max,stride*block_size
-      do ki=ko,ko + stride*block_size - 1,stride
+    DO ko=y_min,y_max - kstep, kstep
+      do ki=ko,ko + kstep - 1,stride
         bottom = ki
         top = ki + stride - 1
 
-        do jo=x_min,x_max,block_size
-!$OMP SIMD PRIVATE(dp_l, z_l)
-          do j=jo,jo+block_size - 1
-            if (j .gt. x_max .or. k .gt. y_max) continue
+        do jo=x_min,x_max - jstep,jstep
+!!$OMP SIMD PRIVATE(dp_l, z_l)
+          do j=jo,jo+jstep - 1
             k = bottom
+            if (j .gt. x_max .or. k .gt. y_max) continue
             dp_l(k-bottom) = r(j, k)/COEF_B
 
             DO k=bottom+1,top
