@@ -79,6 +79,12 @@ SUBROUTINE tea_leaf()
   cheby_calc_steps = 0
   cg_calc_steps = 0
 
+  ! doesn't seem to have any effect
+  !if (mod(chunks(c)%field%y_max, stride) .ne. 0 .and. tl_preconditioner_on) then
+  !  tl_preconditioner_on = .false.
+  !  write(0,*) "WARNING - Deactivating preconditioner as stride does not evenly divide work"
+  !endif
+
   total_solve_time = timer()
 
   DO c=1,chunks_per_task
@@ -95,11 +101,6 @@ SUBROUTINE tea_leaf()
       IF (profiler_on) profiler%halo_exchange = profiler%halo_exchange + (timer() - halo_time)
 
       IF (profiler_on) init_time=timer()
-
-      if (mod(chunks(c)%field%y_max, stride) .ne. 0 .and. tl_preconditioner_on) then
-        tl_preconditioner_on = .false.
-        write(0,*) "WARNING - Deactivating preconditioner as stride does not evenly divide work"
-      endif
 
       IF (use_fortran_kernels) THEN
         rx = dt/(chunks(c)%field%celldx(chunks(c)%field%x_min)**2)
