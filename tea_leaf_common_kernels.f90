@@ -238,14 +238,13 @@ subroutine tea_block_solve(x_min,             &
                            z,                 &
                            cp,                     &
                            bfp,                     &
-                           dp,                     &
                            Kx, Ky, rx, ry)
 
   IMPLICIT NONE
 
   INTEGER(KIND=4):: j, ko, k, s, bottom, top, jo, ki
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: cp, dp, bfp, Kx, Ky, r, z
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: cp, bfp, Kx, Ky, r, z
   REAL(KIND=8) :: rx, ry
   REAL(KIND=8), dimension(0:stride-1) :: dp_l, z_l
 

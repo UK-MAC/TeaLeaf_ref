@@ -41,7 +41,6 @@ SUBROUTINE tea_leaf_kernel_init_cg_fortran(x_min,  &
                            Ky,                     &
                            cp,                     &
                            bfp,                     &
-                           dp,                     &
                            rx,                     &
                            ry,                     &
                            rro,                    &
@@ -63,7 +62,7 @@ SUBROUTINE tea_leaf_kernel_init_cg_fortran(x_min,  &
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: Kx
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: Ky
 
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: cp, dp, bfp
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: cp, bfp
 
   INTEGER(KIND=4) :: coef
   INTEGER(KIND=4) :: j,k,n,s
@@ -92,7 +91,6 @@ SUBROUTINE tea_leaf_kernel_init_cg_fortran(x_min,  &
                         r, z,                 &
                            cp,                     &
                            bfp,                     &
-                           dp,                     &
                            Kx, Ky, rx, ry)
 
 !$OMP DO
@@ -177,7 +175,6 @@ SUBROUTINE tea_leaf_kernel_solve_cg_fortran_calc_ur(x_min,             &
                                                     z,                 &
                                                     cp,                     &
                                                     bfp,                     &
-                                                    dp,                     &
                                                     Kx, Ky, rx, ry, &
                                                     alpha,             &
                                                     rrn,               &
@@ -194,7 +191,7 @@ SUBROUTINE tea_leaf_kernel_solve_cg_fortran_calc_ur(x_min,             &
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: w
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: z
 
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: cp, dp, bfp, Kx, Ky
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: cp, bfp, Kx, Ky
   REAL(KIND=8) :: rx, ry
 
     INTEGER(KIND=4) :: j,k,n
@@ -222,7 +219,6 @@ SUBROUTINE tea_leaf_kernel_solve_cg_fortran_calc_ur(x_min,             &
                         r, z,                 &
                         cp,                     &
                         bfp,                     &
-                        dp,                     &
                         Kx, Ky, rx, ry)
 
 !$OMP DO REDUCTION(+:rrn)

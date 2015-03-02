@@ -170,7 +170,6 @@ SUBROUTINE tea_leaf()
               chunks(c)%field%vector_Ky,                              &
               chunks(c)%field%tri_cp,   &
               chunks(c)%field%tri_bfp,    &
-              chunks(c)%field%tri_dp,                              &
               rx, ry, rro, coefficient, tl_preconditioner_on)
         ENDIF
 
@@ -291,7 +290,6 @@ SUBROUTINE tea_leaf()
                                   chunks(c)%field%vector_Ky,                   &
                                   chunks(c)%field%tri_cp,   &
                                   chunks(c)%field%tri_bfp,    &
-                                  chunks(c)%field%tri_dp,                              &
                                   ch_alphas, ch_betas, max_cheby_iters,        &
                                   rx, ry, cheby_calc_steps, tl_preconditioner_on)
                   ENDIF
@@ -377,7 +375,6 @@ SUBROUTINE tea_leaf()
                   chunks(c)%field%vector_z,                                       &
               chunks(c)%field%tri_cp,   &
               chunks(c)%field%tri_bfp,    &
-              chunks(c)%field%tri_dp,                              &
               chunks(c)%field%vector_Kx,                              &
               chunks(c)%field%vector_Ky,                              &
               rx, ry, &
@@ -390,12 +387,13 @@ SUBROUTINE tea_leaf()
                 rx, ry, tl_ppcg_inner_steps, c)
 
             IF(use_fortran_kernels) THEN
-              CALL tea_leaf_calc_2norm_kernel(chunks(c)%field%x_min, &
+              CALL tea_leaf_ppcg_calc_zrnorm_kernel(chunks(c)%field%x_min, &
                     chunks(c)%field%x_max,                           &
                     chunks(c)%field%y_min,                           &
                     chunks(c)%field%y_max,                           &
+                    chunks(c)%field%vector_z,                        &
                     chunks(c)%field%vector_r,                        &
-                    rrn)
+                    tl_preconditioner_on, rrn)
             ENDIF
 
             IF (profiler_on) dot_product_time=timer()
@@ -460,7 +458,6 @@ SUBROUTINE tea_leaf()
                 chunks(c)%field%vector_z,                                       &
               chunks(c)%field%tri_cp,   &
               chunks(c)%field%tri_bfp,    &
-              chunks(c)%field%tri_dp,                              &
               chunks(c)%field%vector_Kx,                              &
               chunks(c)%field%vector_Ky,                              &
               rx, ry, &
@@ -648,8 +645,14 @@ SUBROUTINE tea_leaF_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
         chunks(c)%field%y_min,                              &
         chunks(c)%field%y_max,                              &
         chunks(c)%field%vector_r,                           &
+          chunks(c)%field%vector_Kx,                        &
+          chunks(c)%field%vector_Ky,                        &
         chunks(c)%field%vector_sd,                          &
-        theta)
+        chunks(c)%field%vector_z,                          &
+        chunks(c)%field%tri_cp,                          &
+        chunks(c)%field%tri_bfp,                          &
+        rx, ry,                          &
+        theta, tl_preconditioner_on)
   ENDIF
 
   fields = 0
@@ -671,7 +674,11 @@ SUBROUTINE tea_leaF_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
           chunks(c)%field%vector_r,                         &
           chunks(c)%field%vector_Kx,                        &
           chunks(c)%field%vector_Ky,                        &
-          chunks(c)%field%vector_sd)
+          chunks(c)%field%vector_sd,                        &
+        chunks(c)%field%vector_z,                          &
+        chunks(c)%field%tri_cp,                          &
+        chunks(c)%field%tri_bfp,                          &
+          tl_preconditioner_on)
     ENDIF
   ENDDO
 
@@ -722,7 +729,6 @@ SUBROUTINE tea_leaf_cheby_first_step(c, ch_alphas, ch_betas, fields, &
           chunks(c)%field%vector_Ky,                      &
           chunks(c)%field%tri_cp,   &
           chunks(c)%field%tri_bfp,    &
-          chunks(c)%field%tri_dp,                              &
           ch_alphas, ch_betas, max_cheby_iters,           &
           rx, ry, theta, error, tl_preconditioner_on)
   ENDIF
@@ -745,7 +751,6 @@ SUBROUTINE tea_leaf_cheby_first_step(c, ch_alphas, ch_betas, fields, &
           chunks(c)%field%vector_Ky,                           &
           chunks(c)%field%tri_cp,   &
           chunks(c)%field%tri_bfp,    &
-          chunks(c)%field%tri_dp,                              &
           ch_alphas, ch_betas, max_cheby_iters,                &
           rx, ry, 1, tl_preconditioner_on)
   ENDIF

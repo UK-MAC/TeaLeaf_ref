@@ -42,7 +42,6 @@ SUBROUTINE tea_leaf_kernel_cheby_init(x_min,  &
                            Ky,                &
                            cp,                     &
                            bfp,                     &
-                           dp,                     &
                            ch_alphas,         &
                            ch_betas,          &
                            max_cheby_iters,   &
@@ -59,7 +58,7 @@ SUBROUTINE tea_leaf_kernel_cheby_init(x_min,  &
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: w
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: r, Mi, z
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: Kx, Ky
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: cp, dp, bfp
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: cp, bfp
 
   INTEGER :: j,k, max_cheby_iters
   REAL(KIND=8) ::  rx, ry, error, theta
@@ -89,7 +88,6 @@ SUBROUTINE tea_leaf_kernel_cheby_init(x_min,  &
                         r, z,                 &
                            cp,                     &
                            bfp,                     &
-                           dp,                     &
                            Kx, Ky, rx, ry)
 
 !$OMP DO
@@ -142,7 +140,6 @@ SUBROUTINE tea_leaf_kernel_cheby_iterate(x_min, &
                            Ky,                  &
                            cp,   &
                            bfp,    &
-                           dp,                              &
                            ch_alphas,           &
                            ch_betas,            &
                            max_cheby_iters,     &
@@ -159,7 +156,7 @@ SUBROUTINE tea_leaf_kernel_cheby_iterate(x_min, &
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: w
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: r, Mi, z
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: Kx, Ky
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: cp, dp, bfp
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: cp, bfp
 
   INTEGER :: j,k
 
@@ -187,7 +184,6 @@ SUBROUTINE tea_leaf_kernel_cheby_iterate(x_min, &
                         r, z,                 &
                            cp,                     &
                            bfp,                     &
-                           dp,                     &
                            Kx, Ky, rx, ry)
 
 !$OMP DO
