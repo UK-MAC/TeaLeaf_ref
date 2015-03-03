@@ -268,6 +268,7 @@ subroutine tea_block_solve(x_min,             &
               dp_l(k-bottom) = (r(j, k) - COEF_A*dp_l(k-bottom-1))*bfp(j, k)
             ENDDO
 
+            k=top
             z_l(k-bottom) = dp_l(k-bottom)
 
             DO k=top-1, bottom, -1
