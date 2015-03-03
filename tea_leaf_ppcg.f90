@@ -98,6 +98,7 @@ SUBROUTINE tea_leaf_kernel_ppcg_inner(x_min,             &
                 - ry*(Ky(j, k+1)*sd(j, k+1) + Ky(j, k)*sd(j, k-1))  &
                 - rx*(Kx(j+1, k)*sd(j+1, k) + Kx(j, k)*sd(j-1, k))
             r(j, k) = r(j, k) - smvp
+
             u(j, k) = u(j, k) + sd(j, k)
         ENDDO
     ENDDO

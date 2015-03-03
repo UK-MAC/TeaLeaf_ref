@@ -256,12 +256,11 @@ SUBROUTINE tea_leaf()
 
             IF (parallel%boss) THEN
 !$            IF(OMP_GET_THREAD_NUM().EQ.0) THEN
+103 FORMAT("Eigen min",e14.6," Eigen max",e14.6," Condition number",e14.6," Error",e14.6)
                 WRITE(g_out,'(a,i3,a,e15.7)') "Switching after ",n," CG its, error ",rro
-                WRITE(g_out,'(a,e14.6,a,e14.6,a,e14.6,a,e14.6)')"Eigen min ",eigmin," Eigen max ",eigmax," Condition number ",cn, &
-                                                                " Error ",error
+                WRITE(g_out, 103) eigmin,eigmax,cn,error
                 WRITE(0,'(a,i3,a,e15.7)') "Switching after ",n," CG its, error ",rro
-                WRITE(0,'(a,e14.6,a,e14.6,a,e14.6,a,e14.6)')"Eigen min ",eigmin," Eigen max ",eigmax," Condition number ",cn, &
-                                                            " Error ",error
+                WRITE(0, 103) eigmin,eigmax,cn,error
 !$            ENDIF
             ENDIF
           ENDIF
@@ -555,18 +554,24 @@ SUBROUTINE tea_leaf()
         CALL tea_allsum(exact_error)
         IF (profiler_on) profiler%dot_product= profiler%dot_product+ (timer() - dot_product_time)
         IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
+
+        exact_error = sqrt(exact_error)
       ENDIF
 
       IF (profiler_on) profiler%tea_solve = profiler%tea_solve + (timer() - solve_time)
 
       IF (parallel%boss) THEN
 !$      IF(OMP_GET_THREAD_NUM().EQ.0) THEN
-          WRITE(g_out,"('Conduction error ',e14.7)") error/initial_residual
-          WRITE(0,"('Conduction error ',e14.7)") error/initial_residual
+
+101 FORMAT('EXACT error calculated as', e14.7)
+102 FORMAT('Conduction error ',e14.7)
+
+          WRITE(g_out,102) error/initial_residual
+          WRITE(0,102) error/initial_residual
 
           IF (tl_check_result) THEN
-            WRITE(0,"('EXACT error calculated as', e14.7)") exact_error
-            WRITE(g_out,"('EXACT error calculated as', e14.7)") exact_error
+            WRITE(0, 101) exact_error/initial_residual
+            WRITE(g_out, 101) exact_error/initial_residual
           ENDIF
 
           WRITE(g_out,"('Iteration count ',i8)") n-1

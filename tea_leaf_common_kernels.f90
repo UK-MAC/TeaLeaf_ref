@@ -4,6 +4,10 @@ IMPLICIT NONE
 
     integer, parameter::stride = 4
 
+    INTEGER(KIND=4), parameter :: block_size=8
+    INTEGER(KIND=4), parameter :: kstep = block_size*stride
+    INTEGER(KIND=4), parameter :: jstep = block_size
+
 CONTAINS
 
 SUBROUTINE tea_leaf_kernel_init_common(x_min,  &
@@ -248,10 +252,6 @@ subroutine tea_block_solve(x_min,             &
   REAL(KIND=8) :: rx, ry
   REAL(KIND=8), dimension(0:stride-1) :: dp_l, z_l
 
-  INTEGER(KIND=4), parameter :: block_size=8
-  INTEGER(KIND=4), parameter :: kstep = block_size*stride
-  INTEGER(KIND=4), parameter :: jstep = block_size
-
 !$OMP DO PRIVATE(j, bottom, top, ko, k, ki, jo)
     DO ko=y_min,y_max - kstep, kstep
       do ki=ko,ko + kstep - 1,stride
@@ -262,14 +262,12 @@ subroutine tea_block_solve(x_min,             &
 !$OMP SIMD PRIVATE(dp_l, z_l)
           do j=jo,jo+jstep - 1
             k = bottom
-            if (j .gt. x_max .or. k .gt. y_max) continue
             dp_l(k-bottom) = r(j, k)/COEF_B
 
             DO k=bottom+1,top
               dp_l(k-bottom) = (r(j, k) - COEF_A*dp_l(k-bottom-1))*bfp(j, k)
             ENDDO
 
-            k = top
             z_l(k-bottom) = dp_l(k-bottom)
 
             DO k=top-1, bottom, -1
