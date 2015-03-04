@@ -26,7 +26,8 @@ SUBROUTINE tea_leaf_kernel_ppcg_init_sd(x_min,             &
 
   LOGICAL :: preconditioner_on
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: r, sd, z, cp, bfp, kx, ky
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: r, sd, kx, ky
+  REAL(KIND=8), DIMENSION(x_min:x_max,y_min:y_max) :: z, cp, bfp
   REAL(KIND=8) :: theta, theta_r, rx, ry
 
   INTEGER :: j,k
@@ -83,7 +84,8 @@ SUBROUTINE tea_leaf_kernel_ppcg_inner(x_min,             &
 
   LOGICAL :: preconditioner_on
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: u, r, Kx, Ky, sd, z, cp, bfp
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: u, r, Kx, Ky, sd
+  REAL(KIND=8), DIMENSION(x_min:x_max,y_min:y_max) :: z, cp, bfp
   INTEGER(KIND=4) :: j,k, step
   REAL(KIND=8), DIMENSION(:) :: alpha, beta
   REAL(KIND=8) :: smvp, rx, ry
@@ -144,7 +146,8 @@ SUBROUTINE tea_leaf_ppcg_calc_zrnorm_kernel(x_min, &
 
   LOGICAL :: preconditioner_on
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: z, r
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: r
+  REAL(KIND=8), DIMENSION(x_min:x_max,y_min:y_max) :: z
   REAL(KIND=8) :: norm
   integer :: j, k
 

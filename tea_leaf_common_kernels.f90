@@ -4,9 +4,8 @@ IMPLICIT NONE
 
     integer, parameter::stride = 4
 
-    INTEGER(KIND=4), parameter :: block_size=8
+    INTEGER(KIND=4), parameter :: block_size=4
     INTEGER(KIND=4), parameter :: kstep = block_size*stride
-    INTEGER(KIND=4), parameter :: jstep = block_size
 
 CONTAINS
 
@@ -210,14 +209,15 @@ subroutine tea_block_init(x_min,             &
 
   INTEGER(KIND=4):: j, ko, k, bottom, top
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: cp, bfp, Kx, Ky
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: Kx, Ky
+  REAL(KIND=8), DIMENSION(x_min:x_max,y_min:y_max) :: cp, bfp
   REAL(KIND=8) :: rx, ry
 
 !$OMP DO PRIVATE(j, bottom, top, ko, k)
     DO ko=y_min,y_max,stride
 
       bottom = ko
-      top = ko + stride - 1
+      top = min(ko + stride - 1, y_max)
 
 !$OMP SIMD
       do j=x_min, x_max
@@ -246,39 +246,40 @@ subroutine tea_block_solve(x_min,             &
 
   IMPLICIT NONE
 
-  INTEGER(KIND=4):: j, ko, k, s, bottom, top, jo, ki
+  INTEGER(KIND=4):: j, ko, k, s, bottom, top, jo, ki, upper_k
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: cp, bfp, Kx, Ky, r, z
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: Kx, Ky, r
+  REAL(KIND=8), DIMENSION(x_min:x_max,y_min:y_max) :: cp, bfp, z
   REAL(KIND=8) :: rx, ry
   REAL(KIND=8), dimension(0:stride-1) :: dp_l, z_l
 
-!$OMP DO PRIVATE(j, bottom, top, ko, k, ki, jo)
-    DO ko=y_min,y_max - kstep, kstep
-      do ki=ko,ko + kstep - 1,stride
-        bottom = ki
-        top = ki + stride - 1
+!$OMP DO PRIVATE(j, bottom, top, ko, k, ki, jo, upper_k)
+    DO ko=y_min, y_max, kstep
+      upper_k = min(ko+kstep - stride, y_max)
 
-        do jo=x_min,x_max - jstep,jstep
+      do ki=ko,upper_k,stride
+        bottom = min(ki, y_max)
+        top = min(ki+stride - 1, y_max)
+
 !$OMP SIMD PRIVATE(dp_l, z_l)
-          do j=jo,jo+jstep - 1
-            k = bottom
-            dp_l(k-bottom) = r(j, k)/COEF_B
+        do j=x_min,x_max
+          k = bottom
+          dp_l(k-bottom) = r(j, k)/COEF_B
 
-            DO k=bottom+1,top
-              dp_l(k-bottom) = (r(j, k) - COEF_A*dp_l(k-bottom-1))*bfp(j, k)
-            ENDDO
+          DO k=bottom+1,top
+            dp_l(k-bottom) = (r(j, k) - COEF_A*dp_l(k-bottom-1))*bfp(j, k)
+          ENDDO
 
-            k=top
-            z_l(k-bottom) = dp_l(k-bottom)
+          k=top
+          z_l(k-bottom) = dp_l(k-bottom)
 
-            DO k=top-1, bottom, -1
-              z_l(k-bottom) = dp_l(k-bottom) - cp(j, k)*z_l(k-bottom+1)
-            ENDDO
+          DO k=top-1, bottom, -1
+            z_l(k-bottom) = dp_l(k-bottom) - cp(j, k)*z_l(k-bottom+1)
+          ENDDO
 
-            DO k=bottom,top
-              z(j, k) = z_l(k-bottom)
-            ENDDO
-          enddo
+          DO k=bottom,top
+            z(j, k) = z_l(k-bottom)
+          ENDDO
         enddo
       enddo
     ENDDO
