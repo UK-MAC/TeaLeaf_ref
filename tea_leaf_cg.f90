@@ -211,6 +211,9 @@ SUBROUTINE tea_leaf_kernel_solve_cg_fortran_calc_ur(x_min,             &
         ENDDO
     ENDDO
 !$OMP END DO
+
+  IF (preconditioner_on) THEN
+
 !$OMP DO PRIVATE(j, ko, k)
     DO ko=y_min, y_max, kstep
         upper_k = min(ko+kstep - 1, y_max)
@@ -220,9 +223,7 @@ SUBROUTINE tea_leaf_kernel_solve_cg_fortran_calc_ur(x_min,             &
           enddo
       ENDDO
     ENDDO
-!$OMP END DO NOWAIT
-
-  IF (preconditioner_on) THEN
+!$OMP END DO
 
     call tea_block_solve(x_min, x_max, y_min, y_max,             &
                         r, z,                 &
@@ -241,6 +242,7 @@ SUBROUTINE tea_leaf_kernel_solve_cg_fortran_calc_ur(x_min,             &
 !$OMP DO REDUCTION(+:rrn)
     DO k=y_min,y_max
         DO j=x_min,x_max
+            r(j, k) = r(j, k) - alpha*w(j, k)
             rrn = rrn + r(j, k)*r(j, k)
         ENDDO
     ENDDO

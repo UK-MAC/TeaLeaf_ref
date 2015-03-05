@@ -2,17 +2,17 @@
 !
 ! This file is part of TeaLeaf.
 !
-! TeaLeaf is free software: you can redistribute it and/or modify it under 
-! the terms of the GNU General Public License as published by the 
-! Free Software Foundation, either version 3 of the License, or (at your option) 
+! TeaLeaf is free software: you can redistribute it and/or modify it under
+! the terms of the GNU General Public License as published by the
+! Free Software Foundation, either version 3 of the License, or (at your option)
 ! any later version.
 !
-! TeaLeaf is distributed in the hope that it will be useful, but 
-! WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
-! FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more 
+! TeaLeaf is distributed in the hope that it will be useful, but
+! WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+! FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
 ! details.
 !
-! You should have received a copy of the GNU General Public License along with 
+! You should have received a copy of the GNU General Public License along with
 ! TeaLeaf. If not, see http://www.gnu.org/licenses/.
 
 !>  @brief Driver for the heat conduction kernel
@@ -152,6 +152,13 @@ SUBROUTINE tea_leaf()
       IF (profiler_on) profiler%dot_product= profiler%dot_product+ (timer() - dot_product_time)
       IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
 
+      initial_residual=SQRT(initial_residual)
+      IF(parallel%boss.AND.verbose_on) THEN
+!$      IF(OMP_GET_THREAD_NUM().EQ.0) THEN
+          WRITE(g_out,*)"Initial residual ",initial_residual
+!$      ENDIF
+      ENDIF
+
       IF(tl_use_cg .OR. tl_use_chebyshev .OR. tl_use_ppcg) THEN
         ! All 3 of these solvers use the CG kernels
         IF(use_fortran_kernels) THEN
@@ -191,17 +198,6 @@ SUBROUTINE tea_leaf()
       ELSEIF (tl_use_jacobi) THEN
         fields=0
         fields(FIELD_U) = 1
-      ENDIF
-
-      IF (profiler_on) dot_product_time=timer()
-      CALL tea_allsum(initial_residual)
-      IF (profiler_on) profiler%dot_product= profiler%dot_product+ (timer() - dot_product_time)
-      IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
-      initial_residual=SQRT(initial_residual)
-      IF(parallel%boss.AND.verbose_on) THEN
-!$      IF(OMP_GET_THREAD_NUM().EQ.0) THEN
-          WRITE(g_out,*)"Initial residual ",initial_residual
-!$      ENDIF
       ENDIF
 
       IF (profiler_on) profiler%tea_init = profiler%tea_init + (timer() - init_time)
@@ -442,8 +438,9 @@ SUBROUTINE tea_leaf()
           IF (profiler_on) profiler%dot_product= profiler%dot_product+ (timer() - dot_product_time)
           IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
           alpha = rro/pw
-          rrn = 0.0_08
           cg_alphas(n) = alpha
+
+          rrn = 0.0_8
 
           IF(use_fortran_kernels) THEN
             CALL tea_leaf_kernel_solve_cg_fortran_calc_ur(chunks(c)%field%x_min,&
