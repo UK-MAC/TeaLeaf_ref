@@ -4,7 +4,7 @@ IMPLICIT NONE
 
     integer, parameter::stride = 4
 
-    INTEGER(KIND=4), parameter :: block_size=4
+    INTEGER(KIND=4), parameter :: block_size=8
     INTEGER(KIND=4), parameter :: kstep = block_size*stride
 
 CONTAINS
@@ -210,7 +210,7 @@ subroutine tea_block_init(x_min,             &
   INTEGER(KIND=4):: j, ko, k, bottom, top
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: Kx, Ky
-  REAL(KIND=8), DIMENSION(x_min:x_max,y_min:y_max) :: cp, bfp
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: cp, bfp
   REAL(KIND=8) :: rx, ry
 
 !$OMP DO PRIVATE(j, bottom, top, ko, k)
@@ -249,7 +249,7 @@ subroutine tea_block_solve(x_min,             &
   INTEGER(KIND=4):: j, ko, k, s, bottom, top, jo, ki, upper_k
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: Kx, Ky, r
-  REAL(KIND=8), DIMENSION(x_min:x_max,y_min:y_max) :: cp, bfp, z
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: cp, bfp, z
   REAL(KIND=8) :: rx, ry
   REAL(KIND=8), dimension(0:stride-1) :: dp_l, z_l
 

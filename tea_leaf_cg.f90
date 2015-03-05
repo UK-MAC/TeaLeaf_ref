@@ -61,7 +61,7 @@ SUBROUTINE tea_leaf_kernel_init_cg_fortran(x_min,  &
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: Kx
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: Ky
 
-  REAL(KIND=8), DIMENSION(x_min:x_max,y_min:y_max) :: cp, bfp, z
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: cp, bfp, z
 
   INTEGER(KIND=4) :: coef
   INTEGER(KIND=4) :: j,k,n,s
@@ -142,12 +142,15 @@ SUBROUTINE tea_leaf_kernel_solve_cg_fortran_calc_w(x_min,             &
 
     REAL(KIND=8) ::  rx, ry
 
-    INTEGER(KIND=4) :: j,k,n
+    INTEGER(KIND=4) :: j,k,n, ko, upper_k
     REAL(kind=8) :: pw
 
 !$OMP PARALLEL
-!$OMP DO REDUCTION(+:pw)
-    DO k=y_min,y_max
+!$OMP DO REDUCTION(+:pw) private(upper_k)
+    !DO k=y_min,y_max
+    DO ko=y_min, y_max, kstep
+        upper_k = min(ko+kstep - 1, y_max)
+        do k=ko,upper_k
         DO j=x_min,x_max
             w(j, k) = (1.0_8                                      &
                 + ry*(Ky(j, k+1) + Ky(j, k))                      &
@@ -156,6 +159,7 @@ SUBROUTINE tea_leaf_kernel_solve_cg_fortran_calc_w(x_min,             &
                 - rx*(Kx(j+1, k)*p(j+1, k) + Kx(j, k)*p(j-1, k))
 
             pw = pw + w(j, k)*p(j, k)
+        ENDDO
         ENDDO
     ENDDO
 !$OMP END DO
@@ -189,7 +193,7 @@ SUBROUTINE tea_leaf_kernel_solve_cg_fortran_calc_ur(x_min,             &
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: r
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: Mi
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: w
-  REAL(KIND=8), DIMENSION(x_min:x_max,y_min:y_max) :: z, cp, bfp
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: z, cp, bfp
 
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: Kx, Ky
   REAL(KIND=8) :: rx, ry
@@ -207,7 +211,7 @@ SUBROUTINE tea_leaf_kernel_solve_cg_fortran_calc_ur(x_min,             &
         ENDDO
     ENDDO
 !$OMP END DO
-!$OMP DO PRIVATE(j, ko, k, ki, jo)
+!$OMP DO PRIVATE(j, ko, k)
     DO ko=y_min, y_max, kstep
         upper_k = min(ko+kstep - 1, y_max)
         do k=ko,upper_k
@@ -216,7 +220,7 @@ SUBROUTINE tea_leaf_kernel_solve_cg_fortran_calc_ur(x_min,             &
           enddo
       ENDDO
     ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
 
   IF (preconditioner_on) THEN
 
@@ -261,7 +265,7 @@ SUBROUTINE tea_leaf_kernel_solve_cg_fortran_calc_p(x_min,             &
   LOGICAL :: preconditioner_on
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: p, r
-  REAL(KIND=8), DIMENSION(x_min:x_max,y_min:y_max) :: z
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: z
 
     REAL(kind=8) :: error
 
