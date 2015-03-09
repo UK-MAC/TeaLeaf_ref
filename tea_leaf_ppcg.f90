@@ -86,13 +86,16 @@ SUBROUTINE tea_leaf_kernel_ppcg_inner(x_min,             &
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: u, r, Kx, Ky, sd
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: z, cp, bfp
-  INTEGER(KIND=4) :: j,k, step
+  INTEGER(KIND=4) :: j,k, step, upper_k, ko
   REAL(KIND=8), DIMENSION(:) :: alpha, beta
   REAL(KIND=8) :: smvp, rx, ry
 
 !$OMP PARALLEL
-!$OMP DO
-    DO k=y_min,y_max
+!$OMP DO private(upper_k)
+    !DO k=y_min,y_max
+    DO ko=y_min, y_max, kstep
+        upper_k = min(ko+kstep - 1, y_max)
+        do k=ko,upper_k
         DO j=x_min,x_max
             smvp = (1.0_8                                           &
                 + ry*(Ky(j, k+1) + Ky(j, k))                        &
@@ -102,6 +105,7 @@ SUBROUTINE tea_leaf_kernel_ppcg_inner(x_min,             &
             r(j, k) = r(j, k) - smvp
 
             u(j, k) = u(j, k) + sd(j, k)
+        ENDDO
         ENDDO
     ENDDO
 !$OMP END DO

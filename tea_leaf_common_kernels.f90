@@ -246,7 +246,7 @@ subroutine tea_block_solve(x_min,             &
 
   IMPLICIT NONE
 
-  INTEGER(KIND=4):: j, ko, k, s, bottom, top, jo, ki, upper_k, k_extra
+  INTEGER(KIND=4):: j, ko, k, bottom, top, ki, upper_k, k_extra
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: Kx, Ky, r
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: cp, bfp, z
@@ -255,7 +255,7 @@ subroutine tea_block_solve(x_min,             &
 
   k_extra = y_max - mod(y_max, kstep)
 
-!$OMP DO PRIVATE(j, bottom, top, ko, k, ki, jo, upper_k)
+!$OMP DO
     DO ko=y_min, k_extra, kstep
       upper_k = ko+kstep - stride
 
@@ -287,7 +287,7 @@ subroutine tea_block_solve(x_min,             &
     ENDDO
 !$OMP END DO
 
-!$OMP DO PRIVATE(j, bottom, top, ko, k, ki, jo, upper_k)
+!$OMP DO
     DO ki=k_extra+1, y_max, stride
       bottom = min(ki, y_max)
       top = min(ki+stride-1, y_max)
