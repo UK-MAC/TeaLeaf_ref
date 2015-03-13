@@ -333,11 +333,6 @@ SUBROUTINE tea_leaf()
               CALL update_halo(fields,1)
               IF (profiler_on) profiler%halo_exchange = profiler%halo_exchange + (timer() - halo_time)
               IF (profiler_on) solve_time = solve_time + (timer()-halo_time)
-
-              IF (profiler_on) dot_product_time=timer()
-              CALL tea_allsum(rro)
-              IF (profiler_on) profiler%dot_product= profiler%dot_product+ (timer() - dot_product_time)
-              IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
             ENDIF
 
             IF(use_fortran_kernels) THEN
