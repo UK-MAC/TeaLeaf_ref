@@ -337,6 +337,7 @@ SUBROUTINE tea_calc_ch_coefs(ch_alphas, ch_betas, eigmin, eigmax, &
 
   DO n=1,max_cheby_iters
     rho_new = 1.0_8/(2.0_8*sigma - rho_old)
+
     cur_alpha = rho_new*rho_old
     cur_beta = 2.0_8*rho_new/delta
 

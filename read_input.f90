@@ -75,8 +75,9 @@ SUBROUTINE read_input()
   tl_ch_cg_presteps = 30
   tl_ch_cg_epslim = 1e-5
   tl_check_result = .FALSE.
-  tl_ppcg_inner_steps = 10 ! Ideally this should be the root of the condition number (usually +10%)
   tl_preconditioner_on = .FALSE.
+
+  tl_ppcg_inner_steps = -1
 
   tl_use_chebyshev = .FALSE.
   tl_use_cg = .FALSE.
@@ -266,6 +267,11 @@ SUBROUTINE read_input()
       END SELECT
     ENDDO
   ENDDO
+
+  ! Simple guess - better than a default of 10
+  if (tl_ppcg_inner_steps .eq. -1) then
+    tl_ppcg_inner_steps = SQRT(SQRT(float(grid%x_cells*grid%y_cells)))
+  endif
 
   IF(parallel%boss) THEN
     WRITE(g_out,*)
