@@ -45,7 +45,7 @@ SUBROUTINE tea_barrier
 
   INTEGER :: err
 
-  CALL MPI_BARRIER(MPI_COMM_WORLD,err)
+  CALL MPI_BARRIER(mpi_cart_comm,err)
 
 END SUBROUTINE tea_barrier
 
@@ -53,7 +53,7 @@ SUBROUTINE tea_abort
 
   INTEGER :: ierr,err
 
-  CALL MPI_ABORT(MPI_COMM_WORLD,ierr,err)
+  CALL MPI_ABORT(mpi_cart_comm,ierr,err)
 
 END SUBROUTINE tea_abort
 
@@ -74,14 +74,25 @@ SUBROUTINE tea_init_comms
   IMPLICIT NONE
 
   INTEGER :: err,rank,size
+  INTEGER, dimension(2)  :: periodic
+  ! not periodic
+  data periodic/0, 0/
+
+  mpi_dims = 0
 
   rank=0
   size=1
 
   CALL MPI_INIT(err)
+  CALL MPI_COMM_SIZE(mpi_comm_world,size,err)
 
-  CALL MPI_COMM_RANK(MPI_COMM_WORLD,rank,err)
-  CALL MPI_COMM_SIZE(MPI_COMM_WORLD,size,err)
+  ! Create comm and get coords
+  call mpi_dims_create(size, 2, mpi_dims, err)
+  call mpi_cart_create(mpi_comm_world, 2, mpi_dims, periodic, 1, mpi_cart_comm, err)
+
+  CALL MPI_COMM_RANK(mpi_cart_comm,rank,err)
+  CALL MPI_COMM_SIZE(mpi_cart_comm,size,err)
+  call mpi_cart_coords(mpi_cart_comm, rank, 2, mpi_coords, err)
 
   parallel%parallel=.TRUE.
   parallel%task=rank
@@ -116,7 +127,8 @@ SUBROUTINE tea_decompose(x_cells,y_cells,left,right,bottom,top)
 
   IMPLICIT NONE
 
-  INTEGER :: x_cells,y_cells,left(:),right(:),top(:),bottom(:)
+  INTEGER :: x_cells,y_cells
+  INTEGER, dimension(1:), contiguous :: left,right,top,bottom
   INTEGER :: c,delta_x,delta_y
 
   REAL(KIND=8) :: mesh_ratio,factor_x,factor_y
@@ -124,78 +136,56 @@ SUBROUTINE tea_decompose(x_cells,y_cells,left,right,bottom,top)
 
   INTEGER  :: cx,cy,chunk,add_x,add_y,add_x_prev,add_y_prev
 
-  ! 2D Decomposition of the mesh
+  INTEGER  :: err
 
-  mesh_ratio=real(x_cells)/real(y_cells)
+  ! 1 chunk
+  c = 1
 
-  chunk_x=number_of_chunks
-  chunk_y=1
+  ! Get destinations/sources
+  call mpi_cart_shift(mpi_cart_comm, 0, 1,      &
+    chunks(c)%chunk_neighbours(chunk_bottom),   &
+    chunks(c)%chunk_neighbours(chunk_top),      &
+    err)
+  call mpi_cart_shift(mpi_cart_comm, 1, 1,      &
+    chunks(c)%chunk_neighbours(chunk_left),     &
+    chunks(c)%chunk_neighbours(chunk_right),    &
+    err)
 
-  split_found=0 ! Used to detect 1D decomposition
-  DO c=1,number_of_chunks
-    IF (MOD(number_of_chunks,c).EQ.0) THEN
-      factor_x=number_of_chunks/real(c)
-      factor_y=c
-      !Compare the factor ratio with the mesh ratio
-      IF(factor_x/factor_y.LE.mesh_ratio) THEN
-        chunk_y=c
-        chunk_x=number_of_chunks/c
-        split_found=1
-        EXIT
-      ENDIF
-    ENDIF
-  ENDDO
+  where (chunks(c)%chunk_neighbours .eq. mpi_proc_null)
+    chunks(c)%chunk_neighbours = external_face
+  end where
 
-  IF(split_found.EQ.0.OR.chunk_y.EQ.number_of_chunks) THEN ! Prime number or 1D decomp detected
-    IF(mesh_ratio.GE.1.0) THEN
-      chunk_x=number_of_chunks
-      chunk_y=1
-    ELSE
-      chunk_x=1
-      chunk_y=number_of_chunks
-    ENDIF
-  ENDIF
+  chunk_y = mpi_dims(1)
+  chunk_x = mpi_dims(2)
 
   delta_x=x_cells/chunk_x
   delta_y=y_cells/chunk_y
   mod_x=MOD(x_cells,chunk_x)
   mod_y=MOD(y_cells,chunk_y)
 
-  ! Set up chunk mesh ranges and chunk connectivity
+  left(c) = mpi_coords(2)*delta_x + 1
+  if (mpi_coords(2) .le. mod_x) then
+    left(c) = left(c) + mpi_coords(2)
+  else
+    left(c) = left(c) + mod_x
+  endif
+  right(c) = left(c)+delta_x - 1
+  if (mpi_coords(2) .lt. mod_x) then
+    right(c) = right(c) + 1
+  endif
 
-    add_x_prev=0
-    add_y_prev=0
-    chunk=1
-    DO cy=1,chunk_y
-        DO cx=1,chunk_x
-            add_x=0
-            add_y=0
-            IF(cx.LE.mod_x)add_x=1
-            IF(cy.LE.mod_y)add_y=1
+  bottom(c) = mpi_coords(1)*delta_y + 1
+  if (mpi_coords(1) .le. mod_y) then
+    bottom(c) = bottom(c) + mpi_coords(1)
+  else
+    bottom(c) = bottom(c) + mod_y
+  endif
+  top(c) = bottom(c)+delta_y - 1
+  if (mpi_coords(1) .lt. mod_y) then
+    top(c) = top(c) + 1
+  endif
 
-            IF (chunk .EQ. parallel%task+1) THEN
-                left(1)   = (cx-1)*delta_x+1+add_x_prev
-                right(1)  = left(1)+delta_x-1+add_x
-                bottom(1) = (cy-1)*delta_y+1+add_y_prev
-                top(1)    = bottom(1)+delta_y-1+add_y
-
-                chunks(1)%chunk_neighbours(chunk_left)=chunk_x*(cy-1)+cx-1
-                chunks(1)%chunk_neighbours(chunk_right)=chunk_x*(cy-1)+cx+1
-                chunks(1)%chunk_neighbours(chunk_bottom)=chunk_x*(cy-2)+cx
-                chunks(1)%chunk_neighbours(chunk_top)=chunk_x*(cy)+cx
-
-                IF(cx.EQ.1)       chunks(1)%chunk_neighbours(chunk_left)=external_face
-                IF(cx.EQ.chunk_x) chunks(1)%chunk_neighbours(chunk_right)=external_face
-                IF(cy.EQ.1)       chunks(1)%chunk_neighbours(chunk_bottom)=external_face
-                IF(cy.EQ.chunk_y) chunks(1)%chunk_neighbours(chunk_top)=external_face
-            ENDIF
-
-            IF(cx.LE.mod_x)add_x_prev=add_x_prev+1
-            chunk=chunk+1
-        ENDDO
-        add_x_prev=0
-        IF(cy.LE.mod_y)add_y_prev=add_y_prev+1
-    ENDDO
+  mesh_ratio=real(x_cells)/real(y_cells)
 
   IF(parallel%boss)THEN
     WRITE(g_out,*)
@@ -462,13 +452,13 @@ SUBROUTINE tea_send_recv_message_left(left_snd_buffer, left_rcv_buffer,      &
   INTEGER         :: total_size, tag_send, tag_recv, err
   INTEGER         :: req_send, req_recv
 
-  left_task =chunks(chunk)%chunk_neighbours(chunk_left) - 1
+  left_task =chunks(chunk)%chunk_neighbours(chunk_left)
 
   CALL MPI_ISEND(left_snd_buffer,total_size,MPI_DOUBLE_PRECISION,left_task,tag_send &
-                ,MPI_COMM_WORLD,req_send,err)
+                ,mpi_cart_comm,req_send,err)
 
   CALL MPI_IRECV(left_rcv_buffer,total_size,MPI_DOUBLE_PRECISION,left_task,tag_recv &
-                ,MPI_COMM_WORLD,req_recv,err)
+                ,mpi_cart_comm,req_recv,err)
 
 END SUBROUTINE tea_send_recv_message_left
 
@@ -668,13 +658,13 @@ SUBROUTINE tea_send_recv_message_right(right_snd_buffer, right_rcv_buffer,   &
   INTEGER      :: total_size, tag_send, tag_recv, err
   INTEGER      :: req_send, req_recv
 
-  right_task=chunks(chunk)%chunk_neighbours(chunk_right) - 1
+  right_task=chunks(chunk)%chunk_neighbours(chunk_right)
 
   CALL MPI_ISEND(right_snd_buffer,total_size,MPI_DOUBLE_PRECISION,right_task,tag_send, &
-                 MPI_COMM_WORLD,req_send,err)
+                 mpi_cart_comm,req_send,err)
 
   CALL MPI_IRECV(right_rcv_buffer,total_size,MPI_DOUBLE_PRECISION,right_task,tag_recv, &
-                 MPI_COMM_WORLD,req_recv,err)
+                 mpi_cart_comm,req_recv,err)
 
 END SUBROUTINE tea_send_recv_message_right
 
@@ -872,13 +862,13 @@ SUBROUTINE tea_send_recv_message_top(top_snd_buffer, top_rcv_buffer,     &
     INTEGER      :: total_size, tag_send, tag_recv, err
     INTEGER      :: req_send, req_recv
 
-    top_task=chunks(chunk)%chunk_neighbours(chunk_top) - 1
+    top_task=chunks(chunk)%chunk_neighbours(chunk_top)
 
     CALL MPI_ISEND(top_snd_buffer,total_size,MPI_DOUBLE_PRECISION,top_task,tag_send, &
-                   MPI_COMM_WORLD,req_send,err)
+                   mpi_cart_comm,req_send,err)
 
     CALL MPI_IRECV(top_rcv_buffer,total_size,MPI_DOUBLE_PRECISION,top_task,tag_recv, &
-                   MPI_COMM_WORLD,req_recv,err)
+                   mpi_cart_comm,req_recv,err)
 
 END SUBROUTINE tea_send_recv_message_top
 
@@ -1077,13 +1067,13 @@ SUBROUTINE tea_send_recv_message_bottom(bottom_snd_buffer, bottom_rcv_buffer,   
   INTEGER      :: total_size, tag_send, tag_recv, err
   INTEGER      :: req_send, req_recv
 
-  bottom_task=chunks(chunk)%chunk_neighbours(chunk_bottom) - 1
+  bottom_task=chunks(chunk)%chunk_neighbours(chunk_bottom)
 
   CALL MPI_ISEND(bottom_snd_buffer,total_size,MPI_DOUBLE_PRECISION,bottom_task,tag_send &
-                ,MPI_COMM_WORLD,req_send,err)
+                ,mpi_cart_comm,req_send,err)
 
   CALL MPI_IRECV(bottom_rcv_buffer,total_size,MPI_DOUBLE_PRECISION,bottom_task,tag_recv &
-                ,MPI_COMM_WORLD,req_recv,err)
+                ,mpi_cart_comm,req_recv,err)
 
 END SUBROUTINE tea_send_recv_message_bottom
 
@@ -1195,7 +1185,7 @@ SUBROUTINE tea_sum(value)
 
   total=value
 
-  CALL MPI_REDUCE(value,total,1,MPI_DOUBLE_PRECISION,MPI_SUM,0,MPI_COMM_WORLD,err)
+  CALL MPI_REDUCE(value,total,1,MPI_DOUBLE_PRECISION,MPI_SUM,0,mpi_cart_comm,err)
 
   value=total
 
@@ -1215,7 +1205,7 @@ SUBROUTINE tea_allsum(value)
 
   total=value
 
-  CALL MPI_ALLREDUCE(value,total,1,MPI_DOUBLE_PRECISION,MPI_SUM,MPI_COMM_WORLD,err)
+  CALL MPI_ALLREDUCE(value,total,1,MPI_DOUBLE_PRECISION,MPI_SUM,mpi_cart_comm,err)
 
   value=total
 
@@ -1233,7 +1223,7 @@ SUBROUTINE tea_min(value)
 
   minimum=value
 
-  CALL MPI_ALLREDUCE(value,minimum,1,MPI_DOUBLE_PRECISION,MPI_MIN,MPI_COMM_WORLD,err)
+  CALL MPI_ALLREDUCE(value,minimum,1,MPI_DOUBLE_PRECISION,MPI_MIN,mpi_cart_comm,err)
 
   value=minimum
 
@@ -1251,7 +1241,7 @@ SUBROUTINE tea_max(value)
 
   maximum=value
 
-  CALL MPI_ALLREDUCE(value,maximum,1,MPI_DOUBLE_PRECISION,MPI_MAX,MPI_COMM_WORLD,err)
+  CALL MPI_ALLREDUCE(value,maximum,1,MPI_DOUBLE_PRECISION,MPI_MAX,mpi_cart_comm,err)
 
   value=maximum
 
@@ -1269,7 +1259,7 @@ SUBROUTINE tea_allgather(value,values)
 
   values(1)=value ! Just to ensure it will work in serial
 
-  CALL MPI_ALLGATHER(value,1,MPI_DOUBLE_PRECISION,values,1,MPI_DOUBLE_PRECISION,MPI_COMM_WORLD,err)
+  CALL MPI_ALLGATHER(value,1,MPI_DOUBLE_PRECISION,values,1,MPI_DOUBLE_PRECISION,mpi_cart_comm,err)
 
 END SUBROUTINE tea_allgather
 
@@ -1285,7 +1275,7 @@ SUBROUTINE tea_check_error(error)
 
   maximum=error
 
-  CALL MPI_ALLREDUCE(error,maximum,1,MPI_INTEGER,MPI_MAX,MPI_COMM_WORLD,err)
+  CALL MPI_ALLREDUCE(error,maximum,1,MPI_INTEGER,MPI_MAX,mpi_cart_comm,err)
 
   error=maximum
 

@@ -51,11 +51,11 @@ SUBROUTINE start
 
   CALL tea_get_num_chunks(number_of_chunks)
 
-  ALLOCATE(chunks(1:number_of_chunks))
-  ALLOCATE(left(1:number_of_chunks))
-  ALLOCATE(right(1:number_of_chunks))
-  ALLOCATE(bottom(1:number_of_chunks))
-  ALLOCATE(top(1:number_of_chunks))
+  ALLOCATE(chunks(1:chunks_per_task))
+  ALLOCATE(left(1:chunks_per_task))
+  ALLOCATE(right(1:chunks_per_task))
+  ALLOCATE(bottom(1:chunks_per_task))
+  ALLOCATE(top(1:chunks_per_task))
 
   CALL tea_decompose(grid%x_cells,grid%y_cells,left,right,bottom,top)
 
