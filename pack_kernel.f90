@@ -58,14 +58,14 @@ SUBROUTINE tea_pack_message_left(x_min,x_max,y_min,y_max,field,                &
     y_inc=1
   ENDIF
 
-!$OMP PARALLEL DO PRIVATE(index)
+!$OMP DO
   DO k=y_min-depth,y_max+y_inc+depth
     DO j=1,depth
       index=buffer_offset + j+(k+depth-1)*depth
       left_snd_buffer(index)=field(x_min+x_inc-1+j,k)
     ENDDO
   ENDDO
-!$OMP END PARALLEL DO
+!$OMP END DO NOWAIT
 
 END SUBROUTINE tea_pack_message_left
 
@@ -104,14 +104,14 @@ SUBROUTINE tea_unpack_message_left(x_min,x_max,y_min,y_max,field,               
     y_inc=1
   ENDIF
 
-!$OMP PARALLEL DO PRIVATE(index)
+!$OMP DO
   DO k=y_min-depth,y_max+y_inc+depth
     DO j=1,depth
       index= buffer_offset + j+(k+depth-1)*depth
       field(x_min-j,k)=left_rcv_buffer(index)
     ENDDO
   ENDDO
-!$OMP END PARALLEL DO
+!$OMP END DO NOWAIT
 
 END SUBROUTINE tea_unpack_message_left
 
@@ -150,14 +150,14 @@ SUBROUTINE tea_pack_message_right(x_min,x_max,y_min,y_max,field,                
     y_inc=1
   ENDIF
 
-!$OMP PARALLEL DO PRIVATE(index)
+!$OMP DO
   DO k=y_min-depth,y_max+y_inc+depth
     DO j=1,depth
       index= buffer_offset + j+(k+depth-1)*depth
       right_snd_buffer(index)=field(x_max+1-j,k)
     ENDDO
   ENDDO
-!$OMP END PARALLEL DO
+!$OMP END DO NOWAIT
 
 END SUBROUTINE tea_pack_message_right
 
@@ -196,14 +196,14 @@ SUBROUTINE tea_unpack_message_right(x_min,x_max,y_min,y_max,field,              
     y_inc=1
   ENDIF
 
-!$OMP PARALLEL DO PRIVATE(index)
+!$OMP DO
   DO k=y_min-depth,y_max+y_inc+depth
     DO j=1,depth
       index= buffer_offset + j+(k+depth-1)*depth
       field(x_max+x_inc+j,k)=right_rcv_buffer(index)
     ENDDO
   ENDDO
-!$OMP END PARALLEL DO
+!$OMP END DO NOWAIT
 
 END SUBROUTINE tea_unpack_message_right
 
@@ -242,14 +242,14 @@ SUBROUTINE tea_pack_message_top(x_min,x_max,y_min,y_max,field,                &
     y_inc=1
   ENDIF
 
+!$OMP DO
   DO k=1,depth
-!$OMP PARALLEL DO PRIVATE(index)
     DO j=x_min-depth,x_max+x_inc+depth
       index= buffer_offset + j+depth+(k-1)*(x_max+x_inc+(2*depth))
       top_snd_buffer(index)=field(j,y_max+1-k)
     ENDDO
-!$OMP END PARALLEL DO
   ENDDO
+!$OMP END DO NOWAIT
 
 END SUBROUTINE tea_pack_message_top
 
@@ -288,14 +288,14 @@ SUBROUTINE tea_unpack_message_top(x_min,x_max,y_min,y_max,field,                
     y_inc=1
   ENDIF
 
+!$OMP DO
   DO k=1,depth
-!$OMP PARALLEL DO PRIVATE(index)
     DO j=x_min-depth,x_max+x_inc+depth
       index= buffer_offset + j + depth+(k-1)*(x_max+x_inc+(2*depth))
       field(j,y_max+y_inc+k)=top_rcv_buffer(index)
     ENDDO
-!$OMP END PARALLEL DO
   ENDDO
+!$OMP END DO NOWAIT
 
 END SUBROUTINE tea_unpack_message_top
 
@@ -334,14 +334,14 @@ SUBROUTINE tea_pack_message_bottom(x_min,x_max,y_min,y_max,field,               
     y_inc=1
   ENDIF
 
-!$OMP PARALLEL DO PRIVATE(index)
+!$OMP DO
   DO k=1,depth
     DO j=x_min-depth,x_max+x_inc+depth
       index= buffer_offset + j+depth+(k-1)*(x_max+x_inc+(2*depth))
       bottom_snd_buffer(index)=field(j,y_min+y_inc-1+k)
     ENDDO
   ENDDO
-!$OMP END PARALLEL DO
+!$OMP END DO NOWAIT
 
 END SUBROUTINE tea_pack_message_bottom
 
@@ -380,14 +380,14 @@ SUBROUTINE tea_unpack_message_bottom(x_min,x_max,y_min,y_max,field,             
     y_inc=1
   ENDIF
 
+!$OMP DO
   DO k=1,depth
-!$OMP PARALLEL DO PRIVATE(index)
     DO j=x_min-depth,x_max+x_inc+depth
       index= buffer_offset + j+depth+(k-1)*(x_max+x_inc+(2*depth))
       field(j,y_min-k)=bottom_rcv_buffer(index)
     ENDDO
-!$OMP END PARALLEL DO
   ENDDO
+!$OMP END DO NOWAIT
 
 END SUBROUTINE tea_unpack_message_bottom
 
