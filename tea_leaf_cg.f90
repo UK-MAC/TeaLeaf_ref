@@ -64,13 +64,10 @@ SUBROUTINE tea_leaf_kernel_init_cg_fortran(x_min,  &
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: cp, bfp, z
 
   INTEGER(KIND=4) :: coef
-  INTEGER(KIND=4) :: j,k,n,s
+  INTEGER(KIND=4) :: j,k
 
   REAL(kind=8) :: rro
   REAL(KIND=8) ::  rx, ry
-
-   INTEGER         ::            CONDUCTIVITY        = 1 &
-                                ,RECIP_CONDUCTIVITY  = 2
 
   rro = 0.0_8
   p = 0.0_8
@@ -142,7 +139,7 @@ SUBROUTINE tea_leaf_kernel_solve_cg_fortran_calc_w(x_min,             &
 
     REAL(KIND=8) ::  rx, ry
 
-    INTEGER(KIND=4) :: j,k,n, ko, upper_k
+    INTEGER(KIND=4) :: j,k, ko, upper_k
     REAL(kind=8) :: pw
 
 !$OMP PARALLEL
@@ -198,10 +195,10 @@ SUBROUTINE tea_leaf_kernel_solve_cg_fortran_calc_ur(x_min,             &
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: Kx, Ky
   REAL(KIND=8) :: rx, ry
 
-    INTEGER(KIND=4) :: j,k,n
+    INTEGER(KIND=4) :: j,k
     REAL(kind=8) :: alpha, rrn
 
-    INTEGER(KIND=4) :: ko, jo, ki, upper_j, upper_k
+    INTEGER(KIND=4) :: ko, upper_k
 
 !$OMP PARALLEL
 !$OMP DO
@@ -269,9 +266,7 @@ SUBROUTINE tea_leaf_kernel_solve_cg_fortran_calc_p(x_min,             &
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: p, r
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: z
 
-    REAL(kind=8) :: error
-
-    INTEGER(KIND=4) :: j,k,n
+    INTEGER(KIND=4) :: j,k
     REAL(kind=8) :: beta
 
 !$OMP PARALLEL

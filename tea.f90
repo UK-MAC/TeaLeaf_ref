@@ -131,10 +131,8 @@ SUBROUTINE tea_decompose(x_cells,y_cells,left,right,bottom,top)
   INTEGER, dimension(1:), contiguous :: left,right,top,bottom
   INTEGER :: c,delta_x,delta_y
 
-  REAL(KIND=8) :: mesh_ratio,factor_x,factor_y
-  INTEGER  :: chunk_x,chunk_y,mod_x,mod_y,split_found
-
-  INTEGER  :: cx,cy,chunk,add_x,add_y,add_x_prev,add_y_prev
+  REAL(KIND=8) :: mesh_ratio
+  INTEGER  :: chunk_x,chunk_y,mod_x,mod_y
 
   INTEGER  :: err
 
@@ -556,7 +554,7 @@ SUBROUTINE tea_pack_right(chunk, fields, depth, right_snd_buffer, left_right_off
 
   IMPLICIT NONE
 
-  INTEGER        :: chunk, fields(:), depth, tot_packr, left_right_offset(:)
+  INTEGER        :: chunk, fields(:), depth, left_right_offset(:)
   REAL(KIND=8)    :: right_snd_buffer(:)
 
 !$OMP PARALLEL
@@ -671,7 +669,7 @@ SUBROUTINE tea_unpack_right(chunk, fields, depth, right_rcv_buffer, left_right_o
 
   IMPLICIT NONE
 
-  INTEGER         :: fields(:), chunk, total_in_right_buff, depth, left_right_offset(:)
+  INTEGER         :: fields(:), chunk, depth, left_right_offset(:)
   REAL(KIND=8)    :: right_rcv_buffer(:)
 
 !$OMP PARALLEL
@@ -878,7 +876,7 @@ SUBROUTINE tea_unpack_top(chunk, fields, depth, top_rcv_buffer, bottom_top_offse
 
   IMPLICIT NONE
 
-  INTEGER         :: fields(:), chunk, total_in_top_buff, depth, bottom_top_offset(:)
+  INTEGER         :: fields(:), chunk, depth, bottom_top_offset(:)
   REAL(KIND=8)    :: top_rcv_buffer(:)
 
 !$OMP PARALLEL
@@ -970,7 +968,7 @@ SUBROUTINE tea_pack_bottom(chunk, fields, depth, bottom_snd_buffer, bottom_top_o
 
   IMPLICIT NONE
 
-  INTEGER        :: chunk, fields(:), depth, tot_packb, bottom_top_offset(:)
+  INTEGER        :: chunk, fields(:), depth, bottom_top_offset(:)
   REAL(KIND=8)    :: bottom_snd_buffer(:)
 
 !$OMP PARALLEL

@@ -42,8 +42,6 @@ MODULE update_halo_kernel_module
 CONTAINS
 
   SUBROUTINE update_halo_kernel(x_min,x_max,y_min,y_max,                            &
-                        left,bottom,right,top,                                      &
-                        left_boundary,bottom_boundary,right_boundary,top_boundary,  &
                         chunk_neighbours,                                           &
                         density,                                                    &
                         energy0,                                                    &
@@ -56,8 +54,6 @@ CONTAINS
   IMPLICIT NONE
 
   INTEGER :: x_min,x_max,y_min,y_max
-  INTEGER :: left,bottom,right,top
-  INTEGER :: left_boundary,bottom_boundary,right_boundary,top_boundary
   INTEGER, DIMENSION(4) :: chunk_neighbours
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: density,energy0,energy1
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: u, p, sd
