@@ -109,25 +109,6 @@ SUBROUTINE update_halo_cell(x_min,x_max,y_min,y_max,    &
 
   INTEGER :: j,k
 
-    IF(chunk_neighbours(CHUNK_BOTTOM).EQ.EXTERNAL_FACE) THEN
-!$OMP DO
-      DO k=1,depth
-        DO j=x_min-depth,x_max+depth
-          mesh(j,1-k)=mesh(j,0+k)
-        ENDDO
-      ENDDO
-!$OMP END DO NOWAIT
-    ENDIF
-    IF(chunk_neighbours(CHUNK_TOP).EQ.EXTERNAL_FACE) THEN
-!$OMP DO
-      DO k=1,depth
-        DO j=x_min-depth,x_max+depth
-          mesh(j,y_max+k)=mesh(j,y_max+1-k)
-        ENDDO
-      ENDDO
-!$OMP END DO NOWAIT
-    ENDIF
-!$OMP BARRIER
     IF(chunk_neighbours(CHUNK_LEFT).EQ.EXTERNAL_FACE) THEN
 !$OMP DO
       DO k=y_min-depth,y_max+depth
@@ -146,7 +127,26 @@ SUBROUTINE update_halo_cell(x_min,x_max,y_min,y_max,    &
       ENDDO
 !$OMP END DO NOWAIT
     ENDIF
+!$OMP BARRIER
+    IF(chunk_neighbours(CHUNK_BOTTOM).EQ.EXTERNAL_FACE) THEN
+!$OMP DO
+      DO k=1,depth
+        DO j=x_min-depth,x_max+depth
+          mesh(j,1-k)=mesh(j,0+k)
+        ENDDO
+      ENDDO
+!$OMP END DO NOWAIT
+    ENDIF
+    IF(chunk_neighbours(CHUNK_TOP).EQ.EXTERNAL_FACE) THEN
+!$OMP DO
+      DO k=1,depth
+        DO j=x_min-depth,x_max+depth
+          mesh(j,y_max+k)=mesh(j,y_max+1-k)
+        ENDDO
+      ENDDO
+!$OMP END DO NOWAIT
+    ENDIF
 
 END SUBROUTINE update_halo_cell
 
-END  MODULE update_halo_kernel_module
+END MODULE update_halo_kernel_module
