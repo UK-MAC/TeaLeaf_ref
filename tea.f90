@@ -131,7 +131,6 @@ SUBROUTINE tea_decompose(x_cells,y_cells,left,right,bottom,top)
   INTEGER, dimension(1:), contiguous :: left,right,top,bottom
   INTEGER :: c,delta_x,delta_y
 
-  REAL(KIND=8) :: mesh_ratio
   INTEGER  :: chunk_x,chunk_y,mod_x,mod_y
 
   INTEGER  :: err
@@ -183,11 +182,9 @@ SUBROUTINE tea_decompose(x_cells,y_cells,left,right,bottom,top)
     top(c) = top(c) + 1
   endif
 
-  mesh_ratio=real(x_cells)/real(y_cells)
-
   IF(parallel%boss)THEN
     WRITE(g_out,*)
-    WRITE(g_out,*)"Mesh ratio of ",mesh_ratio
+    WRITE(g_out,*)"Mesh ratio of ",REAL(x_cells)/REAL(y_cells)
     WRITE(g_out,*)"Decomposing the mesh into ",chunk_x," by ",chunk_y," chunks"
     WRITE(g_out,*)
   ENDIF

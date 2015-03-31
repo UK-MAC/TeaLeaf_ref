@@ -79,12 +79,7 @@ SUBROUTINE tea_leaf_kernel_cheby_init(x_min,  &
     ENDDO
 !$OMP END DO
 
-    call tea_block_init(x_min, x_max, y_min, y_max,             &
-                           cp,                     &
-                           bfp,                     &
-                           Kx, Ky, rx, ry)
-
-    call tea_block_solve(x_min, x_max, y_min, y_max,             &
+    CALL tea_block_solve(x_min, x_max, y_min, y_max,             &
                         r, z,                 &
                            cp,                     &
                            bfp,                     &
@@ -180,7 +175,7 @@ SUBROUTINE tea_leaf_kernel_cheby_iterate(x_min, &
     ENDDO
 !$OMP END DO
 
-    call tea_block_solve(x_min, x_max, y_min, y_max,             &
+    CALL tea_block_solve(x_min, x_max, y_min, y_max,             &
                         r, z,                 &
                            cp,                     &
                            bfp,                     &

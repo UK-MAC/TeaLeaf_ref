@@ -79,12 +79,12 @@ SUBROUTINE tea_leaf_kernel_init_cg_fortran(x_min,  &
 !$OMP PARALLEL
   IF (preconditioner_on) then
 
-    call tea_block_init(x_min, x_max, y_min, y_max,             &
+    CALL tea_block_init(x_min, x_max, y_min, y_max,             &
                            cp,                     &
                            bfp,                     &
                            Kx, Ky, rx, ry)
 
-    call tea_block_solve(x_min, x_max, y_min, y_max,             &
+    CALL tea_block_solve(x_min, x_max, y_min, y_max,             &
                         r, z,                 &
                            cp,                     &
                            bfp,                     &
@@ -139,15 +139,12 @@ SUBROUTINE tea_leaf_kernel_solve_cg_fortran_calc_w(x_min,             &
 
     REAL(KIND=8) ::  rx, ry
 
-    INTEGER(KIND=4) :: j,k, ko, upper_k
+    INTEGER(KIND=4) :: j,k
     REAL(kind=8) :: pw
 
 !$OMP PARALLEL
-!$OMP DO REDUCTION(+:pw) private(upper_k)
-    !DO k=y_min,y_max
-    DO ko=y_min, y_max, kstep
-        upper_k = min(ko+kstep - 1, y_max)
-        do k=ko,upper_k
+!$OMP DO REDUCTION(+:pw)
+    DO k=y_min,y_max
         DO j=x_min,x_max
             w(j, k) = (1.0_8                                      &
                 + ry*(Ky(j, k+1) + Ky(j, k))                      &
@@ -156,7 +153,6 @@ SUBROUTINE tea_leaf_kernel_solve_cg_fortran_calc_w(x_min,             &
                 - rx*(Kx(j+1, k)*p(j+1, k) + Kx(j, k)*p(j-1, k))
 
             pw = pw + w(j, k)*p(j, k)
-        ENDDO
         ENDDO
     ENDDO
 !$OMP END DO
@@ -198,8 +194,6 @@ SUBROUTINE tea_leaf_kernel_solve_cg_fortran_calc_ur(x_min,             &
     INTEGER(KIND=4) :: j,k
     REAL(kind=8) :: alpha, rrn
 
-    INTEGER(KIND=4) :: ko, upper_k
-
 !$OMP PARALLEL
 !$OMP DO
     DO k=y_min,y_max
@@ -211,18 +205,15 @@ SUBROUTINE tea_leaf_kernel_solve_cg_fortran_calc_ur(x_min,             &
 
   IF (preconditioner_on) THEN
 
-!$OMP DO PRIVATE(j, ko, k)
-    DO ko=y_min, y_max, kstep
-        upper_k = min(ko+kstep - 1, y_max)
-        do k=ko,upper_k
-          DO j=x_min,x_max
-            r(j, k) = r(j, k) - alpha*w(j, k)
-          enddo
+!$OMP DO
+    DO k=y_min, y_max
+      DO j=x_min,x_max
+        r(j, k) = r(j, k) - alpha*w(j, k)
       ENDDO
     ENDDO
 !$OMP END DO
 
-    call tea_block_solve(x_min, x_max, y_min, y_max,             &
+    CALL tea_block_solve(x_min, x_max, y_min, y_max,             &
                         r, z,                 &
                         cp,                     &
                         bfp,                     &

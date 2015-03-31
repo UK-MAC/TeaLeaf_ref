@@ -2,7 +2,7 @@ MODULE tea_leaf_kernel_common_module
 
 IMPLICIT NONE
 
-    integer, parameter::stride = 4
+    integer, private, parameter::stride = 4
 
     INTEGER(KIND=4), parameter :: block_size=4
     INTEGER(KIND=4), parameter :: kstep = block_size*stride
@@ -217,10 +217,10 @@ subroutine tea_block_init(x_min,             &
     DO ko=y_min,y_max,stride
 
       bottom = ko
-      top = min(ko + stride - 1, y_max)
+      top = MIN(ko + stride - 1, y_max)
 
 !$OMP SIMD
-      do j=x_min, x_max
+      DO j=x_min, x_max
         k = bottom
         cp(j,k) = COEF_C/COEF_B
 
@@ -228,13 +228,13 @@ subroutine tea_block_init(x_min,             &
             bfp(j, k) = 1.0_8/(COEF_B - COEF_A*cp(j, k-1))
             cp(j, k) = COEF_C*bfp(j, k)
         ENDDO
-      enddo
+      ENDDO
     ENDDO
 !$OMP END DO
 
-end subroutine
+END SUBROUTINE
 
-subroutine tea_block_solve(x_min,             &
+SUBROUTINE tea_block_solve(x_min,             &
                            x_max,             &
                            y_min,             &
                            y_max,             &
@@ -253,18 +253,18 @@ subroutine tea_block_solve(x_min,             &
   REAL(KIND=8) :: rx, ry
   REAL(KIND=8), dimension(0:stride-1) :: dp_l, z_l
 
-  k_extra = y_max - mod(y_max, kstep)
+  k_extra = y_max - MOD(y_max, kstep)
 
 !$OMP DO
     DO ko=y_min, k_extra, kstep
       upper_k = ko+kstep - stride
 
-      do ki=ko,upper_k,stride
+      DO ki=ko,upper_k,stride
         bottom = ki
         top = ki+stride - 1
 
 !$OMP SIMD PRIVATE(dp_l, z_l)
-        do j=x_min,x_max
+        DO j=x_min,x_max
           k = bottom
           dp_l(k-bottom) = r(j, k)/COEF_B
 
@@ -282,18 +282,18 @@ subroutine tea_block_solve(x_min,             &
           DO k=bottom,top
             z(j, k) = z_l(k-bottom)
           ENDDO
-        enddo
-      enddo
+        ENDDO
+      ENDDO
     ENDDO
 !$OMP END DO
 
 !$OMP DO
     DO ki=k_extra+1, y_max, stride
-      bottom = min(ki, y_max)
-      top = min(ki+stride-1, y_max)
+      bottom = MIN(ki, y_max)
+      top = MIN(ki+stride-1, y_max)
 
 !$OMP SIMD PRIVATE(dp_l, z_l)
-      do j=x_min,x_max
+      DO j=x_min,x_max
         k = bottom
         dp_l(k-bottom) = r(j, k)/COEF_B
 
@@ -311,11 +311,11 @@ subroutine tea_block_solve(x_min,             &
         DO k=bottom,top
           z(j, k) = z_l(k-bottom)
         ENDDO
-      enddo
+      ENDDO
     ENDDO
 !$OMP END DO
 
-end subroutine
+END SUBROUTINE
 
 END MODULE tea_leaf_kernel_common_module
 

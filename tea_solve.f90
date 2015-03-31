@@ -358,11 +358,11 @@ SUBROUTINE tea_leaf()
                   chunks(c)%field%vector_Mi,                                      &
                   chunks(c)%field%vector_w,                                       &
                   chunks(c)%field%vector_z,                                       &
-              chunks(c)%field%tri_cp,   &
-              chunks(c)%field%tri_bfp,    &
-              chunks(c)%field%vector_Kx,                              &
-              chunks(c)%field%vector_Ky,                              &
-              rx, ry, &
+                  chunks(c)%field%tri_cp,   &
+                  chunks(c)%field%tri_bfp,    &
+                  chunks(c)%field%vector_Kx,                              &
+                  chunks(c)%field%vector_Ky,                              &
+                  rx, ry, &
                   alpha, rrn, tl_preconditioner_on)
             ENDIF
 
@@ -442,11 +442,11 @@ SUBROUTINE tea_leaf()
                 chunks(c)%field%vector_Mi,                                      &
                 chunks(c)%field%vector_w,                                       &
                 chunks(c)%field%vector_z,                                       &
-              chunks(c)%field%tri_cp,   &
-              chunks(c)%field%tri_bfp,    &
-              chunks(c)%field%vector_Kx,                              &
-              chunks(c)%field%vector_Ky,                              &
-              rx, ry, &
+                chunks(c)%field%tri_cp,   &
+                chunks(c)%field%tri_bfp,    &
+                chunks(c)%field%vector_Kx,                              &
+                chunks(c)%field%vector_Ky,                              &
+                rx, ry, &
                 alpha, rrn, tl_preconditioner_on)
           ENDIF
 
@@ -637,8 +637,8 @@ SUBROUTINE tea_leaF_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
         chunks(c)%field%y_min,                              &
         chunks(c)%field%y_max,                              &
         chunks(c)%field%vector_r,                           &
-          chunks(c)%field%vector_Kx,                        &
-          chunks(c)%field%vector_Ky,                        &
+        chunks(c)%field%vector_Kx,                        &
+        chunks(c)%field%vector_Ky,                        &
         chunks(c)%field%vector_sd,                          &
         chunks(c)%field%vector_z,                          &
         chunks(c)%field%tri_cp,                          &
@@ -667,9 +667,9 @@ SUBROUTINE tea_leaF_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
           chunks(c)%field%vector_Kx,                        &
           chunks(c)%field%vector_Ky,                        &
           chunks(c)%field%vector_sd,                        &
-        chunks(c)%field%vector_z,                          &
-        chunks(c)%field%tri_cp,                          &
-        chunks(c)%field%tri_bfp,                          &
+          chunks(c)%field%vector_z,                          &
+          chunks(c)%field%tri_cp,                          &
+          chunks(c)%field%tri_bfp,                          &
           tl_preconditioner_on)
     ENDIF
   ENDDO
