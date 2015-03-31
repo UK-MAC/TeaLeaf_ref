@@ -171,7 +171,6 @@ SUBROUTINE read_input()
       CASE('tl_ch_cg_errswitch')
         tl_ch_cg_errswitch = .TRUE.
       CASE('tl_preconditioner_type')
-        tl_preconditioner_type = .TRUE.
         DO
           word=parse_getword(.FALSE.)
           IF(word.EQ.'') EXIT

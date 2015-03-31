@@ -368,7 +368,7 @@ SUBROUTINE tea_block_solve(x_min,             &
         ENDDO
       ENDDO
     ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
 
 !$OMP DO
     DO ki=k_extra+1, y_max, jac_block_size
