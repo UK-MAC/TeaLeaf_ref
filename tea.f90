@@ -87,12 +87,12 @@ SUBROUTINE tea_init_comms
   CALL MPI_COMM_SIZE(mpi_comm_world,size,err)
 
   ! Create comm and get coords
-  call mpi_dims_create(size, 2, mpi_dims, err)
-  call mpi_cart_create(mpi_comm_world, 2, mpi_dims, periodic, 1, mpi_cart_comm, err)
+  CALL MPI_DIMS_CREATE(size, 2, mpi_dims, err)
+  CALL MPI_CART_CREATE(mpi_comm_world, 2, mpi_dims, periodic, 1, mpi_cart_comm, err)
 
   CALL MPI_COMM_RANK(mpi_cart_comm,rank,err)
   CALL MPI_COMM_SIZE(mpi_cart_comm,size,err)
-  call mpi_cart_coords(mpi_cart_comm, rank, 2, mpi_coords, err)
+  CALL MPI_CART_COORDS(mpi_cart_comm, rank, 2, mpi_coords, err)
 
   parallel%parallel=.TRUE.
   parallel%task=rank
@@ -128,13 +128,10 @@ SUBROUTINE tea_decompose(x_cells,y_cells,left,right,bottom,top)
   IMPLICIT NONE
 
   INTEGER :: x_cells,y_cells
-  INTEGER, dimension(1:), contiguous :: left,right,top,bottom
+  INTEGER, dimension(1:) :: left,right,top,bottom
   INTEGER :: c,delta_x,delta_y
 
-  REAL(KIND=8) :: mesh_ratio,factor_x,factor_y
-  INTEGER  :: chunk_x,chunk_y,mod_x,mod_y,split_found
-
-  INTEGER  :: cx,cy,chunk,add_x,add_y,add_x_prev,add_y_prev
+  INTEGER  :: chunk_x,chunk_y,mod_x,mod_y
 
   INTEGER  :: err
 
@@ -142,11 +139,11 @@ SUBROUTINE tea_decompose(x_cells,y_cells,left,right,bottom,top)
   c = 1
 
   ! Get destinations/sources
-  call mpi_cart_shift(mpi_cart_comm, 0, 1,      &
+  CALL mpi_cart_shift(mpi_cart_comm, 0, 1,      &
     chunks(c)%chunk_neighbours(chunk_bottom),   &
     chunks(c)%chunk_neighbours(chunk_top),      &
     err)
-  call mpi_cart_shift(mpi_cart_comm, 1, 1,      &
+  CALL mpi_cart_shift(mpi_cart_comm, 1, 1,      &
     chunks(c)%chunk_neighbours(chunk_left),     &
     chunks(c)%chunk_neighbours(chunk_right),    &
     err)
@@ -185,11 +182,9 @@ SUBROUTINE tea_decompose(x_cells,y_cells,left,right,bottom,top)
     top(c) = top(c) + 1
   endif
 
-  mesh_ratio=real(x_cells)/real(y_cells)
-
   IF(parallel%boss)THEN
     WRITE(g_out,*)
-    WRITE(g_out,*)"Mesh ratio of ",mesh_ratio
+    WRITE(g_out,*)"Mesh ratio of ",REAL(x_cells)/REAL(y_cells)
     WRITE(g_out,*)"Decomposing the mesh into ",chunk_x," by ",chunk_y," chunks"
     WRITE(g_out,*)
   ENDIF
@@ -556,7 +551,7 @@ SUBROUTINE tea_pack_right(chunk, fields, depth, right_snd_buffer, left_right_off
 
   IMPLICIT NONE
 
-  INTEGER        :: chunk, fields(:), depth, tot_packr, left_right_offset(:)
+  INTEGER        :: chunk, fields(:), depth, left_right_offset(:)
   REAL(KIND=8)    :: right_snd_buffer(:)
 
 !$OMP PARALLEL
@@ -671,7 +666,7 @@ SUBROUTINE tea_unpack_right(chunk, fields, depth, right_rcv_buffer, left_right_o
 
   IMPLICIT NONE
 
-  INTEGER         :: fields(:), chunk, total_in_right_buff, depth, left_right_offset(:)
+  INTEGER         :: fields(:), chunk, depth, left_right_offset(:)
   REAL(KIND=8)    :: right_rcv_buffer(:)
 
 !$OMP PARALLEL
@@ -878,7 +873,7 @@ SUBROUTINE tea_unpack_top(chunk, fields, depth, top_rcv_buffer, bottom_top_offse
 
   IMPLICIT NONE
 
-  INTEGER         :: fields(:), chunk, total_in_top_buff, depth, bottom_top_offset(:)
+  INTEGER         :: fields(:), chunk, depth, bottom_top_offset(:)
   REAL(KIND=8)    :: top_rcv_buffer(:)
 
 !$OMP PARALLEL
@@ -970,7 +965,7 @@ SUBROUTINE tea_pack_bottom(chunk, fields, depth, bottom_snd_buffer, bottom_top_o
 
   IMPLICIT NONE
 
-  INTEGER        :: chunk, fields(:), depth, tot_packb, bottom_top_offset(:)
+  INTEGER        :: chunk, fields(:), depth, bottom_top_offset(:)
   REAL(KIND=8)    :: bottom_snd_buffer(:)
 
 !$OMP PARALLEL

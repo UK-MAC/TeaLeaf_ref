@@ -112,7 +112,10 @@ SUBROUTINE tea_leaf()
             chunks(c)%field%vector_w,                               &
             chunks(c)%field%vector_Kx,                              &
             chunks(c)%field%vector_Ky,                              &
-            rx, ry, coefficient)
+            chunks(c)%field%tri_cp,   &
+            chunks(c)%field%tri_bfp,    &
+            chunks(c)%field%vector_Mi,    &
+            rx, ry, tl_preconditioner_type, coefficient)
       ENDIF
 
       fields=0
@@ -172,7 +175,7 @@ SUBROUTINE tea_leaf()
               chunks(c)%field%vector_Ky,                              &
               chunks(c)%field%tri_cp,   &
               chunks(c)%field%tri_bfp,    &
-              rx, ry, rro, coefficient, tl_preconditioner_on)
+              rx, ry, rro, tl_preconditioner_type)
         ENDIF
 
         ! need to update p when using CG due to matrix/vector multiplication
@@ -281,7 +284,7 @@ SUBROUTINE tea_leaf()
                                   chunks(c)%field%tri_cp,   &
                                   chunks(c)%field%tri_bfp,    &
                                   ch_alphas, ch_betas, max_cheby_iters,        &
-                                  rx, ry, cheby_calc_steps, tl_preconditioner_on)
+                                  rx, ry, cheby_calc_steps, tl_preconditioner_type)
                   ENDIF
 
                   ! after estimated number of iterations has passed, calc resid.
@@ -358,12 +361,12 @@ SUBROUTINE tea_leaf()
                   chunks(c)%field%vector_Mi,                                      &
                   chunks(c)%field%vector_w,                                       &
                   chunks(c)%field%vector_z,                                       &
-              chunks(c)%field%tri_cp,   &
-              chunks(c)%field%tri_bfp,    &
-              chunks(c)%field%vector_Kx,                              &
-              chunks(c)%field%vector_Ky,                              &
-              rx, ry, &
-                  alpha, rrn, tl_preconditioner_on)
+                  chunks(c)%field%tri_cp,   &
+                  chunks(c)%field%tri_bfp,    &
+                  chunks(c)%field%vector_Kx,                              &
+                  chunks(c)%field%vector_Ky,                              &
+                  rx, ry, &
+                  alpha, rrn, tl_preconditioner_type)
             ENDIF
 
             ! not using rrn, so don't do a tea_allsum
@@ -378,7 +381,7 @@ SUBROUTINE tea_leaf()
                     chunks(c)%field%y_max,                           &
                     chunks(c)%field%vector_z,                        &
                     chunks(c)%field%vector_r,                        &
-                    tl_preconditioner_on, rrn)
+                    tl_preconditioner_type, rrn)
             ENDIF
 
             IF (profiler_on) dot_product_time=timer()
@@ -396,7 +399,7 @@ SUBROUTINE tea_leaf()
                   chunks(c)%field%vector_p,                                      &
                   chunks(c)%field%vector_r,                                      &
                   chunks(c)%field%vector_z,                                      &
-                  beta, tl_preconditioner_on)
+                  beta, tl_preconditioner_type)
             ENDIF
 
             error = rrn
@@ -442,12 +445,12 @@ SUBROUTINE tea_leaf()
                 chunks(c)%field%vector_Mi,                                      &
                 chunks(c)%field%vector_w,                                       &
                 chunks(c)%field%vector_z,                                       &
-              chunks(c)%field%tri_cp,   &
-              chunks(c)%field%tri_bfp,    &
-              chunks(c)%field%vector_Kx,                              &
-              chunks(c)%field%vector_Ky,                              &
-              rx, ry, &
-                alpha, rrn, tl_preconditioner_on)
+                chunks(c)%field%tri_cp,   &
+                chunks(c)%field%tri_bfp,    &
+                chunks(c)%field%vector_Kx,                              &
+                chunks(c)%field%vector_Ky,                              &
+                rx, ry, &
+                alpha, rrn, tl_preconditioner_type)
           ENDIF
 
           IF (profiler_on) dot_product_time=timer()
@@ -465,7 +468,7 @@ SUBROUTINE tea_leaf()
                 chunks(c)%field%vector_p,                                      &
                 chunks(c)%field%vector_r,                                      &
                 chunks(c)%field%vector_z,                                      &
-                beta, tl_preconditioner_on)
+                beta, tl_preconditioner_type)
           ENDIF
 
           error = rrn
@@ -637,14 +640,15 @@ SUBROUTINE tea_leaF_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
         chunks(c)%field%y_min,                              &
         chunks(c)%field%y_max,                              &
         chunks(c)%field%vector_r,                           &
-          chunks(c)%field%vector_Kx,                        &
-          chunks(c)%field%vector_Ky,                        &
+        chunks(c)%field%vector_Kx,                        &
+        chunks(c)%field%vector_Ky,                        &
         chunks(c)%field%vector_sd,                          &
         chunks(c)%field%vector_z,                          &
         chunks(c)%field%tri_cp,                          &
         chunks(c)%field%tri_bfp,                          &
+        chunks(c)%field%vector_Mi,                          &
         rx, ry,                          &
-        theta, tl_preconditioner_on)
+        theta, tl_preconditioner_type)
   ENDIF
 
   fields = 0
@@ -667,10 +671,11 @@ SUBROUTINE tea_leaF_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
           chunks(c)%field%vector_Kx,                        &
           chunks(c)%field%vector_Ky,                        &
           chunks(c)%field%vector_sd,                        &
-        chunks(c)%field%vector_z,                          &
-        chunks(c)%field%tri_cp,                          &
-        chunks(c)%field%tri_bfp,                          &
-          tl_preconditioner_on)
+          chunks(c)%field%vector_z,                          &
+          chunks(c)%field%tri_cp,                          &
+          chunks(c)%field%tri_bfp,                          &
+          chunks(c)%field%vector_Mi,                          &
+          tl_preconditioner_type)
     ENDIF
   ENDDO
 
@@ -722,7 +727,7 @@ SUBROUTINE tea_leaf_cheby_first_step(c, ch_alphas, ch_betas, fields, &
           chunks(c)%field%tri_cp,   &
           chunks(c)%field%tri_bfp,    &
           ch_alphas, ch_betas, max_cheby_iters,           &
-          rx, ry, theta, error, tl_preconditioner_on)
+          rx, ry, theta, error, tl_preconditioner_type)
   ENDIF
 
   CALL update_halo(fields,1)
@@ -744,7 +749,7 @@ SUBROUTINE tea_leaf_cheby_first_step(c, ch_alphas, ch_betas, fields, &
           chunks(c)%field%tri_cp,   &
           chunks(c)%field%tri_bfp,    &
           ch_alphas, ch_betas, max_cheby_iters,                &
-          rx, ry, 1, tl_preconditioner_on)
+          rx, ry, 1, tl_preconditioner_type)
   ENDIF
 
   IF(use_fortran_kernels) THEN

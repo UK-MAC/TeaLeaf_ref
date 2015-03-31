@@ -53,7 +53,6 @@ SUBROUTINE generate_chunk_kernel(x_min,x_max,y_min,y_max, &
   INTEGER      :: x_min,x_max,y_min,y_max
   REAL(KIND=8), DIMENSION(x_min-2:x_max+3) :: vertexx
   REAL(KIND=8), DIMENSION(y_min-2:y_max+3) :: vertexy
-  REAL(KIND=8), DIMENSION(y_min-2:y_max+3) :: vertexdy
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2) :: cellx
   REAL(KIND=8), DIMENSION(y_min-2:y_max+2) :: celly
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: density,energy0

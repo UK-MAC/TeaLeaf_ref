@@ -42,8 +42,6 @@ MODULE update_halo_kernel_module
 CONTAINS
 
   SUBROUTINE update_halo_kernel(x_min,x_max,y_min,y_max,                            &
-                        left,bottom,right,top,                                      &
-                        left_boundary,bottom_boundary,right_boundary,top_boundary,  &
                         chunk_neighbours,                                           &
                         density,                                                    &
                         energy0,                                                    &
@@ -56,8 +54,6 @@ CONTAINS
   IMPLICIT NONE
 
   INTEGER :: x_min,x_max,y_min,y_max
-  INTEGER :: left,bottom,right,top
-  INTEGER :: left_boundary,bottom_boundary,right_boundary,top_boundary
   INTEGER, DIMENSION(4) :: chunk_neighbours
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: density,energy0,energy1
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: u, p, sd
@@ -113,25 +109,6 @@ SUBROUTINE update_halo_cell(x_min,x_max,y_min,y_max,    &
 
   INTEGER :: j,k
 
-    IF(chunk_neighbours(CHUNK_BOTTOM).EQ.EXTERNAL_FACE) THEN
-!$OMP DO COLLAPSE(2)
-      DO k=1,depth
-        DO j=x_min-depth,x_max+depth
-          mesh(j,1-k)=mesh(j,0+k)
-        ENDDO
-      ENDDO
-!$OMP END DO NOWAIT
-    ENDIF
-    IF(chunk_neighbours(CHUNK_TOP).EQ.EXTERNAL_FACE) THEN
-!$OMP DO COLLAPSE(2)
-      DO k=1,depth
-        DO j=x_min-depth,x_max+depth
-          mesh(j,y_max+k)=mesh(j,y_max+1-k)
-        ENDDO
-      ENDDO
-!$OMP END DO NOWAIT
-    ENDIF
-!$OMP BARRIER
     IF(chunk_neighbours(CHUNK_LEFT).EQ.EXTERNAL_FACE) THEN
 !$OMP DO COLLAPSE(2)
       DO k=y_min-depth,y_max+depth
@@ -150,8 +127,27 @@ SUBROUTINE update_halo_cell(x_min,x_max,y_min,y_max,    &
       ENDDO
 !$OMP END DO NOWAIT
     ENDIF
+!$OMP BARRIER
+    IF(chunk_neighbours(CHUNK_BOTTOM).EQ.EXTERNAL_FACE) THEN
+!$OMP DO COLLAPSE(2)
+      DO k=1,depth
+        DO j=x_min-depth,x_max+depth
+          mesh(j,1-k)=mesh(j,0+k)
+        ENDDO
+      ENDDO
+!$OMP END DO NOWAIT
+    ENDIF
+    IF(chunk_neighbours(CHUNK_TOP).EQ.EXTERNAL_FACE) THEN
+!$OMP DO COLLAPSE(2)
+      DO k=1,depth
+        DO j=x_min-depth,x_max+depth
+          mesh(j,y_max+k)=mesh(j,y_max+1-k)
+        ENDDO
+      ENDDO
+!$OMP END DO NOWAIT
+    ENDIF
 
 END SUBROUTINE update_halo_cell
 
-END  MODULE update_halo_kernel_module
+END MODULE update_halo_kernel_module
 

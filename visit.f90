@@ -29,15 +29,12 @@ SUBROUTINE visit
 
   INTEGER :: j,k,c,err,get_unit,u,dummy
   INTEGER :: nxc,nyc,nxv,nyv,nblocks
-  REAL(KIND=8)    :: temp_var
 
   CHARACTER(len=80)           :: name
   CHARACTER(len=10)           :: chunk_name,step_name
   CHARACTER(len=90)           :: filename
 
   LOGICAL, SAVE :: first_call=.TRUE.
-
-  INTEGER :: fields(NUM_FIELDS)
 
   REAL(KIND=8) :: kernel_time,timer
 

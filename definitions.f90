@@ -85,8 +85,9 @@ MODULE definitions_module
    LOGICAL      :: tl_check_result
    ! number of inner steps in ppcg solver
    INTEGER      :: tl_ppcg_inner_steps
-   ! preconditioner is on or not
-   LOGICAL      :: tl_preconditioner_on
+
+   ! Preconditioner option
+   INTEGER      :: tl_preconditioner_type
 
    LOGICAL      :: use_vector_loops ! Some loops work better in serial depending on the hardware
 
