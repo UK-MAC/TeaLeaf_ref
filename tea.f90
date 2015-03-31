@@ -87,12 +87,12 @@ SUBROUTINE tea_init_comms
   CALL MPI_COMM_SIZE(mpi_comm_world,size,err)
 
   ! Create comm and get coords
-  call mpi_dims_create(size, 2, mpi_dims, err)
-  call mpi_cart_create(mpi_comm_world, 2, mpi_dims, periodic, 1, mpi_cart_comm, err)
+  CALL MPI_DIMS_CREATE(size, 2, mpi_dims, err)
+  CALL MPI_CART_CREATE(mpi_comm_world, 2, mpi_dims, periodic, 1, mpi_cart_comm, err)
 
   CALL MPI_COMM_RANK(mpi_cart_comm,rank,err)
   CALL MPI_COMM_SIZE(mpi_cart_comm,size,err)
-  call mpi_cart_coords(mpi_cart_comm, rank, 2, mpi_coords, err)
+  CALL MPI_CART_COORDS(mpi_cart_comm, rank, 2, mpi_coords, err)
 
   parallel%parallel=.TRUE.
   parallel%task=rank
@@ -128,7 +128,7 @@ SUBROUTINE tea_decompose(x_cells,y_cells,left,right,bottom,top)
   IMPLICIT NONE
 
   INTEGER :: x_cells,y_cells
-  INTEGER, dimension(1:), contiguous :: left,right,top,bottom
+  INTEGER, dimension(1:) :: left,right,top,bottom
   INTEGER :: c,delta_x,delta_y
 
   INTEGER  :: chunk_x,chunk_y,mod_x,mod_y
@@ -139,11 +139,11 @@ SUBROUTINE tea_decompose(x_cells,y_cells,left,right,bottom,top)
   c = 1
 
   ! Get destinations/sources
-  call mpi_cart_shift(mpi_cart_comm, 0, 1,      &
+  CALL mpi_cart_shift(mpi_cart_comm, 0, 1,      &
     chunks(c)%chunk_neighbours(chunk_bottom),   &
     chunks(c)%chunk_neighbours(chunk_top),      &
     err)
-  call mpi_cart_shift(mpi_cart_comm, 1, 1,      &
+  CALL mpi_cart_shift(mpi_cart_comm, 1, 1,      &
     chunks(c)%chunk_neighbours(chunk_left),     &
     chunks(c)%chunk_neighbours(chunk_right),    &
     err)
