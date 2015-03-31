@@ -95,7 +95,7 @@ SUBROUTINE tea_leaf_kernel_ppcg_inner(x_min,             &
   REAL(KIND=8) :: smvp, rx, ry
 
 !$OMP PARALLEL
-!$OMP DO
+!$OMP DO PRIVATE(smvp)
     DO k=y_min,y_max
         DO j=x_min,x_max
             smvp = (1.0_8                                           &
