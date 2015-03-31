@@ -40,11 +40,10 @@ SUBROUTINE tea_leaf_kernel_init_cg_fortran(x_min,  &
                            Kx,                     &
                            Ky,                     &
                            cp,                     &
-                           bfp,                     &
+                           bfp,                    &
                            rx,                     &
                            ry,                     &
                            rro,                    &
-                           coef,                   &
                            preconditioner_on)
 
   IMPLICIT NONE
@@ -63,26 +62,24 @@ SUBROUTINE tea_leaf_kernel_init_cg_fortran(x_min,  &
 
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: cp, bfp, z
 
-  INTEGER(KIND=4) :: coef
   INTEGER(KIND=4) :: j,k
 
   REAL(kind=8) :: rro
   REAL(KIND=8) ::  rx, ry
 
   rro = 0.0_8
-  p = 0.0_8
-
-  cp = 0.0_8
-  bfp = 0.0_8
-  z = 0.0_8
 
 !$OMP PARALLEL
-  IF (preconditioner_on) then
+!$OMP DO
+    DO k=y_min,y_max
+        DO j=x_min,x_max
+            p(j, k) = 0.0_8
+            z(j, k) = 0.0_8
+        ENDDO
+    ENDDO
+!$OMP END DO
 
-    CALL tea_block_init(x_min, x_max, y_min, y_max,             &
-                           cp,                     &
-                           bfp,                     &
-                           Kx, Ky, rx, ry)
+  IF (preconditioner_on) then
 
     CALL tea_block_solve(x_min, x_max, y_min, y_max,             &
                         r, z,                 &

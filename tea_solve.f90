@@ -112,7 +112,9 @@ SUBROUTINE tea_leaf()
             chunks(c)%field%vector_w,                               &
             chunks(c)%field%vector_Kx,                              &
             chunks(c)%field%vector_Ky,                              &
-            rx, ry, coefficient)
+            chunks(c)%field%tri_cp,   &
+            chunks(c)%field%tri_bfp,    &
+            rx, ry, tl_preconditioner_on, coefficient)
       ENDIF
 
       fields=0
@@ -172,7 +174,7 @@ SUBROUTINE tea_leaf()
               chunks(c)%field%vector_Ky,                              &
               chunks(c)%field%tri_cp,   &
               chunks(c)%field%tri_bfp,    &
-              rx, ry, rro, coefficient, tl_preconditioner_on)
+              rx, ry, rro, tl_preconditioner_on)
         ENDIF
 
         ! need to update p when using CG due to matrix/vector multiplication
