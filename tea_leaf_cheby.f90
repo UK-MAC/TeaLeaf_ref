@@ -49,10 +49,10 @@ SUBROUTINE tea_leaf_kernel_cheby_init(x_min,  &
                            ry,                &
                            theta,             &
                            error,             &
-                           preconditioner_on)
+                           preconditioner_type)
   IMPLICIT NONE
 
-  LOGICAL :: preconditioner_on
+  INTEGER :: preconditioner_type
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: u, u0, p
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: w
@@ -65,7 +65,6 @@ SUBROUTINE tea_leaf_kernel_cheby_init(x_min,  &
   REAL(KIND=8), DIMENSION(max_cheby_iters) :: ch_alphas, ch_betas
 
 !$OMP PARALLEL
-  IF (preconditioner_on) THEN
 !$OMP DO
     DO k=y_min,y_max
         DO j=x_min,x_max
@@ -79,11 +78,15 @@ SUBROUTINE tea_leaf_kernel_cheby_init(x_min,  &
     ENDDO
 !$OMP END DO
 
-    CALL tea_block_solve(x_min, x_max, y_min, y_max,             &
-                        r, z,                 &
-                           cp,                     &
-                           bfp,                     &
-                           Kx, Ky, rx, ry)
+  IF (preconditioner_type .NE. TL_PREC_NONE) THEN
+
+    IF (preconditioner_type .EQ. TL_PREC_JAC_BLOCK) THEN
+      CALL tea_block_solve(x_min, x_max, y_min, y_max,             &
+                             r, z, cp, bfp, Kx, Ky, rx, ry)
+    ELSE IF (preconditioner_type .EQ. TL_PREC_JAC_DIAG) THEN
+      CALL tea_diag_solve(x_min, x_max, y_min, y_max,             &
+                             r, z, Mi, Kx, Ky, rx, ry)
+    ENDIF
 
 !$OMP DO
     DO k=y_min,y_max
@@ -91,23 +94,15 @@ SUBROUTINE tea_leaf_kernel_cheby_init(x_min,  &
         p(j, k) = z(j, k)/theta
       ENDDO
     ENDDO
-!$OMP END DO
-
+!$OMP END DO NOWAIT
   ELSE
 !$OMP DO
     DO k=y_min,y_max
         DO j=x_min,x_max
-            w(j, k) = (1.0_8                                      &
-                + ry*(Ky(j, k+1) + Ky(j, k))                      &
-                + rx*(Kx(j+1, k) + Kx(j, k)))*u(j, k)             &
-                - ry*(Ky(j, k+1)*u(j, k+1) + Ky(j, k)*u(j, k-1))  &
-                - rx*(Kx(j+1, k)*u(j+1, k) + Kx(j, k)*u(j-1, k))
-            r(j, k) = u0(j, k) - w(j, k)
-
             p(j, k) = r(j, k)/theta
         ENDDO
     ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
   ENDIF
 !$OMP DO
   DO k=y_min,y_max
@@ -115,7 +110,7 @@ SUBROUTINE tea_leaf_kernel_cheby_init(x_min,  &
           u(j, k) = u(j, k) + p(j, k)
       ENDDO
   ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
 !$OMP END PARALLEL
 
 END SUBROUTINE
@@ -141,11 +136,11 @@ SUBROUTINE tea_leaf_kernel_cheby_iterate(x_min, &
                            rx,                  &
                            ry,                  &
                            step,                &
-                           preconditioner_on)
+                           preconditioner_type)
 
   IMPLICIT NONE
 
-  LOGICAL :: preconditioner_on
+  INTEGER :: preconditioner_type
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: u, u0, p
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: w
@@ -161,7 +156,6 @@ SUBROUTINE tea_leaf_kernel_cheby_iterate(x_min, &
     REAL(KIND=8), DIMENSION(max_cheby_iters) :: ch_alphas, ch_betas
 
 !$OMP PARALLEL
-  IF (preconditioner_on) THEN
 !$OMP DO
     DO k=y_min,y_max
         DO j=x_min,x_max
@@ -175,41 +169,39 @@ SUBROUTINE tea_leaf_kernel_cheby_iterate(x_min, &
     ENDDO
 !$OMP END DO
 
-    CALL tea_block_solve(x_min, x_max, y_min, y_max,             &
-                        r, z,                 &
-                           cp,                     &
-                           bfp,                     &
-                           Kx, Ky, rx, ry)
+  IF (preconditioner_type .NE. TL_PREC_NONE) THEN
+
+    IF (preconditioner_type .EQ. TL_PREC_JAC_BLOCK) THEN
+      CALL tea_block_solve(x_min, x_max, y_min, y_max,             &
+                             r, z, cp, bfp, Kx, Ky, rx, ry)
+    ELSE IF (preconditioner_type .EQ. TL_PREC_JAC_DIAG) THEN
+      CALL tea_diag_solve(x_min, x_max, y_min, y_max,             &
+                             r, z, Mi, Kx, Ky, rx, ry)
+    ENDIF
 
 !$OMP DO
     DO k=y_min,y_max
-        DO j=x_min,x_max
-            p(j, k) = ch_alphas(step)*p(j, k) + ch_betas(step)*z(j, k)
-        ENDDO
+      DO j=x_min,x_max
+        p(j, k) = ch_alphas(step)*p(j, k) + ch_betas(step)*z(j, k)
+      ENDDO
     ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
   ELSE
 !$OMP DO
     DO k=y_min,y_max
-        DO j=x_min,x_max
-            w(j, k) = (1.0_8                                      &
-                + ry*(Ky(j, k+1) + Ky(j, k))                      &
-                + rx*(Kx(j+1, k) + Kx(j, k)))*u(j, k)             &
-                - ry*(Ky(j, k+1)*u(j, k+1) + Ky(j, k)*u(j, k-1))  &
-                - rx*(Kx(j+1, k)*u(j+1, k) + Kx(j, k)*u(j-1, k))
-            r(j, k) = u0(j, k) - w(j, k)
-            p(j, k) = ch_alphas(step)*p(j, k) + ch_betas(step)*r(j, k)
-        ENDDO
+      DO j=x_min,x_max
+        p(j, k) = ch_alphas(step)*p(j, k) + ch_betas(step)*r(j, k)
+      ENDDO
     ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
   ENDIF
 !$OMP DO
-    DO k=y_min,y_max
-        DO j=x_min,x_max
-            u(j, k) = u(j, k) + p(j, k)
-        ENDDO
-    ENDDO
-!$OMP END DO
+  DO k=y_min,y_max
+      DO j=x_min,x_max
+          u(j, k) = u(j, k) + p(j, k)
+      ENDDO
+  ENDDO
+!$OMP END DO NOWAIT
 !$OMP END PARALLEL
 
 END SUBROUTINE tea_leaf_kernel_cheby_iterate

@@ -68,6 +68,11 @@ MODULE data_module
    INTEGER         ::            CONDUCTIVITY        = 1 &
                                 ,RECIP_CONDUCTIVITY  = 2
 
+   ! 3 different options for preconditioners
+   INTEGER,PARAMETER::           TL_PREC_NONE       = 1 &
+                                ,TL_PREC_JAC_DIAG   = 2 &
+                                ,TL_PREC_JAC_BLOCK  = 3
+
    TYPE parallel_type
       LOGICAL           ::      parallel &
                                ,boss

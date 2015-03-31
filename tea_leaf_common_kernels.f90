@@ -1,11 +1,19 @@
 MODULE tea_leaf_kernel_common_module
 
-IMPLICIT NONE
+  IMPLICIT NONE
 
-    integer, private, parameter::stride = 4
+   ! 3 different options for preconditioners
+   INTEGER,PARAMETER        ::   TL_PREC_NONE       = 1 &
+                                ,TL_PREC_JAC_DIAG   = 2 &
+                                ,TL_PREC_JAC_BLOCK  = 3
 
-    INTEGER(KIND=4), parameter :: block_size=4
-    INTEGER(KIND=4), parameter :: kstep = block_size*stride
+   INTEGER,PRIVATE         ::    CONDUCTIVITY        = 1 &
+                                ,RECIP_CONDUCTIVITY  = 2
+
+  integer, private, parameter:: jac_block_size = 4
+
+  INTEGER(KIND=4), parameter :: block_size=4
+  INTEGER(KIND=4), parameter :: kstep = block_size*jac_block_size
 
 CONTAINS
 
@@ -23,27 +31,25 @@ SUBROUTINE tea_leaf_kernel_init_common(x_min,  &
                            Ky,                     &
                            cp,                     &
                            bfp,                    &
+                           Mi,                     &
                            rx,                     &
                            ry,                     &
-                           preconditioner_on,      &
+                           preconditioner_type,      &
                            coef)
 
   IMPLICIT NONE
 
-  LOGICAL :: preconditioner_on
+  INTEGER :: preconditioner_type
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: density, energy
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: u, u0, r, w, Kx, Ky
 
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: cp, bfp
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: cp, bfp, Mi
 
   INTEGER(KIND=4) :: coef
   INTEGER(KIND=4) :: j,k
 
   REAL(KIND=8) ::  rx, ry
-
-   INTEGER         ::            CONDUCTIVITY        = 1 &
-                                ,RECIP_CONDUCTIVITY  = 2
 
 !$OMP PARALLEL
 !$OMP DO 
@@ -83,14 +89,13 @@ SUBROUTINE tea_leaf_kernel_init_common(x_min,  &
    ENDDO
 !$OMP END DO
 
-IF (preconditioner_on) then
-
+  IF (preconditioner_type .EQ. TL_PREC_JAC_BLOCK) THEN
     CALL tea_block_init(x_min, x_max, y_min, y_max,             &
-                           cp,                     &
-                           bfp,                     &
-                           Kx, Ky, rx, ry)
-
-ENDIF
+                           cp, bfp, Kx, Ky, rx, ry)
+  ELSE IF (preconditioner_type .EQ. TL_PREC_JAC_DIAG) THEN
+    CALL tea_diag_init(x_min, x_max, y_min, y_max,             &
+                           Mi, Kx, Ky, rx, ry)
+  ENDIF
 
 !$OMP DO
     DO k=y_min,y_max
@@ -206,13 +211,67 @@ SUBROUTINE tea_leaf_calc_2norm_kernel(x_min, &
 !$OMP END DO
 !$OMP END PARALLEL
 
-end SUBROUTINE tea_leaf_calc_2norm_kernel
+END SUBROUTINE tea_leaf_calc_2norm_kernel
 
 #define COEF_A (-Ky(j, k)*ry)
 #define COEF_B (1.0_8 + ry*(Ky(j, k+1) + Ky(j, k)) + rx*(Kx(j+1, k) + Kx(j, k)))
 #define COEF_C (-Ky(j, k+1)*ry)
 
-subroutine tea_block_init(x_min,             &
+SUBROUTINE tea_diag_init(x_min,             &
+                         x_max,             &
+                         y_min,             &
+                         y_max,             &
+                         Mi,                &
+                         Kx, Ky, rx, ry)
+
+  IMPLICIT NONE
+
+  INTEGER(KIND=4):: j, k
+  INTEGER(KIND=4):: x_min,x_max,y_min,y_max
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: Kx, Ky
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: Mi
+  REAL(KIND=8) :: rx, ry
+
+!$OMP DO
+    DO k=y_min,y_max
+      DO j=x_min,x_max
+        Mi(j, k) = 1.0_8/(1.0_8                 &
+                + ry*(Ky(j, k+1) + Ky(j, k))    &
+                + rx*(Kx(j+1, k) + Kx(j, k)))
+      ENDDO
+    ENDDO
+!$OMP END DO
+
+END SUBROUTINE
+
+SUBROUTINE tea_diag_solve(x_min,             &
+                         x_max,             &
+                         y_min,             &
+                         y_max,             &
+                         r,                 &
+                         z,                 &
+                         Mi,                &
+                         Kx, Ky, rx, ry)
+
+  IMPLICIT NONE
+
+  INTEGER(KIND=4):: j, k
+  INTEGER(KIND=4):: x_min,x_max,y_min,y_max
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: Kx, Ky, r, z
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: Mi
+  REAL(KIND=8) :: rx, ry
+
+!$OMP DO
+    DO k=y_min,y_max
+      DO j=x_min,x_max
+        z(j, k) = Mi(j, k)*r(j, k)
+      ENDDO
+    ENDDO
+!$OMP END DO NOWAIT
+
+END SUBROUTINE
+
+SUBROUTINE tea_block_init(x_min,             &
                            x_max,             &
                            y_min,             &
                            y_max,             &
@@ -238,10 +297,10 @@ subroutine tea_block_init(x_min,             &
 !$OMP END DO
 
 !$OMP DO
-    DO ko=y_min,y_max,stride
+    DO ko=y_min,y_max,jac_block_size
 
       bottom = ko
-      top = MIN(ko + stride - 1, y_max)
+      top = MIN(ko + jac_block_size - 1, y_max)
 
 !$OMP SIMD
       DO j=x_min, x_max
@@ -275,17 +334,17 @@ SUBROUTINE tea_block_solve(x_min,             &
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: Kx, Ky, r
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: cp, bfp, z
   REAL(KIND=8) :: rx, ry
-  REAL(KIND=8), dimension(0:stride-1) :: dp_l, z_l
+  REAL(KIND=8), dimension(0:jac_block_size-1) :: dp_l, z_l
 
   k_extra = y_max - MOD(y_max, kstep)
 
 !$OMP DO
     DO ko=y_min, k_extra, kstep
-      upper_k = ko+kstep - stride
+      upper_k = ko+kstep - jac_block_size
 
-      DO ki=ko,upper_k,stride
+      DO ki=ko,upper_k,jac_block_size
         bottom = ki
-        top = ki+stride - 1
+        top = ki+jac_block_size - 1
 
 !$OMP SIMD PRIVATE(dp_l, z_l)
         DO j=x_min,x_max
@@ -312,9 +371,9 @@ SUBROUTINE tea_block_solve(x_min,             &
 !$OMP END DO
 
 !$OMP DO
-    DO ki=k_extra+1, y_max, stride
+    DO ki=k_extra+1, y_max, jac_block_size
       bottom = MIN(ki, y_max)
-      top = MIN(ki+stride-1, y_max)
+      top = MIN(ki+jac_block_size-1, y_max)
 
 !$OMP SIMD PRIVATE(dp_l, z_l)
       DO j=x_min,x_max

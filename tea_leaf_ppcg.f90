@@ -18,16 +18,17 @@ SUBROUTINE tea_leaf_kernel_ppcg_init_sd(x_min,             &
                                         z,                &
                                         cp,                &
                                         bfp,                &
+                                        Mi,                &
                                         rx, ry,             &
                                         theta,             &
-                                        preconditioner_on)
+                                        preconditioner_type)
 
   IMPLICIT NONE
 
-  LOGICAL :: preconditioner_on
+  INTEGER :: preconditioner_type
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: r, sd, kx, ky
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: z, cp, bfp
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: z, cp, bfp, Mi
   REAL(KIND=8) :: theta, theta_r, rx, ry
 
   INTEGER :: j,k
@@ -35,30 +36,32 @@ SUBROUTINE tea_leaf_kernel_ppcg_init_sd(x_min,             &
   theta_r = 1.0_8/theta
 
 !$OMP PARALLEL
-  if (preconditioner_on) then
 
-    CALL tea_block_solve(x_min, x_max, y_min, y_max,             &
-                        r, z,                 &
-                        cp,                     &
-                        bfp,                     &
-                        Kx, Ky, rx, ry)
+  IF (preconditioner_type .NE. TL_PREC_NONE) THEN
+    IF (preconditioner_type .EQ. TL_PREC_JAC_BLOCK) THEN
+      CALL tea_block_solve(x_min, x_max, y_min, y_max,             &
+                             r, z, cp, bfp, Kx, Ky, rx, ry)
+    ELSE IF (preconditioner_type .EQ. TL_PREC_JAC_DIAG) THEN
+      CALL tea_diag_solve(x_min, x_max, y_min, y_max,             &
+                             r, z, Mi, Kx, Ky, rx, ry)
+    ENDIF
 
 !$OMP DO
     DO k=y_min,y_max
-        DO j=x_min,x_max
-            sd(j, k) = z(j, k)*theta_r
-        ENDDO
+      DO j=x_min,x_max
+        sd(j, k) = z(j, k)*theta_r
+      ENDDO
     ENDDO
-!$OMP END DO
-  else
+!$OMP END DO NOWAIT
+  ELSE
 !$OMP DO
     DO k=y_min,y_max
-        DO j=x_min,x_max
-            sd(j, k) = r(j, k)*theta_r
-        ENDDO
+      DO j=x_min,x_max
+        sd(j, k) = r(j, k)*theta_r
+      ENDDO
     ENDDO
-!$OMP END DO
-  endif
+!$OMP END DO NOWAIT
+  ENDIF
 !$OMP END PARALLEL
 
 END SUBROUTINE tea_leaf_kernel_ppcg_init_sd
@@ -79,13 +82,14 @@ SUBROUTINE tea_leaf_kernel_ppcg_inner(x_min,             &
                                       z,                &
                                       cp,                &
                                       bfp,                &
-                                      preconditioner_on)
+                                      Mi,                &
+                                      preconditioner_type)
   IMPLICIT NONE
 
-  LOGICAL :: preconditioner_on
+  INTEGER :: preconditioner_type
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: u, r, Kx, Ky, sd
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: z, cp, bfp
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: z, cp, bfp, Mi
   INTEGER(KIND=4) :: j,k, step
   REAL(KIND=8), DIMENSION(:) :: alpha, beta
   REAL(KIND=8) :: smvp, rx, ry
@@ -106,13 +110,14 @@ SUBROUTINE tea_leaf_kernel_ppcg_inner(x_min,             &
     ENDDO
 !$OMP END DO
 
-  if (preconditioner_on) then
-
-    CALL tea_block_solve(x_min, x_max, y_min, y_max,             &
-                        r, z,                 &
-                        cp,                     &
-                        bfp,                     &
-                        Kx, Ky, rx, ry)
+  IF (preconditioner_type .NE. TL_PREC_NONE) THEN
+    IF (preconditioner_type .EQ. TL_PREC_JAC_BLOCK) THEN
+      CALL tea_block_solve(x_min, x_max, y_min, y_max,             &
+                             r, z, cp, bfp, Kx, Ky, rx, ry)
+    ELSE IF (preconditioner_type .EQ. TL_PREC_JAC_DIAG) THEN
+      CALL tea_diag_solve(x_min, x_max, y_min, y_max,             &
+                             r, z, Mi, Kx, Ky, rx, ry)
+    ENDIF
 
 !$OMP DO
     DO k=y_min,y_max
@@ -120,16 +125,16 @@ SUBROUTINE tea_leaf_kernel_ppcg_inner(x_min,             &
             sd(j, k) = alpha(step)*sd(j, k) + beta(step)*z(j, k)
         ENDDO
     ENDDO
-!$OMP END DO
-  else
+!$OMP END DO NOWAIT
+  ELSE
 !$OMP DO
     DO k=y_min,y_max
         DO j=x_min,x_max
             sd(j, k) = alpha(step)*sd(j, k) + beta(step)*r(j, k)
         ENDDO
     ENDDO
-!$OMP END DO
-  endif
+!$OMP END DO NOWAIT
+  ENDIF
 !$OMP END PARALLEL
 
 END SUBROUTINE
@@ -139,12 +144,12 @@ SUBROUTINE tea_leaf_ppcg_calc_zrnorm_kernel(x_min, &
                           y_min,             &
                           y_max,             &
                           z, r,               &
-                          preconditioner_on,    &
+                          preconditioner_type,    &
                           norm)
 
   IMPLICIT NONE
 
-  LOGICAL :: preconditioner_on
+  INTEGER :: preconditioner_type
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: r
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: z
@@ -154,7 +159,7 @@ SUBROUTINE tea_leaf_ppcg_calc_zrnorm_kernel(x_min, &
   norm = 0.0_8
 
 !$OMP PARALLEL
-  if (preconditioner_on) then
+  IF (preconditioner_type .NE. TL_PREC_NONE) THEN
 !$OMP DO REDUCTION(+:norm)
     DO k=y_min,y_max
         DO j=x_min,x_max
@@ -162,7 +167,7 @@ SUBROUTINE tea_leaf_ppcg_calc_zrnorm_kernel(x_min, &
         ENDDO
     ENDDO
 !$OMP END DO
-  else
+  ELSE
 !$OMP DO REDUCTION(+:norm)
     DO k=y_min,y_max
         DO j=x_min,x_max
@@ -170,7 +175,7 @@ SUBROUTINE tea_leaf_ppcg_calc_zrnorm_kernel(x_min, &
         ENDDO
     ENDDO
 !$OMP END DO
-  endif
+  ENDIF
 !$OMP END PARALLEL
 
 end SUBROUTINE tea_leaf_ppcg_calc_zrnorm_kernel

@@ -32,24 +32,28 @@ SUBROUTINE report_error(location, error)
 
   CHARACTER(LEN=*)  :: location, error
 
-  WRITE(*    ,*)
-  WRITE(*    ,*)  'Error from ',location,':'
-  WRITE(*    ,*)  error
-  WRITE(g_out,*)
-  WRITE(g_out,*)  'Error from ',location,':'
-  WRITE(g_out,*)  error
-  WRITE(0    ,*)
-  WRITE(0    ,*)  'Error from ',location,':'
-  WRITE(0    ,*)  error
-  WRITE(*    ,*)
-  WRITE(g_out,*)
-  WRITE(0    ,*)
-  WRITE(*    ,*) 'TEA is terminating.'
-  WRITE(*,    *)
-  WRITE(g_out,*) 'TEA is terminating.'
-  WRITE(g_out,*)
-  WRITE(0    ,*) 'TEA is terminating.'
-  WRITE(0    ,*)
+  IF (parallel%boss) THEN
+    WRITE(*    ,*)
+    WRITE(*    ,*)  'Error from ',location,':'
+    WRITE(*    ,*)  error
+    WRITE(g_out,*)
+    WRITE(g_out,*)  'Error from ',location,':'
+    WRITE(g_out,*)  error
+    WRITE(0    ,*)
+    WRITE(0    ,*)  'Error from ',location,':'
+    WRITE(0    ,*)  error
+
+    WRITE(*    ,*)
+    WRITE(g_out,*)
+    WRITE(0    ,*)
+
+    WRITE(*    ,*) 'TEA is terminating.'
+    WRITE(*,    *)
+    WRITE(g_out,*) 'TEA is terminating.'
+    WRITE(g_out,*)
+    WRITE(0    ,*) 'TEA is terminating.'
+    WRITE(0    ,*)
+  ENDIF
 
   CALL tea_abort
 

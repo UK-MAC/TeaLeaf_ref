@@ -44,11 +44,11 @@ SUBROUTINE tea_leaf_kernel_init_cg_fortran(x_min,  &
                            rx,                     &
                            ry,                     &
                            rro,                    &
-                           preconditioner_on)
+                           preconditioner_type)
 
   IMPLICIT NONE
 
-  LOGICAL :: preconditioner_on
+  INTEGER :: preconditioner_type
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: density
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: energy
@@ -71,21 +71,23 @@ SUBROUTINE tea_leaf_kernel_init_cg_fortran(x_min,  &
 
 !$OMP PARALLEL
 !$OMP DO
-    DO k=y_min,y_max
-        DO j=x_min,x_max
-            p(j, k) = 0.0_8
-            z(j, k) = 0.0_8
-        ENDDO
+  DO k=y_min,y_max
+    DO j=x_min,x_max
+      p(j, k) = 0.0_8
+      z(j, k) = 0.0_8
     ENDDO
+  ENDDO
 !$OMP END DO
 
-  IF (preconditioner_on) then
+  IF (preconditioner_type .NE. TL_PREC_NONE) THEN
 
-    CALL tea_block_solve(x_min, x_max, y_min, y_max,             &
-                        r, z,                 &
-                           cp,                     &
-                           bfp,                     &
-                           Kx, Ky, rx, ry)
+    IF (preconditioner_type .EQ. TL_PREC_JAC_BLOCK) THEN
+      CALL tea_block_solve(x_min, x_max, y_min, y_max,             &
+                             r, z, cp, bfp, Kx, Ky, rx, ry)
+    ELSE IF (preconditioner_type .EQ. TL_PREC_JAC_DIAG) THEN
+      CALL tea_diag_solve(x_min, x_max, y_min, y_max,             &
+                             r, z, Mi, Kx, Ky, rx, ry)
+    ENDIF
 
 !$OMP DO
     DO k=y_min,y_max
@@ -104,11 +106,11 @@ SUBROUTINE tea_leaf_kernel_init_cg_fortran(x_min,  &
 !$OMP END DO NOWAIT
   ENDIF
 !$OMP DO REDUCTION(+:rro)
-    DO k=y_min,y_max
-        DO j=x_min,x_max
-            rro = rro + r(j, k)*p(j, k);
-        ENDDO
+  DO k=y_min,y_max
+    DO j=x_min,x_max
+      rro = rro + r(j, k)*p(j, k);
     ENDDO
+  ENDDO
 !$OMP END DO
 !$OMP END PARALLEL
 
@@ -172,11 +174,11 @@ SUBROUTINE tea_leaf_kernel_solve_cg_fortran_calc_ur(x_min,             &
                                                     Kx, Ky, rx, ry, &
                                                     alpha,             &
                                                     rrn,               &
-                                                    preconditioner_on)
+                                                    preconditioner_type)
 
   IMPLICIT NONE
 
-  LOGICAL :: preconditioner_on
+  INTEGER :: preconditioner_type
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: u
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: p
@@ -198,9 +200,9 @@ SUBROUTINE tea_leaf_kernel_solve_cg_fortran_calc_ur(x_min,             &
             u(j, k) = u(j, k) + alpha*p(j, k)
         ENDDO
     ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
 
-  IF (preconditioner_on) THEN
+  IF (preconditioner_type .NE. TL_PREC_NONE) THEN
 
 !$OMP DO
     DO k=y_min, y_max
@@ -210,11 +212,13 @@ SUBROUTINE tea_leaf_kernel_solve_cg_fortran_calc_ur(x_min,             &
     ENDDO
 !$OMP END DO
 
-    CALL tea_block_solve(x_min, x_max, y_min, y_max,             &
-                        r, z,                 &
-                        cp,                     &
-                        bfp,                     &
-                        Kx, Ky, rx, ry)
+    IF (preconditioner_type .EQ. TL_PREC_JAC_BLOCK) THEN
+      CALL tea_block_solve(x_min, x_max, y_min, y_max,             &
+                             r, z, cp, bfp, Kx, Ky, rx, ry)
+    ELSE IF (preconditioner_type .EQ. TL_PREC_JAC_DIAG) THEN
+      CALL tea_diag_solve(x_min, x_max, y_min, y_max,             &
+                             r, z, Mi, Kx, Ky, rx, ry)
+    ENDIF
 
 !$OMP DO REDUCTION(+:rrn)
     DO k=y_min,y_max
@@ -245,11 +249,11 @@ SUBROUTINE tea_leaf_kernel_solve_cg_fortran_calc_p(x_min,             &
                                                    r,                 &
                                                    z,                 &
                                                    beta,              &
-                                                   preconditioner_on)
+                                                   preconditioner_type)
 
   IMPLICIT NONE
 
-  LOGICAL :: preconditioner_on
+  INTEGER :: preconditioner_type
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: p, r
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: z
@@ -258,7 +262,7 @@ SUBROUTINE tea_leaf_kernel_solve_cg_fortran_calc_p(x_min,             &
     REAL(kind=8) :: beta
 
 !$OMP PARALLEL
-  IF (preconditioner_on) THEN
+  IF (preconditioner_type .NE. TL_PREC_NONE) THEN
 !$OMP DO
     DO k=y_min,y_max
         DO j=x_min,x_max
