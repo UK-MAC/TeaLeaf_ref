@@ -85,15 +85,6 @@ SUBROUTINE tea_leaf_kernel_init_common(x_min,  &
 
 IF (preconditioner_on) then
 
-!$OMP DO
-    DO k=y_min,y_max
-        DO j=x_min,x_max
-            bfp(j, k) = 0.0_8
-            cp(j, k) = 0.0_8
-        ENDDO
-    ENDDO
-!$OMP END DO
-
     CALL tea_block_init(x_min, x_max, y_min, y_max,             &
                            cp,                     &
                            bfp,                     &
@@ -237,7 +228,16 @@ subroutine tea_block_init(x_min,             &
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: cp, bfp
   REAL(KIND=8) :: rx, ry
 
-!$OMP DO PRIVATE(j, bottom, top, ko, k)
+!$OMP DO
+    DO k=y_min,y_max
+        DO j=x_min,x_max
+            bfp(j, k) = 0.0_8
+            cp(j, k) = 0.0_8
+        ENDDO
+    ENDDO
+!$OMP END DO
+
+!$OMP DO
     DO ko=y_min,y_max,stride
 
       bottom = ko
