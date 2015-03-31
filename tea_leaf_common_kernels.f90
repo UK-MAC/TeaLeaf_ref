@@ -12,7 +12,7 @@ MODULE tea_leaf_kernel_common_module
 
   integer, private, parameter:: jac_block_size = 4
 
-  INTEGER(KIND=4), parameter :: block_size=4
+  INTEGER(KIND=4), parameter :: block_size=2
   INTEGER(KIND=4), parameter :: kstep = block_size*jac_block_size
 
 CONTAINS
