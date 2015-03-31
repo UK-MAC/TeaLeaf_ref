@@ -87,10 +87,10 @@ SUBROUTINE tea_leaf()
 
       ! INIT
 
-      IF (profiler_on) halo_time=timer()
       fields=0
       fields(FIELD_ENERGY1) = 1
       fields(FIELD_DENSITY) = 1
+      IF (profiler_on) halo_time=timer()
       CALL update_halo(fields,2)
       IF (profiler_on) profiler%halo_exchange = profiler%halo_exchange + (timer() - halo_time)
 
@@ -123,7 +123,7 @@ SUBROUTINE tea_leaf()
       IF (profiler_on) halo_time=timer()
       CALL update_halo(fields,1)
       IF (profiler_on) profiler%halo_exchange = profiler%halo_exchange + (timer() - halo_time)
-      halo_time=init_time+(timer()-halo_time)
+      IF (profiler_on) init_time = init_time + (timer()-halo_time)
 
       IF(use_fortran_kernels) THEN
         CALL tea_leaf_calc_residual(chunks(c)%field%x_min,&
@@ -147,7 +147,7 @@ SUBROUTINE tea_leaf()
       IF (profiler_on) dot_product_time=timer()
       CALL tea_allsum(initial_residual)
       IF (profiler_on) profiler%dot_product= profiler%dot_product+ (timer() - dot_product_time)
-      IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
+      IF (profiler_on) init_time = init_time + (timer()-dot_product_time)
 
       initial_residual=SQRT(initial_residual)
       IF(parallel%boss.AND.verbose_on) THEN
@@ -185,19 +185,20 @@ SUBROUTINE tea_leaf()
         IF (profiler_on) halo_time=timer()
         CALL update_halo(fields,1)
         IF (profiler_on) profiler%halo_exchange = profiler%halo_exchange + (timer() - halo_time)
-        halo_time=init_time+(timer()-halo_time)
+        IF (profiler_on) init_time=init_time+(timer()-halo_time)
 
         ! and globally sum rro
         IF (profiler_on) dot_product_time=timer()
         CALL tea_allsum(rro)
         IF (profiler_on) profiler%dot_product= profiler%dot_product+ (timer() - dot_product_time)
-        IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
+        IF (profiler_on) init_time = init_time + (timer()-dot_product_time)
       ELSEIF (tl_use_jacobi) THEN
         fields=0
         fields(FIELD_U) = 1
       ENDIF
 
       IF (profiler_on) profiler%tea_init = profiler%tea_init + (timer() - init_time)
+
       IF (profiler_on) solve_time = timer()
 
       DO n=1,max_iters
@@ -261,7 +262,7 @@ SUBROUTINE tea_leaf()
           IF (tl_use_chebyshev) THEN
               IF (cheby_calc_steps .EQ. 0) THEN
                 CALL tea_leaf_cheby_first_step(c, ch_alphas, ch_betas, fields, &
-                    error, rx, ry, theta, cn, max_cheby_iters, est_itc)
+                    error, rx, ry, theta, cn, max_cheby_iters, est_itc, solve_time)
 
                 cheby_calc_steps = 1
 
@@ -372,7 +373,7 @@ SUBROUTINE tea_leaf()
             ! not using rrn, so don't do a tea_allsum
 
             CALL tea_leaf_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
-                rx, ry, tl_ppcg_inner_steps, c)
+                rx, ry, tl_ppcg_inner_steps, c, solve_time)
 
             IF(use_fortran_kernels) THEN
               CALL tea_leaf_ppcg_calc_zrnorm_kernel(chunks(c)%field%x_min, &
@@ -571,7 +572,7 @@ SUBROUTINE tea_leaf()
       ENDIF
 
       ! RESET
-      reset_time=timer()
+      IF (profiler_on) reset_time=timer()
       IF(use_fortran_kernels) THEN
           CALL tea_leaf_kernel_finalise(chunks(c)%field%x_min, &
               chunks(c)%field%x_max,                           &
@@ -583,9 +584,9 @@ SUBROUTINE tea_leaf()
       ENDIF
       IF (profiler_on) profiler%tea_reset = profiler%tea_reset + (timer() - reset_time)
 
-      halo_time=timer()
       fields=0
       fields(FIELD_ENERGY1) = 1
+      IF (profiler_on) halo_time=timer()
       CALL update_halo(fields,1)
       IF (profiler_on) profiler%halo_exchange = profiler%halo_exchange + (timer() - halo_time)
 
@@ -627,11 +628,12 @@ SUBROUTINE tea_leaf()
 END SUBROUTINE tea_leaf
 
 SUBROUTINE tea_leaF_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
-    rx, ry, tl_ppcg_inner_steps, c)
+    rx, ry, tl_ppcg_inner_steps, c, solve_time)
 
   INTEGER :: fields(NUM_FIELDS)
   INTEGER :: c, tl_ppcg_inner_steps, ppcg_cur_step
   REAL(KIND=8) :: rx, ry, theta
+  REAL(KIND=8) :: halo_time, timer, solve_time
   REAL(KIND=8), DIMENSION(max_iters) :: ch_alphas, ch_betas
 
   IF(use_fortran_kernels) THEN
@@ -656,7 +658,10 @@ SUBROUTINE tea_leaF_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
 
   ! inner steps
   DO ppcg_cur_step=1,tl_ppcg_inner_steps
+    IF (profiler_on) halo_time = timer()
     CALL update_halo(fields,1)
+    IF (profiler_on) profiler%halo_exchange = profiler%halo_exchange + (timer() - halo_time)
+    IF (profiler_on) solve_time = solve_time + (timer()-halo_time)
 
     IF(use_fortran_kernels) THEN
       CALL tea_leaf_kernel_ppcg_inner(chunks(c)%field%x_min,&
@@ -685,7 +690,7 @@ SUBROUTINE tea_leaF_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
 END SUBROUTINE tea_leaF_run_ppcg_inner_steps
 
 SUBROUTINE tea_leaf_cheby_first_step(c, ch_alphas, ch_betas, fields, &
-    error, rx, ry, theta, cn, max_cheby_iters, est_itc)
+    error, rx, ry, theta, cn, max_cheby_iters, est_itc, solve_time)
 
   IMPLICIT NONE
 
@@ -693,6 +698,7 @@ SUBROUTINE tea_leaf_cheby_first_step(c, ch_alphas, ch_betas, fields, &
   integer, dimension(:) :: fields
   REAL(KIND=8) :: it_alpha, cn, gamm, bb, error, rx, ry, theta
   REAL(KIND=8), DIMENSION(:) :: ch_alphas, ch_betas
+  REAL(KIND=8) :: halo_time, timer, dot_product_time, solve_time
 
   ! calculate 2 norm of u0
   IF(use_fortran_kernels) THEN
@@ -704,10 +710,10 @@ SUBROUTINE tea_leaf_cheby_first_step(c, ch_alphas, ch_betas, fields, &
           bb)
   ENDIF
 
-  !IF (profiler_on) dot_product_time=timer()
+  IF (profiler_on) dot_product_time=timer()
   CALL tea_allsum(bb)
-  !IF (profiler_on) profiler%dot_product= profiler%dot_product+ (timer() - dot_product_time)
-  !IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
+  IF (profiler_on) profiler%dot_product= profiler%dot_product+ (timer() - dot_product_time)
+  IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
 
   ! initialise 'p' array
   IF(use_fortran_kernels) THEN
@@ -730,7 +736,10 @@ SUBROUTINE tea_leaf_cheby_first_step(c, ch_alphas, ch_betas, fields, &
           rx, ry, theta, error, tl_preconditioner_type)
   ENDIF
 
+  IF (profiler_on) halo_time = timer()
   CALL update_halo(fields,1)
+  IF (profiler_on) profiler%halo_exchange = profiler%halo_exchange + (timer() - halo_time)
+  IF (profiler_on) solve_time = solve_time + (timer()-halo_time)
 
   IF(use_fortran_kernels) THEN
       CALL tea_leaf_kernel_cheby_iterate(chunks(c)%field%x_min,&
@@ -761,10 +770,10 @@ SUBROUTINE tea_leaf_cheby_first_step(c, ch_alphas, ch_betas, fields, &
           error)
   ENDIF
 
-  !IF (profiler_on) dot_product_time=timer()
+  IF (profiler_on) dot_product_time=timer()
   CALL tea_allsum(error)
-  !IF (profiler_on) profiler%dot_product= profiler%dot_product+ (timer() - dot_product_time)
-  !IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
+  IF (profiler_on) profiler%dot_product= profiler%dot_product+ (timer() - dot_product_time)
+  IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
 
   it_alpha = EPSILON(1.0_8)*bb/(4.0_8*error)
   gamm = (SQRT(cn) - 1.0_8)/(SQRT(cn) + 1.0_8)
