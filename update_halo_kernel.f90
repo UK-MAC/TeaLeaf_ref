@@ -127,7 +127,12 @@ SUBROUTINE update_halo_cell(x_min,x_max,y_min,y_max,    &
       ENDDO
 !$OMP END DO NOWAIT
     ENDIF
+
+    ! Don't need barrier if depth is only 1
+    IF(depth .gt. 1) then
 !$OMP BARRIER
+    ENDIF
+
     IF(chunk_neighbours(CHUNK_BOTTOM).EQ.EXTERNAL_FACE) THEN
 !$OMP DO COLLAPSE(2)
       DO k=1,depth
