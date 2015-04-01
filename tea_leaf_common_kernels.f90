@@ -12,7 +12,7 @@ MODULE tea_leaf_kernel_common_module
 
   integer, private, parameter:: jac_block_size = 4
 
-  INTEGER(KIND=4), parameter :: block_size=2
+  INTEGER(KIND=4), parameter :: block_size=1
   INTEGER(KIND=4), parameter :: kstep = block_size*jac_block_size
 
 CONTAINS
@@ -302,7 +302,9 @@ SUBROUTINE tea_block_init(x_min,             &
       bottom = ko
       top = MIN(ko + jac_block_size - 1, y_max)
 
+#if defined(WITH_OMP4)
 !$OMP SIMD
+#endif
       DO j=x_min, x_max
         k = bottom
         cp(j,k) = COEF_C/COEF_B
@@ -346,7 +348,9 @@ SUBROUTINE tea_block_solve(x_min,             &
         bottom = ki
         top = ki+jac_block_size - 1
 
+#if defined(WITH_OMP4)
 !$OMP SIMD PRIVATE(dp_l, z_l)
+#endif
         DO j=x_min,x_max
           k = bottom
           dp_l(k-bottom) = r(j, k)/COEF_B
@@ -375,7 +379,9 @@ SUBROUTINE tea_block_solve(x_min,             &
       bottom = MIN(ki, y_max)
       top = MIN(ki+jac_block_size-1, y_max)
 
+#if defined(WITH_OMP4)
 !$OMP SIMD PRIVATE(dp_l, z_l)
+#endif
       DO j=x_min,x_max
         k = bottom
         dp_l(k-bottom) = r(j, k)/COEF_B

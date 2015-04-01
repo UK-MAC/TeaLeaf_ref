@@ -250,8 +250,8 @@ SUBROUTINE tea_leaf_kernel_solve_cg_fortran_calc_p(x_min,             &
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: p, r
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: z
 
-    INTEGER(KIND=4) :: j,k
-    REAL(kind=8) :: beta
+  INTEGER(KIND=4) :: j,k
+  REAL(kind=8) :: beta
 
 !$OMP PARALLEL
   IF (preconditioner_type .NE. TL_PREC_NONE) THEN
