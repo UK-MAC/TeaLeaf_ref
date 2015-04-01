@@ -227,17 +227,20 @@ SUBROUTINE tea_exchange(fields,depth)
 
   IMPLICIT NONE
 
-    INTEGER      :: fields(NUM_FIELDS),depth, chunk
+    INTEGER      :: fields(NUM_FIELDS),depth, chunk,err
     INTEGER      :: left_right_offset(NUM_FIELDS),bottom_top_offset(NUM_FIELDS)
-    INTEGER      :: request(4)
-    INTEGER      :: message_count,err
-    INTEGER      :: status(MPI_STATUS_SIZE,4)
     INTEGER      :: end_pack_index_left_right, end_pack_index_bottom_top,field
+    INTEGER      :: message_count_lr, message_count_ud
+    INTEGER, dimension(4)                 :: request_lr, request_ud
+    INTEGER, dimension(MPI_STATUS_SIZE,4) :: status_lr, status_ud
+    LOGICAL :: test_complete
 
     ! Assuming 1 patch per task, this will be changed
 
-    request=0
-    message_count=0
+    request_lr=0
+    message_count_lr=0
+    request_ud = 0
+    message_count_ud = 0
 
     chunk = 1
 
@@ -263,8 +266,8 @@ SUBROUTINE tea_exchange(fields,depth)
                                          chunks(chunk)%left_rcv_buffer,                      &
                                          chunk,end_pack_index_left_right,                    &
                                          1, 2,                                               &
-                                         request(message_count+1), request(message_count+2))
-      message_count = message_count + 2
+                                         request_lr(message_count_lr+1), request_lr(message_count_lr+2))
+      message_count_lr = message_count_lr + 2
     ENDIF
 
     IF(chunks(chunk)%chunk_neighbours(chunk_right).NE.external_face) THEN
@@ -276,26 +279,28 @@ SUBROUTINE tea_exchange(fields,depth)
                                           chunks(chunk)%right_rcv_buffer,                     &
                                           chunk,end_pack_index_left_right,                    &
                                           2, 1,                                               &
-                                          request(message_count+1), request(message_count+2))
-      message_count = message_count + 2
+                                          request_lr(message_count_lr+1), request_lr(message_count_lr+2))
+      message_count_lr = message_count_lr + 2
     ENDIF
 
-    !make a call to wait / sync
-    CALL MPI_WAITALL(message_count,request,status,err)
+    CALL MPI_TESTALL(message_count_lr, request_lr, test_complete, status_lr, err)
 
-    !unpack in left direction
-    IF(chunks(chunk)%chunk_neighbours(chunk_left).NE.external_face) THEN
-      CALL tea_unpack_left(chunk, fields, depth, chunks(chunk)%left_rcv_buffer, left_right_offset)
+    IF ((depth .gt. 1) .or. (test_complete .eq. .true.)) THEN
+      IF (test_complete .eq. .false.) THEN
+        !make a call to wait / sync
+        CALL MPI_WAITALL(message_count_lr,request_lr,status_lr,err)
+      ENDIF
+
+      !unpack in left direction
+      IF(chunks(chunk)%chunk_neighbours(chunk_left).NE.external_face) THEN
+        CALL tea_unpack_left(chunk, fields, depth, chunks(chunk)%left_rcv_buffer, left_right_offset)
+      ENDIF
+
+      !unpack in right direction
+      IF(chunks(chunk)%chunk_neighbours(chunk_right).NE.external_face) THEN
+        CALL tea_unpack_right(chunk, fields, depth, chunks(chunk)%right_rcv_buffer, left_right_offset)
+      ENDIF
     ENDIF
-
-
-    !unpack in right direction
-    IF(chunks(chunk)%chunk_neighbours(chunk_right).NE.external_face) THEN
-      CALL tea_unpack_right(chunk, fields, depth, chunks(chunk)%right_rcv_buffer, left_right_offset)
-    ENDIF
-
-    message_count = 0
-    request = 0
 
     IF(chunks(chunk)%chunk_neighbours(chunk_bottom).NE.external_face) THEN
       ! do bottom exchanges
@@ -306,8 +311,8 @@ SUBROUTINE tea_exchange(fields,depth)
                                            chunks(chunk)%bottom_rcv_buffer,                     &
                                            chunk,end_pack_index_bottom_top,                     &
                                            3, 4,                                                &
-                                           request(message_count+1), request(message_count+2))
-      message_count = message_count + 2
+                                           request_ud(message_count_ud+1), request_ud(message_count_ud+2))
+      message_count_ud = message_count_ud + 2
     ENDIF
 
     IF(chunks(chunk)%chunk_neighbours(chunk_top).NE.external_face) THEN
@@ -319,12 +324,27 @@ SUBROUTINE tea_exchange(fields,depth)
                                         chunks(chunk)%top_rcv_buffer,                           &
                                         chunk,end_pack_index_bottom_top,                        &
                                         4, 3,                                                   &
-                                        request(message_count+1), request(message_count+2))
-      message_count = message_count + 2
+                                        request_ud(message_count_ud+1), request_ud(message_count_ud+2))
+      message_count_ud = message_count_ud + 2
+    ENDIF
+
+    IF ((depth .eq. 1) .and. (test_complete .eq. .false.)) THEN
+      !make a call to wait / sync
+      CALL MPI_WAITALL(message_count_lr,request_lr,status_lr,err)
+
+      !unpack in left direction
+      IF(chunks(chunk)%chunk_neighbours(chunk_left).NE.external_face) THEN
+        CALL tea_unpack_left(chunk, fields, depth, chunks(chunk)%left_rcv_buffer, left_right_offset)
+      ENDIF
+
+      !unpack in right direction
+      IF(chunks(chunk)%chunk_neighbours(chunk_right).NE.external_face) THEN
+        CALL tea_unpack_right(chunk, fields, depth, chunks(chunk)%right_rcv_buffer, left_right_offset)
+      ENDIF
     ENDIF
 
     !need to make a call to wait / sync
-    CALL MPI_WAITALL(message_count,request,status,err)
+    CALL MPI_WAITALL(message_count_ud,request_ud,status_ud,err)
 
     !unpack in top direction
     IF( chunks(chunk)%chunk_neighbours(chunk_top).NE.external_face ) THEN
