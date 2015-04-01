@@ -92,7 +92,7 @@ SUBROUTINE tea_leaf()
       fields(FIELD_DENSITY) = 1
       IF (profiler_on) halo_time=timer()
       CALL update_halo(fields,2)
-      IF (profiler_on) profiler%halo_exchange = profiler%halo_exchange + (timer() - halo_time)
+      !IF (profiler_on) profiler%halo_exchange = profiler%halo_exchange + (timer() - halo_time)
 
       IF (profiler_on) init_time=timer()
 
@@ -122,7 +122,7 @@ SUBROUTINE tea_leaf()
       fields(FIELD_U) = 1
       IF (profiler_on) halo_time=timer()
       CALL update_halo(fields,1)
-      IF (profiler_on) profiler%halo_exchange = profiler%halo_exchange + (timer() - halo_time)
+      !IF (profiler_on) profiler%halo_exchange = profiler%halo_exchange + (timer() - halo_time)
       IF (profiler_on) init_time = init_time + (timer()-halo_time)
 
       IF(use_fortran_kernels) THEN
@@ -184,7 +184,7 @@ SUBROUTINE tea_leaf()
         fields(FIELD_P) = 1
         IF (profiler_on) halo_time=timer()
         CALL update_halo(fields,1)
-        IF (profiler_on) profiler%halo_exchange = profiler%halo_exchange + (timer() - halo_time)
+        !IF (profiler_on) profiler%halo_exchange = profiler%halo_exchange + (timer() - halo_time)
         IF (profiler_on) init_time=init_time+(timer()-halo_time)
 
         ! and globally sum rro
@@ -329,7 +329,7 @@ SUBROUTINE tea_leaf()
               IF (profiler_on) halo_time = timer()
               ! update p
               CALL update_halo(fields,1)
-              IF (profiler_on) profiler%halo_exchange = profiler%halo_exchange + (timer() - halo_time)
+              !IF (profiler_on) profiler%halo_exchange = profiler%halo_exchange + (timer() - halo_time)
               IF (profiler_on) solve_time = solve_time + (timer()-halo_time)
             ENDIF
 
@@ -499,7 +499,7 @@ SUBROUTINE tea_leaf()
         ! updates u and possibly p
         IF (profiler_on) halo_time = timer()
         CALL update_halo(fields,1)
-        IF (profiler_on) profiler%halo_exchange = profiler%halo_exchange + (timer() - halo_time)
+        !IF (profiler_on) profiler%halo_exchange = profiler%halo_exchange + (timer() - halo_time)
         IF (profiler_on) solve_time = solve_time + (timer()-halo_time)
 
         IF (profiler_on) THEN
@@ -588,7 +588,7 @@ SUBROUTINE tea_leaf()
       fields(FIELD_ENERGY1) = 1
       IF (profiler_on) halo_time=timer()
       CALL update_halo(fields,1)
-      IF (profiler_on) profiler%halo_exchange = profiler%halo_exchange + (timer() - halo_time)
+      !IF (profiler_on) profiler%halo_exchange = profiler%halo_exchange + (timer() - halo_time)
 
     ENDIF
 
@@ -660,7 +660,7 @@ SUBROUTINE tea_leaF_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
   DO ppcg_cur_step=1,tl_ppcg_inner_steps
     IF (profiler_on) halo_time = timer()
     CALL update_halo(fields,1)
-    IF (profiler_on) profiler%halo_exchange = profiler%halo_exchange + (timer() - halo_time)
+    !IF (profiler_on) profiler%halo_exchange = profiler%halo_exchange + (timer() - halo_time)
     IF (profiler_on) solve_time = solve_time + (timer()-halo_time)
 
     IF(use_fortran_kernels) THEN
@@ -738,7 +738,7 @@ SUBROUTINE tea_leaf_cheby_first_step(c, ch_alphas, ch_betas, fields, &
 
   IF (profiler_on) halo_time = timer()
   CALL update_halo(fields,1)
-  IF (profiler_on) profiler%halo_exchange = profiler%halo_exchange + (timer() - halo_time)
+  !IF (profiler_on) profiler%halo_exchange = profiler%halo_exchange + (timer() - halo_time)
   IF (profiler_on) solve_time = solve_time + (timer()-halo_time)
 
   IF(use_fortran_kernels) THEN

@@ -102,6 +102,7 @@ MODULE definitions_module
                           ,tea_reset       &
                           ,set_field       &
                           ,dot_product     &
+                          ,halo_update     &
                           ,halo_exchange
                      
    END TYPE profiler_type

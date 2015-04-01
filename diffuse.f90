@@ -115,7 +115,8 @@ SUBROUTINE diffuse
     ! does not take into account compute overlaps before syncronisations
     ! caused by halo exhanges.
     kernel_total=profiler%timestep+profiler%halo_exchange+profiler%summary+profiler%visit+&
-        profiler%tea_init+profiler%set_field+profiler%tea_solve+profiler%tea_reset+profiler%dot_product
+        profiler%tea_init+profiler%set_field+profiler%tea_solve+profiler%tea_reset+profiler%dot_product+&
+        profiler%halo_update
     CALL tea_allgather(kernel_total,totals)
     ! So then what I do is use the individual kernel times for the
     ! maximum kernel time task for the profile print
@@ -125,6 +126,8 @@ SUBROUTINE diffuse
     profiler%timestep=totals(loc(1))
     CALL tea_allgather(profiler%halo_exchange,totals)
     profiler%halo_exchange=totals(loc(1))
+    CALL tea_allgather(profiler%halo_update,totals)
+    profiler%halo_update=totals(loc(1))
     CALL tea_allgather(profiler%summary,totals)
     profiler%summary=totals(loc(1))
     CALL tea_allgather(profiler%dot_product,totals)
@@ -144,7 +147,8 @@ SUBROUTINE diffuse
       WRITE(g_out,*)
       WRITE(g_out,'(a58,2f16.4)')"Profiler Output                 Time            Percentage"
       WRITE(g_out,'(a23,2f16.4)')"Timestep              :",profiler%timestep,100.0*(profiler%timestep/wall_clock)
-      WRITE(g_out,'(a23,2f16.4)')"Halo Exchange         :",profiler%halo_exchange,100.0*(profiler%halo_exchange/wall_clock)
+      WRITE(g_out,'(a23,2f16.4)')"MPI Halo Exchange     :",profiler%halo_exchange,100.0*(profiler%halo_exchange/wall_clock)
+      WRITE(g_out,'(a23,2f16.4)')"Self Halo Update      :",profiler%halo_update,100.0*(profiler%halo_update/wall_clock)
       WRITE(g_out,'(a23,2f16.4)')"Summary               :",profiler%summary,100.0*(profiler%summary/wall_clock)
       WRITE(g_out,'(a23,2f16.4)')"Visit                 :",profiler%visit,100.0*(profiler%visit/wall_clock)
       WRITE(g_out,'(a23,2f16.4)')"Tea Init              :",profiler%tea_init,100.0*(profiler%tea_init/wall_clock)
