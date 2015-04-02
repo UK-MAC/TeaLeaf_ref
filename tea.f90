@@ -236,13 +236,14 @@ SUBROUTINE tea_exchange(fields,depth)
     LOGICAL :: test_complete
 
     ! Assuming 1 patch per task, this will be changed
+    chunk = 1
+
+    IF (ANY(chunks(chunk)%chunk_neighbours .eq. external_face)) return
 
     request_lr=0
     message_count_lr=0
     request_ud = 0
     message_count_ud = 0
-
-    chunk = 1
 
     end_pack_index_left_right=0
     end_pack_index_bottom_top=0
