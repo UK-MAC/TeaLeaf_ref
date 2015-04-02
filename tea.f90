@@ -238,7 +238,7 @@ SUBROUTINE tea_exchange(fields,depth)
     ! Assuming 1 patch per task, this will be changed
     chunk = 1
 
-    IF (ANY(chunks(chunk)%chunk_neighbours .eq. external_face)) return
+    IF (ALL(chunks(chunk)%chunk_neighbours .eq. external_face)) return
 
     request_lr=0
     message_count_lr=0
