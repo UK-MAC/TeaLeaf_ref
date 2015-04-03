@@ -312,6 +312,13 @@ SUBROUTINE tea_leaf()
             IF (cheby_calc_steps .EQ. 0) THEN
               cheby_calc_steps = 1
 
+              fields=0
+              fields(FIELD_U) = 1
+              IF (profiler_on) halo_time=timer()
+              CALL update_halo(fields,1)
+              !IF (profiler_on) profiler%halo_exchange = profiler%halo_exchange + (timer() - halo_time)
+              IF (profiler_on) init_time=init_time+(timer()-halo_time)
+
               IF(use_fortran_kernels) THEN
                 CALL tea_leaf_calc_residual(chunks(c)%field%x_min,&
                     chunks(c)%field%x_max,                        &
@@ -324,12 +331,6 @@ SUBROUTINE tea_leaf()
                     chunks(c)%field%vector_Ky,                    &
                     rx, ry)
               ENDIF
-
-              IF (profiler_on) halo_time = timer()
-              ! update p
-              CALL update_halo(fields,1)
-              !IF (profiler_on) profiler%halo_exchange = profiler%halo_exchange + (timer() - halo_time)
-              IF (profiler_on) solve_time = solve_time + (timer()-halo_time)
             ENDIF
 
             IF(use_fortran_kernels) THEN
