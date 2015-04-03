@@ -284,14 +284,16 @@ SUBROUTINE tea_exchange(fields,depth)
       message_count_lr = message_count_lr + 2
     ENDIF
 
-    CALL MPI_TESTALL(message_count_lr, request_lr, test_complete, status_lr, err)
+    IF (depth .eq. 1) THEN
+      ! don't have to transfer now
+      CALL MPI_TESTALL(message_count_lr, request_lr, test_complete, status_lr, err)
+    ELSE
+      !make a call to wait / sync
+      CALL MPI_WAITALL(message_count_lr,request_lr,status_lr,err)
+      test_complete = .true.
+    ENDIF
 
-    IF ((depth .gt. 1) .or. (test_complete .eq. .true.)) THEN
-      IF (test_complete .eq. .false.) THEN
-        !make a call to wait / sync
-        CALL MPI_WAITALL(message_count_lr,request_lr,status_lr,err)
-      ENDIF
-
+    IF (test_complete .eqv. .true.) THEN
       !unpack in left direction
       IF(chunks(chunk)%chunk_neighbours(chunk_left).NE.external_face) THEN
         CALL tea_unpack_left(chunk, fields, depth, chunks(chunk)%left_rcv_buffer, left_right_offset)
@@ -329,7 +331,7 @@ SUBROUTINE tea_exchange(fields,depth)
       message_count_ud = message_count_ud + 2
     ENDIF
 
-    IF ((depth .eq. 1) .and. (test_complete .eq. .false.)) THEN
+    IF (test_complete .eqv. .false.) THEN
       !make a call to wait / sync
       CALL MPI_WAITALL(message_count_lr,request_lr,status_lr,err)
 
