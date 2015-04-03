@@ -180,7 +180,6 @@ SUBROUTINE tea_leaf()
 
         ! need to update p when using CG due to matrix/vector multiplication
         fields=0
-        fields(FIELD_U) = 1
         fields(FIELD_P) = 1
         IF (profiler_on) halo_time=timer()
         CALL update_halo(fields,1)
@@ -409,7 +408,6 @@ SUBROUTINE tea_leaf()
 
           cheby_calc_steps = cheby_calc_steps + 1
         ELSEIF(tl_use_cg .OR. tl_use_chebyshev .OR. tl_use_ppcg) THEN
-          fields(FIELD_P) = 1
           cg_calc_steps = cg_calc_steps + 1
 
           pw = 0.0_08
@@ -521,6 +519,12 @@ SUBROUTINE tea_leaf()
       ENDDO
 
       IF (tl_check_result) THEN
+        fields = 0
+        fields(FIELD_U) = 1
+        IF (profiler_on) halo_time = timer()
+        CALL update_halo(fields,1)
+        !IF (profiler_on) profiler%halo_exchange = profiler%halo_exchange + (timer() - halo_time)
+        IF (profiler_on) solve_time = solve_time + (timer()-halo_time)
         IF(use_fortran_kernels) THEN
           CALL tea_leaf_calc_residual(chunks(c)%field%x_min,&
               chunks(c)%field%x_max,                        &
@@ -586,9 +590,7 @@ SUBROUTINE tea_leaf()
 
       fields=0
       fields(FIELD_ENERGY1) = 1
-      IF (profiler_on) halo_time=timer()
       CALL update_halo(fields,1)
-      !IF (profiler_on) profiler%halo_exchange = profiler%halo_exchange + (timer() - halo_time)
 
     ENDIF
 
