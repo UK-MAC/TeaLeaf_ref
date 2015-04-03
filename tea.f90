@@ -1223,7 +1223,9 @@ SUBROUTINE tea_allsum(value)
 
   total=value
 
-  CALL MPI_ALLREDUCE(value,total,1,MPI_DOUBLE_PRECISION,MPI_SUM,mpi_cart_comm,err)
+  IF (parallel%max_task .NE. 1) THEN
+    CALL MPI_ALLREDUCE(value,total,1,MPI_DOUBLE_PRECISION,MPI_SUM,mpi_cart_comm,err)
+  ENDIF
 
   value=total
 
