@@ -162,7 +162,6 @@ SUBROUTINE read_input()
         IF(parallel%boss)WRITE(g_out,"(1x,a25,i12)")'tl_ch_cg_presteps',tl_ch_cg_presteps
       CASE('tl_ppcg_inner_steps')
         tl_ppcg_inner_steps=parse_getival(parse_getword(.TRUE.))
-        IF(parallel%boss)WRITE(g_out,"(1x,a25,i12)")'tl_ppcg_inner_steps',tl_ppcg_inner_steps
       CASE('tl_ch_cg_epslim')
         tl_ch_cg_epslim=parse_getrval(parse_getword(.TRUE.))
         IF(parallel%boss)WRITE(g_out,"(1x,a25,e12.4)")'tl_ch_cg_epslim',tl_ch_cg_epslim
@@ -284,8 +283,10 @@ SUBROUTINE read_input()
 
   ! Simple guess - better than a default of 10
   if (tl_ppcg_inner_steps .eq. -1) then
-    tl_ppcg_inner_steps = INT(SQRT(SQRT(REAL(grid%x_cells*grid%y_cells))))
+    tl_ppcg_inner_steps = 4*INT(SQRT(SQRT(REAL(grid%x_cells*grid%y_cells))))
   endif
+
+  IF(parallel%boss)WRITE(g_out,"(1x,a25,i12)")'tl_ppcg_inner_steps',tl_ppcg_inner_steps
 
   IF(parallel%boss) THEN
     WRITE(g_out,*)
