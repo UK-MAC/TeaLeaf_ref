@@ -86,6 +86,9 @@ MODULE definitions_module
    ! number of inner steps in ppcg solver
    INTEGER      :: tl_ppcg_inner_steps
 
+   ! Reflective boundaries at edge of mesh
+   LOGICAL      :: reflective_boundary
+
    ! Preconditioner option
    INTEGER      :: tl_preconditioner_type
 

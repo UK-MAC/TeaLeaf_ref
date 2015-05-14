@@ -43,7 +43,7 @@ SUBROUTINE field_summary()
   IF(parallel%boss)THEN
     WRITE(g_out,*)
     WRITE(g_out,*) 'Time ',time
-    WRITE(g_out,'(a13,5a16)')'           ','Volume','Mass','Density'       &
+    WRITE(g_out,'(a13,5a26)')'           ','Volume','Mass','Density'       &
                                           ,'Energy','U'
   ENDIF
 
@@ -57,7 +57,7 @@ SUBROUTINE field_summary()
                                   chunks(c)%field%y_max,                   &
                                   chunks(c)%field%volume,                  &
                                   chunks(c)%field%density,                 &
-                                  chunks(c)%field%energy0,                 &
+                                  chunks(c)%field%energy1,                 &
                                   chunks(c)%field%u,                       &
                                   vol,mass,ie,temp                         )
       ENDIF
@@ -73,7 +73,7 @@ SUBROUTINE field_summary()
 
   IF(parallel%boss) THEN
 !$  IF(OMP_GET_THREAD_NUM().EQ.0) THEN
-      WRITE(g_out,'(a6,i7,5e16.7)')' step:',step,vol,mass,mass/vol,ie,temp
+      WRITE(g_out,'(a6,i7,5e26.17)')' step:',step,vol,mass,mass/vol,ie,temp
       WRITE(g_out,*)
 !$  ENDIF
   ENDIF

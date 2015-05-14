@@ -26,6 +26,7 @@ SUBROUTINE start
   USE tea_module
   USE parse_module
   USE update_halo_module
+  USE set_field_module
 
   IMPLICIT NONE
 
@@ -132,6 +133,9 @@ SUBROUTINE start
      WRITE(g_out,*)
      WRITE(g_out,*) 'Problem initialised and generated'
   ENDIF
+
+  ! copy time level 0 to time level 1 before the first print
+  CALL set_field()
 
   CALL field_summary()
 

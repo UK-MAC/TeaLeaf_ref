@@ -25,7 +25,6 @@ SUBROUTINE diffuse
   USE tea_module
   USE timestep_module
   USE tea_leaf_module
-  USE set_field_module
 
   IMPLICIT NONE
 
@@ -40,9 +39,6 @@ SUBROUTINE diffuse
   timerstart = timer()
 
   second_step=0.0 ! In order to prevent unused error
-
-  ! copy time level 0 to time level 1
-  CALL set_field()
 
   DO
 

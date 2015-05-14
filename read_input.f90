@@ -77,6 +77,8 @@ SUBROUTINE read_input()
   tl_check_result = .FALSE.
   tl_preconditioner_type = TL_PREC_NONE
 
+  reflective_boundary = .FALSE.
+
   tl_ppcg_inner_steps = -1
 
   tl_use_chebyshev = .FALSE.
@@ -209,6 +211,8 @@ SUBROUTINE read_input()
         tl_use_cg = .FALSE.
         tl_use_ppcg=.FALSE.
         tl_use_jacobi = .FALSE.
+      CASE('reflective_boundary')
+        reflective_boundary=.TRUE.
       CASE('profiler_on')
         profiler_on=.TRUE.
         IF(parallel%boss)WRITE(g_out,"(1x,a25)")'Profiler on'

@@ -106,6 +106,8 @@ SUBROUTINE tea_leaf()
             chunks(c)%field%x_max,                                  &
             chunks(c)%field%y_min,                                  &
             chunks(c)%field%y_max,                                  &
+            chunks(c)%chunk_neighbours,                             &
+            reflective_boundary,                                    &
             chunks(c)%field%density,                                &
             chunks(c)%field%energy1,                                &
             chunks(c)%field%u,                                      &
@@ -188,7 +190,6 @@ SUBROUTINE tea_leaf()
 
         ! need to update p when using CG due to matrix/vector multiplication
         fields=0
-        fields(FIELD_U) = 1
         fields(FIELD_P) = 1
         IF (profiler_on) halo_time=timer()
         CALL update_halo(fields,1)

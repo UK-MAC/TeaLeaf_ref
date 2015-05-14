@@ -2,6 +2,13 @@ MODULE tea_leaf_kernel_common_module
 
   IMPLICIT NONE
 
+  ! These need to be kept consistent with the data module to avoid use statement
+  INTEGER,private,PARAMETER :: CHUNK_LEFT   =1    &
+                            ,CHUNK_RIGHT  =2    &
+                            ,CHUNK_BOTTOM =3    &
+                            ,CHUNK_TOP    =4    &
+                            ,EXTERNAL_FACE=-1
+
    ! 3 different options for preconditioners
    INTEGER,PARAMETER        ::   TL_PREC_NONE       = 1 &
                                 ,TL_PREC_JAC_DIAG   = 2 &
@@ -21,6 +28,8 @@ SUBROUTINE tea_leaf_kernel_init_common(x_min,  &
                            x_max,                  &
                            y_min,                  &
                            y_max,                  &
+                           chunk_neighbours,       &
+                           reflective_boundary,    &
                            density,                &
                            energy,                 &
                            u,                      &
@@ -39,8 +48,10 @@ SUBROUTINE tea_leaf_kernel_init_common(x_min,  &
 
   IMPLICIT NONE
 
+  LOGICAL :: reflective_boundary
   INTEGER :: preconditioner_type
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max
+  INTEGER, DIMENSION(4) :: chunk_neighbours
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: density, energy
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: u, u0, r, w, Kx, Ky
 
@@ -88,6 +99,38 @@ SUBROUTINE tea_leaf_kernel_init_common(x_min,  &
      ENDDO
    ENDDO
 !$OMP END DO
+
+! Whether to apply reflective boundary conditions to all external faces
+  IF (reflective_boundary .eqv. .FALSE.) THEN
+    IF(chunk_neighbours(CHUNK_LEFT).EQ.EXTERNAL_FACE) THEN
+!$OMP DO
+      DO k=y_min,y_max+1
+        Kx(x_min,k)=0.0_8
+      ENDDO
+!$OMP END DO
+    ENDIF
+    IF(chunk_neighbours(CHUNK_RIGHT).EQ.EXTERNAL_FACE) THEN
+!$OMP DO
+      DO k=y_min,y_max+1
+         Kx(x_max+1,k)=0.0_8
+      ENDDO
+!$OMP END DO
+    ENDIF
+    IF(chunk_neighbours(CHUNK_BOTTOM).EQ.EXTERNAL_FACE) THEN
+!$OMP DO
+      DO j=x_min,x_max+1
+         Ky(j,y_min)=0.0_8
+      ENDDO
+!$OMP END DO
+    ENDIF
+    IF(chunk_neighbours(CHUNK_TOP).EQ.EXTERNAL_FACE) THEN
+!$OMP DO
+      DO j=x_min,x_max+1
+         Ky(j,y_max+1)=0.0_8
+      ENDDO
+!$OMP END DO
+    ENDIF
+  ENDIF
 
   IF (preconditioner_type .EQ. TL_PREC_JAC_BLOCK) THEN
     CALL tea_block_init(x_min, x_max, y_min, y_max,             &

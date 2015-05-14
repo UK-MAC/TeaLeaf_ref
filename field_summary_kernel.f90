@@ -26,7 +26,7 @@ CONTAINS
 SUBROUTINE field_summary_kernel(x_min,x_max,y_min,y_max, &
                                 volume,                  &
                                 density,                 &
-                                energy0,                 &
+                                energy1,                 &
                                 u,                       &
                                 vol,mass,ie,temp         )
 
@@ -34,7 +34,7 @@ SUBROUTINE field_summary_kernel(x_min,x_max,y_min,y_max, &
 
   INTEGER      :: x_min,x_max,y_min,y_max
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: volume
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: density,energy0
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: density,energy1
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: u
   REAL(KIND=8) :: vol,mass,ie,temp
 
@@ -54,7 +54,7 @@ SUBROUTINE field_summary_kernel(x_min,x_max,y_min,y_max, &
       cell_mass=cell_vol*density(j,k)
       vol=vol+cell_vol
       mass=mass+cell_mass
-      ie=ie+cell_mass*energy0(j,k)
+      ie=ie+cell_mass*energy1(j,k)
       temp=temp+cell_mass*u(j,k)
     ENDDO
   ENDDO

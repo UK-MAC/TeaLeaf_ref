@@ -38,8 +38,9 @@ SUBROUTINE update_halo(fields,depth)
   CALL tea_exchange(fields,depth)
   IF (profiler_on) profiler%halo_exchange = profiler%halo_exchange + (timer() - halo_time)
 
-  IF (profiler_on) halo_time=timer()
-  DO c=1,chunks_per_task
+  IF (reflective_boundary .eqv. .TRUE.) THEN
+   IF (profiler_on) halo_time=timer()
+   DO c=1,chunks_per_task
 
     IF(chunks(c)%task.EQ.parallel%task) THEN
       IF(use_fortran_kernels)THEN
@@ -59,8 +60,9 @@ SUBROUTINE update_halo(fields,depth)
       ENDIF
     ENDIF
 
-  ENDDO
-  IF (profiler_on) profiler%halo_update = profiler%halo_update + (timer() - halo_time)
+   ENDDO
+   IF (profiler_on) profiler%halo_update = profiler%halo_update + (timer() - halo_time)
+  ENDIF
 
 END SUBROUTINE update_halo
 
