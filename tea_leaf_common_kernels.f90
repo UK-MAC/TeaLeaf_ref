@@ -27,7 +27,7 @@ CONTAINS
 SUBROUTINE tea_leaf_kernel_init_common(x_min,  &
                            x_max,                  &
                            y_min,                  &
-                           y_max,                  &
+                           y_max, halo_exchange_depth,                  &
                            chunk_neighbours,       &
                            reflective_boundary,    &
                            density,                &
@@ -50,12 +50,10 @@ SUBROUTINE tea_leaf_kernel_init_common(x_min,  &
 
   LOGICAL :: reflective_boundary
   INTEGER :: preconditioner_type
-  INTEGER(KIND=4):: x_min,x_max,y_min,y_max
+  INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
   INTEGER, DIMENSION(4) :: chunk_neighbours
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: density, energy
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: u, u0, r, w, Kx, Ky
-
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: cp, bfp, Mi
+  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: density, energy, u, r, w, Kx, Ky, Mi, u0
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: cp, bfp
 
   INTEGER(KIND=4) :: coef
   INTEGER(KIND=4) :: j,k
@@ -133,10 +131,10 @@ SUBROUTINE tea_leaf_kernel_init_common(x_min,  &
   ENDIF
 
   IF (preconditioner_type .EQ. TL_PREC_JAC_BLOCK) THEN
-    CALL tea_block_init(x_min, x_max, y_min, y_max,             &
+    CALL tea_block_init(x_min, x_max, y_min, y_max, halo_exchange_depth,             &
                            cp, bfp, Kx, Ky, rx, ry)
   ELSE IF (preconditioner_type .EQ. TL_PREC_JAC_DIAG) THEN
-    CALL tea_diag_init(x_min, x_max, y_min, y_max,             &
+    CALL tea_diag_init(x_min, x_max, y_min, y_max, halo_exchange_depth,             &
                            Mi, Kx, Ky, rx, ry)
   ENDIF
 
@@ -163,17 +161,15 @@ END SUBROUTINE tea_leaf_kernel_init_common
 SUBROUTINE tea_leaf_kernel_finalise(x_min,    &
                            x_max,             &
                            y_min,             &
-                           y_max,             &
+                           y_max, halo_exchange_depth,             &
                            energy,            &
                            density,           &
                            u)
 
   IMPLICIT NONE
 
-  INTEGER(KIND=4):: x_min,x_max,y_min,y_max
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: u
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: energy
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: density
+  INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
+  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: u, energy, density
 
   INTEGER(KIND=4) :: j,k
 
@@ -192,7 +188,7 @@ END SUBROUTINE tea_leaf_kernel_finalise
 SUBROUTINE tea_leaf_calc_residual(x_min,       &
                                   x_max,       &
                                   y_min,       &
-                                  y_max,       &
+                                  y_max, halo_exchange_depth,       &
                                   u ,          &
                                   u0,          &
                                   r,           &
@@ -202,10 +198,8 @@ SUBROUTINE tea_leaf_calc_residual(x_min,       &
 
   IMPLICIT NONE
 
-  INTEGER(KIND=4):: x_min,x_max,y_min,y_max
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: u0, u, r
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: Kx
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: Ky
+  INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
+  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: Kx, u, r, Ky, u0
 
   REAL(KIND=8) :: smvp, rx, ry
 
@@ -231,14 +225,14 @@ END SUBROUTINE tea_leaf_calc_residual
 SUBROUTINE tea_leaf_calc_2norm_kernel(x_min, &
                           x_max,             &
                           y_min,             &
-                          y_max,             &
+                          y_max, halo_exchange_depth,             &
                           arr,               &
                           norm)
 
   IMPLICIT NONE
 
-  INTEGER(KIND=4):: x_min,x_max,y_min,y_max
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: arr
+  INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
+  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: arr
   REAL(KIND=8) :: norm
   integer :: j, k
 
@@ -263,16 +257,15 @@ END SUBROUTINE tea_leaf_calc_2norm_kernel
 SUBROUTINE tea_diag_init(x_min,             &
                          x_max,             &
                          y_min,             &
-                         y_max,             &
+                         y_max, halo_exchange_depth,             &
                          Mi,                &
                          Kx, Ky, rx, ry)
 
   IMPLICIT NONE
 
   INTEGER(KIND=4):: j, k
-  INTEGER(KIND=4):: x_min,x_max,y_min,y_max
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: Kx, Ky
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: Mi
+  INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
+  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: Kx, Ky, Mi
   REAL(KIND=8) :: rx, ry
 
 !$OMP DO
@@ -290,7 +283,7 @@ END SUBROUTINE
 SUBROUTINE tea_diag_solve(x_min,             &
                          x_max,             &
                          y_min,             &
-                         y_max,             &
+                         y_max, halo_exchange_depth,             &
                          r,                 &
                          z,                 &
                          Mi,                &
@@ -299,9 +292,8 @@ SUBROUTINE tea_diag_solve(x_min,             &
   IMPLICIT NONE
 
   INTEGER(KIND=4):: j, k
-  INTEGER(KIND=4):: x_min,x_max,y_min,y_max
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: Kx, Ky, r, z
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: Mi
+  INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
+  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: Kx, Ky, r, z, Mi
   REAL(KIND=8) :: rx, ry
 
 !$OMP DO
@@ -317,7 +309,7 @@ END SUBROUTINE
 SUBROUTINE tea_block_init(x_min,             &
                            x_max,             &
                            y_min,             &
-                           y_max,             &
+                           y_max, halo_exchange_depth,             &
                            cp,                     &
                            bfp,                     &
                            Kx, Ky, rx, ry)
@@ -325,8 +317,8 @@ SUBROUTINE tea_block_init(x_min,             &
   IMPLICIT NONE
 
   INTEGER(KIND=4):: j, ko, k, bottom, top
-  INTEGER(KIND=4):: x_min,x_max,y_min,y_max
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: Kx, Ky
+  INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
+  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: Kx, Ky
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: cp, bfp
   REAL(KIND=8) :: rx, ry
 
@@ -365,7 +357,7 @@ END SUBROUTINE
 SUBROUTINE tea_block_solve(x_min,             &
                            x_max,             &
                            y_min,             &
-                           y_max,             &
+                           y_max, halo_exchange_depth,             &
                            r,                 &
                            z,                 &
                            cp,                     &
@@ -375,9 +367,9 @@ SUBROUTINE tea_block_solve(x_min,             &
   IMPLICIT NONE
 
   INTEGER(KIND=4):: j, ko, k, bottom, top, ki, upper_k, k_extra
-  INTEGER(KIND=4):: x_min,x_max,y_min,y_max
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: Kx, Ky, r
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: cp, bfp, z
+  INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
+  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: Kx, Ky, r, z
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: cp, bfp
   REAL(KIND=8) :: rx, ry
   REAL(KIND=8), dimension(0:jac_block_size-1) :: dp_l, z_l
 

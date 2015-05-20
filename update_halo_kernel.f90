@@ -41,7 +41,7 @@ MODULE update_halo_kernel_module
 
 CONTAINS
 
-  SUBROUTINE update_halo_kernel(x_min,x_max,y_min,y_max,                            &
+  SUBROUTINE update_halo_kernel(x_min,x_max,y_min,y_max,halo_exchange_depth, &
                         chunk_neighbours,                                           &
                         density,                                                    &
                         energy0,                                                    &
@@ -53,10 +53,9 @@ CONTAINS
                         depth                                                       )
   IMPLICIT NONE
 
-  INTEGER :: x_min,x_max,y_min,y_max
+  INTEGER :: x_min,x_max,y_min,y_max,halo_exchange_depth
   INTEGER, DIMENSION(4) :: chunk_neighbours
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: density,energy0,energy1
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: u, p, sd
+  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: density,energy0,energy1, u, sd, p
 
   INTEGER :: fields(NUM_FIELDS),depth
 
@@ -68,42 +67,42 @@ CONTAINS
   ! loop along the mesh edge.
 
   IF(fields(FIELD_DENSITY).EQ.1) THEN
-    call update_halo_cell(x_min, x_max, y_min, y_max, chunk_neighbours, density, depth)
+    call update_halo_cell(x_min, x_max, y_min, y_max, halo_exchange_depth, chunk_neighbours, density, depth)
   ENDIF
 
   IF(fields(FIELD_ENERGY0).EQ.1) THEN
-    call update_halo_cell(x_min, x_max, y_min, y_max, chunk_neighbours, energy0, depth)
+    call update_halo_cell(x_min, x_max, y_min, y_max, halo_exchange_depth, chunk_neighbours, energy0, depth)
   ENDIF
 
   IF(fields(FIELD_ENERGY1).EQ.1) THEN
-    call update_halo_cell(x_min, x_max, y_min, y_max, chunk_neighbours, energy1, depth)
+    call update_halo_cell(x_min, x_max, y_min, y_max, halo_exchange_depth, chunk_neighbours, energy1, depth)
   ENDIF
 
   IF(fields(FIELD_U).EQ.1) THEN
-    call update_halo_cell(x_min, x_max, y_min, y_max, chunk_neighbours, u, depth)
+    call update_halo_cell(x_min, x_max, y_min, y_max, halo_exchange_depth, chunk_neighbours, u, depth)
   ENDIF
 
   IF(fields(FIELD_p).EQ.1) THEN
-    call update_halo_cell(x_min, x_max, y_min, y_max, chunk_neighbours, p, depth)
+    call update_halo_cell(x_min, x_max, y_min, y_max, halo_exchange_depth, chunk_neighbours, p, depth)
   ENDIF
 
   IF(fields(FIELD_sd).EQ.1) THEN
-    call update_halo_cell(x_min, x_max, y_min, y_max, chunk_neighbours, sd, depth)
+    call update_halo_cell(x_min, x_max, y_min, y_max, halo_exchange_depth, chunk_neighbours, sd, depth)
   ENDIF
 
 !$OMP END PARALLEL
 
 END SUBROUTINE update_halo_kernel
 
-SUBROUTINE update_halo_cell(x_min,x_max,y_min,y_max,    &
+SUBROUTINE update_halo_cell(x_min,x_max,y_min,y_max,halo_exchange_depth,    &
                         chunk_neighbours,               &
                         mesh,                           &
                         depth                           )
   IMPLICIT NONE
 
-  INTEGER :: x_min,x_max,y_min,y_max
+  INTEGER :: x_min,x_max,y_min,y_max,halo_exchange_depth
   INTEGER, DIMENSION(4) :: chunk_neighbours
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: mesh
+  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: mesh
 
   INTEGER :: depth
 

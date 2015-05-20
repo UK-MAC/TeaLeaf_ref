@@ -1,3 +1,6 @@
+build_field.o: build_field.f90 tea_module.mod
+calc_dt.o calc_dt_module.mod: calc_dt.f90 tea_module.mod
+calc_dt_kernel.o calc_dt_kernel_module.mod: calc_dt_kernel.f90
 data.o data_module.mod: data.f90
 definitions.o definitions_module.mod: definitions.f90 data_module.mod
 diffuse.o: diffuse.f90 tea_module.mod timestep_module.mod \
@@ -16,6 +19,8 @@ initialise_chunk_kernel.o initialise_chunk_kernel_module.mod: \
  initialise_chunk_kernel.f90
 initialise.o: initialise.f90 tea_module.mod parse_module.mod \
  report_module.mod
+pack.o pack_module.mod: pack.f90 definitions_module.mod \
+ pack_kernel_module.mod
 pack_kernel.o pack_kernel_module.mod: pack_kernel.f90
 parse.o tea_case_change.mod tea_isitanint_mod.mod parse_module.mod: \
  parse.f90 data_module.mod data_module.mod report_module.mod \

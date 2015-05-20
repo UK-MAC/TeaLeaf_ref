@@ -48,7 +48,7 @@ SUBROUTINE generate_chunk(chunk)
     CALL generate_chunk_kernel(chunks(chunk)%field%x_min,             &
                                chunks(chunk)%field%x_max,             &
                                chunks(chunk)%field%y_min,             &
-                               chunks(chunk)%field%y_max,             &
+                               chunks(chunk)%field%y_max,halo_exchange_depth,             &
                                chunks(chunk)%field%vertexx,           &
                                chunks(chunk)%field%vertexy,           &
                                chunks(chunk)%field%cellx,             &

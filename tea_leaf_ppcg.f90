@@ -10,7 +10,7 @@ CONTAINS
 SUBROUTINE tea_leaf_kernel_ppcg_init_sd(x_min,             &
                                         x_max,             &
                                         y_min,             &
-                                        y_max,             &
+                                        y_max, halo_exchange_depth,             &
                                         r,                 &
                                         kx,                 &
                                         ky,                 &
@@ -26,7 +26,7 @@ SUBROUTINE tea_leaf_kernel_ppcg_init_sd(x_min,             &
   IMPLICIT NONE
 
   INTEGER :: preconditioner_type
-  INTEGER(KIND=4):: x_min,x_max,y_min,y_max
+  INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: r, sd, kx, ky
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: z, cp, bfp, Mi
   REAL(KIND=8) :: theta, theta_r, rx, ry
@@ -39,10 +39,10 @@ SUBROUTINE tea_leaf_kernel_ppcg_init_sd(x_min,             &
 
   IF (preconditioner_type .NE. TL_PREC_NONE) THEN
     IF (preconditioner_type .EQ. TL_PREC_JAC_BLOCK) THEN
-      CALL tea_block_solve(x_min, x_max, y_min, y_max,             &
+      CALL tea_block_solve(x_min, x_max, y_min, y_max, halo_exchange_depth,             &
                              r, z, cp, bfp, Kx, Ky, rx, ry)
     ELSE IF (preconditioner_type .EQ. TL_PREC_JAC_DIAG) THEN
-      CALL tea_diag_solve(x_min, x_max, y_min, y_max,             &
+      CALL tea_diag_solve(x_min, x_max, y_min, y_max, halo_exchange_depth,             &
                              r, z, Mi, Kx, Ky, rx, ry)
     ENDIF
 
@@ -69,7 +69,7 @@ END SUBROUTINE tea_leaf_kernel_ppcg_init_sd
 SUBROUTINE tea_leaf_kernel_ppcg_inner(x_min,             &
                                       x_max,             &
                                       y_min,             &
-                                      y_max,             &
+                                      y_max, halo_exchange_depth,             &
                                       step,              &
                                       alpha,             &
                                       beta,              &
@@ -87,7 +87,7 @@ SUBROUTINE tea_leaf_kernel_ppcg_inner(x_min,             &
   IMPLICIT NONE
 
   INTEGER :: preconditioner_type
-  INTEGER(KIND=4):: x_min,x_max,y_min,y_max
+  INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: u, r, Kx, Ky, sd
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: z, cp, bfp, Mi
   INTEGER(KIND=4) :: j,k, step
@@ -112,10 +112,10 @@ SUBROUTINE tea_leaf_kernel_ppcg_inner(x_min,             &
 
   IF (preconditioner_type .NE. TL_PREC_NONE) THEN
     IF (preconditioner_type .EQ. TL_PREC_JAC_BLOCK) THEN
-      CALL tea_block_solve(x_min, x_max, y_min, y_max,             &
+      CALL tea_block_solve(x_min, x_max, y_min, y_max, halo_exchange_depth,             &
                              r, z, cp, bfp, Kx, Ky, rx, ry)
     ELSE IF (preconditioner_type .EQ. TL_PREC_JAC_DIAG) THEN
-      CALL tea_diag_solve(x_min, x_max, y_min, y_max,             &
+      CALL tea_diag_solve(x_min, x_max, y_min, y_max, halo_exchange_depth,             &
                              r, z, Mi, Kx, Ky, rx, ry)
     ENDIF
 
@@ -142,7 +142,7 @@ END SUBROUTINE
 SUBROUTINE tea_leaf_ppcg_calc_zrnorm_kernel(x_min, &
                           x_max,             &
                           y_min,             &
-                          y_max,             &
+                          y_max, halo_exchange_depth,             &
                           z, r,               &
                           preconditioner_type,    &
                           norm)
@@ -150,7 +150,7 @@ SUBROUTINE tea_leaf_ppcg_calc_zrnorm_kernel(x_min, &
   IMPLICIT NONE
 
   INTEGER :: preconditioner_type
-  INTEGER(KIND=4):: x_min,x_max,y_min,y_max
+  INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: r
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: z
   REAL(KIND=8) :: norm

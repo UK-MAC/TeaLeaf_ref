@@ -33,7 +33,7 @@ SUBROUTINE tea_pack_message_left(x_min,x_max,y_min,y_max,field,                &
   REAL(KIND=8) :: field(-1:,-1:) ! This seems to work for any type of mesh data
   REAL(KIND=8) :: left_snd_buffer(:)
 
-  INTEGER      :: depth,field_type,x_min,x_max,y_min,y_max
+  INTEGER      :: depth,field_type,x_min,x_max,y_min,y_max,halo_exchange_depth
   INTEGER      :: j,k,x_inc,y_inc,index,buffer_offset
 
   ! Pack 
@@ -59,7 +59,7 @@ SUBROUTINE tea_unpack_message_left(x_min,x_max,y_min,y_max,field,               
   REAL(KIND=8) :: field(-1:,-1:) ! This seems to work for any type of mesh data
   REAL(KIND=8) :: left_rcv_buffer(:)
 
-  INTEGER      :: depth,field_type,x_min,x_max,y_min,y_max
+  INTEGER      :: depth,field_type,x_min,x_max,y_min,y_max,halo_exchange_depth
   INTEGER      :: j,k,x_inc,y_inc,index,buffer_offset
 
   ! Unpack 
@@ -85,7 +85,7 @@ SUBROUTINE tea_pack_message_right(x_min,x_max,y_min,y_max,field,                
   REAL(KIND=8) :: field(-1:,-1:) ! This seems to work for any type of mesh data
   REAL(KIND=8) :: right_snd_buffer(:)
 
-  INTEGER      :: depth,field_type,x_min,x_max,y_min,y_max
+  INTEGER      :: depth,field_type,x_min,x_max,y_min,y_max,halo_exchange_depth
   INTEGER      :: j,k,x_inc,y_inc,index,buffer_offset
 
   ! Pack 
@@ -111,7 +111,7 @@ SUBROUTINE tea_unpack_message_right(x_min,x_max,y_min,y_max,field,              
   REAL(KIND=8) :: field(-1:,-1:) ! This seems to work for any type of mesh data
   REAL(KIND=8) :: right_rcv_buffer(:)
 
-  INTEGER      :: depth,field_type,x_min,x_max,y_min,y_max
+  INTEGER      :: depth,field_type,x_min,x_max,y_min,y_max,halo_exchange_depth
   INTEGER      :: j,k,x_inc,y_inc,index,buffer_offset
 
   ! Unpack 
@@ -137,7 +137,7 @@ SUBROUTINE tea_pack_message_top(x_min,x_max,y_min,y_max,field,                &
   REAL(KIND=8) :: field(-1:,-1:) ! This seems to work for any type of mesh data
   REAL(KIND=8) :: top_snd_buffer(:)
 
-  INTEGER      :: depth,field_type,x_min,x_max,y_min,y_max
+  INTEGER      :: depth,field_type,x_min,x_max,y_min,y_max,halo_exchange_depth
   INTEGER      :: j,k,x_inc,y_inc,index,buffer_offset
 
   ! Pack 
@@ -163,7 +163,7 @@ SUBROUTINE tea_unpack_message_top(x_min,x_max,y_min,y_max,field,                
   REAL(KIND=8) :: field(-1:,-1:) ! This seems to work for any type of mesh data
   REAL(KIND=8) :: top_rcv_buffer(:)
 
-  INTEGER      :: depth,field_type,x_min,x_max,y_min,y_max
+  INTEGER      :: depth,field_type,x_min,x_max,y_min,y_max,halo_exchange_depth
   INTEGER      :: j,k,x_inc,y_inc,index,buffer_offset
 
   ! Unpack 
@@ -189,7 +189,7 @@ SUBROUTINE tea_pack_message_bottom(x_min,x_max,y_min,y_max,field,               
   REAL(KIND=8) :: field(-1:,-1:) ! This seems to work for any type of mesh data
   REAL(KIND=8) :: bottom_snd_buffer(:)
 
-  INTEGER      :: depth,field_type,x_min,x_max,y_min,y_max
+  INTEGER      :: depth,field_type,x_min,x_max,y_min,y_max,halo_exchange_depth
   INTEGER      :: j,k,x_inc,y_inc,index,buffer_offset
 
   ! Pack 
@@ -215,7 +215,7 @@ SUBROUTINE tea_unpack_message_bottom(x_min,x_max,y_min,y_max,field,             
   REAL(KIND=8) :: field(-1:,-1:) ! This seems to work for any type of mesh data
   REAL(KIND=8) :: bottom_rcv_buffer(:)
 
-  INTEGER      :: depth,field_type,x_min,x_max,y_min,y_max
+  INTEGER      :: depth,field_type,x_min,x_max,y_min,y_max,halo_exchange_depth
   INTEGER      :: j,k,x_inc,y_inc,index,buffer_offset
 
   ! Unpack 

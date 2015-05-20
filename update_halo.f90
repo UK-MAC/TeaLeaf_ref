@@ -47,7 +47,7 @@ SUBROUTINE update_halo(fields,depth)
         CALL update_halo_kernel(chunks(c)%field%x_min,          &
                                 chunks(c)%field%x_max,          &
                                 chunks(c)%field%y_min,          &
-                                chunks(c)%field%y_max,          &
+                                chunks(c)%field%y_max, halo_exchange_depth,          &
                                 chunks(c)%chunk_neighbours,     &
                                 chunks(c)%field%density,        &
                                 chunks(c)%field%energy0,        &

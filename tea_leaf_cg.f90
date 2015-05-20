@@ -28,7 +28,7 @@ CONTAINS
 SUBROUTINE tea_leaf_kernel_init_cg_fortran(x_min,  &
                            x_max,                  &
                            y_min,                  &
-                           y_max,                  &
+                           y_max, halo_exchange_depth,                  &
                            density,                &
                            energy,                 &
                            u,                      &
@@ -49,10 +49,9 @@ SUBROUTINE tea_leaf_kernel_init_cg_fortran(x_min,  &
   IMPLICIT NONE
 
   INTEGER :: preconditioner_type
-  INTEGER(KIND=4):: x_min,x_max,y_min,y_max
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: density, energy
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: u, p, r, w, Kx, Ky
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: cp, bfp, z, Mi
+  INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
+  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: u, r, w, Kx, Ky, z, Mi, density, energy, p
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: cp, bfp
 
   INTEGER(KIND=4) :: j,k
 
@@ -74,10 +73,10 @@ SUBROUTINE tea_leaf_kernel_init_cg_fortran(x_min,  &
   IF (preconditioner_type .NE. TL_PREC_NONE) THEN
 
     IF (preconditioner_type .EQ. TL_PREC_JAC_BLOCK) THEN
-      CALL tea_block_solve(x_min, x_max, y_min, y_max,             &
+      CALL tea_block_solve(x_min, x_max, y_min, y_max, halo_exchange_depth,             &
                              r, z, cp, bfp, Kx, Ky, rx, ry)
     ELSE IF (preconditioner_type .EQ. TL_PREC_JAC_DIAG) THEN
-      CALL tea_diag_solve(x_min, x_max, y_min, y_max,             &
+      CALL tea_diag_solve(x_min, x_max, y_min, y_max, halo_exchange_depth,             &
                              r, z, Mi, Kx, Ky, rx, ry)
     ENDIF
 
@@ -111,7 +110,7 @@ END SUBROUTINE tea_leaf_kernel_init_cg_fortran
 SUBROUTINE tea_leaf_kernel_solve_cg_fortran_calc_w(x_min,             &
                                                    x_max,             &
                                                    y_min,             &
-                                                   y_max,             &
+                                                   y_max, halo_exchange_depth,             &
                                                    p,                 &
                                                    w,                 &
                                                    Kx,                &
@@ -122,11 +121,8 @@ SUBROUTINE tea_leaf_kernel_solve_cg_fortran_calc_w(x_min,             &
 
   IMPLICIT NONE
 
-  INTEGER(KIND=4):: x_min,x_max,y_min,y_max
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: p
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: w
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: Kx
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: Ky
+  INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
+  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: w, Kx, Ky, p
 
     REAL(KIND=8) ::  rx, ry
 
@@ -154,7 +150,7 @@ END SUBROUTINE tea_leaf_kernel_solve_cg_fortran_calc_w
 SUBROUTINE tea_leaf_kernel_solve_cg_fortran_calc_ur(x_min,             &
                                                     x_max,             &
                                                     y_min,             &
-                                                    y_max,             &
+                                                    y_max, halo_exchange_depth,             &
                                                     u,                 &
                                                     p,                 &
                                                     r,                 &
@@ -171,15 +167,9 @@ SUBROUTINE tea_leaf_kernel_solve_cg_fortran_calc_ur(x_min,             &
   IMPLICIT NONE
 
   INTEGER :: preconditioner_type
-  INTEGER(KIND=4):: x_min,x_max,y_min,y_max
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: u
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: p
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: r
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: Mi
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: w
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: z, cp, bfp
-
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: Kx, Ky
+  INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
+  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: u, r, Mi, w, z, Kx, Ky, p
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: cp, bfp
   REAL(KIND=8) :: rx, ry
 
     INTEGER(KIND=4) :: j,k
@@ -205,10 +195,10 @@ SUBROUTINE tea_leaf_kernel_solve_cg_fortran_calc_ur(x_min,             &
 !$OMP END DO
 
     IF (preconditioner_type .EQ. TL_PREC_JAC_BLOCK) THEN
-      CALL tea_block_solve(x_min, x_max, y_min, y_max,             &
+      CALL tea_block_solve(x_min, x_max, y_min, y_max, halo_exchange_depth,             &
                              r, z, cp, bfp, Kx, Ky, rx, ry)
     ELSE IF (preconditioner_type .EQ. TL_PREC_JAC_DIAG) THEN
-      CALL tea_diag_solve(x_min, x_max, y_min, y_max,             &
+      CALL tea_diag_solve(x_min, x_max, y_min, y_max, halo_exchange_depth,             &
                              r, z, Mi, Kx, Ky, rx, ry)
     ENDIF
 
@@ -236,7 +226,7 @@ END SUBROUTINE tea_leaf_kernel_solve_cg_fortran_calc_ur
 SUBROUTINE tea_leaf_kernel_solve_cg_fortran_calc_p(x_min,             &
                                                    x_max,             &
                                                    y_min,             &
-                                                   y_max,             &
+                                                   y_max, halo_exchange_depth,             &
                                                    p,                 &
                                                    r,                 &
                                                    z,                 &
@@ -246,9 +236,8 @@ SUBROUTINE tea_leaf_kernel_solve_cg_fortran_calc_p(x_min,             &
   IMPLICIT NONE
 
   INTEGER :: preconditioner_type
-  INTEGER(KIND=4):: x_min,x_max,y_min,y_max
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: p, r
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: z
+  INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
+  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: z, r, p
 
   INTEGER(KIND=4) :: j,k
   REAL(kind=8) :: beta

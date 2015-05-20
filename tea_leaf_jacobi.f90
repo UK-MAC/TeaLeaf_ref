@@ -26,7 +26,7 @@ CONTAINS
 SUBROUTINE tea_leaf_kernel_jacobi_solve(x_min,       &
                            x_max,             &
                            y_min,             &
-                           y_max,             &
+                           y_max, halo_exchange_depth,             &
                            rx,                &
                            ry,                &
                            Kx,                &
@@ -39,7 +39,7 @@ SUBROUTINE tea_leaf_kernel_jacobi_solve(x_min,       &
 
   IMPLICIT NONE
 
-  INTEGER(KIND=4):: x_min,x_max,y_min,y_max
+  INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: un
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: u1, u0
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: Kx

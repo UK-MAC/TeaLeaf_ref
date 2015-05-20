@@ -39,7 +39,7 @@ SUBROUTINE initialise_chunk_kernel(x_min,x_max,y_min,y_max,       &
 
   IMPLICIT NONE
 
-  INTEGER      :: x_min,x_max,y_min,y_max
+  INTEGER      :: x_min,x_max,y_min,y_max,halo_exchange_depth
   REAL(KIND=8) :: xmin,ymin,dx,dy
   REAL(KIND=8), DIMENSION(x_min-2:x_max+3) :: vertexx
   REAL(KIND=8), DIMENSION(x_min-2:x_max+3) :: vertexdx

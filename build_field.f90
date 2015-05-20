@@ -36,9 +36,13 @@ SUBROUTINE build_field(chunk,x_cells,y_cells)
 
    ALLOCATE(chunks(chunk)%field%density  (chunks(chunk)%field%x_min-halo_exchange_depth:chunks(chunk)%field%x_max+halo_exchange_depth, &
         chunks(chunk)%field%y_min-halo_exchange_depth:chunks(chunk)%field%y_max+halo_exchange_depth))
+   ALLOCATE(chunks(chunk)%field%energy0  (chunks(chunk)%field%x_min-halo_exchange_depth:chunks(chunk)%field%x_max+halo_exchange_depth, &
+        chunks(chunk)%field%y_min-halo_exchange_depth:chunks(chunk)%field%y_max+halo_exchange_depth))
    ALLOCATE(chunks(chunk)%field%energy1  (chunks(chunk)%field%x_min-halo_exchange_depth:chunks(chunk)%field%x_max+halo_exchange_depth, &
         chunks(chunk)%field%y_min-halo_exchange_depth:chunks(chunk)%field%y_max+halo_exchange_depth))
    ALLOCATE(chunks(chunk)%field%u        (chunks(chunk)%field%x_min-halo_exchange_depth:chunks(chunk)%field%x_max+halo_exchange_depth, &
+        chunks(chunk)%field%y_min-halo_exchange_depth:chunks(chunk)%field%y_max+halo_exchange_depth))
+   ALLOCATE(chunks(chunk)%field%u0       (chunks(chunk)%field%x_min-halo_exchange_depth:chunks(chunk)%field%x_max+halo_exchange_depth, &
         chunks(chunk)%field%y_min-halo_exchange_depth:chunks(chunk)%field%y_max+halo_exchange_depth))
    ALLOCATE(chunks(chunk)%field%vector_r (chunks(chunk)%field%x_min-halo_exchange_depth:chunks(chunk)%field%x_max+halo_exchange_depth, &
         chunks(chunk)%field%y_min-halo_exchange_depth:chunks(chunk)%field%y_max+halo_exchange_depth))
@@ -52,15 +56,10 @@ SUBROUTINE build_field(chunk,x_cells,y_cells)
         chunks(chunk)%field%y_min-halo_exchange_depth:chunks(chunk)%field%y_max+halo_exchange_depth))
    ALLOCATE(chunks(chunk)%field%vector_Ky(chunks(chunk)%field%x_min-halo_exchange_depth:chunks(chunk)%field%x_max+halo_exchange_depth, &
         chunks(chunk)%field%y_min-halo_exchange_depth:chunks(chunk)%field%y_max+halo_exchange_depth))
+   ALLOCATE(chunks(chunk)%field%vector_p (chunks(chunk)%field%x_min-halo_exchange_depth:chunks(chunk)%field%x_max+halo_exchange_depth, &
+        chunks(chunk)%field%y_min-halo_exchange_depth:chunks(chunk)%field%y_max+halo_exchange_depth))
    ALLOCATE(chunks(chunk)%field%vector_sd(chunks(chunk)%field%x_min-halo_exchange_depth:chunks(chunk)%field%x_max+halo_exchange_depth, &
         chunks(chunk)%field%y_min-halo_exchange_depth:chunks(chunk)%field%y_max+halo_exchange_depth))
-
-   ALLOCATE(chunks(chunk)%field%energy0   (chunks(chunk)%field%x_min-2:chunks(chunk)%field%x_max+2, &
-        chunks(chunk)%field%y_min-2:chunks(chunk)%field%y_max+2))
-   ALLOCATE(chunks(chunk)%field%u0        (chunks(chunk)%field%x_min-2:chunks(chunk)%field%x_max+2, &
-        chunks(chunk)%field%y_min-2:chunks(chunk)%field%y_max+2))
-   ALLOCATE(chunks(chunk)%field%vector_p(chunks(chunk)%field%x_min-2:chunks(chunk)%field%x_max+2, &
-        chunks(chunk)%field%y_min-2:chunks(chunk)%field%y_max+2))
 
    ALLOCATE(chunks(chunk)%field%tri_cp(chunks(chunk)%field%x_min-2:chunks(chunk)%field%x_max+2, &
         chunks(chunk)%field%y_min-2:chunks(chunk)%field%y_max+2))
@@ -92,8 +91,10 @@ SUBROUTINE build_field(chunk,x_cells,y_cells)
    DO k=chunks(chunk)%field%y_min-halo_exchange_depth,chunks(chunk)%field%y_max+halo_exchange_depth
      DO j=chunks(chunk)%field%x_min-halo_exchange_depth,chunks(chunk)%field%x_max+halo_exchange_depth
        chunks(chunk)%field%density(j,k)=0.0
+       chunks(chunk)%field%energy0(j,k)=0.0
        chunks(chunk)%field%energy1(j,k)=0.0
        chunks(chunk)%field%u(j,k)=0.0
+       chunks(chunk)%field%u0(j,k)=0.0
 
        chunks(chunk)%field%vector_r(j,k)=0.0
        chunks(chunk)%field%vector_Mi(j,k)=0.0
@@ -101,6 +102,7 @@ SUBROUTINE build_field(chunk,x_cells,y_cells)
        chunks(chunk)%field%vector_z(j,k)=0.0
        chunks(chunk)%field%vector_Kx(j,k)=0.0
        chunks(chunk)%field%vector_Ky(j,k)=0.0
+       chunks(chunk)%field%vector_p(j,k)=0.0
        chunks(chunk)%field%vector_sd(j,k)=0.0
      ENDDO
    ENDDO
@@ -108,11 +110,6 @@ SUBROUTINE build_field(chunk,x_cells,y_cells)
 !$OMP DO 
    DO k=chunks(chunk)%field%y_min-2,chunks(chunk)%field%y_max+2
      DO j=chunks(chunk)%field%x_min-2,chunks(chunk)%field%x_max+2
-       chunks(chunk)%field%vector_p(j,k)=0.0
-
-       chunks(chunk)%field%energy0(j,k)=0.0
-       chunks(chunk)%field%u0(j,k)=0.0
-
        chunks(chunk)%field%tri_cp(j,k)=0.0
        chunks(chunk)%field%tri_bfp(j,k)=0.0
      ENDDO

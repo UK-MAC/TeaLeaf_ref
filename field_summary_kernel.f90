@@ -23,7 +23,7 @@ MODULE field_summary_kernel_module
 
 CONTAINS
 
-SUBROUTINE field_summary_kernel(x_min,x_max,y_min,y_max, &
+SUBROUTINE field_summary_kernel(x_min,x_max,y_min,y_max,halo_exchange_depth, &
                                 volume,                  &
                                 density,                 &
                                 energy1,                 &
@@ -32,10 +32,9 @@ SUBROUTINE field_summary_kernel(x_min,x_max,y_min,y_max, &
 
   IMPLICIT NONE
 
-  INTEGER      :: x_min,x_max,y_min,y_max
+  INTEGER      :: x_min,x_max,y_min,y_max,halo_exchange_depth
   REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: volume
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: density,energy1
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: u
+  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: density,energy1,u
   REAL(KIND=8) :: vol,mass,ie,temp
 
   INTEGER      :: j,k
