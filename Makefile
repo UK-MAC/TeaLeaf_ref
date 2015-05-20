@@ -73,7 +73,7 @@ OMP_XL        = -qsmp=omp -qthreaded
 
 FLAGS_INTEL     = -O3 -no-prec-div -fpp -align array64byte
 FLAGS_SUN       = -fast -xipo=2 -Xlistv4
-FLAGS_GNU       = -O3 -march=native -funroll-loops
+FLAGS_GNU       = -O3 -march=native -funroll-loops -cpp -ffree-line-length-none -ggdb
 FLAGS_CRAY      = -em -ra -h acc_model=fast_addr:no_deep_copy:auto_async_all
 FLAGS_PGI       = -fastsse -gopt -Mipa=fast -Mlist
 FLAGS_PATHSCALE = -O3
@@ -132,6 +132,7 @@ C_FILES=\
 FORTRAN_FILES=\
 	data.o			\
 	definitions.o			\
+	pack.o			\
 	pack_kernel.o			\
 	tea.o				\
 	report.o			\

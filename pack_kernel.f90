@@ -25,8 +25,7 @@ CONTAINS
 
 SUBROUTINE tea_pack_message_left(x_min,x_max,y_min,y_max,field,                &
                                  left_snd_buffer,                              &
-                                 CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
-                                 depth,field_type,                             &
+                                 depth,x_inc, y_inc,                             &
                                  buffer_offset)
 
   IMPLICIT NONE
@@ -34,29 +33,10 @@ SUBROUTINE tea_pack_message_left(x_min,x_max,y_min,y_max,field,                &
   REAL(KIND=8) :: field(-1:,-1:) ! This seems to work for any type of mesh data
   REAL(KIND=8) :: left_snd_buffer(:)
 
-  INTEGER      :: CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA
   INTEGER      :: depth,field_type,x_min,x_max,y_min,y_max
   INTEGER      :: j,k,x_inc,y_inc,index,buffer_offset
 
   ! Pack 
-
-  ! These array modifications still need to be added on, plus the donor data location changes as in update_halo
-  IF(field_type.EQ.CELL_DATA) THEN
-    x_inc=0
-    y_inc=0
-  ENDIF
-  IF(field_type.EQ.VERTEX_DATA) THEN
-    x_inc=1
-    y_inc=1
-  ENDIF
-  IF(field_type.EQ.X_FACE_DATA) THEN
-    x_inc=1
-    y_inc=0
-  ENDIF
-  IF(field_type.EQ.Y_FACE_DATA) THEN
-    x_inc=0
-    y_inc=1
-  ENDIF
 
 !$OMP DO
   DO k=y_min-depth,y_max+y_inc+depth
@@ -71,8 +51,7 @@ END SUBROUTINE tea_pack_message_left
 
 SUBROUTINE tea_unpack_message_left(x_min,x_max,y_min,y_max,field,                &
                                    left_rcv_buffer,                              &
-                                   CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
-                                   depth,field_type,                             &
+                                   depth,x_inc, y_inc,                             &
                                    buffer_offset)
 
   IMPLICIT NONE
@@ -80,29 +59,10 @@ SUBROUTINE tea_unpack_message_left(x_min,x_max,y_min,y_max,field,               
   REAL(KIND=8) :: field(-1:,-1:) ! This seems to work for any type of mesh data
   REAL(KIND=8) :: left_rcv_buffer(:)
 
-  INTEGER      :: CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA
   INTEGER      :: depth,field_type,x_min,x_max,y_min,y_max
   INTEGER      :: j,k,x_inc,y_inc,index,buffer_offset
 
   ! Unpack 
-
-  ! These array modifications still need to be added on, plus the donor data location changes as in update_halo
-  IF(field_type.EQ.CELL_DATA) THEN
-    x_inc=0
-    y_inc=0
-  ENDIF
-  IF(field_type.EQ.VERTEX_DATA) THEN
-    x_inc=1
-    y_inc=1
-  ENDIF
-  IF(field_type.EQ.X_FACE_DATA) THEN
-    x_inc=1
-    y_inc=0
-  ENDIF
-  IF(field_type.EQ.Y_FACE_DATA) THEN
-    x_inc=0
-    y_inc=1
-  ENDIF
 
 !$OMP DO
   DO k=y_min-depth,y_max+y_inc+depth
@@ -117,8 +77,7 @@ END SUBROUTINE tea_unpack_message_left
 
 SUBROUTINE tea_pack_message_right(x_min,x_max,y_min,y_max,field,                &
                                   right_snd_buffer,                             &
-                                  CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
-                                  depth,field_type,                             &
+                                   depth,x_inc, y_inc,                             &
                                   buffer_offset)
 
   IMPLICIT NONE
@@ -126,29 +85,10 @@ SUBROUTINE tea_pack_message_right(x_min,x_max,y_min,y_max,field,                
   REAL(KIND=8) :: field(-1:,-1:) ! This seems to work for any type of mesh data
   REAL(KIND=8) :: right_snd_buffer(:)
 
-  INTEGER      :: CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA
   INTEGER      :: depth,field_type,x_min,x_max,y_min,y_max
   INTEGER      :: j,k,x_inc,y_inc,index,buffer_offset
 
   ! Pack 
-
-  ! These array modifications still need to be added on, plus the donor data location changes as in update_halo
-  IF(field_type.EQ.CELL_DATA) THEN
-    x_inc=0
-    y_inc=0
-  ENDIF
-  IF(field_type.EQ.VERTEX_DATA) THEN
-    x_inc=1
-    y_inc=1
-  ENDIF
-  IF(field_type.EQ.X_FACE_DATA) THEN
-    x_inc=1
-    y_inc=0
-  ENDIF
-  IF(field_type.EQ.Y_FACE_DATA) THEN
-    x_inc=0
-    y_inc=1
-  ENDIF
 
 !$OMP DO
   DO k=y_min-depth,y_max+y_inc+depth
@@ -163,8 +103,7 @@ END SUBROUTINE tea_pack_message_right
 
 SUBROUTINE tea_unpack_message_right(x_min,x_max,y_min,y_max,field,                &
                                     right_rcv_buffer,                             &
-                                    CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
-                                    depth,field_type,                             &
+                                   depth,x_inc, y_inc,                             &
                                     buffer_offset)
 
   IMPLICIT NONE
@@ -172,29 +111,10 @@ SUBROUTINE tea_unpack_message_right(x_min,x_max,y_min,y_max,field,              
   REAL(KIND=8) :: field(-1:,-1:) ! This seems to work for any type of mesh data
   REAL(KIND=8) :: right_rcv_buffer(:)
 
-  INTEGER      :: CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA
   INTEGER      :: depth,field_type,x_min,x_max,y_min,y_max
   INTEGER      :: j,k,x_inc,y_inc,index,buffer_offset
 
   ! Unpack 
-
-  ! These array modifications still need to be added on, plus the donor data location changes as in update_halo
-  IF(field_type.EQ.CELL_DATA) THEN
-    x_inc=0
-    y_inc=0
-  ENDIF
-  IF(field_type.EQ.VERTEX_DATA) THEN
-    x_inc=1
-    y_inc=1
-  ENDIF
-  IF(field_type.EQ.X_FACE_DATA) THEN
-    x_inc=1
-    y_inc=0
-  ENDIF
-  IF(field_type.EQ.Y_FACE_DATA) THEN
-    x_inc=0
-    y_inc=1
-  ENDIF
 
 !$OMP DO
   DO k=y_min-depth,y_max+y_inc+depth
@@ -209,8 +129,7 @@ END SUBROUTINE tea_unpack_message_right
 
 SUBROUTINE tea_pack_message_top(x_min,x_max,y_min,y_max,field,                &
                                 top_snd_buffer,                               &
-                                CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
-                                depth,field_type,                             &
+                                   depth,x_inc, y_inc,                             &
                                 buffer_offset)
 
   IMPLICIT NONE
@@ -218,29 +137,10 @@ SUBROUTINE tea_pack_message_top(x_min,x_max,y_min,y_max,field,                &
   REAL(KIND=8) :: field(-1:,-1:) ! This seems to work for any type of mesh data
   REAL(KIND=8) :: top_snd_buffer(:)
 
-  INTEGER      :: CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA
   INTEGER      :: depth,field_type,x_min,x_max,y_min,y_max
   INTEGER      :: j,k,x_inc,y_inc,index,buffer_offset
 
   ! Pack 
-
-  ! These array modifications still need to be added on, plus the donor data location changes as in update_halo
-  IF(field_type.EQ.CELL_DATA) THEN
-    x_inc=0
-    y_inc=0
-  ENDIF
-  IF(field_type.EQ.VERTEX_DATA) THEN
-    x_inc=1
-    y_inc=1
-  ENDIF
-  IF(field_type.EQ.X_FACE_DATA) THEN
-    x_inc=1
-    y_inc=0
-  ENDIF
-  IF(field_type.EQ.Y_FACE_DATA) THEN
-    x_inc=0
-    y_inc=1
-  ENDIF
 
 !$OMP DO
   DO k=1,depth
@@ -255,8 +155,7 @@ END SUBROUTINE tea_pack_message_top
 
 SUBROUTINE tea_unpack_message_top(x_min,x_max,y_min,y_max,field,                &
                                   top_rcv_buffer,                               &
-                                  CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
-                                  depth,field_type,                             &
+                                   depth,x_inc, y_inc,                             &
                                   buffer_offset)
 
   IMPLICIT NONE
@@ -264,29 +163,10 @@ SUBROUTINE tea_unpack_message_top(x_min,x_max,y_min,y_max,field,                
   REAL(KIND=8) :: field(-1:,-1:) ! This seems to work for any type of mesh data
   REAL(KIND=8) :: top_rcv_buffer(:)
 
-  INTEGER      :: CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA
   INTEGER      :: depth,field_type,x_min,x_max,y_min,y_max
   INTEGER      :: j,k,x_inc,y_inc,index,buffer_offset
 
   ! Unpack 
-
-  ! These array modifications still need to be added on, plus the donor data location changes as in update_halo
-  IF(field_type.EQ.CELL_DATA) THEN
-    x_inc=0
-    y_inc=0
-  ENDIF
-  IF(field_type.EQ.VERTEX_DATA) THEN
-    x_inc=1
-    y_inc=1
-  ENDIF
-  IF(field_type.EQ.X_FACE_DATA) THEN
-    x_inc=1
-    y_inc=0
-  ENDIF
-  IF(field_type.EQ.Y_FACE_DATA) THEN
-    x_inc=0
-    y_inc=1
-  ENDIF
 
 !$OMP DO
   DO k=1,depth
@@ -301,8 +181,7 @@ END SUBROUTINE tea_unpack_message_top
 
 SUBROUTINE tea_pack_message_bottom(x_min,x_max,y_min,y_max,field,                &
                                    bottom_snd_buffer,                            &
-                                   CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
-                                   depth,field_type,                             &
+                                   depth,x_inc, y_inc,                             &
                                    buffer_offset)
 
   IMPLICIT NONE
@@ -310,29 +189,10 @@ SUBROUTINE tea_pack_message_bottom(x_min,x_max,y_min,y_max,field,               
   REAL(KIND=8) :: field(-1:,-1:) ! This seems to work for any type of mesh data
   REAL(KIND=8) :: bottom_snd_buffer(:)
 
-  INTEGER      :: CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA
   INTEGER      :: depth,field_type,x_min,x_max,y_min,y_max
   INTEGER      :: j,k,x_inc,y_inc,index,buffer_offset
 
   ! Pack 
-
-  ! These array modifications still need to be added on, plus the donor data location changes as in update_halo
-  IF(field_type.EQ.CELL_DATA) THEN
-    x_inc=0
-    y_inc=0
-  ENDIF
-  IF(field_type.EQ.VERTEX_DATA) THEN
-    x_inc=1
-    y_inc=1
-  ENDIF
-  IF(field_type.EQ.X_FACE_DATA) THEN
-    x_inc=1
-    y_inc=0
-  ENDIF
-  IF(field_type.EQ.Y_FACE_DATA) THEN
-    x_inc=0
-    y_inc=1
-  ENDIF
 
 !$OMP DO
   DO k=1,depth
@@ -347,8 +207,7 @@ END SUBROUTINE tea_pack_message_bottom
 
 SUBROUTINE tea_unpack_message_bottom(x_min,x_max,y_min,y_max,field,                &
                                      bottom_rcv_buffer,                            &
-                                     CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA,&
-                                     depth,field_type,                             &
+                                   depth,x_inc, y_inc,                             &
                                      buffer_offset)
 
   IMPLICIT NONE
@@ -356,29 +215,10 @@ SUBROUTINE tea_unpack_message_bottom(x_min,x_max,y_min,y_max,field,             
   REAL(KIND=8) :: field(-1:,-1:) ! This seems to work for any type of mesh data
   REAL(KIND=8) :: bottom_rcv_buffer(:)
 
-  INTEGER      :: CELL_DATA,VERTEX_DATA,X_FACE_DATA,Y_FACE_DATA
   INTEGER      :: depth,field_type,x_min,x_max,y_min,y_max
   INTEGER      :: j,k,x_inc,y_inc,index,buffer_offset
 
   ! Unpack 
-
-  ! These array modifications still need to be added on, plus the donor data location changes as in update_halo
-  IF(field_type.EQ.CELL_DATA) THEN
-    x_inc=0
-    y_inc=0
-  ENDIF
-  IF(field_type.EQ.VERTEX_DATA) THEN
-    x_inc=1
-    y_inc=1
-  ENDIF
-  IF(field_type.EQ.X_FACE_DATA) THEN
-    x_inc=1
-    y_inc=0
-  ENDIF
-  IF(field_type.EQ.Y_FACE_DATA) THEN
-    x_inc=0
-    y_inc=1
-  ENDIF
 
 !$OMP DO
   DO k=1,depth

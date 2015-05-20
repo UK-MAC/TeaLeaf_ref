@@ -32,7 +32,6 @@ SUBROUTINE report_error(location, error)
 
   CHARACTER(LEN=*)  :: location, error
 
-  IF (parallel%boss) THEN
     WRITE(*    ,*)
     WRITE(*    ,*)  'Error from ',location,':'
     WRITE(*    ,*)  error
@@ -53,7 +52,6 @@ SUBROUTINE report_error(location, error)
     WRITE(g_out,*)
     WRITE(0    ,*) 'TEA is terminating.'
     WRITE(0    ,*)
-  ENDIF
 
   CALL tea_abort
 

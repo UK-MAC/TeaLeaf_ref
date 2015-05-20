@@ -521,6 +521,7 @@ SUBROUTINE tea_leaf()
             WRITE(g_out,*)"Residual ",error
 !$        ENDIF
         ENDIF
+
         IF (abs(error) .LT. eps*initial_residual) EXIT
 
       ENDDO
