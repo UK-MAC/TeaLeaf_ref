@@ -98,8 +98,8 @@ SUBROUTINE generate_chunk_kernel(x_min,x_max,y_min,y_max,halo_exchange_depth, &
     y_cent=state_ymin(state)
 
 !$OMP DO PRIVATE(radius,jt,kt)
-    DO k=y_min-halo_exchange_depth,y_max+halo_exchange_depth
-      DO j=x_min-halo_exchange_depth,x_max+halo_exchange_depth
+    DO k=y_min-2,y_max+2
+      DO j=x_min-2,x_max+2
         IF(state_geometry(state).EQ.g_rect ) THEN
           IF(vertexx(j+1).GE.state_xmin(state).AND.vertexx(j).LT.state_xmax(state)) THEN
             IF(vertexy(k+1).GE.state_ymin(state).AND.vertexy(k).LT.state_ymax(state)) THEN
