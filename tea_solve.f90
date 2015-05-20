@@ -93,7 +93,7 @@ SUBROUTINE tea_leaf()
       fields(FIELD_ENERGY1) = 1
       fields(FIELD_DENSITY) = 1
       IF (profiler_on) halo_time=timer()
-      CALL update_halo(fields,2)
+      CALL update_halo(fields,halo_exchange_depth)
       !IF (profiler_on) profiler%halo_exchange = profiler%halo_exchange + (timer() - halo_time)
 
       IF (profiler_on) init_time=timer()
@@ -190,9 +190,12 @@ SUBROUTINE tea_leaf()
 
         ! need to update p when using CG due to matrix/vector multiplication
         fields=0
+        fields(FIELD_U) = 1
         fields(FIELD_P) = 1
         IF (profiler_on) halo_time=timer()
         CALL update_halo(fields,1)
+        fields=0
+        fields(FIELD_P) = 1
         !IF (profiler_on) profiler%halo_exchange = profiler%halo_exchange + (timer() - halo_time)
         IF (profiler_on) init_time=init_time+(timer()-halo_time)
       ELSEIF (tl_use_jacobi) THEN
@@ -210,11 +213,11 @@ SUBROUTINE tea_leaf()
 
         IF (ch_switch_check .eqv. .false.) THEN
           IF (tl_ch_cg_errswitch) THEN
-              ! either the error has got below tolerance, or it's already going - minimum 20 steps to converge eigenvalues
-              ch_switch_check = (cheby_calc_steps .GT. 0) .OR. (error .LE. tl_ch_cg_epslim) .AND. (n .GE. 20)
+              ! either the ABS(error) has got below tolerance, or it's already going - minimum 20 steps to converge eigenvalues
+              ch_switch_check = (cheby_calc_steps .GT. 0) .OR. (ABS(error) .LE. tl_ch_cg_epslim) .AND. (n .GE. 20)
           ELSE
-              ! enough steps have passed and error < 1, otherwise it's nowhere near converging on eigenvalues
-              ch_switch_check = (n .GE. tl_ch_cg_presteps) .AND. (error .le. 1.0_8)
+              ! enough steps have passed and ABS(error) < 1, otherwise it's nowhere near converging on eigenvalues
+              ch_switch_check = (n .GE. tl_ch_cg_presteps) .AND. (ABS(error) .le. 1.0_8)
           ENDIF
         ENDIF
 
@@ -684,11 +687,12 @@ SUBROUTINE tea_leaF_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
 
   fields = 0
   fields(FIELD_SD) = 1
+  fields(FIELD_R) = 1
 
   ! inner steps
-  DO ppcg_cur_step=1,tl_ppcg_inner_steps
+  DO ppcg_cur_step=1,tl_ppcg_inner_steps,halo_exchange_depth
     IF (profiler_on) halo_time = timer()
-    CALL update_halo(fields,1)
+    CALL update_halo(fields,halo_exchange_depth)
     !IF (profiler_on) profiler%halo_exchange = profiler%halo_exchange + (timer() - halo_time)
     IF (profiler_on) solve_time = solve_time + (timer()-halo_time)
 

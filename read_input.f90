@@ -87,6 +87,8 @@ SUBROUTINE read_input()
   tl_use_jacobi = .TRUE.
   verbose_on = .FALSE.
 
+  halo_exchange_depth=1
+
   IF(parallel%boss)WRITE(g_out,*) 'Reading input file'
   IF(parallel%boss)WRITE(g_out,*)
 
@@ -216,6 +218,10 @@ SUBROUTINE read_input()
       CASE('profiler_on')
         profiler_on=.TRUE.
         IF(parallel%boss)WRITE(g_out,"(1x,a25)")'Profiler on'
+      CASE('halo_depth')
+        halo_exchange_depth = parse_getival(parse_getword(.TRUE.))
+        IF(halo_exchange_depth .lt. 1) CALL report_error('read_input', 'Invalid halo exchange depth specified')
+        IF(parallel%boss)WRITE(g_out,"(1x,a25,i12)")'halo_depth',halo_exchange_depth
       CASE('tl_max_iters')
         max_iters = parse_getival(parse_getword(.TRUE.))
       CASE('tl_eps')
@@ -288,9 +294,12 @@ SUBROUTINE read_input()
   ! Simple guess - better than a default of 10
   if (tl_ppcg_inner_steps .eq. -1) then
     tl_ppcg_inner_steps = 4*INT(SQRT(SQRT(REAL(grid%x_cells*grid%y_cells))))
+    IF(parallel%boss)WRITE(g_out,"(1x,a25,i12)")'tl_ppcg_inner_steps',tl_ppcg_inner_steps
   endif
 
-  IF(parallel%boss)WRITE(g_out,"(1x,a25,i12)")'tl_ppcg_inner_steps',tl_ppcg_inner_steps
+  if ((halo_exchange_depth .gt. 1) .and. (tl_preconditioner_type .eq. TL_PREC_JAC_BLOCK)) then
+    call report_error('read_input', 'Unable to use nonstandard halo depth with block jacobi preconditioner')
+  endif
 
   IF(parallel%boss) THEN
     WRITE(g_out,*)

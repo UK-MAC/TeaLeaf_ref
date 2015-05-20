@@ -47,7 +47,8 @@ MODULE data_module
                                 ,FIELD_U          = 4         &
                                 ,FIELD_P          = 5         &
                                 ,FIELD_SD         = 6         &
-                                ,NUM_FIELDS       = 6
+                                ,FIELD_R          = 7         &
+                                ,NUM_FIELDS       = 7
 
    INTEGER,         PARAMETER :: CELL_DATA     = 1,        &
                                  VERTEX_DATA   = 2,        &
