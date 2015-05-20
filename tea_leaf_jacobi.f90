@@ -40,10 +40,7 @@ SUBROUTINE tea_leaf_kernel_jacobi_solve(x_min,       &
   IMPLICIT NONE
 
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: un
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: u1, u0
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: Kx
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: Ky
+  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: un , u1, u0 , Kx , Ky
 
   REAL(KIND=8) :: ry,rx, error
 
@@ -53,8 +50,8 @@ SUBROUTINE tea_leaf_kernel_jacobi_solve(x_min,       &
 
 !$OMP PARALLEL
 !$OMP DO
-    DO k=y_min-1, y_max+1
-      DO j=x_min-1, x_max+1
+    DO k=y_min, y_max
+      DO j=x_min, x_max
         un(j,k) = u1(j,k)
       ENDDO
     ENDDO

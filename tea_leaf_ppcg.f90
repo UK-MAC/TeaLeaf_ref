@@ -27,8 +27,8 @@ SUBROUTINE tea_leaf_kernel_ppcg_init_sd(x_min,             &
 
   INTEGER :: preconditioner_type
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: r, sd, kx, ky
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: z, cp, bfp, Mi
+  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: r, sd, kx, ky , z, Mi
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: cp, bfp
   REAL(KIND=8) :: theta, theta_r, rx, ry
 
   INTEGER :: j,k
@@ -74,6 +74,7 @@ SUBROUTINE tea_leaf_kernel_ppcg_inner(x_min,             &
                                       alpha,             &
                                       beta,              &
                                       rx, ry,            &
+                                      ppcg_cur_step, tl_ppcg_inner_steps,   &
                                       u,                 &
                                       r,                 &
                                       Kx,                &
@@ -88,16 +89,21 @@ SUBROUTINE tea_leaf_kernel_ppcg_inner(x_min,             &
 
   INTEGER :: preconditioner_type
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: u, r, Kx, Ky, sd
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: z, cp, bfp, Mi
+  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: u, r, Kx, Ky, sd , z, Mi
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: cp, bfp
   INTEGER(KIND=4) :: j,k, step
   REAL(KIND=8), DIMENSION(:) :: alpha, beta
   REAL(KIND=8) :: smvp, rx, ry
 
+  INTEGER(KIND=4) :: bounds_extra, ppcg_cur_step, tl_ppcg_inner_steps, inner_step
+
+  inner_step = step
+
+  DO bounds_extra = halo_exchange_depth-1, 0, -1
 !$OMP PARALLEL PRIVATE(smvp)
 !$OMP DO
-    DO k=y_min,y_max
-        DO j=x_min,x_max
+    DO k=y_min-bounds_extra,y_max+bounds_extra
+        DO j=x_min-bounds_extra,x_max+bounds_extra
             smvp = (1.0_8                                           &
                 + ry*(Ky(j, k+1) + Ky(j, k))                        &
                 + rx*(Kx(j+1, k) + Kx(j, k)))*sd(j, k)              &
@@ -120,22 +126,27 @@ SUBROUTINE tea_leaf_kernel_ppcg_inner(x_min,             &
     ENDIF
 
 !$OMP DO
-    DO k=y_min,y_max
-        DO j=x_min,x_max
-            sd(j, k) = alpha(step)*sd(j, k) + beta(step)*z(j, k)
+    DO k=y_min-bounds_extra,y_max+bounds_extra
+        DO j=x_min-bounds_extra,x_max+bounds_extra
+            sd(j, k) = alpha(inner_step)*sd(j, k) + beta(inner_step)*z(j, k)
         ENDDO
     ENDDO
 !$OMP END DO NOWAIT
   ELSE
 !$OMP DO
-    DO k=y_min,y_max
-        DO j=x_min,x_max
-            sd(j, k) = alpha(step)*sd(j, k) + beta(step)*r(j, k)
+    DO k=y_min-bounds_extra,y_max+bounds_extra
+        DO j=x_min-bounds_extra,x_max+bounds_extra
+            sd(j, k) = alpha(inner_step)*sd(j, k) + beta(inner_step)*r(j, k)
         ENDDO
     ENDDO
 !$OMP END DO NOWAIT
   ENDIF
 !$OMP END PARALLEL
+
+  inner_step = inner_step + 1
+  IF (inner_step .ge. tl_ppcg_inner_steps) EXIT
+
+  END DO
 
 END SUBROUTINE
 
@@ -151,8 +162,7 @@ SUBROUTINE tea_leaf_ppcg_calc_zrnorm_kernel(x_min, &
 
   INTEGER :: preconditioner_type
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: r
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: z
+  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: r, z
   REAL(KIND=8) :: norm
   integer :: j, k
 

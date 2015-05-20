@@ -73,16 +73,16 @@ SUBROUTINE tea_leaf_kernel_init_common(x_min,  &
   IF(coef .EQ. RECIP_CONDUCTIVITY) THEN
 !$OMP DO 
     ! use w as temp val
-    DO k=y_min-1,y_max+1
-      DO j=x_min-1,x_max+1
+    DO k=y_min-halo_exchange_depth,y_max+halo_exchange_depth
+      DO j=x_min-halo_exchange_depth,x_max+halo_exchange_depth
          w(j  ,k  )=1.0_8/density(j  ,k  )
       ENDDO
     ENDDO
 !$OMP END DO
   ELSE IF(coef .EQ. CONDUCTIVITY) THEN
 !$OMP DO
-    DO k=y_min-1,y_max+1
-      DO j=x_min-1,x_max+1
+    DO k=y_min-halo_exchange_depth,y_max+halo_exchange_depth
+      DO j=x_min-halo_exchange_depth,x_max+halo_exchange_depth
          w(j  ,k  )=density(j  ,k  )
       ENDDO
     ENDDO
@@ -90,8 +90,8 @@ SUBROUTINE tea_leaf_kernel_init_common(x_min,  &
   ENDIF
 
 !$OMP DO
-   DO k=y_min,y_max+1
-     DO j=x_min,x_max+1
+   DO k=y_min-halo_exchange_depth + 1,y_max+halo_exchange_depth
+     DO j=x_min-halo_exchange_depth + 1,x_max+halo_exchange_depth
           Kx(j,k)=(w(j-1,k  ) + w(j,k))/(2.0_8*w(j-1,k  )*w(j,k))
           Ky(j,k)=(w(j  ,k-1) + w(j,k))/(2.0_8*w(j  ,k-1)*w(j,k))
      ENDDO
@@ -102,29 +102,37 @@ SUBROUTINE tea_leaf_kernel_init_common(x_min,  &
   IF (reflective_boundary .eqv. .FALSE.) THEN
     IF(chunk_neighbours(CHUNK_LEFT).EQ.EXTERNAL_FACE) THEN
 !$OMP DO
-      DO k=y_min,y_max+1
-        Kx(x_min,k)=0.0_8
+      DO k=y_min-halo_exchange_depth,y_max+halo_exchange_depth
+        DO j=x_min-halo_exchange_depth,x_min
+          Kx(j,k)=0.0_8
+        ENDDO
       ENDDO
 !$OMP END DO
     ENDIF
     IF(chunk_neighbours(CHUNK_RIGHT).EQ.EXTERNAL_FACE) THEN
 !$OMP DO
-      DO k=y_min,y_max+1
-         Kx(x_max+1,k)=0.0_8
+      DO k=y_min-halo_exchange_depth,y_max+halo_exchange_depth
+        DO j=x_max,x_max+halo_exchange_depth
+          Kx(j,k)=0.0_8
+        ENDDO
       ENDDO
 !$OMP END DO
     ENDIF
     IF(chunk_neighbours(CHUNK_BOTTOM).EQ.EXTERNAL_FACE) THEN
 !$OMP DO
-      DO j=x_min,x_max+1
-         Ky(j,y_min)=0.0_8
+      DO k=y_min-halo_exchange_depth,y_min
+        DO j=x_min-halo_exchange_depth,x_max+halo_exchange_depth
+          Ky(j,k)=0.0_8
+        ENDDO
       ENDDO
 !$OMP END DO
     ENDIF
     IF(chunk_neighbours(CHUNK_TOP).EQ.EXTERNAL_FACE) THEN
 !$OMP DO
-      DO j=x_min,x_max+1
-         Ky(j,y_max+1)=0.0_8
+      DO k=y_max,y_max+halo_exchange_depth
+        DO j=x_min-halo_exchange_depth,x_max+halo_exchange_depth
+          Ky(j,k)=0.0_8
+        ENDDO
       ENDDO
 !$OMP END DO
     ENDIF

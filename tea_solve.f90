@@ -81,6 +81,8 @@ SUBROUTINE tea_leaf()
   cheby_calc_steps = 0
   cg_calc_steps = 0
 
+  initial_residual = 0.0_8
+
   total_solve_time = timer()
 
   DO c=1,chunks_per_task
@@ -704,6 +706,7 @@ SUBROUTINE tea_leaF_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
           ppcg_cur_step,                                    &
           ch_alphas, ch_betas,                              &
           rx, ry,                                           &
+          ppcg_cur_step, tl_ppcg_inner_steps,   &
           chunks(c)%field%u,                                &
           chunks(c)%field%vector_r,                         &
           chunks(c)%field%vector_Kx,                        &
