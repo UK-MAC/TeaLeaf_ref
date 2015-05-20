@@ -220,7 +220,7 @@ SUBROUTINE read_input()
         IF(parallel%boss)WRITE(g_out,"(1x,a25)")'Profiler on'
       CASE('halo_depth')
         halo_exchange_depth = parse_getival(parse_getword(.TRUE.))
-        IF(halo_exchange_depth .lt. 1) CALL report_error('read_input', 'Invalid halo exchange depth specified')
+        IF(halo_exchange_depth .lt. 2) CALL report_error('read_input', 'Invalid halo exchange depth specified')
         IF(parallel%boss)WRITE(g_out,"(1x,a25,i12)")'halo_depth',halo_exchange_depth
       CASE('tl_max_iters')
         max_iters = parse_getival(parse_getword(.TRUE.))

@@ -65,16 +65,16 @@ SUBROUTINE call_packing_functions(chunk, fields, depth, face, packing, mpi_buffe
   IMPLICIT NONE
 
   INTERFACE
-    SUBROUTINE pack_or_unpack(x_min,x_max,y_min,y_max,    &
+    SUBROUTINE pack_or_unpack(x_min,x_max,y_min,y_max,halo_exchange_depth,    &
                               field, mpi_buffer,          &
                               depth, x_inc, y_inc,        &
                               buffer_offset)
 
       IMPLICIT NONE
 
-      REAL(KIND=8) :: field(:,:)
+      REAL(KIND=8) :: field(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) ! This seems to work for any type of mesh data
       REAL(KIND=8) :: mpi_buffer(:)
-      INTEGER      :: depth,x_min,x_max,y_min,y_max,buffer_offset, x_inc, y_inc
+      INTEGER      :: depth,x_min,x_max,y_min,y_max,buffer_offset, x_inc, y_inc,halo_exchange_depth
     END SUBROUTINE
   END INTERFACE
 
@@ -121,6 +121,7 @@ SUBROUTINE call_packing_functions(chunk, fields, depth, face, packing, mpi_buffe
                                     chunks(chunk)%field%x_max,                    &
                                     chunks(chunk)%field%y_min,                    &
                                     chunks(chunk)%field%y_max,                    &
+                                    halo_exchange_depth,                    &
                                     chunks(chunk)%field%density,                 &
                                     mpi_buffer,                &
                                     depth, xincs(CELL_DATA), yincs(CELL_DATA),   &
@@ -131,6 +132,7 @@ SUBROUTINE call_packing_functions(chunk, fields, depth, face, packing, mpi_buffe
                                     chunks(chunk)%field%x_max,                    &
                                     chunks(chunk)%field%y_min,                    &
                                     chunks(chunk)%field%y_max,                    &
+                                    halo_exchange_depth,                    &
                                     chunks(chunk)%field%energy0,                  &
                                     mpi_buffer,                &
                                     depth, xincs(CELL_DATA), yincs(CELL_DATA),   &
@@ -141,6 +143,7 @@ SUBROUTINE call_packing_functions(chunk, fields, depth, face, packing, mpi_buffe
                                     chunks(chunk)%field%x_max,                    &
                                     chunks(chunk)%field%y_min,                    &
                                     chunks(chunk)%field%y_max,                    &
+                                    halo_exchange_depth,                    &
                                     chunks(chunk)%field%energy1,                  &
                                     mpi_buffer,                &
                                     depth, xincs(CELL_DATA), yincs(CELL_DATA),   &
@@ -151,6 +154,7 @@ SUBROUTINE call_packing_functions(chunk, fields, depth, face, packing, mpi_buffe
                                     chunks(chunk)%field%x_max,                    &
                                     chunks(chunk)%field%y_min,                    &
                                     chunks(chunk)%field%y_max,                    &
+                                    halo_exchange_depth,                    &
                                     chunks(chunk)%field%vector_p,                  &
                                     mpi_buffer,                &
                                     depth, xincs(CELL_DATA), yincs(CELL_DATA),   &
@@ -161,6 +165,7 @@ SUBROUTINE call_packing_functions(chunk, fields, depth, face, packing, mpi_buffe
                                     chunks(chunk)%field%x_max,                    &
                                     chunks(chunk)%field%y_min,                    &
                                     chunks(chunk)%field%y_max,                    &
+                                    halo_exchange_depth,                    &
                                     chunks(chunk)%field%u,                  &
                                     mpi_buffer,                &
                                     depth, xincs(CELL_DATA), yincs(CELL_DATA),   &
@@ -171,10 +176,22 @@ SUBROUTINE call_packing_functions(chunk, fields, depth, face, packing, mpi_buffe
                                     chunks(chunk)%field%x_max,                    &
                                     chunks(chunk)%field%y_min,                    &
                                     chunks(chunk)%field%y_max,                    &
+                                    halo_exchange_depth,                    &
                                     chunks(chunk)%field%vector_sd,                  &
                                     mpi_buffer,                &
                                     depth, xincs(CELL_DATA), yincs(CELL_DATA),   &
                                     offsets(FIELD_SD))
+  ENDIF
+  IF(fields(FIELD_R).EQ.1) THEN
+      CALL pack_func(chunks(chunk)%field%x_min,                    &
+                                    chunks(chunk)%field%x_max,                    &
+                                    chunks(chunk)%field%y_min,                    &
+                                    chunks(chunk)%field%y_max,                    &
+                                    halo_exchange_depth,                    &
+                                    chunks(chunk)%field%vector_r,                  &
+                                    mpi_buffer,                &
+                                    depth, xincs(CELL_DATA), yincs(CELL_DATA),   &
+                                    offsets(FIELD_R))
   ENDIF
     
   !$OMP END PARALLEL

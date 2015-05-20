@@ -112,6 +112,7 @@ SUBROUTINE build_field(chunk,x_cells,y_cells)
      DO j=chunks(chunk)%field%x_min-2,chunks(chunk)%field%x_max+2
        chunks(chunk)%field%tri_cp(j,k)=0.0
        chunks(chunk)%field%tri_bfp(j,k)=0.0
+       chunks(chunk)%field%volume(j,k)=0.0
      ENDDO
    ENDDO
 !$OMP ENDDO 
