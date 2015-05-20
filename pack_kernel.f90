@@ -30,11 +30,11 @@ SUBROUTINE tea_pack_message_left(x_min,x_max,y_min,y_max,halo_exchange_depth,fie
 
   IMPLICIT NONE
 
-  REAL(KIND=8) :: field(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) ! This seems to work for any type of mesh data
-  REAL(KIND=8) :: left_snd_buffer(:)
-
   INTEGER      :: depth,field_type,x_min,x_max,y_min,y_max,halo_exchange_depth
   INTEGER      :: j,k,x_inc,y_inc,index,buffer_offset
+
+  REAL(KIND=8) :: field(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth)
+  REAL(KIND=8) :: left_snd_buffer(:)
 
   ! Pack 
 
@@ -56,11 +56,11 @@ SUBROUTINE tea_unpack_message_left(x_min,x_max,y_min,y_max,halo_exchange_depth,f
 
   IMPLICIT NONE
 
-  REAL(KIND=8) :: field(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) ! This seems to work for any type of mesh data
-  REAL(KIND=8) :: left_rcv_buffer(:)
-
   INTEGER      :: depth,field_type,x_min,x_max,y_min,y_max,halo_exchange_depth
   INTEGER      :: j,k,x_inc,y_inc,index,buffer_offset
+
+  REAL(KIND=8) :: field(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth)
+  REAL(KIND=8) :: left_rcv_buffer(:)
 
   ! Unpack 
 
@@ -82,11 +82,11 @@ SUBROUTINE tea_pack_message_right(x_min,x_max,y_min,y_max,halo_exchange_depth,fi
 
   IMPLICIT NONE
 
-  REAL(KIND=8) :: field(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) ! This seems to work for any type of mesh data
-  REAL(KIND=8) :: right_snd_buffer(:)
-
   INTEGER      :: depth,field_type,x_min,x_max,y_min,y_max,halo_exchange_depth
   INTEGER      :: j,k,x_inc,y_inc,index,buffer_offset
+
+  REAL(KIND=8) :: field(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth)
+  REAL(KIND=8) :: right_snd_buffer(:)
 
   ! Pack 
 
@@ -108,11 +108,11 @@ SUBROUTINE tea_unpack_message_right(x_min,x_max,y_min,y_max,halo_exchange_depth,
 
   IMPLICIT NONE
 
-  REAL(KIND=8) :: field(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) ! This seems to work for any type of mesh data
-  REAL(KIND=8) :: right_rcv_buffer(:)
-
   INTEGER      :: depth,field_type,x_min,x_max,y_min,y_max,halo_exchange_depth
   INTEGER      :: j,k,x_inc,y_inc,index,buffer_offset
+
+  REAL(KIND=8) :: field(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth)
+  REAL(KIND=8) :: right_rcv_buffer(:)
 
   ! Unpack 
 
@@ -134,11 +134,11 @@ SUBROUTINE tea_pack_message_top(x_min,x_max,y_min,y_max,halo_exchange_depth,fiel
 
   IMPLICIT NONE
 
-  REAL(KIND=8) :: field(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) ! This seems to work for any type of mesh data
-  REAL(KIND=8) :: top_snd_buffer(:)
-
   INTEGER      :: depth,field_type,x_min,x_max,y_min,y_max,halo_exchange_depth
   INTEGER      :: j,k,x_inc,y_inc,index,buffer_offset
+
+  REAL(KIND=8) :: field(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth)
+  REAL(KIND=8) :: top_snd_buffer(:)
 
   ! Pack 
 
@@ -160,11 +160,11 @@ SUBROUTINE tea_unpack_message_top(x_min,x_max,y_min,y_max,halo_exchange_depth,fi
 
   IMPLICIT NONE
 
-  REAL(KIND=8) :: field(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) ! This seems to work for any type of mesh data
-  REAL(KIND=8) :: top_rcv_buffer(:)
-
   INTEGER      :: depth,field_type,x_min,x_max,y_min,y_max,halo_exchange_depth
   INTEGER      :: j,k,x_inc,y_inc,index,buffer_offset
+
+  REAL(KIND=8) :: field(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth)
+  REAL(KIND=8) :: top_rcv_buffer(:)
 
   ! Unpack 
 
@@ -186,11 +186,11 @@ SUBROUTINE tea_pack_message_bottom(x_min,x_max,y_min,y_max,halo_exchange_depth,f
 
   IMPLICIT NONE
 
-  REAL(KIND=8) :: field(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) ! This seems to work for any type of mesh data
-  REAL(KIND=8) :: bottom_snd_buffer(:)
-
   INTEGER      :: depth,field_type,x_min,x_max,y_min,y_max,halo_exchange_depth
   INTEGER      :: j,k,x_inc,y_inc,index,buffer_offset
+
+  REAL(KIND=8) :: field(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth)
+  REAL(KIND=8) :: bottom_snd_buffer(:)
 
   ! Pack 
 
@@ -212,11 +212,11 @@ SUBROUTINE tea_unpack_message_bottom(x_min,x_max,y_min,y_max,halo_exchange_depth
 
   IMPLICIT NONE
 
-  REAL(KIND=8) :: field(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) ! This seems to work for any type of mesh data
-  REAL(KIND=8) :: bottom_rcv_buffer(:)
-
   INTEGER      :: depth,field_type,x_min,x_max,y_min,y_max,halo_exchange_depth
   INTEGER      :: j,k,x_inc,y_inc,index,buffer_offset
+
+  REAL(KIND=8) :: field(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth)
+  REAL(KIND=8) :: bottom_rcv_buffer(:)
 
   ! Unpack 
 
