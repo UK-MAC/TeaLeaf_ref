@@ -198,29 +198,42 @@ SUBROUTINE tea_allocate_buffers(chunk)
 
   INTEGER      :: chunk
 
-  lr_pack_buffer_size = (chunks(chunk)%field%y_max+5)
-  bt_pack_buffer_size = (chunks(chunk)%field%x_max+5)
+  INTEGER      :: bt_size, lr_size
+  INTEGER,parameter :: num_buffered=6
+
+  bt_size = num_buffered*(chunks(chunk)%field%x_max + 2*max(2, halo_exchange_depth))*halo_exchange_depth
+  lr_size = num_buffered*(chunks(chunk)%field%y_max + 2*max(2, halo_exchange_depth))*halo_exchange_depth
 
   ! Unallocated buffers for external boundaries caused issues on some systems so they are now
   !  all allocated
   IF(parallel%task.EQ.chunks(chunk)%task)THEN
     !IF(chunks(chunk)%chunk_neighbours(chunk_left).NE.external_face) THEN
-      ALLOCATE(chunks(chunk)%left_snd_buffer(6*(chunks(chunk)%field%y_max+5)))
-      ALLOCATE(chunks(chunk)%left_rcv_buffer(6*(chunks(chunk)%field%y_max+5)))
+      ALLOCATE(chunks(chunk)%left_snd_buffer(lr_size))
+      ALLOCATE(chunks(chunk)%left_rcv_buffer(lr_size))
     !ENDIF
     !IF(chunks(chunk)%chunk_neighbours(chunk_right).NE.external_face) THEN
-      ALLOCATE(chunks(chunk)%right_snd_buffer(6*(chunks(chunk)%field%y_max+5)))
-      ALLOCATE(chunks(chunk)%right_rcv_buffer(6*(chunks(chunk)%field%y_max+5)))
+      ALLOCATE(chunks(chunk)%right_snd_buffer(lr_size))
+      ALLOCATE(chunks(chunk)%right_rcv_buffer(lr_size))
     !ENDIF
     !IF(chunks(chunk)%chunk_neighbours(chunk_bottom).NE.external_face) THEN
-      ALLOCATE(chunks(chunk)%bottom_snd_buffer(6*(chunks(chunk)%field%x_max+5)))
-      ALLOCATE(chunks(chunk)%bottom_rcv_buffer(6*(chunks(chunk)%field%x_max+5)))
+      ALLOCATE(chunks(chunk)%bottom_snd_buffer(bt_size))
+      ALLOCATE(chunks(chunk)%bottom_rcv_buffer(bt_size))
     !ENDIF
     !IF(chunks(chunk)%chunk_neighbours(chunk_top).NE.external_face) THEN
-      ALLOCATE(chunks(chunk)%top_snd_buffer(6*(chunks(chunk)%field%x_max+5)))
-      ALLOCATE(chunks(chunk)%top_rcv_buffer(6*(chunks(chunk)%field%x_max+5)))
+      ALLOCATE(chunks(chunk)%top_snd_buffer(bt_size))
+      ALLOCATE(chunks(chunk)%top_rcv_buffer(bt_size))
     !ENDIF
   ENDIF
+
+  chunks(chunk)%left_snd_buffer = 0
+  chunks(chunk)%right_snd_buffer = 0
+  chunks(chunk)%bottom_snd_buffer = 0
+  chunks(chunk)%top_snd_buffer = 0
+
+  chunks(chunk)%left_rcv_buffer = 0
+  chunks(chunk)%right_rcv_buffer = 0
+  chunks(chunk)%bottom_rcv_buffer = 0
+  chunks(chunk)%top_rcv_buffer = 0
 
 END SUBROUTINE tea_allocate_buffers
 
@@ -232,6 +245,7 @@ SUBROUTINE tea_exchange(fields,depth)
     INTEGER      :: left_right_offset(NUM_FIELDS),bottom_top_offset(NUM_FIELDS)
     INTEGER      :: end_pack_index_left_right, end_pack_index_bottom_top,field
     INTEGER      :: message_count_lr, message_count_ud
+    INTEGER      :: exchange_size_lr, exchange_size_ud
     INTEGER, dimension(4)                 :: request_lr, request_ud
     INTEGER, dimension(MPI_STATUS_SIZE,4) :: status_lr, status_ud
     LOGICAL :: test_complete
@@ -241,8 +255,11 @@ SUBROUTINE tea_exchange(fields,depth)
 
     IF (ALL(chunks(chunk)%chunk_neighbours .eq. external_face)) return
 
-    request_lr=0
-    message_count_lr=0
+    exchange_size_lr = depth*(chunks(chunk)%field%y_max+2*depth)
+    exchange_size_ud = depth*(chunks(chunk)%field%x_max+2*depth)
+
+    request_lr = 0
+    message_count_lr = 0
     request_ud = 0
     message_count_ud = 0
 
@@ -254,8 +271,8 @@ SUBROUTINE tea_exchange(fields,depth)
       IF(fields(field).EQ.1) THEN
         left_right_offset(field)=end_pack_index_left_right
         bottom_top_offset(field)=end_pack_index_bottom_top
-        end_pack_index_left_right=end_pack_index_left_right + depth*lr_pack_buffer_size
-        end_pack_index_bottom_top=end_pack_index_bottom_top + depth*bt_pack_buffer_size
+        end_pack_index_left_right=end_pack_index_left_right + exchange_size_lr
+        end_pack_index_bottom_top=end_pack_index_bottom_top + exchange_size_ud
       ENDIF
     ENDDO
 
@@ -496,9 +513,7 @@ SUBROUTINE tea_allsum(value)
 
   total=value
 
-  IF (parallel%max_task .NE. 1) THEN
-    CALL MPI_ALLREDUCE(value,total,1,MPI_DOUBLE_PRECISION,MPI_SUM,mpi_cart_comm,err)
-  ENDIF
+  CALL MPI_ALLREDUCE(value,total,1,MPI_DOUBLE_PRECISION,MPI_SUM,mpi_cart_comm,err)
 
   value=total
 
