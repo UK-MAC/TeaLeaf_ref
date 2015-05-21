@@ -311,6 +311,8 @@ SUBROUTINE read_input()
     WRITE(g_out,*)
   ENDIF
 
+  CALL flush(g_out)
+
   ! If a state boundary falls exactly on a cell boundary then round off can
   ! cause the state to be put one cell further that expected. This is compiler
   ! /system dependent. To avoid this, a state boundary is reduced/increased by a 100th
