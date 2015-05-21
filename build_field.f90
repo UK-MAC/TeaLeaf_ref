@@ -44,8 +44,6 @@ SUBROUTINE build_field(chunk,x_cells,y_cells)
         chunks(chunk)%field%y_min-halo_exchange_depth:chunks(chunk)%field%y_max+halo_exchange_depth))
    ALLOCATE(chunks(chunk)%field%u0       (chunks(chunk)%field%x_min-halo_exchange_depth:chunks(chunk)%field%x_max+halo_exchange_depth, &
         chunks(chunk)%field%y_min-halo_exchange_depth:chunks(chunk)%field%y_max+halo_exchange_depth))
-   ALLOCATE(chunks(chunk)%field%vector_rm1 (chunks(chunk)%field%x_min-halo_exchange_depth:chunks(chunk)%field%x_max+halo_exchange_depth, &
-        chunks(chunk)%field%y_min-halo_exchange_depth:chunks(chunk)%field%y_max+halo_exchange_depth))
    ALLOCATE(chunks(chunk)%field%vector_r (chunks(chunk)%field%x_min-halo_exchange_depth:chunks(chunk)%field%x_max+halo_exchange_depth, &
         chunks(chunk)%field%y_min-halo_exchange_depth:chunks(chunk)%field%y_max+halo_exchange_depth))
    ALLOCATE(chunks(chunk)%field%vector_Mi(chunks(chunk)%field%x_min-halo_exchange_depth:chunks(chunk)%field%x_max+halo_exchange_depth, &
