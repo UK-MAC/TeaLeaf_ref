@@ -89,7 +89,7 @@ SUBROUTINE call_packing_functions(chunk, fields, depth, face, packing, mpi_buffe
   IF (packing .EQV. .TRUE.) THEN
     SELECT CASE (face)
     CASE (CHUNK_LEFT)
-      pack_func => pack_func
+      pack_func => tea_pack_message_left
     CASE (CHUNK_right)
       pack_func => tea_pack_message_right
     CASE (CHUNK_bottom)
