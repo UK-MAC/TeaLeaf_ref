@@ -44,6 +44,8 @@ SUBROUTINE build_field(chunk,x_cells,y_cells)
         chunks(chunk)%field%y_min-halo_exchange_depth:chunks(chunk)%field%y_max+halo_exchange_depth))
    ALLOCATE(chunks(chunk)%field%u0       (chunks(chunk)%field%x_min-halo_exchange_depth:chunks(chunk)%field%x_max+halo_exchange_depth, &
         chunks(chunk)%field%y_min-halo_exchange_depth:chunks(chunk)%field%y_max+halo_exchange_depth))
+   ALLOCATE(chunks(chunk)%field%vector_rm1 (chunks(chunk)%field%x_min-halo_exchange_depth:chunks(chunk)%field%x_max+halo_exchange_depth, &
+        chunks(chunk)%field%y_min-halo_exchange_depth:chunks(chunk)%field%y_max+halo_exchange_depth))
    ALLOCATE(chunks(chunk)%field%vector_r (chunks(chunk)%field%x_min-halo_exchange_depth:chunks(chunk)%field%x_max+halo_exchange_depth, &
         chunks(chunk)%field%y_min-halo_exchange_depth:chunks(chunk)%field%y_max+halo_exchange_depth))
    ALLOCATE(chunks(chunk)%field%vector_Mi(chunks(chunk)%field%x_min-halo_exchange_depth:chunks(chunk)%field%x_max+halo_exchange_depth, &
@@ -61,10 +63,10 @@ SUBROUTINE build_field(chunk,x_cells,y_cells)
    ALLOCATE(chunks(chunk)%field%vector_sd(chunks(chunk)%field%x_min-halo_exchange_depth:chunks(chunk)%field%x_max+halo_exchange_depth, &
         chunks(chunk)%field%y_min-halo_exchange_depth:chunks(chunk)%field%y_max+halo_exchange_depth))
 
-   ALLOCATE(chunks(chunk)%field%tri_cp(chunks(chunk)%field%x_min-2:chunks(chunk)%field%x_max+2, &
-        chunks(chunk)%field%y_min-2:chunks(chunk)%field%y_max+2))
-   ALLOCATE(chunks(chunk)%field%tri_bfp(chunks(chunk)%field%x_min-2:chunks(chunk)%field%x_max+2, &
-        chunks(chunk)%field%y_min-2:chunks(chunk)%field%y_max+2))
+   ALLOCATE(chunks(chunk)%field%tri_cp(chunks(chunk)%field%x_min:chunks(chunk)%field%x_max, &
+        chunks(chunk)%field%y_min:chunks(chunk)%field%y_max))
+   ALLOCATE(chunks(chunk)%field%tri_bfp(chunks(chunk)%field%x_min:chunks(chunk)%field%x_max, &
+        chunks(chunk)%field%y_min:chunks(chunk)%field%y_max))
 
    ALLOCATE(chunks(chunk)%field%cellx   (chunks(chunk)%field%x_min-2:chunks(chunk)%field%x_max+2))
    ALLOCATE(chunks(chunk)%field%celly   (chunks(chunk)%field%y_min-2:chunks(chunk)%field%y_max+2))
@@ -106,30 +108,36 @@ SUBROUTINE build_field(chunk,x_cells,y_cells)
        chunks(chunk)%field%vector_sd(j,k)=0.0
      ENDDO
    ENDDO
-!$OMP ENDDO 
-!$OMP DO 
-   DO k=chunks(chunk)%field%y_min-2,chunks(chunk)%field%y_max+2
-     DO j=chunks(chunk)%field%x_min-2,chunks(chunk)%field%x_max+2
+!$OMP ENDDO NOWAIT
+!$OMP DO
+   DO k=chunks(chunk)%field%y_min,chunks(chunk)%field%y_max
+     DO j=chunks(chunk)%field%x_min,chunks(chunk)%field%x_max
        chunks(chunk)%field%tri_cp(j,k)=0.0
        chunks(chunk)%field%tri_bfp(j,k)=0.0
+     ENDDO
+   ENDDO
+!$OMP ENDDO NOWAIT
+!$OMP DO
+   DO k=chunks(chunk)%field%y_min-2,chunks(chunk)%field%y_max+2
+     DO j=chunks(chunk)%field%x_min-2,chunks(chunk)%field%x_max+2
        chunks(chunk)%field%volume(j,k)=0.0
      ENDDO
    ENDDO
-!$OMP ENDDO 
-!$OMP DO 
+!$OMP ENDDO NOWAIT
+!$OMP DO
     DO k=chunks(chunk)%field%y_min-2,chunks(chunk)%field%y_max+2
         DO j=chunks(chunk)%field%x_min-2,chunks(chunk)%field%x_max+3
             chunks(chunk)%field%xarea(j,k)=0.0
         ENDDO
     ENDDO
-!$OMP END DO
-!$OMP DO 
+!$OMP END DO NOWAIT
+!$OMP DO
     DO k=chunks(chunk)%field%y_min-2,chunks(chunk)%field%y_max+3
         DO j=chunks(chunk)%field%x_min-2,chunks(chunk)%field%x_max+2
             chunks(chunk)%field%yarea(j,k)=0.0
         ENDDO
     ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
 
 !$OMP DO 
     DO j=chunks(chunk)%field%x_min-2,chunks(chunk)%field%x_max+2

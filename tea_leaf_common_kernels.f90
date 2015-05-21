@@ -53,7 +53,7 @@ SUBROUTINE tea_leaf_kernel_init_common(x_min,  &
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
   INTEGER, DIMENSION(4) :: chunk_neighbours
   REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: density, energy, u, r, w, Kx, Ky, Mi, u0
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: cp, bfp
+  REAL(KIND=8), DIMENSION(x_min:x_max,y_min:y_max) :: cp, bfp
 
   INTEGER(KIND=4) :: coef
   INTEGER(KIND=4) :: j,k
@@ -327,17 +327,8 @@ SUBROUTINE tea_block_init(x_min,             &
   INTEGER(KIND=4):: j, ko, k, bottom, top
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
   REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: Kx, Ky
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: cp, bfp
+  REAL(KIND=8), DIMENSION(x_min:x_max,y_min:y_max) :: cp, bfp
   REAL(KIND=8) :: rx, ry
-
-!$OMP DO
-    DO k=y_min,y_max
-        DO j=x_min,x_max
-            bfp(j, k) = 0.0_8
-            cp(j, k) = 0.0_8
-        ENDDO
-    ENDDO
-!$OMP END DO
 
 !$OMP DO
     DO ko=y_min,y_max,jac_block_size
@@ -377,7 +368,7 @@ SUBROUTINE tea_block_solve(x_min,             &
   INTEGER(KIND=4):: j, ko, k, bottom, top, ki, upper_k, k_extra
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
   REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: Kx, Ky, r, z
-  REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+2) :: cp, bfp
+  REAL(KIND=8), DIMENSION(x_min:x_max,y_min:y_max) :: cp, bfp
   REAL(KIND=8) :: rx, ry
   REAL(KIND=8), dimension(0:jac_block_size-1) :: dp_l, z_l
 

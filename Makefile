@@ -117,7 +117,7 @@ ifdef IEEE
 endif
 
 ifneq (,$(filter $(COMPILER), GNU INTEL))
-#OMP4=-D WITH_OMP4
+OMP4=-D WITH_OMP4
 endif
 
 
