@@ -127,7 +127,7 @@ SUBROUTINE start
   fields(FIELD_ENERGY0)=1
   fields(FIELD_ENERGY1)=1
 
-  CALL update_halo(fields,2)
+  CALL update_halo(fields,halo_exchange_depth)
 
   IF(parallel%boss)THEN
      WRITE(g_out,*)
