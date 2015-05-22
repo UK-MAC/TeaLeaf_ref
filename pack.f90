@@ -114,7 +114,7 @@ SUBROUTINE call_packing_functions(chunk, fields, depth, face, packing, mpi_buffe
     END SELECT
   ENDIF
 
-  !$OMP PARALLEL
+!$OMP PARALLEL
 
   IF(fields(FIELD_DENSITY).EQ.1) THEN
       CALL pack_func(chunks(chunk)%field%x_min,                    &
@@ -194,7 +194,7 @@ SUBROUTINE call_packing_functions(chunk, fields, depth, face, packing, mpi_buffe
                                     offsets(FIELD_R))
   ENDIF
     
-  !$OMP END PARALLEL
+!$OMP END PARALLEL
 
 END SUBROUTINE
 

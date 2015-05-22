@@ -68,6 +68,6 @@ PROGRAM tea_leaf
   CALL diffuse
 
   ! Deallocate everything
-  
+
 END PROGRAM tea_leaf
 

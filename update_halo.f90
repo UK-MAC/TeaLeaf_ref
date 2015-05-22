@@ -40,26 +40,24 @@ SUBROUTINE update_halo(fields,depth)
 
   IF (profiler_on) halo_time=timer()
   DO c=1,chunks_per_task
-
-  IF(chunks(c)%task.EQ.parallel%task) THEN
-    IF(use_fortran_kernels)THEN
-      CALL update_halo_kernel(chunks(c)%field%x_min,          &
-                              chunks(c)%field%x_max,          &
-                              chunks(c)%field%y_min,          &
-                              chunks(c)%field%y_max, halo_exchange_depth,          &
-                              chunks(c)%chunk_neighbours,     &
-                              chunks(c)%field%density,        &
-                              chunks(c)%field%energy0,        &
-                              chunks(c)%field%energy1,        &
-                              chunks(c)%field%u,              &
-                              chunks(c)%field%vector_p,       &
-                              chunks(c)%field%vector_sd,      &
-                              fields,                         &
-                              reflective_boundary,            &
-                              depth                           )
+    IF(chunks(c)%task.EQ.parallel%task) THEN
+      IF(use_fortran_kernels)THEN
+        CALL update_halo_kernel(chunks(c)%field%x_min,          &
+                                chunks(c)%field%x_max,          &
+                                chunks(c)%field%y_min,          &
+                                chunks(c)%field%y_max, halo_exchange_depth,          &
+                                chunks(c)%chunk_neighbours,     &
+                                chunks(c)%field%density,        &
+                                chunks(c)%field%energy0,        &
+                                chunks(c)%field%energy1,        &
+                                chunks(c)%field%u,              &
+                                chunks(c)%field%vector_p,       &
+                                chunks(c)%field%vector_sd,      &
+                                fields,                         &
+                                reflective_boundary,            &
+                                depth                           )
+      ENDIF
     ENDIF
-  ENDIF
-
   ENDDO
   IF (profiler_on) profiler%halo_update = profiler%halo_update + (timer() - halo_time)
 

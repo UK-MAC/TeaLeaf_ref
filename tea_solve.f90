@@ -250,9 +250,11 @@ SUBROUTINE tea_leaf()
               fields = 0
               fields(FIELD_U) = 1
             ELSE IF (tl_use_ppcg) THEN
+              ! To avoid some irritating bounds checking in ppcg inner iterations
+              max_cheby_iters = max_cheby_iters + halo_exchange_depth
+
               ! currently also calculate chebyshev coefficients
-              ! TODO least squares
-              CALL tea_calc_ch_coefs(ch_alphas, ch_betas, eigmin, eigmax, &
+              CALL tea_calc_ls_coefs(ch_alphas, ch_betas, eigmin, eigmax, &
                   theta, tl_ppcg_inner_steps)
             ENDIF
 
@@ -646,7 +648,7 @@ SUBROUTINE tea_leaf()
 
 END SUBROUTINE tea_leaf
 
-SUBROUTINE tea_leaF_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
+SUBROUTINE tea_leaf_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
     rx, ry, tl_ppcg_inner_steps, c, solve_time)
 
   INTEGER :: fields(NUM_FIELDS)
@@ -654,6 +656,13 @@ SUBROUTINE tea_leaF_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
   REAL(KIND=8) :: rx, ry, theta
   REAL(KIND=8) :: halo_time, timer, solve_time
   REAL(KIND=8), DIMENSION(max_iters) :: ch_alphas, ch_betas
+
+  INTEGER :: bounds_extra, ppcg_inner_step
+  INTEGER(KIND=4) :: xminb, xmaxb, yminb, ymaxb
+
+  INTEGER :: inner_bounds(halo_exchange_depth, 4), outer_step
+
+!$ INTEGER :: OMP_GET_THREAD_NUM
 
   fields = 0
   fields(FIELD_U) = 1
@@ -693,20 +702,90 @@ SUBROUTINE tea_leaF_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
 
   ! inner steps
   DO ppcg_cur_step=1,tl_ppcg_inner_steps,halo_exchange_depth
+!$OMP PARALLEL PRIVATE(bounds_extra, ppcg_inner_step, xminb, xmaxb, yminb, ymaxb)
+
+    ppcg_inner_step = ppcg_cur_step
+
+!$ IF(OMP_GET_THREAD_NUM() .EQ. 0) THEN
     IF (profiler_on) halo_time = timer()
     CALL update_halo(fields,halo_exchange_depth)
-    !IF (profiler_on) profiler%halo_exchange = profiler%halo_exchange + (timer() - halo_time)
     IF (profiler_on) solve_time = solve_time + (timer()-halo_time)
 
-    IF(use_fortran_kernels) THEN
+    bounds_extra = halo_exchange_depth - 1
+
+    xminb = chunks(c)%field%x_min
+    xmaxb = chunks(c)%field%x_max
+    yminb = chunks(c)%field%y_min
+    ymaxb = chunks(c)%field%y_max
+!$ ELSE
+    bounds_extra = -1
+
+    xminb = 0
+    xmaxb = 0
+    yminb = 0
+    ymaxb = 0
+!$ ENDIF
+
+!$OMP PARALLEL
+    CALL tea_leaf_ppcg_matmul(chunks(c)%field%x_min,    &
+        chunks(c)%field%x_max,                            &
+        chunks(c)%field%y_min,                            &
+        chunks(c)%field%y_max, halo_exchange_depth,     &
+        xminb, xmaxb, yminb, ymaxb, &
+        bounds_extra,                                   &
+        rx, ry,                                           &
+        chunks(c)%field%vector_r,                         &
+        chunks(c)%field%vector_Kx,                        &
+        chunks(c)%field%vector_Ky,                        &
+        chunks(c)%field%vector_sd)
+!$OMP END PARALLEL
+
+!$OMP BARRIER
+
+    bounds_extra = halo_exchange_depth - 1
+
+    CALL tea_leaf_kernel_ppcg_inner(chunks(c)%field%x_min,&
+        chunks(c)%field%x_max,                            &
+        chunks(c)%field%y_min,                            &
+        chunks(c)%field%y_max, halo_exchange_depth,     &
+        bounds_extra,                                   &
+        ppcg_inner_step,                      &
+        ch_alphas, ch_betas,                              &
+        rx, ry,                                           &
+        chunks(c)%field%u,                                &
+        chunks(c)%field%vector_r,                         &
+        chunks(c)%field%vector_Kx,                        &
+        chunks(c)%field%vector_Ky,                        &
+        chunks(c)%field%vector_sd,                        &
+        chunks(c)%field%vector_z,                          &
+        chunks(c)%field%tri_cp,                          &
+        chunks(c)%field%tri_bfp,                          &
+        chunks(c)%field%vector_Mi,                          &
+        tl_preconditioner_type)
+
+    ppcg_inner_step = ppcg_cur_step + 1
+
+    DO bounds_extra = halo_exchange_depth - 2, 0, -1
+      CALL tea_leaf_ppcg_matmul(chunks(c)%field%x_min,    &
+          chunks(c)%field%x_max,                            &
+          chunks(c)%field%y_min,                            &
+          chunks(c)%field%y_max, halo_exchange_depth,     &
+          0, 0, 0, 0, &
+          bounds_extra,                                   &
+          rx, ry,                                           &
+          chunks(c)%field%vector_r,                         &
+          chunks(c)%field%vector_Kx,                        &
+          chunks(c)%field%vector_Ky,                        &
+          chunks(c)%field%vector_sd)
+
       CALL tea_leaf_kernel_ppcg_inner(chunks(c)%field%x_min,&
           chunks(c)%field%x_max,                            &
           chunks(c)%field%y_min,                            &
-          chunks(c)%field%y_max, halo_exchange_depth,                            &
-          ppcg_cur_step,                                    &
+          chunks(c)%field%y_max, halo_exchange_depth,     &
+          bounds_extra,                                   &
+          ppcg_inner_step,                      &
           ch_alphas, ch_betas,                              &
           rx, ry,                                           &
-          ppcg_cur_step, tl_ppcg_inner_steps,   &
           chunks(c)%field%u,                                &
           chunks(c)%field%vector_r,                         &
           chunks(c)%field%vector_Kx,                        &
@@ -717,7 +796,10 @@ SUBROUTINE tea_leaF_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
           chunks(c)%field%tri_bfp,                          &
           chunks(c)%field%vector_Mi,                          &
           tl_preconditioner_type)
-    ENDIF
+
+      ppcg_inner_step = ppcg_inner_step + 1
+    ENDDO
+!$OMP END PARALLEL
   ENDDO
 
   fields = 0
