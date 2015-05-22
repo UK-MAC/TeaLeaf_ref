@@ -662,7 +662,7 @@ SUBROUTINE tea_leaf_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
 
   INTEGER :: inner_bounds(halo_exchange_depth, 4), outer_step
 
-!$ INTEGER :: OMP_GET_THREAD_NUM
+!$ INTEGER :: OMP_GET_THREAD_NUM,OMP_GET_NUM_THREADS, launch_threads
 
   fields = 0
   fields(FIELD_U) = 1
@@ -702,9 +702,7 @@ SUBROUTINE tea_leaf_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
 
   ! inner steps
   DO ppcg_cur_step=1,tl_ppcg_inner_steps,halo_exchange_depth
-!$OMP PARALLEL PRIVATE(bounds_extra, ppcg_inner_step, xminb, xmaxb, yminb, ymaxb)
-
-    ppcg_inner_step = ppcg_cur_step
+!$OMP PARALLEL PRIVATE(bounds_extra, ppcg_inner_step, xminb, xmaxb, yminb, ymaxb, launch_threads)
 
 !$ IF(OMP_GET_THREAD_NUM() .EQ. 0) THEN
     IF (profiler_on) halo_time = timer()
@@ -713,20 +711,42 @@ SUBROUTINE tea_leaf_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
 
     bounds_extra = halo_exchange_depth - 1
 
-    xminb = chunks(c)%field%x_min
-    xmaxb = chunks(c)%field%x_max
-    yminb = chunks(c)%field%y_min
-    ymaxb = chunks(c)%field%y_max
+!$  IF(OMP_GET_NUM_THREADS() .EQ. 1) THEN
+!$    xminb = 0
+!$    xmaxb = 0
+!$    yminb = 0
+!$    ymaxb = 0
+!$  ELSE
+!$    xminb = chunks(c)%field%x_min
+!$    xmaxb = chunks(c)%field%x_max
+!$    yminb = chunks(c)%field%y_min
+!$    ymaxb = chunks(c)%field%y_max
+!$  ENDIF
+!$  launch_threads=1
+!$OMP PARALLEL NUM_THREADS(launch_threads)
+!$    CALL tea_leaf_ppcg_matmul(chunks(c)%field%x_min,    &
+!$        chunks(c)%field%x_max,                            &
+!$        chunks(c)%field%y_min,                            &
+!$        chunks(c)%field%y_max, halo_exchange_depth,     &
+!$        xminb, xmaxb, yminb, ymaxb, &
+!$        bounds_extra,                                   &
+!$        rx, ry,                                           &
+!$        chunks(c)%field%vector_r,                         &
+!$        chunks(c)%field%vector_Kx,                        &
+!$        chunks(c)%field%vector_Ky,                        &
+!$        chunks(c)%field%vector_sd)
+!$OMP END PARALLEL
 !$ ELSE
-    bounds_extra = -1
+!$    bounds_extra = -1
 
     xminb = 0
     xmaxb = 0
     yminb = 0
     ymaxb = 0
-!$ ENDIF
+!$  launch_threads=OMP_GET_NUM_THREADS() - 1
 
-!$OMP PARALLEL
+!$  IF(omp_get_thread_num() .eq. 1) THEN
+!$OMP PARALLEL NUM_THREADS(launch_threads)
     CALL tea_leaf_ppcg_matmul(chunks(c)%field%x_min,    &
         chunks(c)%field%x_max,                            &
         chunks(c)%field%y_min,                            &
@@ -739,6 +759,9 @@ SUBROUTINE tea_leaf_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
         chunks(c)%field%vector_Ky,                        &
         chunks(c)%field%vector_sd)
 !$OMP END PARALLEL
+!$  endif
+
+!$ ENDIF
 
 !$OMP BARRIER
 
@@ -749,7 +772,7 @@ SUBROUTINE tea_leaf_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
         chunks(c)%field%y_min,                            &
         chunks(c)%field%y_max, halo_exchange_depth,     &
         bounds_extra,                                   &
-        ppcg_inner_step,                      &
+        ppcg_cur_step,                      &
         ch_alphas, ch_betas,                              &
         rx, ry,                                           &
         chunks(c)%field%u,                                &
@@ -799,6 +822,7 @@ SUBROUTINE tea_leaf_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
 
       ppcg_inner_step = ppcg_inner_step + 1
     ENDDO
+
 !$OMP END PARALLEL
   ENDDO
 

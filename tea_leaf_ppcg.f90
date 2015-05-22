@@ -98,7 +98,7 @@ SUBROUTINE tea_leaf_ppcg_matmul(x_min,             &
             r(j, k) = r(j, k) - smvp
         ENDDO
     ENDDO
-!$OMP END DO NOWAIT
+!$OMP END DO
 
 END SUBROUTINE
 
