@@ -133,6 +133,14 @@ SUBROUTINE tea_leaf_kernel_ppcg_inner(x_min,             &
 
   INTEGER(KIND=4) :: bounds_extra
 
+!$OMP DO
+    DO k=y_min-bounds_extra,y_max+bounds_extra
+        DO j=x_min-bounds_extra,x_max+bounds_extra
+            u(j, k) = u(j, k) + sd(j, k)
+        ENDDO
+    ENDDO
+!$OMP END DO
+
   IF (preconditioner_type .NE. TL_PREC_NONE) THEN
     IF (preconditioner_type .EQ. TL_PREC_JAC_BLOCK) THEN
       CALL tea_block_solve(x_min, x_max, y_min, y_max, halo_exchange_depth,             &
@@ -145,8 +153,6 @@ SUBROUTINE tea_leaf_kernel_ppcg_inner(x_min,             &
 !$OMP DO
     DO k=y_min-bounds_extra,y_max+bounds_extra
         DO j=x_min-bounds_extra,x_max+bounds_extra
-            u(j, k) = u(j, k) + sd(j, k)
-
             sd(j, k) = alpha(ppcg_step)*sd(j, k) + beta(ppcg_step)*z(j, k)
         ENDDO
     ENDDO
@@ -155,8 +161,6 @@ SUBROUTINE tea_leaf_kernel_ppcg_inner(x_min,             &
 !$OMP DO
     DO k=y_min-bounds_extra,y_max+bounds_extra
         DO j=x_min-bounds_extra,x_max+bounds_extra
-            u(j, k) = u(j, k) + sd(j, k)
-
             sd(j, k) = alpha(ppcg_step)*sd(j, k) + beta(ppcg_step)*r(j, k)
         ENDDO
     ENDDO
