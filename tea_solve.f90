@@ -662,7 +662,7 @@ SUBROUTINE tea_leaf_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
 
   INTEGER :: inner_bounds(halo_exchange_depth, 4), outer_step
 
-   INTEGER :: OMP_GET_THREAD_NUM,OMP_GET_NUM_THREADS, launch_threads
+   INTEGER :: OMP_GET_THREAD_NUM,OMP_GET_NUM_THREADS
 
   fields = 0
   fields(FIELD_U) = 1
@@ -705,12 +705,6 @@ SUBROUTINE tea_leaf_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
   yminb = chunks(c)%field%y_min + halo_exchange_depth
   ymaxb = chunks(c)%field%y_max - halo_exchange_depth
   bounds_extra = halo_exchange_depth - 1
-
-  IF (OMP_GET_NUM_THREADS() .EQ. 1) THEN
-    launch_threads = 1
-  ELSE
-    launch_threads = OMP_GET_NUM_THREADS() - 1
-  ENDIF
 
   ! inner steps
   DO ppcg_cur_step=1,tl_ppcg_inner_steps,halo_exchange_depth
