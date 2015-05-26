@@ -724,21 +724,17 @@ SUBROUTINE tea_leaf_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
         IF (profiler_on) solve_time = solve_time + (timer()-halo_time)
     ENDIF
 
-    IF ((OMP_GET_NUM_THREADS() .EQ. 1) .OR. (OMP_GET_THREAD_NUM() .EQ. 1)) THEN
-!$OMP PARALLEL NUM_THREADS(launch_threads)
-        CALL tea_leaf_ppcg_matmul(chunks(c)%field%x_min,    &
-            chunks(c)%field%x_max,                            &
-            chunks(c)%field%y_min,                            &
-            chunks(c)%field%y_max, halo_exchange_depth,     &
-            0, 0, 0, 0,                                     &
-            - (bounds_extra + 2),                                 &
-            rx, ry,                                           &
-            chunks(c)%field%vector_r,                         &
-            chunks(c)%field%vector_Kx,                        &
-            chunks(c)%field%vector_Ky,                        &
-            chunks(c)%field%vector_sd)
-!$OMP END PARALLEL
-    ENDIF
+    CALL tea_leaf_ppcg_matmul(chunks(c)%field%x_min,    &
+        chunks(c)%field%x_max,                            &
+        chunks(c)%field%y_min,                            &
+        chunks(c)%field%y_max, halo_exchange_depth,     &
+        0, 0, 0, 0,                                     &
+        - (bounds_extra + 2),                                 &
+        rx, ry,                                           &
+        chunks(c)%field%vector_r,                         &
+        chunks(c)%field%vector_Kx,                        &
+        chunks(c)%field%vector_Ky,                        &
+        chunks(c)%field%vector_sd)
 
 !$OMP BARRIER
 
@@ -753,8 +749,6 @@ SUBROUTINE tea_leaf_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
         chunks(c)%field%vector_Kx,                        &
         chunks(c)%field%vector_Ky,                        &
         chunks(c)%field%vector_sd)
-
-    bounds_extra = halo_exchange_depth - 1
 
     CALL tea_leaf_kernel_ppcg_inner(chunks(c)%field%x_min,&
         chunks(c)%field%x_max,                            &
