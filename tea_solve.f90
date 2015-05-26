@@ -706,7 +706,11 @@ SUBROUTINE tea_leaf_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
   ymaxb = chunks(c)%field%y_max - halo_exchange_depth
   bounds_extra = halo_exchange_depth - 1
 
-  launch_threads = OMP_GET_NUM_THREADS() - 1
+  IF (OMP_GET_NUM_THREADS() .EQ. 1) THEN
+    launch_threads = 1
+  ELSE
+    launch_threads = OMP_GET_NUM_THREADS() - 1
+  ENDIF
 
   ! inner steps
   DO ppcg_cur_step=1,tl_ppcg_inner_steps,halo_exchange_depth
@@ -718,8 +722,6 @@ SUBROUTINE tea_leaf_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
         IF (profiler_on) halo_time = timer()
         CALL update_halo(fields,halo_exchange_depth)
         IF (profiler_on) solve_time = solve_time + (timer()-halo_time)
-
-        IF (OMP_GET_NUM_THREADS() .EQ. 1) launch_threads = 1
     ENDIF
 
     IF ((OMP_GET_NUM_THREADS() .EQ. 1) .OR. (OMP_GET_THREAD_NUM() .EQ. 1)) THEN
