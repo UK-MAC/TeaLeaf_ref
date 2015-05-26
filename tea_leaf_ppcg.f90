@@ -89,7 +89,10 @@ SUBROUTINE tea_leaf_ppcg_matmul(x_min,             &
 !$OMP DO
     DO k=y_min-bounds_extra,y_max+bounds_extra
         DO j=x_min-bounds_extra,x_max+bounds_extra
-            if (k .gt. yminb .and. k .lt. ymaxb .and. j .gt. xminb .and. j .lt. xmaxb) CYCLE
+            if (k .gt. yminb .and. &
+                k .lt. ymaxb .and. &
+                j .gt. xminb .and. &
+                j .lt. xmaxb) CYCLE
             smvp = (1.0_8                                           &
                 + ry*(Ky(j, k+1) + Ky(j, k))                        &
                 + rx*(Kx(j+1, k) + Kx(j, k)))*sd(j, k)              &

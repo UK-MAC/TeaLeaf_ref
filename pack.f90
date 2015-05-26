@@ -90,11 +90,11 @@ SUBROUTINE call_packing_functions(chunk, fields, depth, face, packing, mpi_buffe
     SELECT CASE (face)
     CASE (CHUNK_LEFT)
       pack_func => tea_pack_message_left
-    CASE (CHUNK_right)
+    CASE (CHUNK_RIGHT)
       pack_func => tea_pack_message_right
-    CASE (CHUNK_bottom)
+    CASE (CHUNK_BOTTOM)
       pack_func => tea_pack_message_bottom
-    CASE (CHUNK_top)
+    CASE (CHUNK_TOP)
       pack_func => tea_pack_message_top
     CASE DEFAULT
       !call report_error("pack.f90","Invalid face pased to buffer packing")
@@ -103,11 +103,11 @@ SUBROUTINE call_packing_functions(chunk, fields, depth, face, packing, mpi_buffe
     SELECT CASE (face)
     CASE (CHUNK_LEFT)
       pack_func => tea_unpack_message_left
-    CASE (CHUNK_right)
+    CASE (CHUNK_RIGHT)
       pack_func => tea_unpack_message_right
-    CASE (CHUNK_bottom)
+    CASE (CHUNK_BOTTOM)
       pack_func => tea_unpack_message_bottom
-    CASE (CHUNK_top)
+    CASE (CHUNK_TOP)
       pack_func => tea_unpack_message_top
     CASE DEFAULT
       !call report_error("pack.f90","Invalid face pased to buffer packing")
