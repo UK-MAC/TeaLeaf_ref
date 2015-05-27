@@ -65,7 +65,7 @@ endif
 
 OMP_INTEL     = -openmp -ip -g
 OMP_SUN       = -xopenmp=parallel -vpara
-OMP_GNU       = -fopenmp -cpp
+OMP_GNU       = -fopenmp
 OMP_CRAY      = -e Z
 OMP_PGI       = -mp=nonuma
 OMP_PATHSCALE = -mp
@@ -173,13 +173,13 @@ tea_leaf: Makefile $(FORTRAN_FILES) $(C_FILES)
 	-o tea_leaf
 	@echo $(MESSAGE)
 
-include make.deps
+include makefile.deps
 
 %_module.mod: %.f90 %.o
 	@true
-%.o: %.f90 Makefile make.deps
+%.o: %.f90 Makefile makefile.deps
 	$(MPI_COMPILER) $(FLAGS) -c $< -o $*.o
-%.o: %.c Makefile make.deps
+%.o: %.c Makefile makefile.deps
 	$(C_MPI_COMPILER) $(CFLAGS) -c $< -o $*.o
 
 clean:
