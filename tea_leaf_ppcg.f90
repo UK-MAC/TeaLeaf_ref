@@ -71,7 +71,8 @@ SUBROUTINE tea_leaf_ppcg_matmul(x_min,             &
                                       y_min,             &
                                       y_max, halo_exchange_depth,             &
                                       xminb, xmaxb, yminb, ymaxb, &
-                                      bounds_extra, &
+                                      bounds_extra_x, &
+                                      bounds_extra_y, &
                                       rx, ry,            &
                                       r,                 &
                                       Kx,                &
@@ -84,11 +85,12 @@ SUBROUTINE tea_leaf_ppcg_matmul(x_min,             &
   INTEGER(KIND=4) :: j,k
   REAL(KIND=8) :: smvp, rx, ry
 
-  INTEGER(KIND=4) :: bounds_extra, xminb, xmaxb, yminb, ymaxb
+  INTEGER(KIND=4) :: bounds_extra_x, bounds_extra_y
+  INTEGER(KIND=4) :: xminb, xmaxb, yminb, ymaxb
 
 !$OMP DO
-    DO k=y_min-bounds_extra,y_max+bounds_extra
-        DO j=x_min-bounds_extra,x_max+bounds_extra
+    DO k=y_min-bounds_extra_y,y_max+bounds_extra_y
+        DO j=x_min-bounds_extra_x,x_max+bounds_extra_x
             if (k .gt. yminb .and. &
                 k .lt. ymaxb .and. &
                 j .gt. xminb .and. &

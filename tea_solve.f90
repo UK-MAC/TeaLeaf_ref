@@ -712,11 +712,11 @@ SUBROUTINE tea_leaf_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
 !$OMP FIRSTPRIVATE(bounds_extra) &
 !$OMP PRIVATE(ppcg_inner_step)
 
-    IF (OMP_GET_THREAD_NUM() .EQ. 0) THEN
+    !$OMP MASTER
         IF (profiler_on) halo_time = timer()
-        CALL update_halo(fields,halo_exchange_depth)
+        CALL tea_pack_send_bottom_top(fields, halo_exchange_depth, .TRUE.)
         IF (profiler_on) solve_time = solve_time + (timer()-halo_time)
-    ENDIF
+    !$OMP END MASTER
 
     CALL tea_leaf_ppcg_matmul(chunks(c)%field%x_min,    &
         chunks(c)%field%x_max,                            &
@@ -724,11 +724,45 @@ SUBROUTINE tea_leaf_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
         chunks(c)%field%y_max, halo_exchange_depth,     &
         0, 0, 0, 0,                                     &
         - (bounds_extra + 2),                                 &
+        - (bounds_extra + 2),                                 &
         rx, ry,                                           &
         chunks(c)%field%vector_r,                         &
         chunks(c)%field%vector_Kx,                        &
         chunks(c)%field%vector_Ky,                        &
         chunks(c)%field%vector_sd)
+
+    !$OMP MASTER
+        IF (profiler_on) halo_time = timer()
+        CALL tea_pack_send_bottom_top(fields, halo_exchange_depth, .FALSE.)
+        IF (profiler_on) solve_time = solve_time + (timer()-halo_time)
+    !$OMP END MASTER
+
+!$OMP BARRIER
+
+    !$OMP MASTER
+        IF (profiler_on) halo_time = timer()
+        CALL tea_pack_send_left_right(fields, halo_exchange_depth, .TRUE.)
+        IF (profiler_on) solve_time = solve_time + (timer()-halo_time)
+    !$OMP END MASTER
+
+    CALL tea_leaf_ppcg_matmul(chunks(c)%field%x_min,    &
+        chunks(c)%field%x_max,                            &
+        chunks(c)%field%y_min,                            &
+        chunks(c)%field%y_max, halo_exchange_depth,     &
+        xminb, xmaxb, yminb, ymaxb, &
+        - (bounds_extra + 2),                                   &
+        bounds_extra,                                   &
+        rx, ry,                                           &
+        chunks(c)%field%vector_r,                         &
+        chunks(c)%field%vector_Kx,                        &
+        chunks(c)%field%vector_Ky,                        &
+        chunks(c)%field%vector_sd)
+
+    !$OMP MASTER
+        IF (profiler_on) halo_time = timer()
+        CALL tea_pack_send_left_right(fields, halo_exchange_depth, .FALSE.)
+        IF (profiler_on) solve_time = solve_time + (timer()-halo_time)
+    !$OMP END MASTER
 
 !$OMP BARRIER
 
@@ -736,7 +770,11 @@ SUBROUTINE tea_leaf_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
         chunks(c)%field%x_max,                            &
         chunks(c)%field%y_min,                            &
         chunks(c)%field%y_max, halo_exchange_depth,     &
-        xminb, xmaxb, yminb, ymaxb, &
+        chunks(c)%field%x_min + halo_exchange_depth, &
+        chunks(c)%field%x_max - halo_exchange_depth, &
+        chunks(c)%field%y_min - halo_exchange_depth, &
+        chunks(c)%field%y_max + halo_exchange_depth, &
+        bounds_extra,                                   &
         bounds_extra,                                   &
         rx, ry,                                           &
         chunks(c)%field%vector_r,                         &
@@ -771,6 +809,7 @@ SUBROUTINE tea_leaf_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
           chunks(c)%field%y_min,                            &
           chunks(c)%field%y_max, halo_exchange_depth,     &
           0, 0, 0, 0, &
+          bounds_extra,                                   &
           bounds_extra,                                   &
           rx, ry,                                           &
           chunks(c)%field%vector_r,                         &

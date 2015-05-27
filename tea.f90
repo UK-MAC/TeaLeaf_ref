@@ -237,6 +237,192 @@ SUBROUTINE tea_allocate_buffers(chunk)
 
 END SUBROUTINE tea_allocate_buffers
 
+SUBROUTINE calculate_mpi_sizes(left_right_offset, bottom_top_offset,    &
+    end_pack_index_left_right, end_pack_index_bottom_top,               &
+    fields, depth)
+
+  IMPLICIT NONE
+
+    INTEGER      :: fields(NUM_FIELDS),depth, chunk
+    INTEGER      :: left_right_offset(NUM_FIELDS),bottom_top_offset(NUM_FIELDS)
+    INTEGER      :: end_pack_index_left_right, end_pack_index_bottom_top,field
+    INTEGER      :: message_count_lr, message_count_ud
+    INTEGER      :: exchange_size_lr, exchange_size_ud
+
+    chunk = 1
+
+    exchange_size_lr = depth*(chunks(chunk)%field%y_max+2*depth)
+    exchange_size_ud = depth*(chunks(chunk)%field%x_max+2*depth)
+
+    end_pack_index_left_right=0
+    end_pack_index_bottom_top=0
+    left_right_offset = 0
+    bottom_top_offset = 0
+
+    DO field=1,NUM_FIELDS
+      IF(fields(field).EQ.1) THEN
+        left_right_offset(field)=end_pack_index_left_right
+        bottom_top_offset(field)=end_pack_index_bottom_top
+        end_pack_index_left_right=end_pack_index_left_right + exchange_size_lr
+        end_pack_index_bottom_top=end_pack_index_bottom_top + exchange_size_ud
+      ENDIF
+    ENDDO
+
+END SUBROUTINE calculate_mpi_sizes
+
+SUBROUTINE tea_pack_send_left_right(fields, depth, packing)
+
+  IMPLICIT NONE
+
+    INTEGER      :: fields(NUM_FIELDS),depth
+    LOGICAL :: packing
+
+    INTEGER      :: chunk,err
+    INTEGER      :: left_right_offset(NUM_FIELDS),bottom_top_offset(NUM_FIELDS)
+    INTEGER      :: end_pack_index_left_right, end_pack_index_bottom_top
+    INTEGER, SAVE:: message_count_lr, exchange_size_lr
+    INTEGER, SAVE, dimension(4)                 :: request_lr
+    INTEGER, SAVE, dimension(MPI_STATUS_SIZE,4) :: status_lr
+
+    ! Assuming 1 patch per task, this will be changed
+    chunk = 1
+
+    IF (ALL(chunks(chunk)%chunk_neighbours .eq. external_face)) return
+
+    call calculate_mpi_sizes(left_right_offset, bottom_top_offset,  &
+        end_pack_index_left_right, end_pack_index_bottom_top,       &
+        fields, depth)
+
+    if (packing.eqv..true.) then
+
+        request_lr = 0
+        message_count_lr = 0
+
+        IF(chunks(chunk)%chunk_neighbours(chunk_left).NE.external_face) THEN
+          ! do left exchanges
+          CALL tea_pack_buffers(chunk, fields, depth, CHUNK_LEFT, &
+            chunks(chunk)%left_snd_buffer, left_right_offset)
+
+          !send and recv messagse to the left
+          CALL tea_send_recv_message_left(chunks(chunk)%left_snd_buffer,                      &
+                                             chunks(chunk)%left_rcv_buffer,                      &
+                                             chunk,end_pack_index_left_right,                    &
+                                             1, 2,                                               &
+                                             request_lr(message_count_lr+1), request_lr(message_count_lr+2))
+          message_count_lr = message_count_lr + 2
+        ENDIF
+
+        IF(chunks(chunk)%chunk_neighbours(chunk_right).NE.external_face) THEN
+          ! do right exchanges
+          CALL tea_pack_buffers(chunk, fields, depth, CHUNK_RIGHT, &
+            chunks(chunk)%right_snd_buffer, left_right_offset)
+
+          !send message to the right
+          CALL tea_send_recv_message_right(chunks(chunk)%right_snd_buffer,                     &
+                                              chunks(chunk)%right_rcv_buffer,                     &
+                                              chunk,end_pack_index_left_right,                    &
+                                              2, 1,                                               &
+                                              request_lr(message_count_lr+1), request_lr(message_count_lr+2))
+          message_count_lr = message_count_lr + 2
+        ENDIF
+
+    ELSE
+
+        !make a call to wait / sync
+        CALL MPI_WAITALL(message_count_lr,request_lr,status_lr,err)
+
+        !unpack in left direction
+        IF(chunks(chunk)%chunk_neighbours(chunk_left).NE.external_face) THEN
+          CALL tea_unpack_buffers(chunk, fields, depth, CHUNK_LEFT, &
+            chunks(chunk)%left_rcv_buffer, left_right_offset)
+        ENDIF
+
+        !unpack in right direction
+        IF(chunks(chunk)%chunk_neighbours(chunk_right).NE.external_face) THEN
+          CALL tea_unpack_buffers(chunk, fields, depth, CHUNK_RIGHT, &
+            chunks(chunk)%right_rcv_buffer, left_right_offset)
+        ENDIF
+
+    ENDIF
+
+END SUBROUTINE tea_pack_send_left_right
+
+SUBROUTINE tea_pack_send_bottom_top(fields, depth, packing)
+
+  IMPLICIT NONE
+
+    INTEGER      :: fields(NUM_FIELDS),depth
+    LOGICAL :: packing
+
+    INTEGER      :: chunk,err
+    INTEGER      :: left_right_offset(NUM_FIELDS),bottom_top_offset(NUM_FIELDS)
+    INTEGER      :: end_pack_index_left_right, end_pack_index_bottom_top
+    INTEGER, SAVE:: message_count_ud, exchange_size_ud
+    INTEGER, SAVE, dimension(4)                 :: request_ud
+    INTEGER, SAVE, dimension(MPI_STATUS_SIZE,4) :: status_ud
+
+    ! Assuming 1 patch per task, this will be changed
+    chunk = 1
+
+    IF (ALL(chunks(chunk)%chunk_neighbours .eq. external_face)) return
+
+    call calculate_mpi_sizes(left_right_offset, bottom_top_offset,  &
+        end_pack_index_left_right, end_pack_index_bottom_top,       &
+        fields, depth)
+
+    if (packing.eqv..true.) then
+
+        request_ud = 0
+        message_count_ud = 0
+
+        IF(chunks(chunk)%chunk_neighbours(chunk_bottom).NE.external_face) THEN
+          ! do bottom exchanges
+          CALL tea_pack_buffers(chunk, fields, depth, CHUNK_BOTTOM, &
+            chunks(chunk)%bottom_snd_buffer, bottom_top_offset)
+
+          !send message downwards
+          CALL tea_send_recv_message_bottom(chunks(chunk)%bottom_snd_buffer,                     &
+                                               chunks(chunk)%bottom_rcv_buffer,                     &
+                                               chunk,end_pack_index_bottom_top,                     &
+                                               3, 4,                                                &
+                                               request_ud(message_count_ud+1), request_ud(message_count_ud+2))
+          message_count_ud = message_count_ud + 2
+        ENDIF
+
+        IF(chunks(chunk)%chunk_neighbours(chunk_top).NE.external_face) THEN
+          ! do top exchanges
+          CALL tea_pack_buffers(chunk, fields, depth, CHUNK_TOP, &
+            chunks(chunk)%top_snd_buffer, bottom_top_offset)
+
+          !send message upwards
+          CALL tea_send_recv_message_top(chunks(chunk)%top_snd_buffer,                           &
+                                            chunks(chunk)%top_rcv_buffer,                           &
+                                            chunk,end_pack_index_bottom_top,                        &
+                                            4, 3,                                                   &
+                                            request_ud(message_count_ud+1), request_ud(message_count_ud+2))
+          message_count_ud = message_count_ud + 2
+        ENDIF
+
+    ELSE
+
+        CALL MPI_WAITALL(message_count_ud,request_ud,status_ud,err)
+
+        !unpack in top direction
+        IF( chunks(chunk)%chunk_neighbours(chunk_top).NE.external_face ) THEN
+          CALL tea_unpack_buffers(chunk, fields, depth, CHUNK_TOP, &
+            chunks(chunk)%top_rcv_buffer, bottom_top_offset)
+        ENDIF
+
+        !unpack in bottom direction
+        IF(chunks(chunk)%chunk_neighbours(chunk_bottom).NE.external_face) THEN
+          CALL tea_unpack_buffers(chunk, fields, depth, CHUNK_BOTTOM, &
+            chunks(chunk)%bottom_rcv_buffer, bottom_top_offset)
+        ENDIF
+
+    ENDIF
+
+END SUBROUTINE tea_pack_send_bottom_top
+
 SUBROUTINE tea_exchange(fields,depth)
 
   IMPLICIT NONE
@@ -317,13 +503,13 @@ SUBROUTINE tea_exchange(fields,depth)
       !unpack in left direction
       IF(chunks(chunk)%chunk_neighbours(chunk_left).NE.external_face) THEN
         CALL tea_unpack_buffers(chunk, fields, depth, CHUNK_LEFT, &
-        chunks(chunk)%left_rcv_buffer, left_right_offset)
+          chunks(chunk)%left_rcv_buffer, left_right_offset)
       ENDIF
 
       !unpack in right direction
       IF(chunks(chunk)%chunk_neighbours(chunk_right).NE.external_face) THEN
         CALL tea_unpack_buffers(chunk, fields, depth, CHUNK_RIGHT, &
-        chunks(chunk)%right_rcv_buffer, left_right_offset)
+          chunks(chunk)%right_rcv_buffer, left_right_offset)
       ENDIF
     ENDIF
 
@@ -362,13 +548,13 @@ SUBROUTINE tea_exchange(fields,depth)
       !unpack in left direction
       IF(chunks(chunk)%chunk_neighbours(chunk_left).NE.external_face) THEN
         CALL tea_unpack_buffers(chunk, fields, depth, CHUNK_LEFT, &
-        chunks(chunk)%left_rcv_buffer, left_right_offset)
+          chunks(chunk)%left_rcv_buffer, left_right_offset)
       ENDIF
 
       !unpack in right direction
       IF(chunks(chunk)%chunk_neighbours(chunk_right).NE.external_face) THEN
         CALL tea_unpack_buffers(chunk, fields, depth, CHUNK_RIGHT, &
-        chunks(chunk)%right_rcv_buffer, left_right_offset)
+          chunks(chunk)%right_rcv_buffer, left_right_offset)
       ENDIF
     ENDIF
 
