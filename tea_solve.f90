@@ -660,9 +660,7 @@ SUBROUTINE tea_leaf_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
   INTEGER :: bounds_extra, ppcg_inner_step
   INTEGER(KIND=4) :: xminb, xmaxb, yminb, ymaxb
 
-  INTEGER :: inner_bounds(halo_exchange_depth, 4), outer_step
-
-   INTEGER :: OMP_GET_THREAD_NUM,OMP_GET_NUM_THREADS
+  INTEGER :: OMP_GET_THREAD_NUM,OMP_GET_NUM_THREADS
 
   fields = 0
   fields(FIELD_U) = 1
