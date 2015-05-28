@@ -183,4 +183,4 @@ include makefile.deps
 	$(C_MPI_COMPILER) $(CFLAGS) -c $< -o $*.o
 
 clean:
-	rm -f *.o *.mod *genmod* *.lst *.cub *.ptx tea_leaf
+	rm -f *.o *.mod *genmod* *.lst *.cub *.ptx tea_leaf *.s *.i

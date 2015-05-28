@@ -275,7 +275,7 @@ SUBROUTINE tea_pack_send_left_right(fields, depth, packing)
   IMPLICIT NONE
 
     INTEGER      :: fields(NUM_FIELDS),depth
-    LOGICAL :: packing
+    LOGICAL :: packing, test_complete
 
     INTEGER      :: chunk,err
     INTEGER      :: left_right_offset(NUM_FIELDS),bottom_top_offset(NUM_FIELDS)
@@ -326,6 +326,8 @@ SUBROUTINE tea_pack_send_left_right(fields, depth, packing)
           message_count_lr = message_count_lr + 2
         ENDIF
 
+        CALL MPI_TESTALL(message_count_lr, request_lr, test_complete, status_lr, err)
+
     ELSE
 
         !make a call to wait / sync
@@ -352,7 +354,7 @@ SUBROUTINE tea_pack_send_bottom_top(fields, depth, packing)
   IMPLICIT NONE
 
     INTEGER      :: fields(NUM_FIELDS),depth
-    LOGICAL :: packing
+    LOGICAL :: packing, test_complete
 
     INTEGER      :: chunk,err
     INTEGER      :: left_right_offset(NUM_FIELDS),bottom_top_offset(NUM_FIELDS)
@@ -402,6 +404,8 @@ SUBROUTINE tea_pack_send_bottom_top(fields, depth, packing)
                                             request_ud(message_count_ud+1), request_ud(message_count_ud+2))
           message_count_ud = message_count_ud + 2
         ENDIF
+
+        CALL MPI_TESTALL(message_count_ud, request_ud, test_complete, status_ud, err)
 
     ELSE
 
