@@ -702,13 +702,13 @@ SUBROUTINE tea_leaf_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
   xmaxb = chunks(c)%field%x_max - halo_exchange_depth
   yminb = chunks(c)%field%y_min + halo_exchange_depth
   ymaxb = chunks(c)%field%y_max - halo_exchange_depth
-  bounds_extra = halo_exchange_depth - 1
 
   ! inner steps
   DO ppcg_cur_step=1,tl_ppcg_inner_steps,halo_exchange_depth
 !$OMP PARALLEL &
-!$OMP FIRSTPRIVATE(bounds_extra) &
-!$OMP PRIVATE(ppcg_inner_step)
+!$OMP PRIVATE(ppcg_inner_step, bounds_extra)
+
+    bounds_extra = halo_exchange_depth - 1
 
     !$OMP MASTER
         IF (profiler_on) halo_time = timer()
