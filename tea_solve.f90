@@ -536,7 +536,7 @@ SUBROUTINE tea_leaf()
       IF (tl_check_result) THEN
         fields = 0
         fields(FIELD_U) = 1
-        IF (profiler_on) halo_time = timer()
+        !IF (profiler_on) halo_time = timer()
         CALL update_halo(fields,1)
         !IF (profiler_on) profiler%halo_exchange = profiler%halo_exchange + (timer() - halo_time)
         IF (profiler_on) solve_time = solve_time + (timer()-halo_time)
@@ -714,6 +714,7 @@ SUBROUTINE tea_leaf_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
         IF (profiler_on) halo_time = timer()
         CALL tea_pack_send_bottom_top(fields, halo_exchange_depth, .TRUE.)
         IF (profiler_on) solve_time = solve_time + (timer()-halo_time)
+        IF (profiler_on) profiler%halo_exchange = profiler%halo_exchange + (timer() - halo_time)
     !$OMP END MASTER
 
     CALL tea_leaf_ppcg_matmul(chunks(c)%field%x_min,    &
@@ -733,6 +734,7 @@ SUBROUTINE tea_leaf_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
         IF (profiler_on) halo_time = timer()
         CALL tea_pack_send_bottom_top(fields, halo_exchange_depth, .FALSE.)
         IF (profiler_on) solve_time = solve_time + (timer()-halo_time)
+        IF (profiler_on) profiler%halo_exchange = profiler%halo_exchange + (timer() - halo_time)
     !$OMP END MASTER
 
 !$OMP BARRIER
@@ -741,6 +743,7 @@ SUBROUTINE tea_leaf_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
         IF (profiler_on) halo_time = timer()
         CALL tea_pack_send_left_right(fields, halo_exchange_depth, .TRUE.)
         IF (profiler_on) solve_time = solve_time + (timer()-halo_time)
+        IF (profiler_on) profiler%halo_exchange = profiler%halo_exchange + (timer() - halo_time)
     !$OMP END MASTER
 
     CALL tea_leaf_ppcg_matmul(chunks(c)%field%x_min,    &
@@ -760,6 +763,7 @@ SUBROUTINE tea_leaf_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
         IF (profiler_on) halo_time = timer()
         CALL tea_pack_send_left_right(fields, halo_exchange_depth, .FALSE.)
         IF (profiler_on) solve_time = solve_time + (timer()-halo_time)
+        IF (profiler_on) profiler%halo_exchange = profiler%halo_exchange + (timer() - halo_time)
     !$OMP END MASTER
 
 !$OMP BARRIER
