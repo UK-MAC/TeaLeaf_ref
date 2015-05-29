@@ -66,6 +66,41 @@ SUBROUTINE tea_leaf_kernel_ppcg_init_sd(x_min,             &
 
 END SUBROUTINE tea_leaf_kernel_ppcg_init_sd
 
+SUBROUTINE tea_leaf_ppcg_matmul_inner(x_min,             &
+                                      x_max,             &
+                                      y_min,             &
+                                      y_max, halo_exchange_depth,             &
+                                      x_min_bound, x_max_bound, &
+                                      y_min_bound, y_max_bound, &
+                                      rx, ry,            &
+                                      r,                 &
+                                      Kx,                &
+                                      Ky,                &
+                                      sd)
+  IMPLICIT NONE
+
+  INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
+  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: r, Kx, Ky, sd
+  INTEGER(KIND=4) :: j,k
+  REAL(KIND=8) :: smvp, rx, ry
+
+  INTEGER(KIND=4) :: x_min_bound, x_max_bound, y_min_bound, y_max_bound
+
+!$OMP DO
+    DO k=y_min_bound,y_max_bound
+        DO j=x_min_bound,x_max_bound
+            smvp = (1.0_8                                           &
+                + ry*(Ky(j, k+1) + Ky(j, k))                        &
+                + rx*(Kx(j+1, k) + Kx(j, k)))*sd(j, k)              &
+                - ry*(Ky(j, k+1)*sd(j, k+1) + Ky(j, k)*sd(j, k-1))  &
+                - rx*(Kx(j+1, k)*sd(j+1, k) + Kx(j, k)*sd(j-1, k))
+            r(j, k) = r(j, k) - smvp
+        ENDDO
+    ENDDO
+!$OMP END DO NOWAIT
+
+END SUBROUTINE
+
 SUBROUTINE tea_leaf_ppcg_matmul(x_min,             &
                                       x_max,             &
                                       y_min,             &
@@ -82,28 +117,37 @@ SUBROUTINE tea_leaf_ppcg_matmul(x_min,             &
 
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
   REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: r, Kx, Ky, sd
-  INTEGER(KIND=4) :: j,k
-  REAL(KIND=8) :: smvp, rx, ry
+  REAL(KIND=8) :: rx, ry
 
   INTEGER(KIND=4) :: bounds_extra_x, bounds_extra_y
   INTEGER(KIND=4) :: xminb, xmaxb, yminb, ymaxb
 
-!$OMP DO
-    DO k=y_min-bounds_extra_y,y_max+bounds_extra_y
-        DO j=x_min-bounds_extra_x,x_max+bounds_extra_x
-            if (k .gt. yminb .and. &
-                k .lt. ymaxb .and. &
-                j .gt. xminb .and. &
-                j .lt. xmaxb) CYCLE
-            smvp = (1.0_8                                           &
-                + ry*(Ky(j, k+1) + Ky(j, k))                        &
-                + rx*(Kx(j+1, k) + Kx(j, k)))*sd(j, k)              &
-                - ry*(Ky(j, k+1)*sd(j, k+1) + Ky(j, k)*sd(j, k-1))  &
-                - rx*(Kx(j+1, k)*sd(j+1, k) + Kx(j, k)*sd(j-1, k))
-            r(j, k) = r(j, k) - smvp
-        ENDDO
-    ENDDO
-!$OMP END DO NOWAIT
+  IF ((xmaxb .EQ. 0) .AND. (xminb .EQ. 0)) THEN
+    call tea_leaf_ppcg_matmul_inner(x_min, x_max, y_min, y_max, halo_exchange_depth, &
+        x_min-bounds_extra_x, x_max+bounds_extra_x, &
+        y_min-bounds_extra_y, y_max+bounds_extra_y, &
+        rx, ry, r, Kx, Ky, sd)
+  ELSE
+    IF ((xminb + 1) .EQ. x_min-bounds_extra_x) THEN
+      call tea_leaf_ppcg_matmul_inner(x_min, x_max, y_min, y_max, halo_exchange_depth, &
+        xminb, xmaxb, &
+        y_min-bounds_extra_y, yminb, &
+        rx, ry, r, Kx, Ky, sd)
+      call tea_leaf_ppcg_matmul_inner(x_min, x_max, y_min, y_max, halo_exchange_depth, &
+        xminb, xmaxb, &
+        ymaxb, y_max+bounds_extra_y, &
+        rx, ry, r, Kx, Ky, sd)
+    ELSE IF ((yminb + 1) .EQ. y_min-bounds_extra_y) THEN
+      call tea_leaf_ppcg_matmul_inner(x_min, x_max, y_min, y_max, halo_exchange_depth, &
+        x_min-bounds_extra_x, xminb, &
+        yminb, ymaxb, &
+        rx, ry, r, Kx, Ky, sd)
+      call tea_leaf_ppcg_matmul_inner(x_min, x_max, y_min, y_max, halo_exchange_depth, &
+        xmaxb, x_max+bounds_extra_x, &
+        yminb, ymaxb, &
+        rx, ry, r, Kx, Ky, sd)
+    ENDIF
+  ENDIF
 
 END SUBROUTINE
 

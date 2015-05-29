@@ -495,12 +495,13 @@ SUBROUTINE tea_exchange(fields,depth)
     ENDIF
 
     IF (depth .eq. 1) THEN
+      test_complete = .false.
       ! don't have to transfer now
       CALL MPI_TESTALL(message_count_lr, request_lr, test_complete, status_lr, err)
     ELSE
+      test_complete = .true.
       !make a call to wait / sync
       CALL MPI_WAITALL(message_count_lr,request_lr,status_lr,err)
-      test_complete = .true.
     ENDIF
 
     IF (test_complete .eqv. .true.) THEN
