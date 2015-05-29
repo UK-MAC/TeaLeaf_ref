@@ -130,21 +130,21 @@ SUBROUTINE tea_leaf_ppcg_matmul(x_min,             &
   ELSE
     IF ((xminb + 1) .EQ. x_min-bounds_extra_x) THEN
       call tea_leaf_ppcg_matmul_inner(x_min, x_max, y_min, y_max, halo_exchange_depth, &
-        xminb, xmaxb, &
+        xminb + 1, xmaxb - 1, &
         y_min-bounds_extra_y, yminb, &
         rx, ry, r, Kx, Ky, sd)
       call tea_leaf_ppcg_matmul_inner(x_min, x_max, y_min, y_max, halo_exchange_depth, &
-        xminb, xmaxb, &
+        xminb + 1, xmaxb - 1, &
         ymaxb, y_max+bounds_extra_y, &
         rx, ry, r, Kx, Ky, sd)
     ELSE IF ((yminb + 1) .EQ. y_min-bounds_extra_y) THEN
       call tea_leaf_ppcg_matmul_inner(x_min, x_max, y_min, y_max, halo_exchange_depth, &
         x_min-bounds_extra_x, xminb, &
-        yminb, ymaxb, &
+        yminb + 1, ymaxb - 1, &
         rx, ry, r, Kx, Ky, sd)
       call tea_leaf_ppcg_matmul_inner(x_min, x_max, y_min, y_max, halo_exchange_depth, &
         xmaxb, x_max+bounds_extra_x, &
-        yminb, ymaxb, &
+        yminb + 1, ymaxb - 1, &
         rx, ry, r, Kx, Ky, sd)
     ENDIF
   ENDIF
