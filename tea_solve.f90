@@ -704,9 +704,9 @@ SUBROUTINE tea_leaf_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
   ymaxb = chunks(c)%field%y_max - halo_exchange_depth
 
   ! inner steps
-  DO ppcg_cur_step=1,tl_ppcg_inner_steps,halo_exchange_depth
 !$OMP PARALLEL &
-!$OMP PRIVATE(ppcg_inner_step, bounds_extra)
+!$OMP PRIVATE(ppcg_inner_step, ppcg_cur_step, bounds_extra)
+  DO ppcg_cur_step=1,tl_ppcg_inner_steps,halo_exchange_depth
 
     bounds_extra = halo_exchange_depth - 1
 
@@ -841,8 +841,8 @@ SUBROUTINE tea_leaf_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
       ppcg_inner_step = ppcg_inner_step + 1
     ENDDO
 
-!$OMP END PARALLEL
   ENDDO
+!$OMP END PARALLEL
 
   fields = 0
   fields(FIELD_P) = 1
