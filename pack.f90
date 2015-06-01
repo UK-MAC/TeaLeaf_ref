@@ -43,7 +43,9 @@ SUBROUTINE tea_pack_buffers(chunk, fields, depth, face, mpi_buffer, offsets)
   INTEGER       :: face
   LOGICAL       :: packing
 
+!$OMP PARALLEL
   CALL call_packing_functions(chunk, fields, depth, face, .TRUE., mpi_buffer, offsets)
+!$OMP END PARALLEL
 
 END SUBROUTINE
 
@@ -56,7 +58,9 @@ SUBROUTINE tea_unpack_buffers(chunk, fields, depth, face, mpi_buffer, offsets)
   INTEGER       :: face
   LOGICAL       :: packing
 
+!$OMP PARALLEL
   CALL call_packing_functions(chunk, fields, depth, face, .FALSE., mpi_buffer, offsets)
+!$OMP END PARALLEL
 
 END SUBROUTINE
 
@@ -86,6 +90,7 @@ SUBROUTINE call_packing_functions(chunk, fields, depth, face, packing, mpi_buffe
 
   PROCEDURE(pack_or_unpack), POINTER :: pack_func => NULL()
 
+!$OMP SINGLE
   IF (packing .EQV. .TRUE.) THEN
     SELECT CASE (face)
     CASE (CHUNK_LEFT)
@@ -113,8 +118,7 @@ SUBROUTINE call_packing_functions(chunk, fields, depth, face, packing, mpi_buffe
       !call report_error("pack.f90","Invalid face pased to buffer packing")
     END SELECT
   ENDIF
-
-!$OMP PARALLEL
+!$OMP END SINGLE
 
   IF(fields(FIELD_DENSITY).EQ.1) THEN
       CALL pack_func(chunks(chunk)%field%x_min,                    &
@@ -193,8 +197,6 @@ SUBROUTINE call_packing_functions(chunk, fields, depth, face, packing, mpi_buffe
                                     depth, xincs(CELL_DATA), yincs(CELL_DATA),   &
                                     offsets(FIELD_R))
   ENDIF
-    
-!$OMP END PARALLEL
 
 END SUBROUTINE
 

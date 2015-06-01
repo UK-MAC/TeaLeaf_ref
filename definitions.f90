@@ -106,6 +106,9 @@ MODULE definitions_module
                           ,set_field       &
                           ,dot_product     &
                           ,halo_update     &
+                          ,halo_async_wait_time &
+                          ,halo_send_async &
+                          ,halo_recv_async &
                           ,halo_exchange
                      
    END TYPE profiler_type
