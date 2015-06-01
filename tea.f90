@@ -295,6 +295,7 @@ SUBROUTINE tea_pack_bottom_top(fields, depth, packing)
         CALL tea_pack_buffers(chunk, fields, depth, CHUNK_bottom, &
           chunks(chunk)%bottom_snd_buffer, bottom_top_offset)
       ENDIF
+!$OMP BARRIER
       IF(chunks(chunk)%chunk_neighbours(chunk_top).NE.external_face) THEN
         CALL tea_pack_buffers(chunk, fields, depth, CHUNK_top, &
           chunks(chunk)%top_snd_buffer, bottom_top_offset)
@@ -304,6 +305,7 @@ SUBROUTINE tea_pack_bottom_top(fields, depth, packing)
         CALL tea_unpack_buffers(chunk, fields, depth, CHUNK_bottom, &
           chunks(chunk)%bottom_rcv_buffer, bottom_top_offset)
       ENDIF
+!$OMP BARRIER
       IF(chunks(chunk)%chunk_neighbours(chunk_top).NE.external_face) THEN
         CALL tea_unpack_buffers(chunk, fields, depth, CHUNK_top, &
           chunks(chunk)%top_rcv_buffer, bottom_top_offset)
