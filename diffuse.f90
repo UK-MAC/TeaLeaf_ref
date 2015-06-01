@@ -112,8 +112,8 @@ SUBROUTINE diffuse
     ! caused by halo exhanges.
     kernel_total=profiler%timestep+profiler%halo_exchange+profiler%summary+profiler%visit+&
         profiler%tea_init+profiler%set_field+profiler%tea_solve+profiler%tea_reset+profiler%dot_product+&
-        profiler%halo_update +profiler%halo_async_wait_time
-        !+profiler%halo_recv_async+profiler%halo_send_async
+        profiler%halo_update+profiler%halo_async_wait_time+&
+        profiler%halo_async_buffer_packing !+profiler%halo_recv_async+profiler%halo_send_async
     CALL tea_allgather(kernel_total,totals)
     ! So then what I do is use the individual kernel times for the
     ! maximum kernel time task for the profile print
@@ -127,6 +127,8 @@ SUBROUTINE diffuse
     profiler%halo_update=totals(loc(1))
     CALL tea_allgather(profiler%halo_send_async,totals)
     profiler%halo_send_async=totals(loc(1))
+    CALL tea_allgather(profiler%halo_async_buffer_packing,totals)
+    profiler%halo_async_buffer_packing=totals(loc(1))
     CALL tea_allgather(profiler%halo_recv_async,totals)
     profiler%halo_recv_async=totals(loc(1))
     CALL tea_allgather(profiler%summary,totals)
@@ -150,6 +152,7 @@ SUBROUTINE diffuse
       WRITE(g_out,'(a23,2f16.4)')"Timestep              :",profiler%timestep,100.0*(profiler%timestep/wall_clock)
       WRITE(g_out,'(a23,2f16.4)')"MPI Halo Exchange     :",profiler%halo_exchange,100.0*(profiler%halo_exchange/wall_clock)
       WRITE(g_out,'(a23,2f16.4)')"MPI Async wait time   :",profiler%halo_async_wait_time,100.0*(profiler%halo_async_wait_time/wall_clock)
+      WRITE(g_out,'(a23,2f16.4)')"MPI Async buffer pack :",profiler%halo_async_buffer_packing,100.0*(profiler%halo_async_buffer_packing/wall_clock)
       WRITE(g_out,'(a23,2f16.4)')"Self Halo Update      :",profiler%halo_update,100.0*(profiler%halo_update/wall_clock)
       WRITE(g_out,'(a23,2f16.4)')"Summary               :",profiler%summary,100.0*(profiler%summary/wall_clock)
       WRITE(g_out,'(a23,2f16.4)')"Visit                 :",profiler%visit,100.0*(profiler%visit/wall_clock)
@@ -164,7 +167,7 @@ SUBROUTINE diffuse
       WRITE(g_out, *) ""
       WRITE(g_out,'(a23,2f16.4)')"MPI Halo recv_async   :",profiler%halo_recv_async,100.0*(profiler%halo_recv_async/wall_clock)
       WRITE(g_out,'(a23,2f16.4)')"MPI Halo send_async   :",profiler%halo_send_async,100.0*(profiler%halo_send_async/wall_clock)
-      WRITE(g_out,'(a23,2f16.4)')"Overlapped time       :",(profiler%halo_recv_async + profiler%halo_send_async) - profiler%halo_async_wait_time,100.0*(((profiler%halo_recv_async + profiler%halo_send_async) - profiler%halo_async_wait_time)/wall_clock)
+      !WRITE(g_out,'(a23,2f16.4)')"Overlapped time       :",(profiler%halo_recv_async ) - profiler%halo_async_wait_time,100.0*(((profiler%halo_recv_async ) - profiler%halo_async_wait_time)/wall_clock)
       !WRITE(g_out,'(a23,2f16.4)')"Asynchronous overlap  :",0.0,100.0*(profiler%halo_send_async + profiler%halo_recv_async)/kernel_total
     ENDIF
 

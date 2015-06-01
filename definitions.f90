@@ -109,6 +109,7 @@ MODULE definitions_module
                           ,halo_async_wait_time &
                           ,halo_send_async &
                           ,halo_recv_async &
+                          ,halo_async_buffer_packing &
                           ,halo_exchange
                      
    END TYPE profiler_type
