@@ -30,7 +30,7 @@ SUBROUTINE tea_pack_message_left(x_min,x_max,y_min,y_max,halo_exchange_depth,fie
 
   IMPLICIT NONE
 
-  INTEGER      :: depth,field_type,x_min,x_max,y_min,y_max,halo_exchange_depth
+  INTEGER      :: depth,x_min,x_max,y_min,y_max,halo_exchange_depth
   INTEGER      :: j,k,x_inc,y_inc,index,buffer_offset
 
   REAL(KIND=8) :: field(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth)
@@ -56,7 +56,7 @@ SUBROUTINE tea_unpack_message_left(x_min,x_max,y_min,y_max,halo_exchange_depth,f
 
   IMPLICIT NONE
 
-  INTEGER      :: depth,field_type,x_min,x_max,y_min,y_max,halo_exchange_depth
+  INTEGER      :: depth,x_min,x_max,y_min,y_max,halo_exchange_depth
   INTEGER      :: j,k,x_inc,y_inc,index,buffer_offset
 
   REAL(KIND=8) :: field(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth)
@@ -82,7 +82,7 @@ SUBROUTINE tea_pack_message_right(x_min,x_max,y_min,y_max,halo_exchange_depth,fi
 
   IMPLICIT NONE
 
-  INTEGER      :: depth,field_type,x_min,x_max,y_min,y_max,halo_exchange_depth
+  INTEGER      :: depth,x_min,x_max,y_min,y_max,halo_exchange_depth
   INTEGER      :: j,k,x_inc,y_inc,index,buffer_offset
 
   REAL(KIND=8) :: field(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth)
@@ -108,7 +108,7 @@ SUBROUTINE tea_unpack_message_right(x_min,x_max,y_min,y_max,halo_exchange_depth,
 
   IMPLICIT NONE
 
-  INTEGER      :: depth,field_type,x_min,x_max,y_min,y_max,halo_exchange_depth
+  INTEGER      :: depth,x_min,x_max,y_min,y_max,halo_exchange_depth
   INTEGER      :: j,k,x_inc,y_inc,index,buffer_offset
 
   REAL(KIND=8) :: field(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth)
@@ -134,7 +134,7 @@ SUBROUTINE tea_pack_message_top(x_min,x_max,y_min,y_max,halo_exchange_depth,fiel
 
   IMPLICIT NONE
 
-  INTEGER      :: depth,field_type,x_min,x_max,y_min,y_max,halo_exchange_depth
+  INTEGER      :: depth,x_min,x_max,y_min,y_max,halo_exchange_depth
   INTEGER      :: j,k,x_inc,y_inc,index,buffer_offset
 
   REAL(KIND=8) :: field(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth)
@@ -160,7 +160,7 @@ SUBROUTINE tea_unpack_message_top(x_min,x_max,y_min,y_max,halo_exchange_depth,fi
 
   IMPLICIT NONE
 
-  INTEGER      :: depth,field_type,x_min,x_max,y_min,y_max,halo_exchange_depth
+  INTEGER      :: depth,x_min,x_max,y_min,y_max,halo_exchange_depth
   INTEGER      :: j,k,x_inc,y_inc,index,buffer_offset
 
   REAL(KIND=8) :: field(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth)
@@ -186,7 +186,7 @@ SUBROUTINE tea_pack_message_bottom(x_min,x_max,y_min,y_max,halo_exchange_depth,f
 
   IMPLICIT NONE
 
-  INTEGER      :: depth,field_type,x_min,x_max,y_min,y_max,halo_exchange_depth
+  INTEGER      :: depth,x_min,x_max,y_min,y_max,halo_exchange_depth
   INTEGER      :: j,k,x_inc,y_inc,index,buffer_offset
 
   REAL(KIND=8) :: field(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth)
@@ -212,7 +212,7 @@ SUBROUTINE tea_unpack_message_bottom(x_min,x_max,y_min,y_max,halo_exchange_depth
 
   IMPLICIT NONE
 
-  INTEGER      :: depth,field_type,x_min,x_max,y_min,y_max,halo_exchange_depth
+  INTEGER      :: depth,x_min,x_max,y_min,y_max,halo_exchange_depth
   INTEGER      :: j,k,x_inc,y_inc,index,buffer_offset
 
   REAL(KIND=8) :: field(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth)
