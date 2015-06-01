@@ -722,10 +722,14 @@ SUBROUTINE tea_leaf_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
 
 !$OMP BARRIER
 
+    call tea_pack_bottom_top(fields, halo_exchange_depth, .TRUE.)
+
+!$OMP BARRIER
+
     !$OMP MASTER
-        IF (profiler_on) halo_time = timer()
-        CALL tea_pack_send_bottom_top(fields, halo_exchange_depth, .TRUE.)
-        IF (profiler_on) profiler%halo_send_async = profiler%halo_send_async + (timer() - halo_time)
+    IF (profiler_on) halo_time = timer()
+    CALL tea_async_send_recv_bottom_top(fields, halo_exchange_depth, .TRUE.)
+    IF (profiler_on) profiler%halo_send_async = profiler%halo_send_async + (timer() - halo_time)
     !$OMP END MASTER
 
     CALL tea_leaf_ppcg_matmul(chunks(c)%field%x_min,    &
@@ -744,21 +748,29 @@ SUBROUTINE tea_leaf_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
 !$  IF(profiler_on .and. omp_get_threaD_num() .eq. 1) sync_time = timer()
 
     !$OMP MASTER
-        IF (profiler_on) halo_time = timer()
-        CALL tea_pack_send_bottom_top(fields, halo_exchange_depth, .FALSE.)
-        IF (profiler_on) profiler%halo_recv_async = profiler%halo_recv_async + (timer() - halo_time)
+    IF (profiler_on) halo_time = timer()
+    CALL tea_async_send_recv_bottom_top(fields, halo_exchange_depth, .FALSE.)
+    IF (profiler_on) profiler%halo_recv_async = profiler%halo_recv_async + (timer() - halo_time)
     !$OMP END MASTER
 
 !$OMP BARRIER
 
-    !$OMP MASTER
-        IF (profiler_on) halo_time = timer()
-        CALL tea_pack_send_left_right(fields, halo_exchange_depth, .TRUE.)
-        IF (profiler_on) profiler%halo_send_async = profiler%halo_send_async + (timer() - halo_time)
-    !$OMP END MASTER
-
 !$  IF(profiler_on .and. omp_get_threaD_num() .eq. 1)  profiler%halo_async_wait_time = profiler%halo_async_wait_time + (timer()-sync_time)
 !$  IF(profiler_on .and. omp_get_threaD_num() .eq. 1)  solve_time = solve_time + (timer()-sync_time)
+
+    call tea_pack_bottom_top(fields, halo_exchange_depth, .FALSE.)
+
+!$OMP BARRIER
+
+    call tea_pack_left_right(fields, halo_exchange_depth, .TRUE.)
+
+!$OMP BARRIER
+
+    !$OMP MASTER
+    IF (profiler_on) halo_time = timer()
+    CALL tea_async_send_recv_left_right(fields, halo_exchange_depth, .TRUE.)
+    IF (profiler_on) profiler%halo_send_async = profiler%halo_send_async + (timer() - halo_time)
+    !$OMP END MASTER
 
     CALL tea_leaf_ppcg_matmul(chunks(c)%field%x_min,    &
         chunks(c)%field%x_max,                            &
@@ -776,15 +788,19 @@ SUBROUTINE tea_leaf_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
 !$  IF(profiler_on .and. omp_get_threaD_num() .eq. 1) sync_time = timer()
 
     !$OMP MASTER
-        IF (profiler_on) halo_time = timer()
-        CALL tea_pack_send_left_right(fields, halo_exchange_depth, .FALSE.)
-        IF (profiler_on) profiler%halo_recv_async = profiler%halo_recv_async + (timer() - halo_time)
+    IF (profiler_on) halo_time = timer()
+    CALL tea_async_send_recv_left_right(fields, halo_exchange_depth, .FALSE.)
+    IF (profiler_on) profiler%halo_recv_async = profiler%halo_recv_async + (timer() - halo_time)
     !$OMP END MASTER
 
 !$OMP BARRIER
 
 !$  IF(profiler_on .and. omp_get_threaD_num() .eq. 1)  profiler%halo_async_wait_time = profiler%halo_async_wait_time + (timer()-sync_time)
 !$  IF(profiler_on .and. omp_get_threaD_num() .eq. 1)  solve_time = solve_time + (timer()-sync_time)
+
+    call tea_pack_left_right(fields, halo_exchange_depth, .FALSE.)
+
+!$OMP BARRIER
 
     CALL tea_leaf_ppcg_matmul(chunks(c)%field%x_min,    &
         chunks(c)%field%x_max,                            &

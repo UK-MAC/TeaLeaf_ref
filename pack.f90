@@ -43,9 +43,15 @@ SUBROUTINE tea_pack_buffers(chunk, fields, depth, face, mpi_buffer, offsets)
   INTEGER       :: face
   LOGICAL       :: packing
 
+!$  INTEGER       :: omp_get_level
+
+!$ IF (OMP_GET_LEVEL() .GT. 0) THEN
+    CALL call_packing_functions(chunk, fields, depth, face, .TRUE., mpi_buffer, offsets)
+!$ ELSE
 !$OMP PARALLEL
-  CALL call_packing_functions(chunk, fields, depth, face, .TRUE., mpi_buffer, offsets)
+!$  CALL call_packing_functions(chunk, fields, depth, face, .TRUE., mpi_buffer, offsets)
 !$OMP END PARALLEL
+!$ ENDIF
 
 END SUBROUTINE
 
@@ -58,9 +64,15 @@ SUBROUTINE tea_unpack_buffers(chunk, fields, depth, face, mpi_buffer, offsets)
   INTEGER       :: face
   LOGICAL       :: packing
 
+!$  INTEGER       :: omp_get_level
+
+!$ IF (OMP_GET_LEVEL() .GT. 0) THEN
+    CALL call_packing_functions(chunk, fields, depth, face, .FALSE., mpi_buffer, offsets)
+!$ ELSE
 !$OMP PARALLEL
-  CALL call_packing_functions(chunk, fields, depth, face, .FALSE., mpi_buffer, offsets)
+!$  CALL call_packing_functions(chunk, fields, depth, face, .FALSE., mpi_buffer, offsets)
 !$OMP END PARALLEL
+!$ ENDIF
 
 END SUBROUTINE
 
@@ -90,7 +102,6 @@ SUBROUTINE call_packing_functions(chunk, fields, depth, face, packing, mpi_buffe
 
   PROCEDURE(pack_or_unpack), POINTER :: pack_func => NULL()
 
-!$OMP SINGLE
   IF (packing .EQV. .TRUE.) THEN
     SELECT CASE (face)
     CASE (CHUNK_LEFT)
@@ -118,7 +129,6 @@ SUBROUTINE call_packing_functions(chunk, fields, depth, face, packing, mpi_buffe
       !call report_error("pack.f90","Invalid face pased to buffer packing")
     END SELECT
   ENDIF
-!$OMP END SINGLE
 
   IF(fields(FIELD_DENSITY).EQ.1) THEN
       CALL pack_func(chunks(chunk)%field%x_min,                    &
