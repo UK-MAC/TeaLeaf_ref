@@ -278,16 +278,16 @@ SUBROUTINE tea_pack_bottom_top(fields, depth, packing)
     LOGICAL :: packing
 
     INTEGER      :: chunk
-    INTEGER      :: bottom_top_offset(NUM_FIELDS),bottom_top_offset(NUM_FIELDS)
-    INTEGER      :: end_pack_index_bottom_top, end_pack_index_bottom_top
+    INTEGER      :: left_right_offset(NUM_FIELDS),bottom_top_offset(NUM_FIELDS)
+    INTEGER      :: end_pack_index_left_right, end_pack_index_bottom_top
 
     ! Assuming 1 patch per task, this will be changed
     chunk = 1
 
     IF (ALL(chunks(chunk)%chunk_neighbours .eq. external_face)) return
 
-    call calculate_mpi_sizes(bottom_top_offset, bottom_top_offset,  &
-        end_pack_index_bottom_top, end_pack_index_bottom_top,       &
+    call calculate_mpi_sizes(left_right_offset, bottom_top_offset,  &
+        end_pack_index_left_right, end_pack_index_bottom_top,       &
         fields, depth)
 
     IF (packing .EQV. .TRUE.) THEN
