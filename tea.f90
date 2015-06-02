@@ -305,25 +305,26 @@ SUBROUTINE tea_exchange(fields,depth)
     ENDIF
 
     IF (depth .eq. 1) THEN
+      test_complete = .false.
       ! don't have to transfer now
       CALL MPI_TESTALL(message_count_lr, request_lr, test_complete, status_lr, err)
     ELSE
+      test_complete = .true.
       !make a call to wait / sync
       CALL MPI_WAITALL(message_count_lr,request_lr,status_lr,err)
-      test_complete = .true.
     ENDIF
 
     IF (test_complete .eqv. .true.) THEN
       !unpack in left direction
       IF(chunks(chunk)%chunk_neighbours(chunk_left).NE.external_face) THEN
         CALL tea_unpack_buffers(chunk, fields, depth, CHUNK_LEFT, &
-        chunks(chunk)%left_rcv_buffer, left_right_offset)
+          chunks(chunk)%left_rcv_buffer, left_right_offset)
       ENDIF
 
       !unpack in right direction
       IF(chunks(chunk)%chunk_neighbours(chunk_right).NE.external_face) THEN
         CALL tea_unpack_buffers(chunk, fields, depth, CHUNK_RIGHT, &
-        chunks(chunk)%right_rcv_buffer, left_right_offset)
+          chunks(chunk)%right_rcv_buffer, left_right_offset)
       ENDIF
     ENDIF
 
@@ -362,13 +363,13 @@ SUBROUTINE tea_exchange(fields,depth)
       !unpack in left direction
       IF(chunks(chunk)%chunk_neighbours(chunk_left).NE.external_face) THEN
         CALL tea_unpack_buffers(chunk, fields, depth, CHUNK_LEFT, &
-        chunks(chunk)%left_rcv_buffer, left_right_offset)
+          chunks(chunk)%left_rcv_buffer, left_right_offset)
       ENDIF
 
       !unpack in right direction
       IF(chunks(chunk)%chunk_neighbours(chunk_right).NE.external_face) THEN
         CALL tea_unpack_buffers(chunk, fields, depth, CHUNK_RIGHT, &
-        chunks(chunk)%right_rcv_buffer, left_right_offset)
+          chunks(chunk)%right_rcv_buffer, left_right_offset)
       ENDIF
     ENDIF
 

@@ -76,7 +76,8 @@ SUBROUTINE generate_chunk_kernel(x_min,x_max,y_min,y_max,halo_exchange_depth, &
 
   ! State 1 is always the background state
 
-!$OMP PARALLEL SHARED(x_cent,y_cent)
+!$OMP PARALLEL PRIVATE(x_cent,y_cent, state,radius,jt,kt)
+
 !$OMP DO
   DO k=y_min,y_max
     DO j=x_min,x_max
@@ -97,7 +98,7 @@ SUBROUTINE generate_chunk_kernel(x_min,x_max,y_min,y_max,halo_exchange_depth, &
     x_cent=state_xmin(state)
     y_cent=state_ymin(state)
 
-!$OMP DO PRIVATE(radius,jt,kt)
+!$OMP DO
     DO k=y_min,y_max
       DO j=x_min,x_max
         IF(state_geometry(state).EQ.g_rect ) THEN

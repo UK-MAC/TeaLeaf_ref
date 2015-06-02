@@ -43,7 +43,15 @@ SUBROUTINE tea_pack_buffers(chunk, fields, depth, face, mpi_buffer, offsets)
   INTEGER       :: face
   LOGICAL       :: packing
 
-  CALL call_packing_functions(chunk, fields, depth, face, .TRUE., mpi_buffer, offsets)
+!$  INTEGER       :: omp_get_level
+
+!$ IF (OMP_GET_LEVEL() .GT. 0) THEN
+    CALL call_packing_functions(chunk, fields, depth, face, .TRUE., mpi_buffer, offsets)
+!$ ELSE
+!$OMP PARALLEL
+!$  CALL call_packing_functions(chunk, fields, depth, face, .TRUE., mpi_buffer, offsets)
+!$OMP END PARALLEL
+!$ ENDIF
 
 END SUBROUTINE
 
@@ -56,7 +64,15 @@ SUBROUTINE tea_unpack_buffers(chunk, fields, depth, face, mpi_buffer, offsets)
   INTEGER       :: face
   LOGICAL       :: packing
 
-  CALL call_packing_functions(chunk, fields, depth, face, .FALSE., mpi_buffer, offsets)
+!$  INTEGER       :: omp_get_level
+
+!$ IF (OMP_GET_LEVEL() .GT. 0) THEN
+    CALL call_packing_functions(chunk, fields, depth, face, .FALSE., mpi_buffer, offsets)
+!$ ELSE
+!$OMP PARALLEL
+!$  CALL call_packing_functions(chunk, fields, depth, face, .FALSE., mpi_buffer, offsets)
+!$OMP END PARALLEL
+!$ ENDIF
 
 END SUBROUTINE
 
@@ -90,11 +106,11 @@ SUBROUTINE call_packing_functions(chunk, fields, depth, face, packing, mpi_buffe
     SELECT CASE (face)
     CASE (CHUNK_LEFT)
       pack_func => tea_pack_message_left
-    CASE (CHUNK_right)
+    CASE (CHUNK_RIGHT)
       pack_func => tea_pack_message_right
-    CASE (CHUNK_bottom)
+    CASE (CHUNK_BOTTOM)
       pack_func => tea_pack_message_bottom
-    CASE (CHUNK_top)
+    CASE (CHUNK_TOP)
       pack_func => tea_pack_message_top
     CASE DEFAULT
       !call report_error("pack.f90","Invalid face pased to buffer packing")
@@ -103,11 +119,11 @@ SUBROUTINE call_packing_functions(chunk, fields, depth, face, packing, mpi_buffe
     SELECT CASE (face)
     CASE (CHUNK_LEFT)
       pack_func => tea_unpack_message_left
-    CASE (CHUNK_right)
+    CASE (CHUNK_RIGHT)
       pack_func => tea_unpack_message_right
-    CASE (CHUNK_bottom)
+    CASE (CHUNK_BOTTOM)
       pack_func => tea_unpack_message_bottom
-    CASE (CHUNK_top)
+    CASE (CHUNK_TOP)
       pack_func => tea_unpack_message_top
     CASE DEFAULT
       !call report_error("pack.f90","Invalid face pased to buffer packing")
