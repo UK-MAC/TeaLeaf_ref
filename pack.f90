@@ -193,7 +193,7 @@ SUBROUTINE call_packing_functions(chunk, fields, depth, face, packing, mpi_buffe
                                     depth, xincs(CELL_DATA), yincs(CELL_DATA),   &
                                     offsets(FIELD_R))
   ENDIF
-    
+
   !$OMP END PARALLEL
 
 END SUBROUTINE

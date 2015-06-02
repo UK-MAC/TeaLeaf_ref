@@ -61,7 +61,7 @@ SUBROUTINE tea_leaf_kernel_init_common(x_min,  &
   REAL(KIND=8) ::  rx, ry
 
 !$OMP PARALLEL
-!$OMP DO 
+!$OMP DO
   DO k=y_min, y_max
     DO j=x_min, x_max
       u(j,k) = energy(j,k)*density(j,k)
@@ -71,7 +71,7 @@ SUBROUTINE tea_leaf_kernel_init_common(x_min,  &
 !$OMP END DO
 
   IF(coef .EQ. RECIP_CONDUCTIVITY) THEN
-!$OMP DO 
+!$OMP DO
     ! use w as temp val
     DO k=y_min-halo_exchange_depth,y_max+halo_exchange_depth
       DO j=x_min-halo_exchange_depth,x_max+halo_exchange_depth

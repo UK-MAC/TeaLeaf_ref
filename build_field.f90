@@ -2,17 +2,17 @@
 !
 ! This file is part of TeaLeaf.
 !
-! TeaLeaf is free software: you can redistribute it and/or modify it under 
-! the terms of the GNU General Public License as published by the 
-! Free Software Foundation, either version 3 of the License, or (at your option) 
+! TeaLeaf is free software: you can redistribute it and/or modify it under
+! the terms of the GNU General Public License as published by the
+! Free Software Foundation, either version 3 of the License, or (at your option)
 ! any later version.
 !
-! TeaLeaf is distributed in the hope that it will be useful, but 
-! WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
-! FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more 
+! TeaLeaf is distributed in the hope that it will be useful, but
+! WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+! FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
 ! details.
 !
-! You should have received a copy of the GNU General Public License along with 
+! You should have received a copy of the GNU General Public License along with
 ! TeaLeaf. If not, see http://www.gnu.org/licenses/.
 
 !>  @brief  Allocates the data for each mesh chunk
@@ -87,7 +87,7 @@ SUBROUTINE build_field(chunk,x_cells,y_cells)
    ! Explicit loop limits ensures correct NUMA access, which array syntax does
    ! not
 !$OMP PARALLEL
-!$OMP DO 
+!$OMP DO
    DO k=chunks(chunk)%field%y_min-halo_exchange_depth,chunks(chunk)%field%y_max+halo_exchange_depth
      DO j=chunks(chunk)%field%x_min-halo_exchange_depth,chunks(chunk)%field%x_max+halo_exchange_depth
        chunks(chunk)%field%density(j,k)=0.0
@@ -137,31 +137,31 @@ SUBROUTINE build_field(chunk,x_cells,y_cells)
     ENDDO
 !$OMP END DO NOWAIT
 
-!$OMP DO 
+!$OMP DO
     DO j=chunks(chunk)%field%x_min-2,chunks(chunk)%field%x_max+2
         chunks(chunk)%field%cellx(j)=0.0
         chunks(chunk)%field%celldx(j)=0.0
     ENDDO
 !$OMP END DO
-!$OMP DO 
+!$OMP DO
     DO k=chunks(chunk)%field%y_min-2,chunks(chunk)%field%y_max+2
         chunks(chunk)%field%celly(k)=0.0
         chunks(chunk)%field%celldy(k)=0.0
     ENDDO
 !$OMP END DO
 
-!$OMP DO 
+!$OMP DO
     DO j=chunks(chunk)%field%x_min-2,chunks(chunk)%field%x_max+3
         chunks(chunk)%field%vertexx(j)=0.0
         chunks(chunk)%field%vertexdx(j)=0.0
     ENDDO
 !$OMP END DO
-!$OMP DO 
+!$OMP DO
     DO k=chunks(chunk)%field%y_min-2,chunks(chunk)%field%y_max+3
         chunks(chunk)%field%vertexy(k)=0.0
         chunks(chunk)%field%vertexdy(k)=0.0
     ENDDO
 !$OMP END DO
 !$OMP END PARALLEL
-  
+
 END SUBROUTINE build_field

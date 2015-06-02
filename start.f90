@@ -2,17 +2,17 @@
 !
 ! This file is part of TeaLeaf.
 !
-! TeaLeaf is free software: you can redistribute it and/or modify it under 
-! the terms of the GNU General Public License as published by the 
-! Free Software Foundation, either version 3 of the License, or (at your option) 
+! TeaLeaf is free software: you can redistribute it and/or modify it under
+! the terms of the GNU General Public License as published by the
+! Free Software Foundation, either version 3 of the License, or (at your option)
 ! any later version.
 !
-! TeaLeaf is distributed in the hope that it will be useful, but 
-! WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
-! FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more 
+! TeaLeaf is distributed in the hope that it will be useful, but
+! WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+! FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
 ! details.
 !
-! You should have received a copy of the GNU General Public License along with 
+! You should have received a copy of the GNU General Public License along with
 ! TeaLeaf. If not, see http://www.gnu.org/licenses/.
 
 !>  @brief Main set up routine
@@ -61,7 +61,7 @@ SUBROUTINE start
   CALL tea_decompose(grid%x_cells,grid%y_cells,left,right,bottom,top)
 
   DO c=1,chunks_per_task
-      
+
     ! Needs changing so there can be more than 1 chunk per task
     chunks(c)%task = parallel%task
 
@@ -69,7 +69,7 @@ SUBROUTINE start
 
     x_cells = right(c) -left(c)  +1
     y_cells = top(c)   -bottom(c)+1
-      
+
     IF(chunks(c)%task.EQ.parallel%task)THEN
       CALL build_field(c,x_cells,y_cells)
     ENDIF

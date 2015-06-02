@@ -2,17 +2,17 @@
 !
 ! This file is part of TeaLeaf.
 !
-! TeaLeaf is free software: you can redistribute it and/or modify it under 
-! the terms of the GNU General Public License as published by the 
-! Free Software Foundation, either version 3 of the License, or (at your option) 
+! TeaLeaf is free software: you can redistribute it and/or modify it under
+! the terms of the GNU General Public License as published by the
+! Free Software Foundation, either version 3 of the License, or (at your option)
 ! any later version.
 !
-! TeaLeaf is distributed in the hope that it will be useful, but 
-! WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
-! FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more 
+! TeaLeaf is distributed in the hope that it will be useful, but
+! WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+! FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
 ! details.
 !
-! You should have received a copy of the GNU General Public License along with 
+! You should have received a copy of the GNU General Public License along with
 ! TeaLeaf. If not, see http://www.gnu.org/licenses/.
 
 !>  @brief Fortran mpi buffer packing kernel
@@ -36,7 +36,7 @@ SUBROUTINE tea_pack_message_left(x_min,x_max,y_min,y_max,halo_exchange_depth,fie
   REAL(KIND=8) :: field(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth)
   REAL(KIND=8) :: left_snd_buffer(:)
 
-  ! Pack 
+  ! Pack
 
 !$OMP DO
   DO k=y_min-depth,y_max+y_inc+depth
@@ -62,7 +62,7 @@ SUBROUTINE tea_unpack_message_left(x_min,x_max,y_min,y_max,halo_exchange_depth,f
   REAL(KIND=8) :: field(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth)
   REAL(KIND=8) :: left_rcv_buffer(:)
 
-  ! Unpack 
+  ! Unpack
 
 !$OMP DO
   DO k=y_min-depth,y_max+y_inc+depth
@@ -88,7 +88,7 @@ SUBROUTINE tea_pack_message_right(x_min,x_max,y_min,y_max,halo_exchange_depth,fi
   REAL(KIND=8) :: field(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth)
   REAL(KIND=8) :: right_snd_buffer(:)
 
-  ! Pack 
+  ! Pack
 
 !$OMP DO
   DO k=y_min-depth,y_max+y_inc+depth
@@ -114,7 +114,7 @@ SUBROUTINE tea_unpack_message_right(x_min,x_max,y_min,y_max,halo_exchange_depth,
   REAL(KIND=8) :: field(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth)
   REAL(KIND=8) :: right_rcv_buffer(:)
 
-  ! Unpack 
+  ! Unpack
 
 !$OMP DO
   DO k=y_min-depth,y_max+y_inc+depth
@@ -140,7 +140,7 @@ SUBROUTINE tea_pack_message_top(x_min,x_max,y_min,y_max,halo_exchange_depth,fiel
   REAL(KIND=8) :: field(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth)
   REAL(KIND=8) :: top_snd_buffer(:)
 
-  ! Pack 
+  ! Pack
 
 !$OMP DO
   DO k=1,depth
@@ -166,7 +166,7 @@ SUBROUTINE tea_unpack_message_top(x_min,x_max,y_min,y_max,halo_exchange_depth,fi
   REAL(KIND=8) :: field(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth)
   REAL(KIND=8) :: top_rcv_buffer(:)
 
-  ! Unpack 
+  ! Unpack
 
 !$OMP DO
   DO k=1,depth
@@ -192,7 +192,7 @@ SUBROUTINE tea_pack_message_bottom(x_min,x_max,y_min,y_max,halo_exchange_depth,f
   REAL(KIND=8) :: field(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth)
   REAL(KIND=8) :: bottom_snd_buffer(:)
 
-  ! Pack 
+  ! Pack
 
 !$OMP DO
   DO k=1,depth
@@ -218,7 +218,7 @@ SUBROUTINE tea_unpack_message_bottom(x_min,x_max,y_min,y_max,halo_exchange_depth
   REAL(KIND=8) :: field(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth)
   REAL(KIND=8) :: bottom_rcv_buffer(:)
 
-  ! Unpack 
+  ! Unpack
 
 !$OMP DO
   DO k=1,depth
