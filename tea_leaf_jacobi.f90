@@ -26,7 +26,8 @@ CONTAINS
 SUBROUTINE tea_leaf_kernel_jacobi_solve(x_min,       &
                            x_max,             &
                            y_min,             &
-                           y_max, halo_exchange_depth,             &
+                           y_max,             &
+                           halo_exchange_depth,             &
                            rx,                &
                            ry,                &
                            Kx,                &

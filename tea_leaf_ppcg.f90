@@ -10,7 +10,8 @@ CONTAINS
 SUBROUTINE tea_leaf_kernel_ppcg_init_sd(x_min,             &
                                         x_max,             &
                                         y_min,             &
-                                        y_max, halo_exchange_depth,             &
+                                        y_max,             &
+                                        halo_exchange_depth,             &
                                         r,                 &
                                         kx,                 &
                                         ky,                 &
@@ -69,7 +70,8 @@ END SUBROUTINE tea_leaf_kernel_ppcg_init_sd
 SUBROUTINE tea_leaf_kernel_ppcg_inner(x_min,             &
                                       x_max,             &
                                       y_min,             &
-                                      y_max, halo_exchange_depth,             &
+                                      y_max,             &
+                                      halo_exchange_depth,             &
                                       step,              &
                                       alpha,             &
                                       beta,              &
@@ -153,7 +155,8 @@ END SUBROUTINE
 SUBROUTINE tea_leaf_ppcg_calc_zrnorm_kernel(x_min, &
                           x_max,             &
                           y_min,             &
-                          y_max, halo_exchange_depth,             &
+                          y_max,             &
+                          halo_exchange_depth,             &
                           z, r,               &
                           preconditioner_type,    &
                           norm)

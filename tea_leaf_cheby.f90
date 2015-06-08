@@ -30,7 +30,8 @@ CONTAINS
 SUBROUTINE tea_leaf_kernel_cheby_init(x_min,  &
                            x_max,             &
                            y_min,             &
-                           y_max, halo_exchange_depth,             &
+                           y_max,             &
+                           halo_exchange_depth,             &
                            u,                 &
                            u0,                &
                            p,                 &
@@ -115,7 +116,8 @@ END SUBROUTINE
 SUBROUTINE tea_leaf_kernel_cheby_iterate(x_min, &
                            x_max,               &
                            y_min,               &
-                           y_max, halo_exchange_depth,               &
+                           y_max,               &
+                           halo_exchange_depth,               &
                            u,                   &
                            u0,                  &
                            p,                   &
