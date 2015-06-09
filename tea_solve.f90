@@ -585,7 +585,7 @@ SUBROUTINE tea_leaf()
         IF (profiler_on) profiler%dot_product= profiler%dot_product+ (timer() - dot_product_time)
         IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
 
-        exact_error = sqrt(exact_error)
+        exact_error = SQRT(exact_error)
       ENDIF
 
       IF (profiler_on) profiler%tea_solve = profiler%tea_solve + (timer() - solve_time)

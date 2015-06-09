@@ -39,6 +39,7 @@ SUBROUTINE tea_leaf_kernel_ppcg_init_sd(x_min,             &
 !$OMP PARALLEL
 
   IF (preconditioner_type .NE. TL_PREC_NONE) THEN
+
     IF (preconditioner_type .EQ. TL_PREC_JAC_BLOCK) THEN
       CALL tea_block_solve(x_min, x_max, y_min, y_max, halo_exchange_depth,             &
                              r, z, cp, bfp, Kx, Ky, rx, ry)
@@ -119,6 +120,7 @@ SUBROUTINE tea_leaf_kernel_ppcg_inner(x_min,             &
 !$OMP END DO
 
   IF (preconditioner_type .NE. TL_PREC_NONE) THEN
+
     IF (preconditioner_type .EQ. TL_PREC_JAC_BLOCK) THEN
       CALL tea_block_solve(x_min, x_max, y_min, y_max, halo_exchange_depth,             &
                              r, z, cp, bfp, Kx, Ky, rx, ry)
@@ -129,9 +131,9 @@ SUBROUTINE tea_leaf_kernel_ppcg_inner(x_min,             &
 
 !$OMP DO
     DO k=y_min-bounds_extra,y_max+bounds_extra
-        DO j=x_min-bounds_extra,x_max+bounds_extra
-            sd(j, k) = alpha(inner_step)*sd(j, k) + beta(inner_step)*z(j, k)
-        ENDDO
+      DO j=x_min-bounds_extra,x_max+bounds_extra
+        sd(j, k) = alpha(inner_step)*sd(j, k) + beta(inner_step)*z(j, k)
+      ENDDO
     ENDDO
 !$OMP END DO NOWAIT
   ELSE

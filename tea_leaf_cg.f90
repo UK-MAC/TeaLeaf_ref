@@ -162,7 +162,10 @@ SUBROUTINE tea_leaf_kernel_solve_cg_fortran_calc_ur(x_min,             &
                                                     z,                 &
                                                     cp,                     &
                                                     bfp,                     &
-                                                    Kx, Ky, rx, ry, &
+                                                    Kx, &
+                                                    Ky, &
+                                                    rx, &
+                                                    ry, &
                                                     alpha,             &
                                                     rrn,               &
                                                     preconditioner_type)

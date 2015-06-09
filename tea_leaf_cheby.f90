@@ -193,9 +193,9 @@ SUBROUTINE tea_leaf_kernel_cheby_iterate(x_min, &
   ENDIF
 !$OMP DO
   DO k=y_min,y_max
-      DO j=x_min,x_max
-          u(j, k) = u(j, k) + p(j, k)
-      ENDDO
+    DO j=x_min,x_max
+        u(j, k) = u(j, k) + p(j, k)
+    ENDDO
   ENDDO
 !$OMP END DO NOWAIT
 !$OMP END PARALLEL
