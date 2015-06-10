@@ -713,7 +713,6 @@ SUBROUTINE tea_leaF_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
           chunks(c)%field%x_max,                            &
           chunks(c)%field%y_min,                            &
           chunks(c)%field%y_max, halo_exchange_depth,                            &
-          ppcg_cur_step,                                    &
           ch_alphas, ch_betas,                              &
           rx, ry,                                           &
           ppcg_cur_step, tl_ppcg_inner_steps,   &

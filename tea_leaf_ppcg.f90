@@ -70,7 +70,6 @@ SUBROUTINE tea_leaf_kernel_ppcg_inner(x_min,             &
                                       x_max,             &
                                       y_min,             &
                                       y_max, halo_exchange_depth,             &
-                                      step,              &
                                       alpha,             &
                                       beta,              &
                                       rx, ry,            &
@@ -91,16 +90,18 @@ SUBROUTINE tea_leaf_kernel_ppcg_inner(x_min,             &
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
   REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: u, r, Kx, Ky, sd , z, Mi
   REAL(KIND=8), DIMENSION(x_min:x_max,y_min:y_max) :: cp, bfp
-  INTEGER(KIND=4) :: j,k, step
+  INTEGER(KIND=4) :: j,k
   REAL(KIND=8), DIMENSION(:) :: alpha, beta
   REAL(KIND=8) :: smvp, rx, ry
 
   INTEGER(KIND=4) :: bounds_extra, ppcg_cur_step, tl_ppcg_inner_steps, inner_step
 
-  inner_step = step
+!$OMP PARALLEL PRIVATE(smvp, bounds_extra, inner_step)
+
+  inner_step = ppcg_cur_step
 
   DO bounds_extra = halo_exchange_depth-1, 0, -1
-!$OMP PARALLEL PRIVATE(smvp)
+
 !$OMP DO
     DO k=y_min-bounds_extra,y_max+bounds_extra
         DO j=x_min-bounds_extra,x_max+bounds_extra
@@ -109,44 +110,44 @@ SUBROUTINE tea_leaf_kernel_ppcg_inner(x_min,             &
                 + rx*(Kx(j+1, k) + Kx(j, k)))*sd(j, k)              &
                 - ry*(Ky(j, k+1)*sd(j, k+1) + Ky(j, k)*sd(j, k-1))  &
                 - rx*(Kx(j+1, k)*sd(j+1, k) + Kx(j, k)*sd(j-1, k))
-            r(j, k) = r(j, k) - smvp
 
+            r(j, k) = r(j, k) - smvp
             u(j, k) = u(j, k) + sd(j, k)
         ENDDO
     ENDDO
 !$OMP END DO
 
-  IF (preconditioner_type .NE. TL_PREC_NONE) THEN
-    IF (preconditioner_type .EQ. TL_PREC_JAC_BLOCK) THEN
-      CALL tea_block_solve(x_min, x_max, y_min, y_max, halo_exchange_depth,             &
-                             r, z, cp, bfp, Kx, Ky, rx, ry)
-    ELSE IF (preconditioner_type .EQ. TL_PREC_JAC_DIAG) THEN
-      CALL tea_diag_solve(x_min, x_max, y_min, y_max, halo_exchange_depth,             &
-                             r, z, Mi, Kx, Ky, rx, ry)
+    IF (preconditioner_type .NE. TL_PREC_NONE) THEN
+      IF (preconditioner_type .EQ. TL_PREC_JAC_BLOCK) THEN
+        CALL tea_block_solve(x_min, x_max, y_min, y_max, halo_exchange_depth,             &
+                               r, z, cp, bfp, Kx, Ky, rx, ry)
+      ELSE IF (preconditioner_type .EQ. TL_PREC_JAC_DIAG) THEN
+        CALL tea_diag_solve(x_min, x_max, y_min, y_max, halo_exchange_depth,             &
+                               r, z, Mi, Kx, Ky, rx, ry)
+      ENDIF
+  
+!$OMP DO
+      DO k=y_min-bounds_extra,y_max+bounds_extra
+          DO j=x_min-bounds_extra,x_max+bounds_extra
+              sd(j, k) = alpha(inner_step)*sd(j, k) + beta(inner_step)*z(j, k)
+          ENDDO
+      ENDDO
+!$OMP END DO
+    ELSE
+!$OMP DO
+      DO k=y_min-bounds_extra,y_max+bounds_extra
+          DO j=x_min-bounds_extra,x_max+bounds_extra
+              sd(j, k) = alpha(inner_step)*sd(j, k) + beta(inner_step)*r(j, k)
+          ENDDO
+      ENDDO
+!$OMP END DO
     ENDIF
-
-!$OMP DO
-    DO k=y_min-bounds_extra,y_max+bounds_extra
-        DO j=x_min-bounds_extra,x_max+bounds_extra
-            sd(j, k) = alpha(inner_step)*sd(j, k) + beta(inner_step)*z(j, k)
-        ENDDO
-    ENDDO
-!$OMP END DO NOWAIT
-  ELSE
-!$OMP DO
-    DO k=y_min-bounds_extra,y_max+bounds_extra
-        DO j=x_min-bounds_extra,x_max+bounds_extra
-            sd(j, k) = alpha(inner_step)*sd(j, k) + beta(inner_step)*r(j, k)
-        ENDDO
-    ENDDO
-!$OMP END DO NOWAIT
-  ENDIF
-!$OMP END PARALLEL
-
-  inner_step = inner_step + 1
-  IF (inner_step .ge. tl_ppcg_inner_steps) EXIT
-
+  
+    inner_step = inner_step + 1
+    IF (inner_step .gt. tl_ppcg_inner_steps) EXIT
+  
   END DO
+!$OMP END PARALLEL
 
 END SUBROUTINE
 
