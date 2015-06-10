@@ -30,12 +30,12 @@ SUBROUTINE initialise_chunk(chunk)
 
   REAL(KIND=8) :: xmin,ymin,dx,dy
 
-  dx=(grid%xmax-grid%xmin)/float(grid%x_cells)
-  dy=(grid%ymax-grid%ymin)/float(grid%y_cells)
+  dx=(grid%xmax-grid%xmin)/REAL(grid%x_cells)
+  dy=(grid%ymax-grid%ymin)/REAL(grid%y_cells)
 
-  xmin=grid%xmin+dx*float(chunks(chunk)%field%left-1)
+  xmin=grid%xmin+dx*REAL(chunks(chunk)%field%left-1)
 
-  ymin=grid%ymin+dy*float(chunks(chunk)%field%bottom-1)
+  ymin=grid%ymin+dy*REAL(chunks(chunk)%field%bottom-1)
 
   IF(use_fortran_kernels) THEN
     CALL initialise_chunk_kernel(chunks(chunk)%field%x_min,    &

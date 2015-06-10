@@ -10,7 +10,8 @@ CONTAINS
 SUBROUTINE tea_leaf_kernel_ppcg_init_sd(x_min,             &
                                         x_max,             &
                                         y_min,             &
-                                        y_max, halo_exchange_depth,             &
+                                        y_max,             &
+                                        halo_exchange_depth,             &
                                         r,                 &
                                         kx,                 &
                                         ky,                 &
@@ -38,6 +39,7 @@ SUBROUTINE tea_leaf_kernel_ppcg_init_sd(x_min,             &
 !$OMP PARALLEL
 
   IF (preconditioner_type .NE. TL_PREC_NONE) THEN
+
     IF (preconditioner_type .EQ. TL_PREC_JAC_BLOCK) THEN
       CALL tea_block_solve(x_min, x_max, y_min, y_max, halo_exchange_depth,             &
                              r, z, cp, bfp, Kx, Ky, rx, ry)
@@ -69,7 +71,8 @@ END SUBROUTINE tea_leaf_kernel_ppcg_init_sd
 SUBROUTINE tea_leaf_kernel_ppcg_inner(x_min,             &
                                       x_max,             &
                                       y_min,             &
-                                      y_max, halo_exchange_depth,             &
+                                      y_max,             &
+                                      halo_exchange_depth,             &
                                       alpha,             &
                                       beta,              &
                                       rx, ry,            &
@@ -154,7 +157,8 @@ END SUBROUTINE
 SUBROUTINE tea_leaf_ppcg_calc_zrnorm_kernel(x_min, &
                           x_max,             &
                           y_min,             &
-                          y_max, halo_exchange_depth,             &
+                          y_max,             &
+                          halo_exchange_depth,             &
                           z, r,               &
                           preconditioner_type,    &
                           norm)

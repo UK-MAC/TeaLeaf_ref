@@ -27,7 +27,8 @@ CONTAINS
 SUBROUTINE tea_leaf_kernel_init_common(x_min,  &
                            x_max,                  &
                            y_min,                  &
-                           y_max, halo_exchange_depth,                  &
+                           y_max,                  &
+                           halo_exchange_depth,                  &
                            chunk_neighbours,       &
                            reflective_boundary,    &
                            density,                &
@@ -169,7 +170,8 @@ END SUBROUTINE tea_leaf_kernel_init_common
 SUBROUTINE tea_leaf_kernel_finalise(x_min,    &
                            x_max,             &
                            y_min,             &
-                           y_max, halo_exchange_depth,             &
+                           y_max,             &
+                           halo_exchange_depth,             &
                            energy,            &
                            density,           &
                            u)
@@ -196,7 +198,8 @@ END SUBROUTINE tea_leaf_kernel_finalise
 SUBROUTINE tea_leaf_calc_residual(x_min,       &
                                   x_max,       &
                                   y_min,       &
-                                  y_max, halo_exchange_depth,       &
+                                  y_max,       &
+                                  halo_exchange_depth,       &
                                   u ,          &
                                   u0,          &
                                   r,           &
@@ -233,7 +236,8 @@ END SUBROUTINE tea_leaf_calc_residual
 SUBROUTINE tea_leaf_calc_2norm_kernel(x_min, &
                           x_max,             &
                           y_min,             &
-                          y_max, halo_exchange_depth,             &
+                          y_max,             &
+                          halo_exchange_depth,             &
                           arr,               &
                           norm)
 
@@ -265,7 +269,8 @@ END SUBROUTINE tea_leaf_calc_2norm_kernel
 SUBROUTINE tea_diag_init(x_min,             &
                          x_max,             &
                          y_min,             &
-                         y_max, halo_exchange_depth,             &
+                         y_max,             &
+                         halo_exchange_depth,             &
                          Mi,                &
                          Kx, Ky, rx, ry)
 
@@ -291,7 +296,8 @@ END SUBROUTINE
 SUBROUTINE tea_diag_solve(x_min,             &
                          x_max,             &
                          y_min,             &
-                         y_max, halo_exchange_depth,             &
+                         y_max,             &
+                         halo_exchange_depth,             &
                          r,                 &
                          z,                 &
                          Mi,                &
@@ -317,7 +323,8 @@ END SUBROUTINE
 SUBROUTINE tea_block_init(x_min,             &
                            x_max,             &
                            y_min,             &
-                           y_max, halo_exchange_depth,             &
+                           y_max,             &
+                           halo_exchange_depth,             &
                            cp,                     &
                            bfp,                     &
                            Kx, Ky, rx, ry)
@@ -356,7 +363,8 @@ END SUBROUTINE
 SUBROUTINE tea_block_solve(x_min,             &
                            x_max,             &
                            y_min,             &
-                           y_max, halo_exchange_depth,             &
+                           y_max,             &
+                           halo_exchange_depth,             &
                            r,                 &
                            z,                 &
                            cp,                     &

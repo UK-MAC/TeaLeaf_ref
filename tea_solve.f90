@@ -107,7 +107,8 @@ SUBROUTINE tea_leaf()
         CALL tea_leaf_kernel_init_common(chunks(c)%field%x_min, &
             chunks(c)%field%x_max,                                  &
             chunks(c)%field%y_min,                                  &
-            chunks(c)%field%y_max, halo_exchange_depth,                                  &
+            chunks(c)%field%y_max,                                  &
+            halo_exchange_depth,                                  &
             chunks(c)%chunk_neighbours,                             &
             reflective_boundary,                                    &
             chunks(c)%field%density,                                &
@@ -135,7 +136,8 @@ SUBROUTINE tea_leaf()
         CALL tea_leaf_calc_residual(chunks(c)%field%x_min,&
             chunks(c)%field%x_max,                        &
             chunks(c)%field%y_min,                        &
-            chunks(c)%field%y_max, halo_exchange_depth,                        &
+            chunks(c)%field%y_max,                        &
+            halo_exchange_depth,                        &
             chunks(c)%field%u,                            &
             chunks(c)%field%u0,                           &
             chunks(c)%field%vector_r,                     &
@@ -145,7 +147,8 @@ SUBROUTINE tea_leaf()
         CALL tea_leaf_calc_2norm_kernel(chunks(c)%field%x_min,        &
             chunks(c)%field%x_max,                                    &
             chunks(c)%field%y_min,                                    &
-            chunks(c)%field%y_max, halo_exchange_depth,                                    &
+            chunks(c)%field%y_max,                                    &
+            halo_exchange_depth,                                    &
             chunks(c)%field%vector_r,                                 &
             initial_residual)
       ENDIF
@@ -168,7 +171,8 @@ SUBROUTINE tea_leaf()
           CALL tea_leaf_kernel_init_cg_fortran(chunks(c)%field%x_min, &
               chunks(c)%field%x_max,                                  &
               chunks(c)%field%y_min,                                  &
-              chunks(c)%field%y_max, halo_exchange_depth,                                  &
+              chunks(c)%field%y_max,                                  &
+              halo_exchange_depth,                                  &
               chunks(c)%field%density,                                &
               chunks(c)%field%energy1,                                &
               chunks(c)%field%u,                                      &
@@ -283,7 +287,8 @@ SUBROUTINE tea_leaf()
                       CALL tea_leaf_kernel_cheby_iterate(chunks(c)%field%x_min,&
                                   chunks(c)%field%x_max,                       &
                                   chunks(c)%field%y_min,                       &
-                                  chunks(c)%field%y_max, halo_exchange_depth,                       &
+                                  chunks(c)%field%y_max,                       &
+                                  halo_exchange_depth,                       &
                                   chunks(c)%field%u,                           &
                                   chunks(c)%field%u0,                          &
                                   chunks(c)%field%vector_p,                    &
@@ -309,7 +314,8 @@ SUBROUTINE tea_leaf()
                       CALL tea_leaf_calc_2norm_kernel(chunks(c)%field%x_min,&
                             chunks(c)%field%x_max,                          &
                             chunks(c)%field%y_min,                          &
-                            chunks(c)%field%y_max, halo_exchange_depth,                          &
+                            chunks(c)%field%y_max,                          &
+                            halo_exchange_depth,                          &
                             chunks(c)%field%vector_r,                       &
                             error                                           )
                     ENDIF
@@ -335,7 +341,8 @@ SUBROUTINE tea_leaf()
                 CALL tea_leaf_calc_residual(chunks(c)%field%x_min,&
                     chunks(c)%field%x_max,                        &
                     chunks(c)%field%y_min,                        &
-                    chunks(c)%field%y_max, halo_exchange_depth,                        &
+                    chunks(c)%field%y_max,                        &
+                    halo_exchange_depth,                        &
                     chunks(c)%field%u,                            &
                     chunks(c)%field%u0,                           &
                     chunks(c)%field%vector_r,                     &
@@ -349,7 +356,8 @@ SUBROUTINE tea_leaf()
               CALL tea_leaf_kernel_solve_cg_fortran_calc_w(chunks(c)%field%x_min,&
                   chunks(c)%field%x_max,                                         &
                   chunks(c)%field%y_min,                                         &
-                  chunks(c)%field%y_max, halo_exchange_depth,                                         &
+                  chunks(c)%field%y_max,                                         &
+                  halo_exchange_depth,                                         &
                   chunks(c)%field%vector_p,                                      &
                   chunks(c)%field%vector_w,                                      &
                   chunks(c)%field%vector_Kx,                                     &
@@ -368,7 +376,8 @@ SUBROUTINE tea_leaf()
               CALL tea_leaf_kernel_solve_cg_fortran_calc_ur(chunks(c)%field%x_min,&
                   chunks(c)%field%x_max,                                          &
                   chunks(c)%field%y_min,                                          &
-                  chunks(c)%field%y_max, halo_exchange_depth,                                          &
+                  chunks(c)%field%y_max,                                          &
+                  halo_exchange_depth,                                          &
                   chunks(c)%field%u,                                              &
                   chunks(c)%field%vector_p,                                       &
                   chunks(c)%field%vector_r,                                       &
@@ -393,7 +402,8 @@ SUBROUTINE tea_leaf()
               CALL tea_leaf_ppcg_calc_zrnorm_kernel(chunks(c)%field%x_min, &
                     chunks(c)%field%x_max,                           &
                     chunks(c)%field%y_min,                           &
-                    chunks(c)%field%y_max, halo_exchange_depth,                           &
+                    chunks(c)%field%y_max,                           &
+                    halo_exchange_depth,                           &
                     chunks(c)%field%vector_z,                        &
                     chunks(c)%field%vector_r,                        &
                     tl_preconditioner_type, rrn)
@@ -410,7 +420,8 @@ SUBROUTINE tea_leaf()
               CALL tea_leaf_kernel_solve_cg_fortran_calc_p(chunks(c)%field%x_min,&
                   chunks(c)%field%x_max,                                         &
                   chunks(c)%field%y_min,                                         &
-                  chunks(c)%field%y_max, halo_exchange_depth,                                         &
+                  chunks(c)%field%y_max,                                         &
+                  halo_exchange_depth,                                         &
                   chunks(c)%field%vector_p,                                      &
                   chunks(c)%field%vector_r,                                      &
                   chunks(c)%field%vector_z,                                      &
@@ -432,7 +443,8 @@ SUBROUTINE tea_leaf()
             CALL tea_leaf_kernel_solve_cg_fortran_calc_w(chunks(c)%field%x_min,&
                 chunks(c)%field%x_max,                                         &
                 chunks(c)%field%y_min,                                         &
-                chunks(c)%field%y_max, halo_exchange_depth,                                         &
+                chunks(c)%field%y_max,                                         &
+                halo_exchange_depth,                                         &
                 chunks(c)%field%vector_p,                                      &
                 chunks(c)%field%vector_w,                                      &
                 chunks(c)%field%vector_Kx,                                     &
@@ -454,7 +466,8 @@ SUBROUTINE tea_leaf()
             CALL tea_leaf_kernel_solve_cg_fortran_calc_ur(chunks(c)%field%x_min,&
                 chunks(c)%field%x_max,                                          &
                 chunks(c)%field%y_min,                                          &
-                chunks(c)%field%y_max, halo_exchange_depth,                                          &
+                chunks(c)%field%y_max,                                          &
+                halo_exchange_depth,                                          &
                 chunks(c)%field%u,                                              &
                 chunks(c)%field%vector_p,                                       &
                 chunks(c)%field%vector_r,                                       &
@@ -481,7 +494,8 @@ SUBROUTINE tea_leaf()
             CALL tea_leaf_kernel_solve_cg_fortran_calc_p(chunks(c)%field%x_min,&
                 chunks(c)%field%x_max,                                         &
                 chunks(c)%field%y_min,                                         &
-                chunks(c)%field%y_max, halo_exchange_depth,                                         &
+                chunks(c)%field%y_max,                                         &
+                halo_exchange_depth,                                         &
                 chunks(c)%field%vector_p,                                      &
                 chunks(c)%field%vector_r,                                      &
                 chunks(c)%field%vector_z,                                      &
@@ -495,7 +509,8 @@ SUBROUTINE tea_leaf()
             CALL tea_leaf_kernel_jacobi_solve(chunks(c)%field%x_min,&
                 chunks(c)%field%x_max,                       &
                 chunks(c)%field%y_min,                       &
-                chunks(c)%field%y_max, halo_exchange_depth,                       &
+                chunks(c)%field%y_max,                       &
+                halo_exchange_depth,                       &
                 rx,                                          &
                 ry,                                          &
                 chunks(c)%field%vector_Kx,                   &
@@ -548,7 +563,8 @@ SUBROUTINE tea_leaf()
           CALL tea_leaf_calc_residual(chunks(c)%field%x_min,&
               chunks(c)%field%x_max,                        &
               chunks(c)%field%y_min,                        &
-              chunks(c)%field%y_max, halo_exchange_depth,                        &
+              chunks(c)%field%y_max,                        &
+              halo_exchange_depth,                        &
               chunks(c)%field%u,                            &
               chunks(c)%field%u0,                           &
               chunks(c)%field%vector_r,                     &
@@ -558,7 +574,8 @@ SUBROUTINE tea_leaf()
           CALL tea_leaf_calc_2norm_kernel(chunks(c)%field%x_min,        &
               chunks(c)%field%x_max,                                    &
               chunks(c)%field%y_min,                                    &
-              chunks(c)%field%y_max, halo_exchange_depth,                                    &
+              chunks(c)%field%y_max,                                    &
+              halo_exchange_depth,                                    &
               chunks(c)%field%vector_r,                                 &
               exact_error)
         ENDIF
@@ -568,7 +585,7 @@ SUBROUTINE tea_leaf()
         IF (profiler_on) profiler%dot_product= profiler%dot_product+ (timer() - dot_product_time)
         IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
 
-        exact_error = sqrt(exact_error)
+        exact_error = SQRT(exact_error)
       ENDIF
 
       IF (profiler_on) profiler%tea_solve = profiler%tea_solve + (timer() - solve_time)
@@ -603,7 +620,8 @@ SUBROUTINE tea_leaf()
           CALL tea_leaf_kernel_finalise(chunks(c)%field%x_min, &
               chunks(c)%field%x_max,                           &
               chunks(c)%field%y_min,                           &
-              chunks(c)%field%y_max, halo_exchange_depth,                           &
+              chunks(c)%field%y_max,                           &
+              halo_exchange_depth,                           &
               chunks(c)%field%energy1,                         &
               chunks(c)%field%density,                         &
               chunks(c)%field%u)
@@ -675,7 +693,8 @@ SUBROUTINE tea_leaF_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
      CALL tea_leaf_calc_residual(chunks(c)%field%x_min,&
          chunks(c)%field%x_max,                        &
          chunks(c)%field%y_min,                        &
-         chunks(c)%field%y_max, halo_exchange_depth,                        &
+         chunks(c)%field%y_max,                        &
+         halo_exchange_depth,                        &
          chunks(c)%field%u,                            &
          chunks(c)%field%u0,                           &
          chunks(c)%field%vector_r,                     &
@@ -685,7 +704,8 @@ SUBROUTINE tea_leaF_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
     CALL tea_leaf_kernel_ppcg_init_sd(chunks(c)%field%x_min,&
         chunks(c)%field%x_max,                              &
         chunks(c)%field%y_min,                              &
-        chunks(c)%field%y_max, halo_exchange_depth,                              &
+        chunks(c)%field%y_max,                              &
+        halo_exchange_depth,                              &
         chunks(c)%field%vector_r,                           &
         chunks(c)%field%vector_Kx,                        &
         chunks(c)%field%vector_Ky,                        &
@@ -712,7 +732,8 @@ SUBROUTINE tea_leaF_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
       CALL tea_leaf_kernel_ppcg_inner(chunks(c)%field%x_min,&
           chunks(c)%field%x_max,                            &
           chunks(c)%field%y_min,                            &
-          chunks(c)%field%y_max, halo_exchange_depth,                            &
+          chunks(c)%field%y_max,                            &
+          halo_exchange_depth,                            &
           ch_alphas, ch_betas,                              &
           rx, ry,                                           &
           ppcg_cur_step, tl_ppcg_inner_steps,   &
@@ -750,7 +771,8 @@ SUBROUTINE tea_leaf_cheby_first_step(c, ch_alphas, ch_betas, fields, &
     CALL tea_leaf_calc_2norm_kernel(chunks(c)%field%x_min,&
           chunks(c)%field%x_max,                          &
           chunks(c)%field%y_min,                          &
-          chunks(c)%field%y_max, halo_exchange_depth,                          &
+          chunks(c)%field%y_max,                          &
+          halo_exchange_depth,                          &
           chunks(c)%field%u0,                             &
           bb)
   ENDIF
@@ -765,7 +787,8 @@ SUBROUTINE tea_leaf_cheby_first_step(c, ch_alphas, ch_betas, fields, &
     CALL tea_leaf_kernel_cheby_init(chunks(c)%field%x_min,&
           chunks(c)%field%x_max,                          &
           chunks(c)%field%y_min,                          &
-          chunks(c)%field%y_max, halo_exchange_depth,                          &
+          chunks(c)%field%y_max,                          &
+          halo_exchange_depth,                          &
           chunks(c)%field%u,                              &
           chunks(c)%field%u0,                             &
           chunks(c)%field%vector_p,                       &
@@ -789,7 +812,8 @@ SUBROUTINE tea_leaf_cheby_first_step(c, ch_alphas, ch_betas, fields, &
       CALL tea_leaf_kernel_cheby_iterate(chunks(c)%field%x_min,&
           chunks(c)%field%x_max,                               &
           chunks(c)%field%y_min,                               &
-          chunks(c)%field%y_max, halo_exchange_depth,                               &
+          chunks(c)%field%y_max,                               &
+          halo_exchange_depth,                               &
           chunks(c)%field%u,                                   &
           chunks(c)%field%u0,                                  &
           chunks(c)%field%vector_p,                            &
@@ -809,7 +833,8 @@ SUBROUTINE tea_leaf_cheby_first_step(c, ch_alphas, ch_betas, fields, &
     CALL tea_leaf_calc_2norm_kernel(chunks(c)%field%x_min,&
           chunks(c)%field%x_max,                          &
           chunks(c)%field%y_min,                          &
-          chunks(c)%field%y_max, halo_exchange_depth,                          &
+          chunks(c)%field%y_max,                          &
+          halo_exchange_depth,                          &
           chunks(c)%field%vector_r,                       &
           error)
   ENDIF

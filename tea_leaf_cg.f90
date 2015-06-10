@@ -28,7 +28,8 @@ CONTAINS
 SUBROUTINE tea_leaf_kernel_init_cg_fortran(x_min,  &
                            x_max,                  &
                            y_min,                  &
-                           y_max, halo_exchange_depth,                  &
+                           y_max,                  &
+                           halo_exchange_depth,                  &
                            density,                &
                            energy,                 &
                            u,                      &
@@ -110,7 +111,8 @@ END SUBROUTINE tea_leaf_kernel_init_cg_fortran
 SUBROUTINE tea_leaf_kernel_solve_cg_fortran_calc_w(x_min,             &
                                                    x_max,             &
                                                    y_min,             &
-                                                   y_max, halo_exchange_depth,             &
+                                                   y_max,             &
+                                                   halo_exchange_depth,             &
                                                    p,                 &
                                                    w,                 &
                                                    Kx,                &
@@ -150,7 +152,8 @@ END SUBROUTINE tea_leaf_kernel_solve_cg_fortran_calc_w
 SUBROUTINE tea_leaf_kernel_solve_cg_fortran_calc_ur(x_min,             &
                                                     x_max,             &
                                                     y_min,             &
-                                                    y_max, halo_exchange_depth,             &
+                                                    y_max,             &
+                                                    halo_exchange_depth,             &
                                                     u,                 &
                                                     p,                 &
                                                     r,                 &
@@ -159,7 +162,10 @@ SUBROUTINE tea_leaf_kernel_solve_cg_fortran_calc_ur(x_min,             &
                                                     z,                 &
                                                     cp,                     &
                                                     bfp,                     &
-                                                    Kx, Ky, rx, ry, &
+                                                    Kx, &
+                                                    Ky, &
+                                                    rx, &
+                                                    ry, &
                                                     alpha,             &
                                                     rrn,               &
                                                     preconditioner_type)
@@ -226,7 +232,8 @@ END SUBROUTINE tea_leaf_kernel_solve_cg_fortran_calc_ur
 SUBROUTINE tea_leaf_kernel_solve_cg_fortran_calc_p(x_min,             &
                                                    x_max,             &
                                                    y_min,             &
-                                                   y_max, halo_exchange_depth,             &
+                                                   y_max,             &
+                                                   halo_exchange_depth,             &
                                                    p,                 &
                                                    r,                 &
                                                    z,                 &
