@@ -73,10 +73,14 @@ SUBROUTINE tea_leaf_kernel_ppcg_inner(x_min,             &
                                       y_min,             &
                                       y_max,             &
                                       halo_exchange_depth,             &
+                                      x_min_bound,      &
+                                      x_max_bound,      &
+                                      y_min_bound,      &
+                                      y_max_bound,      &
                                       alpha,             &
                                       beta,              &
                                       rx, ry,            &
-                                      ppcg_cur_step, tl_ppcg_inner_steps,   &
+                                      inner_step,       &
                                       u,                 &
                                       r,                 &
                                       Kx,                &
@@ -97,17 +101,13 @@ SUBROUTINE tea_leaf_kernel_ppcg_inner(x_min,             &
   REAL(KIND=8), DIMENSION(:) :: alpha, beta
   REAL(KIND=8) :: smvp, rx, ry
 
-  INTEGER(KIND=4) :: bounds_extra, ppcg_cur_step, tl_ppcg_inner_steps, inner_step
+  INTEGER(KIND=4) :: x_min_bound, x_max_bound, y_min_bound, y_max_bound, inner_step
 
-!$OMP PARALLEL PRIVATE(smvp, bounds_extra, inner_step)
-
-  inner_step = ppcg_cur_step
-
-  DO bounds_extra = halo_exchange_depth-1, 0, -1
+!$OMP PARALLEL PRIVATE(smvp)
 
 !$OMP DO
-    DO k=y_min-bounds_extra,y_max+bounds_extra
-        DO j=x_min-bounds_extra,x_max+bounds_extra
+    DO k=y_min_bound,y_max_bound
+        DO j=x_min_bound,x_max_bound
             smvp = (1.0_8                                           &
                 + ry*(Ky(j, k+1) + Ky(j, k))                        &
                 + rx*(Kx(j+1, k) + Kx(j, k)))*sd(j, k)              &
@@ -130,26 +130,21 @@ SUBROUTINE tea_leaf_kernel_ppcg_inner(x_min,             &
       ENDIF
   
 !$OMP DO
-      DO k=y_min-bounds_extra,y_max+bounds_extra
-          DO j=x_min-bounds_extra,x_max+bounds_extra
+      DO k=y_min_bound,y_max_bound
+          DO j=x_min_bound,x_max_bound
               sd(j, k) = alpha(inner_step)*sd(j, k) + beta(inner_step)*z(j, k)
           ENDDO
       ENDDO
 !$OMP END DO
     ELSE
 !$OMP DO
-      DO k=y_min-bounds_extra,y_max+bounds_extra
-          DO j=x_min-bounds_extra,x_max+bounds_extra
+      DO k=y_min_bound,y_max_bound
+          DO j=x_min_bound,x_max_bound
               sd(j, k) = alpha(inner_step)*sd(j, k) + beta(inner_step)*r(j, k)
           ENDDO
       ENDDO
 !$OMP END DO
     ENDIF
-  
-    inner_step = inner_step + 1
-    IF (inner_step .gt. tl_ppcg_inner_steps) EXIT
-  
-  END DO
 !$OMP END PARALLEL
 
 END SUBROUTINE

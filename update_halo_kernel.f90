@@ -50,12 +50,10 @@ CONTAINS
                         p,                                                          &
                         sd,                                                         &
                         fields,                                                     &
-                        reflective_boundary,                                        &
                         depth                                                       )
   IMPLICIT NONE
 
   INTEGER :: x_min,x_max,y_min,y_max,halo_exchange_depth
-  LOGICAL :: reflective_boundary
   INTEGER, DIMENSION(4) :: chunk_neighbours
   REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: density,energy0,energy1, u, sd, p
 
@@ -67,7 +65,6 @@ CONTAINS
   ! Even though half of these loops look the wrong way around, it should be noted
   ! that depth is either 1 or 2 so that it is more efficient to always thread
   ! loop along the mesh edge.
-
   IF(fields(FIELD_DENSITY).EQ.1) THEN
     call update_halo_cell(x_min, x_max, y_min, y_max, halo_exchange_depth, chunk_neighbours, density, depth)
   ENDIF
@@ -80,18 +77,16 @@ CONTAINS
     call update_halo_cell(x_min, x_max, y_min, y_max, halo_exchange_depth, chunk_neighbours, energy1, depth)
   ENDIF
 
-  IF (reflective_boundary .EQV. .TRUE.) THEN
-    IF(fields(FIELD_U).EQ.1) THEN
-      call update_halo_cell(x_min, x_max, y_min, y_max, halo_exchange_depth, chunk_neighbours, u, depth)
-    ENDIF
+  IF(fields(FIELD_U).EQ.1) THEN
+    call update_halo_cell(x_min, x_max, y_min, y_max, halo_exchange_depth, chunk_neighbours, u, depth)
+  ENDIF
 
-    IF(fields(FIELD_p).EQ.1) THEN
-      call update_halo_cell(x_min, x_max, y_min, y_max, halo_exchange_depth, chunk_neighbours, p, depth)
-    ENDIF
+  IF(fields(FIELD_p).EQ.1) THEN
+    call update_halo_cell(x_min, x_max, y_min, y_max, halo_exchange_depth, chunk_neighbours, p, depth)
+  ENDIF
 
-    IF(fields(FIELD_sd).EQ.1) THEN
-      call update_halo_cell(x_min, x_max, y_min, y_max, halo_exchange_depth, chunk_neighbours, sd, depth)
-    ENDIF
+  IF(fields(FIELD_sd).EQ.1) THEN
+    call update_halo_cell(x_min, x_max, y_min, y_max, halo_exchange_depth, chunk_neighbours, sd, depth)
   ENDIF
 
 !$OMP END PARALLEL

@@ -129,7 +129,7 @@ SUBROUTINE generate_chunk_kernel(x_min,x_max,y_min,y_max,halo_exchange_depth, &
 !$OMP DO
   DO k=y_min, y_max
     DO j=x_min, x_max
-      u0(j,k) =  energy0(j,k) * density(j,k)
+      u0(j,k) = energy0(j,k)*density(j,k)
     ENDDO
   ENDDO
 !$OMP END DO

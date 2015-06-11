@@ -673,7 +673,7 @@ SUBROUTINE tea_leaf()
 
 END SUBROUTINE tea_leaf
 
-SUBROUTINE tea_leaF_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
+SUBROUTINE tea_leaf_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
     rx, ry, tl_ppcg_inner_steps, c, solve_time)
 
   INTEGER :: fields(NUM_FIELDS)
@@ -681,6 +681,8 @@ SUBROUTINE tea_leaF_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
   REAL(KIND=8) :: rx, ry, theta
   REAL(KIND=8) :: halo_time, timer, solve_time
   REAL(KIND=8), DIMENSION(max_iters) :: ch_alphas, ch_betas
+
+  INTEGER(KIND=4) :: x_min_bound, x_max_bound, y_min_bound, y_max_bound, inner_step, bounds_extra
 
   fields = 0
   fields(FIELD_U) = 1
@@ -718,42 +720,85 @@ SUBROUTINE tea_leaF_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
         theta, tl_preconditioner_type)
   ENDIF
 
-  fields = 0
-  fields(FIELD_SD) = 1
-  fields(FIELD_R) = 1
-
   ! inner steps
   DO ppcg_cur_step=1,tl_ppcg_inner_steps,halo_exchange_depth
+
+    fields = 0
+    fields(FIELD_SD) = 1
+    fields(FIELD_R) = 1
+
     IF (profiler_on) halo_time = timer()
     CALL update_halo(fields,halo_exchange_depth)
     IF (profiler_on) solve_time = solve_time + (timer()-halo_time)
 
-    IF(use_fortran_kernels) THEN
-      CALL tea_leaf_kernel_ppcg_inner(chunks(c)%field%x_min,&
-          chunks(c)%field%x_max,                            &
-          chunks(c)%field%y_min,                            &
-          chunks(c)%field%y_max,                            &
-          halo_exchange_depth,                            &
-          ch_alphas, ch_betas,                              &
-          rx, ry,                                           &
-          ppcg_cur_step, tl_ppcg_inner_steps,   &
-          chunks(c)%field%u,                                &
-          chunks(c)%field%vector_r,                         &
-          chunks(c)%field%vector_Kx,                        &
-          chunks(c)%field%vector_Ky,                        &
-          chunks(c)%field%vector_sd,                        &
-          chunks(c)%field%vector_z,                          &
-          chunks(c)%field%tri_cp,                          &
-          chunks(c)%field%tri_bfp,                          &
-          chunks(c)%field%vector_Mi,                          &
-          tl_preconditioner_type)
-    ENDIF
+    inner_step = ppcg_cur_step
+
+    DO bounds_extra = halo_exchange_depth-1, 0, -1
+      IF (chunks(c)%chunk_neighbours(CHUNK_LEFT).EQ.EXTERNAL_FACE) THEN
+        x_min_bound = chunks(c)%field%x_min
+      ELSE
+        x_min_bound = chunks(c)%field%x_min - bounds_extra
+      ENDIF
+
+      IF (chunks(c)%chunk_neighbours(CHUNK_RIGHT).EQ.EXTERNAL_FACE) THEN
+        x_max_bound = chunks(c)%field%x_max
+      ELSE
+        x_max_bound = chunks(c)%field%x_max + bounds_extra
+      ENDIF
+
+      IF (chunks(c)%chunk_neighbours(CHUNK_BOTTOM).EQ.EXTERNAL_FACE) THEN
+        y_min_bound = chunks(c)%field%y_min
+      ELSE
+        y_min_bound = chunks(c)%field%y_min - bounds_extra
+      ENDIF
+
+      IF (chunks(c)%chunk_neighbours(CHUNK_TOP).EQ.EXTERNAL_FACE) THEN
+        y_max_bound = chunks(c)%field%y_max
+      ELSE
+        y_max_bound = chunks(c)%field%y_max + bounds_extra
+      ENDIF
+
+      IF(use_fortran_kernels) THEN
+        CALL tea_leaf_kernel_ppcg_inner(chunks(c)%field%x_min,&
+            chunks(c)%field%x_max,                            &
+            chunks(c)%field%y_min,                            &
+            chunks(c)%field%y_max,                            &
+            halo_exchange_depth,                            &
+            x_min_bound,                                    &
+            x_max_bound,                                    &
+            y_min_bound,                                    &
+            y_max_bound,                                    &
+            ch_alphas, ch_betas,                              &
+            rx, ry,                                           &
+            inner_step,                                     &
+            chunks(c)%field%u,                                &
+            chunks(c)%field%vector_r,                         &
+            chunks(c)%field%vector_Kx,                        &
+            chunks(c)%field%vector_Ky,                        &
+            chunks(c)%field%vector_sd,                        &
+            chunks(c)%field%vector_z,                          &
+            chunks(c)%field%tri_cp,                          &
+            chunks(c)%field%tri_bfp,                          &
+            chunks(c)%field%vector_Mi,                          &
+            tl_preconditioner_type)
+      ENDIF
+
+      fields = 0
+      fields(FIELD_SD) = 1
+
+      IF (profiler_on) halo_time = timer()
+      CALL update_boundary(fields, bounds_extra)
+      IF (profiler_on) solve_time = solve_time + (timer()-halo_time)
+
+      inner_step = inner_step + 1
+      IF (inner_step .gt. tl_ppcg_inner_steps) EXIT
+    ENDDO
   ENDDO
 
   fields = 0
   fields(FIELD_P) = 1
 
-END SUBROUTINE tea_leaF_run_ppcg_inner_steps
+END SUBROUTINE tea_leaf_run_ppcg_inner_steps
 
 SUBROUTINE tea_leaf_cheby_first_step(c, ch_alphas, ch_betas, fields, &
     error, rx, ry, theta, cn, max_cheby_iters, est_itc, solve_time)
