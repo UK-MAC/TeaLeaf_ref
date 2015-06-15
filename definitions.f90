@@ -74,10 +74,7 @@ MODULE definitions_module
    REAL(KIND=8) :: eps
    INTEGER      :: coefficient
 
-   ! for chebyshev solver - whether to run cg until a certain error (tl_ch_eps)
-   ! is reached, or for a certain number of steps (tl_ch_cg_presteps)
-   LOGICAL      :: tl_ch_cg_errswitch
-   ! error to run cg to if tl_ch_cg_errswitch is set
+   ! error to run cg to before calculating eigenvalues
    REAL(KIND=8) :: tl_ch_cg_epslim
    ! number of steps of cg to run to before switching to ch if tl_ch_cg_errswitch not set
    INTEGER      :: tl_ch_cg_presteps

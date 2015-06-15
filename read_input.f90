@@ -71,9 +71,8 @@ SUBROUTINE read_input()
   profiler%tea_reset=0.0
   profiler%dot_product=0.0
 
-  tl_ch_cg_errswitch = .FALSE.
-  tl_ch_cg_presteps = 30
-  tl_ch_cg_epslim = 1e-5
+  tl_ch_cg_presteps = 25
+  tl_ch_cg_epslim = 1.0
   tl_check_result = .FALSE.
   tl_preconditioner_type = TL_PREC_NONE
 
@@ -171,8 +170,6 @@ SUBROUTINE read_input()
         IF(parallel%boss)WRITE(g_out,"(1x,a25,e12.4)")'tl_ch_cg_epslim',tl_ch_cg_epslim
       CASE('tl_check_result')
         tl_check_result = .TRUE.
-      CASE('tl_ch_cg_errswitch')
-        tl_ch_cg_errswitch = .TRUE.
       CASE('tl_preconditioner_type')
         DO
           word=parse_getword(.FALSE.)
@@ -322,10 +319,10 @@ SUBROUTINE read_input()
   dx=(grid%xmax-grid%xmin)/REAL(grid%x_cells)
   dy=(grid%ymax-grid%ymin)/REAL(grid%y_cells)
   DO n=2,number_of_states
-    states(n)%xmin=states(n)%xmin+(dx/100.0)
-    states(n)%ymin=states(n)%ymin+(dy/100.0)
-    states(n)%xmax=states(n)%xmax-(dx/100.0)
-    states(n)%ymax=states(n)%ymax-(dy/100.0)
+    states(n)%xmin=states(n)%xmin+(dx/100.0_8)
+    states(n)%ymin=states(n)%ymin+(dy/100.0_8)
+    states(n)%xmax=states(n)%xmax-(dx/100.0_8)
+    states(n)%ymax=states(n)%ymax-(dy/100.0_8)
   ENDDO
 
 END SUBROUTINE read_input
