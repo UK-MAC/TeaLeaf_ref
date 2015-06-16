@@ -164,6 +164,7 @@ MODULE definitions_module
                        ,tile_y_max
 
      INTEGER         :: tile_neighbours(4)
+     INTEGER         :: tile_coords(2)
    END TYPE tile_type
 
    TYPE chunk_type
@@ -192,7 +193,10 @@ MODULE definitions_module
      REAL(KIND=8),ALLOCATABLE:: left_rcv_buffer(:),right_rcv_buffer(:),bottom_rcv_buffer(:),top_rcv_buffer(:)
      REAL(KIND=8),ALLOCATABLE:: left_snd_buffer(:),right_snd_buffer(:),bottom_snd_buffer(:),top_snd_buffer(:)
 
-     TYPE(tile_type), DIMENSION(:,:), ALLOCATABLE :: tiles
+     TYPE(tile_type), DIMENSION(:), ALLOCATABLE :: tiles
+
+     ! how tiles are arranged
+     INTEGER,DIMENSION(2) :: tile_dims
 
   END TYPE chunk_type
 

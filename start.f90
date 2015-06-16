@@ -52,10 +52,10 @@ SUBROUTINE start
   step  = 0
   dt    = dtinit
 
-  CALL tea_barrier
+  CALL tea_barrier()
 
-  CALL tea_decompose(grid%x_cells, grid%y_cells, &
-    chunk%left, chunk%right, chunk%bottom, chunk%top)
+  CALL tea_decompose(grid%x_cells, grid%y_cells, mpi_cart_comm, &
+    chunk%left, chunk%right, chunk%bottom, chunk%top, chunk%chunk_neighbours)
 
   ALLOCATE(chunk%tiles(tiles_per_task))
 
@@ -67,18 +67,17 @@ SUBROUTINE start
   chunk%chunk_x_max = chunk%x_cells
   chunk%chunk_y_max = chunk%y_cells
 
-  CALL tea_decompose_tiles(chunk%x_cells, chunk%y_cells, &
-    tile%left, tile%right, tile%bottom, tile%top)
+  CALL tea_decompose_tiles(chunk%x_cells, chunk%y_cells)
 
   DO t=1,tiles_per_task
-    tile%x_cells = tile%right -tile%left  +1
-    tile%y_cells = tile%top   -tile%bottom+1
+    chunk%tiles(t)%x_cells = chunk%tiles(t)%right -chunk%tiles(t)%left  +1
+    chunk%tiles(t)%y_cells = chunk%tiles(t)%top   -chunk%tiles(t)%bottom+1
 
-    tile%tile_x_min = 1
-    tile%tile_y_min = 1
-    tile%tile_x_max = tile%x_cells
-    tile%tile_y_max = tile%y_cells
-  NDDO
+    chunk%tiles(t)%tile_x_min = 1
+    chunk%tiles(t)%tile_y_min = 1
+    chunk%tiles(t)%tile_x_max = chunk%tiles(t)%x_cells
+    chunk%tiles(t)%tile_y_max = chunk%tiles(t)%y_cells
+  ENDDO
 
   CALL build_field()
 
