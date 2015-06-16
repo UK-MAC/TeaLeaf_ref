@@ -179,18 +179,17 @@ SUBROUTINE tea_decompose_tiles(x_cells, y_cells)
 
   INTEGER :: x_cells, y_cells
 
+  INTEGER :: delta_x,delta_y
+  INTEGER  :: tiles_x,tiles_y,mod_x,mod_y
+
   ! create a fake communicator to easily decompose the tiles as before
   INTEGER :: err, j, k, t
-  INTEGER,dimension(:), allocatable :: k_boundaries, j_boundaries
   INTEGER, dimension(2)     :: tile_dims, tile_coords
 
   tile_dims = 0
 
-  ! Create comm and get coords
+  ! get good split for tiles
   CALL MPI_DIMS_CREATE(tiles_per_task, 2, tile_dims, err)
-
-  ALLOCATE(k_boundaries(tile_dims(2)))
-  ALLOCATE(j_boundaries(tile_dims(1)))
 
   tiles_y = tile_dims(2)
   tiles_x = tile_dims(1)
@@ -204,19 +203,8 @@ SUBROUTINE tea_decompose_tiles(x_cells, y_cells)
     DO j=1,tile_dims(1)
       t = k*tile_dims(1) + j
 
-      tile_coords(1) = j
       tile_coords(2) = k
-
-      chunk%tiles(t)%left = tile_coords(1)*delta_x + 1
-      if (tile_coords(1) .le. mod_x) then
-        chunk%tiles(t)%left = chunk%tiles(t)%left + tile_coords(1)
-      else
-        chunk%tiles(t)%left = chunk%tiles(t)%left + mod_x
-      endif
-      chunk%tiles(t)%right = chunk%tiles(t)%left+delta_x - 1
-      if (tile_coords(1) .lt. mod_x) then
-        chunk%tiles(t)%right = chunk%tiles(t)%right + 1
-      endif
+      tile_coords(1) = j
 
       chunk%tiles(t)%bottom = tile_coords(2)*delta_y + 1
       if (tile_coords(2) .le. mod_y) then
@@ -229,30 +217,35 @@ SUBROUTINE tea_decompose_tiles(x_cells, y_cells)
         chunk%tiles(t)%top = chunk%tiles(t)%top + 1
       endif
 
-      chunk%tiles(t)%tile_coords(1) = j
+      chunk%tiles(t)%left = tile_coords(1)*delta_x + 1
+      if (tile_coords(1) .le. mod_x) then
+        chunk%tiles(t)%left = chunk%tiles(t)%left + tile_coords(1)
+      else
+        chunk%tiles(t)%left = chunk%tiles(t)%left + mod_x
+      endif
+      chunk%tiles(t)%right = chunk%tiles(t)%left+delta_x - 1
+      if (tile_coords(1) .lt. mod_x) then
+        chunk%tiles(t)%right = chunk%tiles(t)%right + 1
+      endif
+
       chunk%tiles(t)%tile_coords(2) = k
+      chunk%tiles(t)%tile_coords(1) = j
 
-      IF (k .EQ. tile_dims(2)) THEN
-        chunk%tiles(t)%tile_neighbours(CHUNK_BOTTOM) = EXTERNAL_FACE
-      ELSE
+      chunks%tiles(t)%tile_neighbours = EXTERNAL_FACE
+
+      IF (k .NE. tile_dims(2)) THEN
+        chunk%tiles(t)%tile_neighbours(CHUNK_BOTTOM) = CHUNK_TOP
+      ENDIF
+
+      IF (j .NE. tile_dims(1)) THEN
+        chunk%tiles(t)%tile_neighbours(CHUNK_LEFT) = CHUNK_RIGHT
+      ENDIF
+
+      IF (k .NE. 1) THEN
         chunk%tiles(t)%tile_neighbours(CHUNK_BOTTOM) = CHUNK_BOTTOM
       ENDIF
 
-      IF (j .EQ. tile_dims(1)) THEN
-        chunk%tiles(t)%tile_neighbours(CHUNK_LEFT) = EXTERNAL_FACE
-      ELSE
-        chunk%tiles(t)%tile_neighbours(CHUNK_LEFT) = CHUNK_LEFT
-      ENDIF
-
-      IF (k .EQ. 1) THEN
-        chunk%tiles(t)%tile_neighbours(CHUNK_BOTTOM) = EXTERNAL_FACE
-      ELSE
-        chunk%tiles(t)%tile_neighbours(CHUNK_BOTTOM) = CHUNK_BOTTOM
-      ENDIF
-
-      IF (j .EQ. 1) THEN
-        chunk%tiles(t)%tile_neighbours(CHUNK_LEFT) = EXTERNAL_FACE
-      ELSE
+      IF (j .NE. 1) THEN
         chunk%tiles(t)%tile_neighbours(CHUNK_LEFT) = CHUNK_LEFT
       ENDIF
     ENDDO
