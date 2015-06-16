@@ -52,13 +52,14 @@ SUBROUTINE update_boundary(fields,depth)
   IF (reflective_boundary .EQV. .TRUE.) THEN
     IF (profiler_on) halo_time=timer()
     DO t=1,tiles_per_task
+      ! FIXME intra-chunk comms
       IF(use_fortran_kernels)THEN
         CALL update_halo_kernel(chunk%tiles(t)%field%x_min,          &
                                 chunk%tiles(t)%field%x_max,          &
                                 chunk%tiles(t)%field%y_min,          &
                                 chunk%tiles(t)%field%y_max,          &
                                 halo_exchange_depth,          &
-                                chunk%tiles(t)%chunk_neighbours,     &
+                                chunk%tiles(t)%tile_neighbours,     &
                                 chunk%tiles(t)%field%density,        &
                                 chunk%tiles(t)%field%energy0,        &
                                 chunk%tiles(t)%field%energy1,        &

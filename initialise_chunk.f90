@@ -19,8 +19,9 @@
 !>  @author David Beckingsale, Wayne Gaudin
 !>  @details Invokes the user specified chunk initialisation kernel.
 
-SUBROUTINE initialise_chunk(chunk)
+SUBROUTINE initialise_chunk()
 
+  USE definitions_module
   USE tea_module
   USE initialise_chunk_kernel_module
 
@@ -34,9 +35,9 @@ SUBROUTINE initialise_chunk(chunk)
   dy=(grid%ymax - grid%ymin)/REAL(grid%y_cells)
 
   DO t=1,tiles_per_task
-    xmin=grid%xmin + dx*REAL(chunk%tiles(t)%field%left-1)
+    xmin=grid%xmin + dx*REAL(chunk%tiles(t)%left-1)
   
-    ymin=grid%ymin + dy*REAL(chunk%tiles(t)%field%bottom-1)
+    ymin=grid%ymin + dy*REAL(chunk%tiles(t)%bottom-1)
   
     IF(use_fortran_kernels) THEN
       CALL initialise_chunk_kernel(chunk%tiles(t)%field%x_min,    &

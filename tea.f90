@@ -95,8 +95,6 @@ SUBROUTINE tea_init_comms
   CALL MPI_COMM_SIZE(mpi_cart_comm,size,err)
   CALL MPI_CART_COORDS(mpi_cart_comm, rank, 2, mpi_coords, err)
 
-  parallel%parallel=.TRUE.
-
   IF (rank.EQ.0) THEN
     parallel%boss=.TRUE.
   ENDIF
@@ -230,7 +228,7 @@ SUBROUTINE tea_decompose_tiles(x_cells, y_cells)
       chunk%tiles(t)%tile_coords(2) = k
       chunk%tiles(t)%tile_coords(1) = j
 
-      chunks%tiles(t)%tile_neighbours = EXTERNAL_FACE
+      chunk%tiles(t)%tile_neighbours = EXTERNAL_FACE
 
       IF (k .NE. tile_dims(2)) THEN
         chunk%tiles(t)%tile_neighbours(CHUNK_BOTTOM) = CHUNK_TOP
@@ -309,7 +307,7 @@ SUBROUTINE tea_exchange(fields,depth)
 
   IMPLICIT NONE
 
-    INTEGER      :: fields(NUM_FIELDS),depth, chunk,err
+    INTEGER      :: fields(NUM_FIELDS),depth, err
     INTEGER      :: left_right_offset(NUM_FIELDS),bottom_top_offset(NUM_FIELDS)
     INTEGER      :: end_pack_index_left_right, end_pack_index_bottom_top,field
     INTEGER      :: message_count_lr, message_count_ud
@@ -318,13 +316,10 @@ SUBROUTINE tea_exchange(fields,depth)
     INTEGER, dimension(MPI_STATUS_SIZE,4) :: status_lr, status_ud
     LOGICAL :: test_complete
 
-    ! Assuming 1 patch per task, this will be changed
-    chunk = 1
-
     IF (ALL(chunk%chunk_neighbours .eq. EXTERNAL_FACE)) return
 
-    exchange_size_lr = depth*(chunk%field%y_max+2*depth)
-    exchange_size_ud = depth*(chunk%field%x_max+2*depth)
+    exchange_size_lr = depth*(chunk%y_cells+2*depth)
+    exchange_size_ud = depth*(chunk%x_cells+2*depth)
 
     request_lr = 0
     message_count_lr = 0
@@ -347,13 +342,13 @@ SUBROUTINE tea_exchange(fields,depth)
 
     IF (chunk%chunk_neighbours(CHUNK_LEFT).NE.EXTERNAL_FACE) THEN
       ! do left exchanges
-      CALL tea_pack_buffers(chunk, fields, depth, CHUNK_LEFT, &
+      CALL tea_pack_buffers(fields, depth, CHUNK_LEFT, &
         chunk%left_snd_buffer, left_right_offset)
 
       !send and recv messagse to the left
       CALL tea_send_recv_message_left(chunk%left_snd_buffer,                      &
                                          chunk%left_rcv_buffer,                      &
-                                         chunk,end_pack_index_left_right,                    &
+                                         end_pack_index_left_right,                    &
                                          1, 2,                                               &
                                          request_lr(message_count_lr+1), request_lr(message_count_lr+2))
       message_count_lr = message_count_lr + 2
@@ -361,13 +356,13 @@ SUBROUTINE tea_exchange(fields,depth)
 
     IF (chunk%chunk_neighbours(CHUNK_RIGHT).NE.EXTERNAL_FACE) THEN
       ! do right exchanges
-      CALL tea_pack_buffers(chunk, fields, depth, CHUNK_RIGHT, &
+      CALL tea_pack_buffers(fields, depth, CHUNK_RIGHT, &
         chunk%right_snd_buffer, left_right_offset)
 
       !send message to the right
       CALL tea_send_recv_message_right(chunk%right_snd_buffer,                     &
                                           chunk%right_rcv_buffer,                     &
-                                          chunk,end_pack_index_left_right,                    &
+                                          end_pack_index_left_right,                    &
                                           2, 1,                                               &
                                           request_lr(message_count_lr+1), request_lr(message_count_lr+2))
       message_count_lr = message_count_lr + 2
@@ -386,26 +381,26 @@ SUBROUTINE tea_exchange(fields,depth)
     IF (test_complete .eqv. .true.) THEN
       !unpack in left direction
       IF (chunk%chunk_neighbours(CHUNK_LEFT).NE.EXTERNAL_FACE) THEN
-        CALL tea_unpack_buffers(chunk, fields, depth, CHUNK_LEFT, &
+        CALL tea_unpack_buffers(fields, depth, CHUNK_LEFT, &
           chunk%left_rcv_buffer, left_right_offset)
       ENDIF
 
       !unpack in right direction
       IF (chunk%chunk_neighbours(CHUNK_RIGHT).NE.EXTERNAL_FACE) THEN
-        CALL tea_unpack_buffers(chunk, fields, depth, CHUNK_RIGHT, &
+        CALL tea_unpack_buffers(fields, depth, CHUNK_RIGHT, &
           chunk%right_rcv_buffer, left_right_offset)
       ENDIF
     ENDIF
 
     IF (chunk%chunk_neighbours(CHUNK_BOTTOM).NE.EXTERNAL_FACE) THEN
       ! do bottom exchanges
-      CALL tea_pack_buffers(chunk, fields, depth, CHUNK_BOTTOM, &
+      CALL tea_pack_buffers(fields, depth, CHUNK_BOTTOM, &
         chunk%bottom_snd_buffer, bottom_top_offset)
 
       !send message downwards
       CALL tea_send_recv_message_bottom(chunk%bottom_snd_buffer,                     &
                                            chunk%bottom_rcv_buffer,                     &
-                                           chunk,end_pack_index_bottom_top,                     &
+                                           end_pack_index_bottom_top,                     &
                                            3, 4,                                                &
                                            request_ud(message_count_ud+1), request_ud(message_count_ud+2))
       message_count_ud = message_count_ud + 2
@@ -413,13 +408,13 @@ SUBROUTINE tea_exchange(fields,depth)
 
     IF (chunk%chunk_neighbours(CHUNK_TOP).NE.EXTERNAL_FACE) THEN
       ! do top exchanges
-      CALL tea_pack_buffers(chunk, fields, depth, CHUNK_TOP, &
+      CALL tea_pack_buffers(fields, depth, CHUNK_TOP, &
         chunk%top_snd_buffer, bottom_top_offset)
 
       !send message upwards
       CALL tea_send_recv_message_top(chunk%top_snd_buffer,                           &
                                         chunk%top_rcv_buffer,                           &
-                                        chunk,end_pack_index_bottom_top,                        &
+                                        end_pack_index_bottom_top,                        &
                                         4, 3,                                                   &
                                         request_ud(message_count_ud+1), request_ud(message_count_ud+2))
       message_count_ud = message_count_ud + 2
@@ -431,13 +426,13 @@ SUBROUTINE tea_exchange(fields,depth)
 
       !unpack in left direction
       IF (chunk%chunk_neighbours(CHUNK_LEFT).NE.EXTERNAL_FACE) THEN
-        CALL tea_unpack_buffers(chunk, fields, depth, CHUNK_LEFT, &
+        CALL tea_unpack_buffers(fields, depth, CHUNK_LEFT, &
           chunk%left_rcv_buffer, left_right_offset)
       ENDIF
 
       !unpack in right direction
       IF (chunk%chunk_neighbours(CHUNK_RIGHT).NE.EXTERNAL_FACE) THEN
-        CALL tea_unpack_buffers(chunk, fields, depth, CHUNK_RIGHT, &
+        CALL tea_unpack_buffers(fields, depth, CHUNK_RIGHT, &
           chunk%right_rcv_buffer, left_right_offset)
       ENDIF
     ENDIF
@@ -447,26 +442,25 @@ SUBROUTINE tea_exchange(fields,depth)
 
     !unpack in top direction
     IF (chunk%chunk_neighbours(CHUNK_TOP).NE.EXTERNAL_FACE ) THEN
-      CALL tea_unpack_buffers(chunk, fields, depth, CHUNK_TOP, &
+      CALL tea_unpack_buffers(fields, depth, CHUNK_TOP, &
         chunk%top_rcv_buffer, bottom_top_offset)
     ENDIF
 
     !unpack in bottom direction
     IF (chunk%chunk_neighbours(CHUNK_BOTTOM).NE.EXTERNAL_FACE) THEN
-      CALL tea_unpack_buffers(chunk, fields, depth, CHUNK_BOTTOM, &
+      CALL tea_unpack_buffers(fields, depth, CHUNK_BOTTOM, &
         chunk%bottom_rcv_buffer, bottom_top_offset)
     ENDIF
 
 END SUBROUTINE tea_exchange
 
 SUBROUTINE tea_send_recv_message_left(left_snd_buffer, left_rcv_buffer,      &
-                                         chunk, total_size,                     &
+                                         total_size,                     &
                                          tag_send, tag_recv,                    &
                                          req_send, req_recv)
 
   REAL(KIND=8)    :: left_snd_buffer(:), left_rcv_buffer(:)
   INTEGER         :: left_task
-  INTEGER         :: chunk
   INTEGER         :: total_size, tag_send, tag_recv, err
   INTEGER         :: req_send, req_recv
 
@@ -481,7 +475,7 @@ SUBROUTINE tea_send_recv_message_left(left_snd_buffer, left_rcv_buffer,      &
 END SUBROUTINE tea_send_recv_message_left
 
 SUBROUTINE tea_send_recv_message_right(right_snd_buffer, right_rcv_buffer,   &
-                                          chunk, total_size,                    &
+                                          total_size,                    &
                                           tag_send, tag_recv,                   &
                                           req_send, req_recv)
 
@@ -489,7 +483,6 @@ SUBROUTINE tea_send_recv_message_right(right_snd_buffer, right_rcv_buffer,   &
 
   REAL(KIND=8) :: right_snd_buffer(:), right_rcv_buffer(:)
   INTEGER      :: right_task
-  INTEGER      :: chunk
   INTEGER      :: total_size, tag_send, tag_recv, err
   INTEGER      :: req_send, req_recv
 
@@ -504,7 +497,7 @@ SUBROUTINE tea_send_recv_message_right(right_snd_buffer, right_rcv_buffer,   &
 END SUBROUTINE tea_send_recv_message_right
 
 SUBROUTINE tea_send_recv_message_top(top_snd_buffer, top_rcv_buffer,     &
-                                        chunk, total_size,                  &
+                                        total_size,                  &
                                         tag_send, tag_recv,                 &
                                         req_send, req_recv)
 
@@ -512,7 +505,6 @@ SUBROUTINE tea_send_recv_message_top(top_snd_buffer, top_rcv_buffer,     &
 
     REAL(KIND=8) :: top_snd_buffer(:), top_rcv_buffer(:)
     INTEGER      :: top_task
-    INTEGER      :: chunk
     INTEGER      :: total_size, tag_send, tag_recv, err
     INTEGER      :: req_send, req_recv
 
@@ -527,7 +519,7 @@ SUBROUTINE tea_send_recv_message_top(top_snd_buffer, top_rcv_buffer,     &
 END SUBROUTINE tea_send_recv_message_top
 
 SUBROUTINE tea_send_recv_message_bottom(bottom_snd_buffer, bottom_rcv_buffer,        &
-                                           chunk, total_size,                           &
+                                           total_size,                           &
                                            tag_send, tag_recv,                          &
                                            req_send, req_recv)
 
@@ -535,7 +527,6 @@ SUBROUTINE tea_send_recv_message_bottom(bottom_snd_buffer, bottom_rcv_buffer,   
 
   REAL(KIND=8) :: bottom_snd_buffer(:), bottom_rcv_buffer(:)
   INTEGER      :: bottom_task
-  INTEGER      :: chunk
   INTEGER      :: total_size, tag_send, tag_recv, err
   INTEGER      :: req_send, req_recv
 

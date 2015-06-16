@@ -43,7 +43,7 @@ SUBROUTINE timestep()
 
   IF(profiler_on) kernel_time=timer()
   DO t=1,tiles_per_task
-    CALL calc_dt(c,dtlp)
+    CALL calc_dt(dtlp)
 
     IF(dtlp.LE.dt) THEN
       dt=dtlp

@@ -19,7 +19,7 @@
 !>  @author David Beckingsale, Wayne Gaudin
 !>  @details Invoked the users specified chunk generator.
 
-SUBROUTINE generate_chunk(chunk)
+SUBROUTINE generate_chunk()
 
   USE tea_module
   USE generate_chunk_kernel_module

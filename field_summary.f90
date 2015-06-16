@@ -40,10 +40,11 @@ SUBROUTINE field_summary()
 
   REAL(KIND=8) :: kernel_time,timer
 
-  IF(parallel%boss)THEN
+  IF(parallel%boss) THEN
     WRITE(g_out,*)
     WRITE(g_out,*) 'Time ',time
     WRITE(g_out,'(a13,5a26)')'           ','Volume','Mass','Density'       &
+                                          ,'Energy','U'
   ENDIF
 
   IF(profiler_on) kernel_time=timer()

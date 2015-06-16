@@ -33,8 +33,8 @@ SUBROUTINE build_field()
     chunk%tiles(t)%field%x_min=1
     chunk%tiles(t)%field%y_min=1
 
-    chunk%tiles(t)%field%x_max=x_cells
-    chunk%tiles(t)%field%y_max=y_cells
+    chunk%tiles(t)%field%x_max=chunk%tiles(t)%x_cells
+    chunk%tiles(t)%field%y_max=chunk%tiles(t)%y_cells
 
     ! TODO only allocate extra halo on external tiles
 
@@ -85,6 +85,9 @@ SUBROUTINE build_field()
     ALLOCATE(chunk%tiles(t)%field%yarea   (chunk%tiles(t)%field%x_min-2:chunk%tiles(t)%field%x_max+2, &
          chunk%tiles(t)%field%y_min-2:chunk%tiles(t)%field%y_max+3))
   ENDDO
+
+  return
+  ! TODO nested parallelism would require nested zero allocation...?
 
   ! Zeroing isn't strictly neccessary but it ensures physical pages
   ! are allocated. This prevents first touch overheads in the main code

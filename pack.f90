@@ -34,33 +34,33 @@ FUNCTION xincs(field_type) RESULT(x_inc)
   ENDIF
 END FUNCTION
 
-SUBROUTINE tea_pack_buffers(chunk, fields, depth, face, mpi_buffer, offsets)
+SUBROUTINE tea_pack_buffers(fields, depth, face, mpi_buffer, offsets)
   IMPLICIT NONE
 
-  INTEGER      :: fields(:),depth, chunk
+  INTEGER      :: fields(:),depth
   INTEGER      :: offsets(:)
   REAL(KIND=8) :: mpi_buffer(:)
   INTEGER       :: face
   LOGICAL       :: packing
 
-  CALL call_packing_functions(chunk, fields, depth, face, .TRUE., mpi_buffer, offsets)
+  CALL call_packing_functions(fields, depth, face, .TRUE., mpi_buffer, offsets)
 
 END SUBROUTINE
 
-SUBROUTINE tea_unpack_buffers(chunk, fields, depth, face, mpi_buffer, offsets)
+SUBROUTINE tea_unpack_buffers(fields, depth, face, mpi_buffer, offsets)
   IMPLICIT NONE
 
-  INTEGER      :: fields(:),depth, chunk
+  INTEGER      :: fields(:),depth
   INTEGER      :: offsets(:)
   REAL(KIND=8) :: mpi_buffer(:)
   INTEGER       :: face
   LOGICAL       :: packing
 
-  CALL call_packing_functions(chunk, fields, depth, face, .FALSE., mpi_buffer, offsets)
+  CALL call_packing_functions(fields, depth, face, .FALSE., mpi_buffer, offsets)
 
 END SUBROUTINE
 
-SUBROUTINE call_packing_functions(chunk, fields, depth, face, packing, mpi_buffer, offsets)
+SUBROUTINE call_packing_functions(fields, depth, face, packing, mpi_buffer, offsets)
 
   IMPLICIT NONE
 
@@ -78,10 +78,10 @@ SUBROUTINE call_packing_functions(chunk, fields, depth, face, packing, mpi_buffe
     END SUBROUTINE
   END INTERFACE
 
-  INTEGER      :: fields(:),depth, chunk
+  INTEGER      :: fields(:),depth
   INTEGER      :: offsets(:)
   REAL(KIND=8) :: mpi_buffer(:)
-  INTEGER      :: face
+  INTEGER      :: face,t
   LOGICAL      :: packing
 
   PROCEDURE(pack_or_unpack), POINTER :: pack_func => NULL()
@@ -114,7 +114,7 @@ SUBROUTINE call_packing_functions(chunk, fields, depth, face, packing, mpi_buffe
     END SELECT
   ENDIF
 
-  DO t=1,tiles_per_chunk
+  DO t=1,tiles_per_task
     IF (fields(FIELD_DENSITY).EQ.1) THEN
         CALL pack_func(chunk%tiles(t)%field%x_min,                    &
                        chunk%tiles(t)%field%x_max,                    &

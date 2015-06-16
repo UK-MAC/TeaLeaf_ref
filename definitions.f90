@@ -148,6 +148,11 @@ MODULE definitions_module
                                                  ,xarea   &
                                                  ,yarea
 
+     INTEGER         :: x_min  &
+                       ,y_min  &
+                       ,x_max  &
+                       ,y_max
+
    END TYPE field_type
 
    TYPE tile_type
@@ -158,10 +163,8 @@ MODULE definitions_module
                        ,bottom          &
                        ,top
 
-     INTEGER         :: tile_x_min  &
-                       ,tile_y_min  &
-                       ,tile_x_max  &
-                       ,tile_y_max
+     INTEGER            :: x_cells              &
+                          ,y_cells
 
      INTEGER         :: tile_neighbours(4)
      INTEGER         :: tile_coords(2)

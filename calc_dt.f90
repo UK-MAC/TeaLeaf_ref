@@ -23,13 +23,12 @@ MODULE calc_dt_module
 
 CONTAINS
 
-SUBROUTINE calc_dt(chunk,local_dt)
+SUBROUTINE calc_dt(local_dt)
 
   USE tea_module
 
   IMPLICIT NONE
 
-  INTEGER          :: chunk
   REAL(KIND=8)     :: local_dt
 
   local_dt = dtinit

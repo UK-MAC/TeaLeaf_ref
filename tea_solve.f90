@@ -39,7 +39,7 @@ SUBROUTINE tea_leaf()
   IMPLICIT NONE
 
 !$ INTEGER :: OMP_GET_THREAD_NUM
-  INTEGER :: n
+  INTEGER :: n, t
   REAL(KIND=8) :: ry,rx,old_error,error,exact_error,initial_residual
 
   INTEGER :: fields(NUM_FIELDS)
@@ -105,7 +105,7 @@ SUBROUTINE tea_leaf()
           chunk%tiles(t)%field%y_min,                                  &
           chunk%tiles(t)%field%y_max,                                  &
           halo_exchange_depth,                                  &
-          chunk%tiles(t)%chunk_neighbours,                             &
+          chunk%chunk_neighbours,                             &
           reflective_boundary,                                    &
           chunk%tiles(t)%field%density,                                &
           chunk%tiles(t)%field%energy1,                                &
@@ -287,7 +287,7 @@ SUBROUTINE tea_leaf()
 
       IF (tl_use_chebyshev) THEN
         IF (cheby_calc_steps .EQ. 0) THEN
-          CALL tea_leaf_cheby_first_step(c, ch_alphas, ch_betas, fields, &
+          CALL tea_leaf_cheby_first_step(ch_alphas, ch_betas, fields, &
               old_error, rx, ry, theta, cn, max_cheby_iters, est_itc, solve_time)
 
           cheby_calc_steps = 1
@@ -387,7 +387,7 @@ SUBROUTINE tea_leaf()
         ! not using rrn, so don't do a tea_allsum
 
         CALL tea_leaf_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
-            rx, ry, tl_ppcg_inner_steps, c, solve_time)
+            rx, ry, tl_ppcg_inner_steps, solve_time)
         ppcg_inner_iters = ppcg_inner_iters + tl_ppcg_inner_steps
 
         IF (use_fortran_kernels) THEN
@@ -681,10 +681,10 @@ SUBROUTINE tea_leaf()
 END SUBROUTINE tea_leaf
 
 SUBROUTINE tea_leaf_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
-    rx, ry, tl_ppcg_inner_steps, c, solve_time)
+    rx, ry, tl_ppcg_inner_steps, solve_time)
 
   INTEGER :: fields(NUM_FIELDS)
-  INTEGER :: c, tl_ppcg_inner_steps, ppcg_cur_step
+  INTEGER :: t, tl_ppcg_inner_steps, ppcg_cur_step
   REAL(KIND=8) :: rx, ry, theta
   REAL(KIND=8) :: halo_time, timer, solve_time
   REAL(KIND=8), DIMENSION(max_iters) :: ch_alphas, ch_betas
@@ -732,25 +732,25 @@ SUBROUTINE tea_leaf_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
     inner_step = ppcg_cur_step
 
     DO bounds_extra = halo_exchange_depth-1, 0, -1
-      IF (chunk%tiles(t)%chunk_neighbours(CHUNK_LEFT).EQ.EXTERNAL_FACE) THEN
+      IF (chunk%chunk_neighbours(CHUNK_LEFT).EQ.EXTERNAL_FACE) THEN
         x_min_bound = chunk%tiles(t)%field%x_min
       ELSE
         x_min_bound = chunk%tiles(t)%field%x_min - bounds_extra
       ENDIF
 
-      IF (chunk%tiles(t)%chunk_neighbours(CHUNK_RIGHT).EQ.EXTERNAL_FACE) THEN
+      IF (chunk%chunk_neighbours(CHUNK_RIGHT).EQ.EXTERNAL_FACE) THEN
         x_max_bound = chunk%tiles(t)%field%x_max
       ELSE
         x_max_bound = chunk%tiles(t)%field%x_max + bounds_extra
       ENDIF
 
-      IF (chunk%tiles(t)%chunk_neighbours(CHUNK_BOTTOM).EQ.EXTERNAL_FACE) THEN
+      IF (chunk%chunk_neighbours(CHUNK_BOTTOM).EQ.EXTERNAL_FACE) THEN
         y_min_bound = chunk%tiles(t)%field%y_min
       ELSE
         y_min_bound = chunk%tiles(t)%field%y_min - bounds_extra
       ENDIF
 
-      IF (chunk%tiles(t)%chunk_neighbours(CHUNK_TOP).EQ.EXTERNAL_FACE) THEN
+      IF (chunk%chunk_neighbours(CHUNK_TOP).EQ.EXTERNAL_FACE) THEN
         y_max_bound = chunk%tiles(t)%field%y_max
       ELSE
         y_max_bound = chunk%tiles(t)%field%y_max + bounds_extra
@@ -800,12 +800,12 @@ SUBROUTINE tea_leaf_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
 
 END SUBROUTINE tea_leaf_run_ppcg_inner_steps
 
-SUBROUTINE tea_leaf_cheby_first_step(c, ch_alphas, ch_betas, fields, &
+SUBROUTINE tea_leaf_cheby_first_step(ch_alphas, ch_betas, fields, &
     error, rx, ry, theta, cn, max_cheby_iters, est_itc, solve_time)
 
   IMPLICIT NONE
 
-  integer :: c, est_itc, max_cheby_iters
+  integer :: t, est_itc, max_cheby_iters
   integer, dimension(:) :: fields
   REAL(KIND=8) :: it_alpha, cn, gamm, bb, error, rx, ry, theta
   REAL(KIND=8), DIMENSION(:) :: ch_alphas, ch_betas

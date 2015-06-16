@@ -54,8 +54,7 @@ SUBROUTINE start
 
   CALL tea_barrier()
 
-  CALL tea_decompose(grid%x_cells, grid%y_cells, mpi_cart_comm, &
-    chunk%left, chunk%right, chunk%bottom, chunk%top, chunk%chunk_neighbours)
+  CALL tea_decompose(grid%x_cells, grid%y_cells)
 
   ALLOCATE(chunk%tiles(tiles_per_task))
 
@@ -73,10 +72,10 @@ SUBROUTINE start
     chunk%tiles(t)%x_cells = chunk%tiles(t)%right -chunk%tiles(t)%left  +1
     chunk%tiles(t)%y_cells = chunk%tiles(t)%top   -chunk%tiles(t)%bottom+1
 
-    chunk%tiles(t)%tile_x_min = 1
-    chunk%tiles(t)%tile_y_min = 1
-    chunk%tiles(t)%tile_x_max = chunk%tiles(t)%x_cells
-    chunk%tiles(t)%tile_y_max = chunk%tiles(t)%y_cells
+    chunk%tiles(t)%field%x_min = 1
+    chunk%tiles(t)%field%y_min = 1
+    chunk%tiles(t)%field%x_max = chunk%tiles(t)%x_cells
+    chunk%tiles(t)%field%y_max = chunk%tiles(t)%y_cells
   ENDDO
 
   CALL build_field()
