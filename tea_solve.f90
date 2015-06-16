@@ -39,7 +39,7 @@ SUBROUTINE tea_leaf()
   IMPLICIT NONE
 
 !$ INTEGER :: OMP_GET_THREAD_NUM
-  INTEGER :: c, n
+  INTEGER :: n
   REAL(KIND=8) :: ry,rx,old_error,error,exact_error,initial_residual
 
   INTEGER :: fields(NUM_FIELDS)
@@ -73,7 +73,7 @@ SUBROUTINE tea_leaf()
   solve_time = 0.0_8
   dot_product_time = 0.0_8
 
-  IF(coefficient .NE. RECIP_CONDUCTIVITY .AND. coefficient .NE. conductivity) THEN
+  IF (coefficient .NE. RECIP_CONDUCTIVITY .AND. coefficient .NE. conductivity) THEN
     CALL report_error('tea_leaf', 'unknown coefficient option')
   ENDIF
 
@@ -84,546 +84,568 @@ SUBROUTINE tea_leaf()
 
   total_solve_time = timer()
 
-  DO t=1,tiles_per_task
+  ! INIT
+  IF (profiler_on) init_time=timer()
 
-    IF(chunks(c)%task.EQ.parallel%task) THEN
+  fields=0
+  fields(FIELD_ENERGY1) = 1
+  fields(FIELD_DENSITY) = 1
 
-      ! INIT
-      IF (profiler_on) init_time=timer()
+  IF (profiler_on) halo_time=timer()
+  CALL update_halo(fields,halo_exchange_depth)
+  IF (profiler_on) init_time = init_time + (timer()-halo_time)
 
-      fields=0
-      fields(FIELD_ENERGY1) = 1
-      fields(FIELD_DENSITY) = 1
+  IF (use_fortran_kernels) THEN
+    DO t=1,tiles_per_task
+      rx = dt/(chunk%tiles(t)%field%celldx(chunk%tiles(t)%field%x_min)**2)
+      ry = dt/(chunk%tiles(t)%field%celldy(chunk%tiles(t)%field%y_min)**2)
 
-      IF (profiler_on) halo_time=timer()
-      CALL update_halo(fields,halo_exchange_depth)
-      IF (profiler_on) init_time = init_time + (timer()-halo_time)
+      CALL tea_leaf_kernel_init_common(chunk%tiles(t)%field%x_min, &
+          chunk%tiles(t)%field%x_max,                                  &
+          chunk%tiles(t)%field%y_min,                                  &
+          chunk%tiles(t)%field%y_max,                                  &
+          halo_exchange_depth,                                  &
+          chunk%tiles(t)%chunk_neighbours,                             &
+          reflective_boundary,                                    &
+          chunk%tiles(t)%field%density,                                &
+          chunk%tiles(t)%field%energy1,                                &
+          chunk%tiles(t)%field%u,                                      &
+          chunk%tiles(t)%field%u0,                                      &
+          chunk%tiles(t)%field%vector_r,                               &
+          chunk%tiles(t)%field%vector_w,                               &
+          chunk%tiles(t)%field%vector_Kx,                              &
+          chunk%tiles(t)%field%vector_Ky,                              &
+          chunk%tiles(t)%field%tri_cp,   &
+          chunk%tiles(t)%field%tri_bfp,    &
+          chunk%tiles(t)%field%vector_Mi,    &
+          rx, ry, tl_preconditioner_type, coefficient)
+    ENDDO
+  ENDIF
 
-      IF (use_fortran_kernels) THEN
-        rx = dt/(chunks(c)%field%celldx(chunks(c)%field%x_min)**2)
-        ry = dt/(chunks(c)%field%celldy(chunks(c)%field%y_min)**2)
+  fields=0
+  fields(FIELD_U) = 1
 
-        CALL tea_leaf_kernel_init_common(chunks(c)%field%x_min, &
-            chunks(c)%field%x_max,                                  &
-            chunks(c)%field%y_min,                                  &
-            chunks(c)%field%y_max,                                  &
+  IF (profiler_on) halo_time=timer()
+  CALL update_halo(fields,1)
+  IF (profiler_on) init_time = init_time + (timer()-halo_time)
+
+  IF (use_fortran_kernels) THEN
+    DO t=1,tiles_per_task
+      CALL tea_leaf_calc_residual(chunk%tiles(t)%field%x_min,&
+          chunk%tiles(t)%field%x_max,                        &
+          chunk%tiles(t)%field%y_min,                        &
+          chunk%tiles(t)%field%y_max,                        &
+          halo_exchange_depth,                        &
+          chunk%tiles(t)%field%u,                            &
+          chunk%tiles(t)%field%u0,                           &
+          chunk%tiles(t)%field%vector_r,                     &
+          chunk%tiles(t)%field%vector_Kx,                    &
+          chunk%tiles(t)%field%vector_Ky,                    &
+          rx, ry)
+      CALL tea_leaf_calc_2norm_kernel(chunk%tiles(t)%field%x_min,        &
+          chunk%tiles(t)%field%x_max,                                    &
+          chunk%tiles(t)%field%y_min,                                    &
+          chunk%tiles(t)%field%y_max,                                    &
+          halo_exchange_depth,                                    &
+          chunk%tiles(t)%field%vector_r,                                 &
+          initial_residual)
+    ENDDO
+  ENDIF
+
+  IF (profiler_on) dot_product_time=timer()
+  CALL tea_allsum(initial_residual)
+  IF (profiler_on) profiler%dot_product= profiler%dot_product+ (timer() - dot_product_time)
+  IF (profiler_on) init_time = init_time + (timer()-dot_product_time)
+
+  old_error = initial_residual
+
+  initial_residual=SQRT(initial_residual)
+
+  IF (parallel%boss.AND.verbose_on) THEN
+!$  IF (OMP_GET_THREAD_NUM().EQ.0) THEN
+      WRITE(g_out,*)"Initial residual ",initial_residual
+!$  ENDIF
+  ENDIF
+
+  IF (tl_use_cg .OR. tl_use_chebyshev .OR. tl_use_ppcg) THEN
+    ! All 3 of these solvers use the CG kernels
+    IF (use_fortran_kernels) THEN
+      DO t=1,tiles_per_task
+        CALL tea_leaf_kernel_init_cg_fortran(chunk%tiles(t)%field%x_min, &
+            chunk%tiles(t)%field%x_max,                                  &
+            chunk%tiles(t)%field%y_min,                                  &
+            chunk%tiles(t)%field%y_max,                                  &
             halo_exchange_depth,                                  &
-            chunks(c)%chunk_neighbours,                             &
-            reflective_boundary,                                    &
-            chunks(c)%field%density,                                &
-            chunks(c)%field%energy1,                                &
-            chunks(c)%field%u,                                      &
-            chunks(c)%field%u0,                                      &
-            chunks(c)%field%vector_r,                               &
-            chunks(c)%field%vector_w,                               &
-            chunks(c)%field%vector_Kx,                              &
-            chunks(c)%field%vector_Ky,                              &
-            chunks(c)%field%tri_cp,   &
-            chunks(c)%field%tri_bfp,    &
-            chunks(c)%field%vector_Mi,    &
-            rx, ry, tl_preconditioner_type, coefficient)
+            chunk%tiles(t)%field%density,                                &
+            chunk%tiles(t)%field%energy1,                                &
+            chunk%tiles(t)%field%u,                                      &
+            chunk%tiles(t)%field%vector_p,                               &
+            chunk%tiles(t)%field%vector_r,                               &
+            chunk%tiles(t)%field%vector_Mi,                              &
+            chunk%tiles(t)%field%vector_w,                               &
+            chunk%tiles(t)%field%vector_z,                               &
+            chunk%tiles(t)%field%vector_Kx,                              &
+            chunk%tiles(t)%field%vector_Ky,                              &
+            chunk%tiles(t)%field%tri_cp,   &
+            chunk%tiles(t)%field%tri_bfp,    &
+            rx, ry, rro, tl_preconditioner_type)
+      ENDDO
+    ENDIF
+
+    ! and globally sum rro
+    IF (profiler_on) dot_product_time=timer()
+    CALL tea_allsum(rro)
+    IF (profiler_on) profiler%dot_product= profiler%dot_product+ (timer() - dot_product_time)
+    IF (profiler_on) init_time = init_time + (timer()-dot_product_time)
+
+    ! need to update p when using CG due to matrix/vector multiplication
+    fields=0
+    fields(FIELD_U) = 1
+    fields(FIELD_P) = 1
+
+    IF (profiler_on) halo_time=timer()
+    CALL update_halo(fields,1)
+    IF (profiler_on) init_time=init_time+(timer()-halo_time)
+
+    fields=0
+    fields(FIELD_P) = 1
+  ELSEIF (tl_use_jacobi) THEN
+    fields=0
+    fields(FIELD_U) = 1
+  ENDIF
+
+  IF (profiler_on) profiler%tea_init = profiler%tea_init + (timer() - init_time)
+
+  IF (profiler_on) solve_time = timer()
+
+  DO n=1,max_iters
+
+    iteration_time = timer()
+
+    IF (ch_switch_check .EQV. .FALSE.) THEN
+      IF ((cheby_calc_steps .GT. 0)) THEN
+        ! already started or already have good guesses for eigenvalues
+        ch_switch_check = .TRUE.
+      ELSE IF ((first .EQV. .FALSE.) .AND. tl_use_ppcg .AND. n .GT. 1) THEN
+        ! If using PPCG, it can start almost immediately
+        ch_switch_check = .TRUE.
+      ELSE IF ((ABS(old_error) .LE. tl_ch_cg_epslim) .AND. (n .GE. tl_ch_cg_presteps)) THEN
+        ! Error is less than set limit, and enough steps have passed to get a good eigenvalue guess
+        ch_switch_check = .TRUE.
+      ELSE
+        ! keep doing CG (or jacobi)
+        ch_switch_check = .FALSE.
       ENDIF
+    ENDIF
 
-      fields=0
-      fields(FIELD_U) = 1
+    IF ((tl_use_chebyshev .OR. tl_use_ppcg) .AND. ch_switch_check) THEN
+      ! on the first chebyshev steps, find the eigenvalues, coefficients,
+      ! and expected number of iterations
+      IF (cheby_calc_steps .EQ. 0) THEN
+        ! maximum number of iterations in chebyshev solver
+        max_cheby_iters = max_iters - n + 2
 
-      IF (profiler_on) halo_time=timer()
-      CALL update_halo(fields,1)
-      IF (profiler_on) init_time = init_time + (timer()-halo_time)
-
-      IF(use_fortran_kernels) THEN
-        CALL tea_leaf_calc_residual(chunks(c)%field%x_min,&
-            chunks(c)%field%x_max,                        &
-            chunks(c)%field%y_min,                        &
-            chunks(c)%field%y_max,                        &
-            halo_exchange_depth,                        &
-            chunks(c)%field%u,                            &
-            chunks(c)%field%u0,                           &
-            chunks(c)%field%vector_r,                     &
-            chunks(c)%field%vector_Kx,                    &
-            chunks(c)%field%vector_Ky,                    &
-            rx, ry)
-        CALL tea_leaf_calc_2norm_kernel(chunks(c)%field%x_min,        &
-            chunks(c)%field%x_max,                                    &
-            chunks(c)%field%y_min,                                    &
-            chunks(c)%field%y_max,                                    &
-            halo_exchange_depth,                                    &
-            chunks(c)%field%vector_r,                                 &
-            initial_residual)
-      ENDIF
-
-      IF (profiler_on) dot_product_time=timer()
-      CALL tea_allsum(initial_residual)
-      IF (profiler_on) profiler%dot_product= profiler%dot_product+ (timer() - dot_product_time)
-      IF (profiler_on) init_time = init_time + (timer()-dot_product_time)
-
-      old_error = initial_residual
-
-      initial_residual=SQRT(initial_residual)
-
-      IF(parallel%boss.AND.verbose_on) THEN
-!$      IF(OMP_GET_THREAD_NUM().EQ.0) THEN
-          WRITE(g_out,*)"Initial residual ",initial_residual
-!$      ENDIF
-      ENDIF
-
-      IF(tl_use_cg .OR. tl_use_chebyshev .OR. tl_use_ppcg) THEN
-        ! All 3 of these solvers use the CG kernels
-        IF(use_fortran_kernels) THEN
-          CALL tea_leaf_kernel_init_cg_fortran(chunks(c)%field%x_min, &
-              chunks(c)%field%x_max,                                  &
-              chunks(c)%field%y_min,                                  &
-              chunks(c)%field%y_max,                                  &
-              halo_exchange_depth,                                  &
-              chunks(c)%field%density,                                &
-              chunks(c)%field%energy1,                                &
-              chunks(c)%field%u,                                      &
-              chunks(c)%field%vector_p,                               &
-              chunks(c)%field%vector_r,                               &
-              chunks(c)%field%vector_Mi,                              &
-              chunks(c)%field%vector_w,                               &
-              chunks(c)%field%vector_z,                               &
-              chunks(c)%field%vector_Kx,                              &
-              chunks(c)%field%vector_Ky,                              &
-              chunks(c)%field%tri_cp,   &
-              chunks(c)%field%tri_bfp,    &
-              rx, ry, rro, tl_preconditioner_type)
+        IF (first) THEN
+          ! calculate eigenvalues
+          CALL tea_calc_eigenvalues(cg_alphas, cg_betas, eigmin, eigmax, &
+              max_iters, n-1, info)
+          first=.FALSE.
+          IF (info .NE. 0) CALL report_error('tea_leaf', 'Error in calculating eigenvalues')
+          eigmin = eigmin * 0.95
+          eigmax = eigmax * 1.05
         ENDIF
 
-        ! and globally sum rro
-        IF (profiler_on) dot_product_time=timer()
-        CALL tea_allsum(rro)
-        IF (profiler_on) profiler%dot_product= profiler%dot_product+ (timer() - dot_product_time)
-        IF (profiler_on) init_time = init_time + (timer()-dot_product_time)
+        IF (tl_use_chebyshev) THEN
+          ! calculate chebyshev coefficients
+          CALL tea_calc_ch_coefs(ch_alphas, ch_betas, eigmin, eigmax, &
+              theta, max_cheby_iters)
 
-        ! need to update p when using CG due to matrix/vector multiplication
-        fields=0
-        fields(FIELD_U) = 1
-        fields(FIELD_P) = 1
+          ! don't need to update p any more
+          fields = 0
+          fields(FIELD_U) = 1
+        ELSE IF (tl_use_ppcg) THEN
+          ! To avoid some irritating bounds checking in ppcg inner iterations
+          max_cheby_iters = max_cheby_iters + halo_exchange_depth
 
-        IF (profiler_on) halo_time=timer()
-        CALL update_halo(fields,1)
-        IF (profiler_on) init_time=init_time+(timer()-halo_time)
-
-        fields=0
-        fields(FIELD_P) = 1
-      ELSEIF (tl_use_jacobi) THEN
-        fields=0
-        fields(FIELD_U) = 1
-      ENDIF
-
-      IF (profiler_on) profiler%tea_init = profiler%tea_init + (timer() - init_time)
-
-      IF (profiler_on) solve_time = timer()
-
-      DO n=1,max_iters
-
-        iteration_time = timer()
-
-        IF (ch_switch_check .EQV. .FALSE.) THEN
-          IF ((cheby_calc_steps .GT. 0)) THEN
-            ! already started or already have good guesses for eigenvalues
-            ch_switch_check = .TRUE.
-          ELSE IF ((first .EQV. .FALSE.) .AND. tl_use_ppcg .AND. n .GT. 1) THEN
-            ! If using PPCG, it can start almost immediately
-            ch_switch_check = .TRUE.
-          ELSE IF ((ABS(old_error) .LE. tl_ch_cg_epslim) .AND. (n .GE. tl_ch_cg_presteps)) THEN
-            ! Error is less than set limit, and enough steps have passed to get a good eigenvalue guess
-            ch_switch_check = .TRUE.
-          ELSE
-            ! keep doing CG (or jacobi)
-            ch_switch_check = .FALSE.
-          ENDIF
+          ! currently also calculate chebyshev coefficients
+          CALL tea_calc_ls_coefs(ch_alphas, ch_betas, eigmin, eigmax, &
+              theta, tl_ppcg_inner_steps)
         ENDIF
 
-        IF ((tl_use_chebyshev .OR. tl_use_ppcg) .AND. ch_switch_check) THEN
-          ! on the first chebyshev steps, find the eigenvalues, coefficients,
-          ! and expected number of iterations
-          IF (cheby_calc_steps .EQ. 0) THEN
-            ! maximum number of iterations in chebyshev solver
-            max_cheby_iters = max_iters - n + 2
+        cn = eigmax/eigmin
 
-            IF (first) THEN
-              ! calculate eigenvalues
-              CALL tea_calc_eigenvalues(cg_alphas, cg_betas, eigmin, eigmax, &
-                  max_iters, n-1, info)
-              first=.FALSE.
-              IF (info .NE. 0) CALL report_error('tea_leaf', 'Error in calculating eigenvalues')
-              eigmin = eigmin * 0.95
-              eigmax = eigmax * 1.05
-            ENDIF
-
-            IF (tl_use_chebyshev) THEN
-              ! calculate chebyshev coefficients
-              CALL tea_calc_ch_coefs(ch_alphas, ch_betas, eigmin, eigmax, &
-                  theta, max_cheby_iters)
-
-              ! don't need to update p any more
-              fields = 0
-              fields(FIELD_U) = 1
-            ELSE IF (tl_use_ppcg) THEN
-              ! To avoid some irritating bounds checking in ppcg inner iterations
-              max_cheby_iters = max_cheby_iters + halo_exchange_depth
-
-              ! currently also calculate chebyshev coefficients
-              CALL tea_calc_ls_coefs(ch_alphas, ch_betas, eigmin, eigmax, &
-                  theta, tl_ppcg_inner_steps)
-            ENDIF
-
-            cn = eigmax/eigmin
-
-            IF (parallel%boss) THEN
-!$            IF(OMP_GET_THREAD_NUM().EQ.0) THEN
+        IF (parallel%boss) THEN
+!$        IF (OMP_GET_THREAD_NUM().EQ.0) THEN
 100 FORMAT("Eigen min",e14.6," Eigen max",e14.6," Condition number",f14.6," Error",e14.6)
-                WRITE(g_out,'(a,i3,a,e15.7)') "Switching after ",n," CG its, error ",rro
-                WRITE(g_out, 100) eigmin,eigmax,cn,old_error
-                WRITE(0,'(a,i3,a,e15.7)') "Switching after ",n," CG its, error ",rro
-                WRITE(0, 100) eigmin,eigmax,cn,old_error
-!$            ENDIF
-            ENDIF
-          ENDIF
-
-          IF (tl_use_chebyshev) THEN
-            IF (cheby_calc_steps .EQ. 0) THEN
-              CALL tea_leaf_cheby_first_step(c, ch_alphas, ch_betas, fields, &
-                  old_error, rx, ry, theta, cn, max_cheby_iters, est_itc, solve_time)
-
-              cheby_calc_steps = 1
-            ELSE
-              IF(use_fortran_kernels) THEN
-                CALL tea_leaf_kernel_cheby_iterate(chunks(c)%field%x_min,&
-                            chunks(c)%field%x_max,                       &
-                            chunks(c)%field%y_min,                       &
-                            chunks(c)%field%y_max,                       &
-                            halo_exchange_depth,                       &
-                            chunks(c)%field%u,                           &
-                            chunks(c)%field%u0,                          &
-                            chunks(c)%field%vector_p,                    &
-                            chunks(c)%field%vector_r,                    &
-                            chunks(c)%field%vector_Mi,                   &
-                            chunks(c)%field%vector_w,                    &
-                            chunks(c)%field%vector_z,                    &
-                            chunks(c)%field%vector_Kx,                   &
-                            chunks(c)%field%vector_Ky,                   &
-                            chunks(c)%field%tri_cp,   &
-                            chunks(c)%field%tri_bfp,    &
-                            ch_alphas, ch_betas, max_cheby_iters,        &
-                            rx, ry, cheby_calc_steps, tl_preconditioner_type)
-              ENDIF
-
-              ! after estimated number of iterations has passed, calc resid.
-              ! Leaving 10 iterations between each global reduction won't affect
-              ! total time spent much if at all (number of steps spent in
-              ! chebyshev is typically O(300+)) but will greatly reduce global
-              ! synchronisations needed
-              IF ((n .GE. est_itc) .AND. (MOD(n, 10) .eq. 0)) THEN
-                IF(use_fortran_kernels) THEN
-                  CALL tea_leaf_calc_2norm_kernel(chunks(c)%field%x_min,&
-                        chunks(c)%field%x_max,                          &
-                        chunks(c)%field%y_min,                          &
-                        chunks(c)%field%y_max,                          &
-                        halo_exchange_depth,                          &
-                        chunks(c)%field%vector_r,                       &
-                        error                                           )
-                ENDIF
-
-                IF (profiler_on) dot_product_time=timer()
-                CALL tea_allsum(error)
-                IF (profiler_on) profiler%dot_product= profiler%dot_product+ (timer() - dot_product_time)
-                IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
-              ENDIF
-            ENDIF
-          ELSE IF (tl_use_ppcg) THEN
-            IF(use_fortran_kernels) THEN
-              CALL tea_leaf_kernel_solve_cg_fortran_calc_w(chunks(c)%field%x_min,&
-                  chunks(c)%field%x_max,                                         &
-                  chunks(c)%field%y_min,                                         &
-                  chunks(c)%field%y_max,                                         &
-                  halo_exchange_depth,                                         &
-                  chunks(c)%field%vector_p,                                      &
-                  chunks(c)%field%vector_w,                                      &
-                  chunks(c)%field%vector_Kx,                                     &
-                  chunks(c)%field%vector_Ky,                                     &
-                  rx, ry, pw)
-            ENDIF
-
-            IF (profiler_on) dot_product_time=timer()
-            CALL tea_allsum(pw)
-            IF (profiler_on) profiler%dot_product= profiler%dot_product+ (timer() - dot_product_time)
-            IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
-
-            alpha = rro/pw
-
-            IF(use_fortran_kernels) THEN
-              CALL tea_leaf_kernel_solve_cg_fortran_calc_ur(chunks(c)%field%x_min,&
-                  chunks(c)%field%x_max,                                          &
-                  chunks(c)%field%y_min,                                          &
-                  chunks(c)%field%y_max,                                          &
-                  halo_exchange_depth,                                          &
-                  chunks(c)%field%u,                                              &
-                  chunks(c)%field%vector_p,                                       &
-                  chunks(c)%field%vector_r,                                       &
-                  chunks(c)%field%vector_Mi,                                      &
-                  chunks(c)%field%vector_w,                                       &
-                  chunks(c)%field%vector_z,                                       &
-                  chunks(c)%field%tri_cp,   &
-                  chunks(c)%field%tri_bfp,    &
-                  chunks(c)%field%vector_Kx,                              &
-                  chunks(c)%field%vector_Ky,                              &
-                  rx, ry, &
-                  alpha, rrn, tl_preconditioner_type)
-            ENDIF
-
-            ! not using rrn, so don't do a tea_allsum
-
-            CALL tea_leaf_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
-                rx, ry, tl_ppcg_inner_steps, c, solve_time)
-            ppcg_inner_iters = ppcg_inner_iters + tl_ppcg_inner_steps
-
-            IF(use_fortran_kernels) THEN
-              CALL tea_leaf_ppcg_calc_zrnorm_kernel(chunks(c)%field%x_min, &
-                    chunks(c)%field%x_max,                           &
-                    chunks(c)%field%y_min,                           &
-                    chunks(c)%field%y_max,                           &
-                    halo_exchange_depth,                           &
-                    chunks(c)%field%vector_z,                        &
-                    chunks(c)%field%vector_r,                        &
-                    tl_preconditioner_type, rrn)
-            ENDIF
-
-            IF (profiler_on) dot_product_time=timer()
-            CALL tea_allsum(rrn)
-            IF (profiler_on) profiler%dot_product= profiler%dot_product+ (timer() - dot_product_time)
-            IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
-
-            beta = rrn/rro
-
-            IF(use_fortran_kernels) THEN
-              CALL tea_leaf_kernel_solve_cg_fortran_calc_p(chunks(c)%field%x_min,&
-                  chunks(c)%field%x_max,                                         &
-                  chunks(c)%field%y_min,                                         &
-                  chunks(c)%field%y_max,                                         &
-                  halo_exchange_depth,                                         &
-                  chunks(c)%field%vector_p,                                      &
-                  chunks(c)%field%vector_r,                                      &
-                  chunks(c)%field%vector_z,                                      &
-                  beta, tl_preconditioner_type)
-            ENDIF
-
-            error = rrn
-            rro = rrn
-          ENDIF
-
-          cheby_calc_steps = cheby_calc_steps + 1
-        ELSEIF(tl_use_cg .OR. tl_use_chebyshev .OR. tl_use_ppcg) THEN
-          fields(FIELD_P) = 1
-          cg_calc_steps = cg_calc_steps + 1
-
-          pw = 0.0_08
-
-          IF(use_fortran_kernels) THEN
-            CALL tea_leaf_kernel_solve_cg_fortran_calc_w(chunks(c)%field%x_min,&
-                chunks(c)%field%x_max,                                         &
-                chunks(c)%field%y_min,                                         &
-                chunks(c)%field%y_max,                                         &
-                halo_exchange_depth,                                         &
-                chunks(c)%field%vector_p,                                      &
-                chunks(c)%field%vector_w,                                      &
-                chunks(c)%field%vector_Kx,                                     &
-                chunks(c)%field%vector_Ky,                                     &
-                rx, ry, pw)
-          ENDIF
-
-          IF (profiler_on) dot_product_time=timer()
-          CALL tea_allsum(pw)
-          IF (profiler_on) profiler%dot_product= profiler%dot_product+ (timer() - dot_product_time)
-          IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
-
-          alpha = rro/pw
-          cg_alphas(n) = alpha
-
-          rrn = 0.0_8
-
-          IF(use_fortran_kernels) THEN
-            CALL tea_leaf_kernel_solve_cg_fortran_calc_ur(chunks(c)%field%x_min,&
-                chunks(c)%field%x_max,                                          &
-                chunks(c)%field%y_min,                                          &
-                chunks(c)%field%y_max,                                          &
-                halo_exchange_depth,                                          &
-                chunks(c)%field%u,                                              &
-                chunks(c)%field%vector_p,                                       &
-                chunks(c)%field%vector_r,                                       &
-                chunks(c)%field%vector_Mi,                                      &
-                chunks(c)%field%vector_w,                                       &
-                chunks(c)%field%vector_z,                                       &
-                chunks(c)%field%tri_cp,   &
-                chunks(c)%field%tri_bfp,    &
-                chunks(c)%field%vector_Kx,                              &
-                chunks(c)%field%vector_Ky,                              &
-                rx, ry, &
-                alpha, rrn, tl_preconditioner_type)
-          ENDIF
-
-          IF (profiler_on) dot_product_time=timer()
-          CALL tea_allsum(rrn)
-          IF (profiler_on) profiler%dot_product= profiler%dot_product+ (timer() - dot_product_time)
-          IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
-
-          beta = rrn/rro
-          cg_betas(n) = beta
-
-          IF(use_fortran_kernels) THEN
-            CALL tea_leaf_kernel_solve_cg_fortran_calc_p(chunks(c)%field%x_min,&
-                chunks(c)%field%x_max,                                         &
-                chunks(c)%field%y_min,                                         &
-                chunks(c)%field%y_max,                                         &
-                halo_exchange_depth,                                         &
-                chunks(c)%field%vector_p,                                      &
-                chunks(c)%field%vector_r,                                      &
-                chunks(c)%field%vector_z,                                      &
-                beta, tl_preconditioner_type)
-          ENDIF
-
-          error = rrn
-          rro = rrn
-        ELSEIF(tl_use_jacobi) THEN
-          IF(use_fortran_kernels) THEN
-            CALL tea_leaf_kernel_jacobi_solve(chunks(c)%field%x_min,&
-                chunks(c)%field%x_max,                       &
-                chunks(c)%field%y_min,                       &
-                chunks(c)%field%y_max,                       &
-                halo_exchange_depth,                       &
-                rx,                                          &
-                ry,                                          &
-                chunks(c)%field%vector_Kx,                   &
-                chunks(c)%field%vector_Ky,                   &
-                error,                                       &
-                chunks(c)%field%u0,                          &
-                chunks(c)%field%u,                           &
-                chunks(c)%field%vector_r)
-          ENDIF
-
-          IF (profiler_on) dot_product_time=timer()
-          CALL tea_allsum(error)
-          IF (profiler_on) profiler%dot_product= profiler%dot_product+ (timer() - dot_product_time)
-          IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
-        ENDIF
-
-        ! updates u and possibly p
-        IF (profiler_on) halo_time = timer()
-        CALL update_halo(fields,1)
-        IF (profiler_on) solve_time = solve_time + (timer()-halo_time)
-
-        IF (profiler_on) THEN
-          IF (tl_use_chebyshev .AND. ch_switch_check) THEN
-            ch_time=ch_time+(timer()-iteration_time)
-          ELSE
-            cg_time=cg_time+(timer()-iteration_time)
-          ENDIF
-        ENDIF
-
-        error=SQRT(error)
-
-        IF(parallel%boss.AND.verbose_on) THEN
-!$        IF(OMP_GET_THREAD_NUM().EQ.0) THEN
-            WRITE(g_out,*)"Residual ",error
+            WRITE(g_out,'(a,i3,a,e15.7)') "Switching after ",n," CG its, error ",rro
+            WRITE(g_out, 100) eigmin,eigmax,cn,old_error
+            WRITE(0,'(a,i3,a,e15.7)') "Switching after ",n," CG its, error ",rro
+            WRITE(0, 100) eigmin,eigmax,cn,old_error
 !$        ENDIF
         ENDIF
+      ENDIF
 
-        IF (ABS(error) .LT. eps*initial_residual) EXIT
+      IF (tl_use_chebyshev) THEN
+        IF (cheby_calc_steps .EQ. 0) THEN
+          CALL tea_leaf_cheby_first_step(c, ch_alphas, ch_betas, fields, &
+              old_error, rx, ry, theta, cn, max_cheby_iters, est_itc, solve_time)
 
-        old_error = error
+          cheby_calc_steps = 1
+        ELSE
+          IF (use_fortran_kernels) THEN
+            DO t=1,tiles_per_task
+              CALL tea_leaf_kernel_cheby_iterate(chunk%tiles(t)%field%x_min,&
+                          chunk%tiles(t)%field%x_max,                       &
+                          chunk%tiles(t)%field%y_min,                       &
+                          chunk%tiles(t)%field%y_max,                       &
+                          halo_exchange_depth,                       &
+                          chunk%tiles(t)%field%u,                           &
+                          chunk%tiles(t)%field%u0,                          &
+                          chunk%tiles(t)%field%vector_p,                    &
+                          chunk%tiles(t)%field%vector_r,                    &
+                          chunk%tiles(t)%field%vector_Mi,                   &
+                          chunk%tiles(t)%field%vector_w,                    &
+                          chunk%tiles(t)%field%vector_z,                    &
+                          chunk%tiles(t)%field%vector_Kx,                   &
+                          chunk%tiles(t)%field%vector_Ky,                   &
+                          chunk%tiles(t)%field%tri_cp,   &
+                          chunk%tiles(t)%field%tri_bfp,    &
+                          ch_alphas, ch_betas, max_cheby_iters,        &
+                          rx, ry, cheby_calc_steps, tl_preconditioner_type)
+            ENDDO
+          ENDIF
 
-      ENDDO
+          ! after estimated number of iterations has passed, calc resid.
+          ! Leaving 10 iterations between each global reduction won't affect
+          ! total time spent much if at all (number of steps spent in
+          ! chebyshev is typically O(300+)) but will greatly reduce global
+          ! synchronisations needed
+          IF ((n .GE. est_itc) .AND. (MOD(n, 10) .eq. 0)) THEN
+            IF (use_fortran_kernels) THEN
+              DO t=1,tiles_per_task
+                CALL tea_leaf_calc_2norm_kernel(chunk%tiles(t)%field%x_min,&
+                      chunk%tiles(t)%field%x_max,                          &
+                      chunk%tiles(t)%field%y_min,                          &
+                      chunk%tiles(t)%field%y_max,                          &
+                      halo_exchange_depth,                          &
+                      chunk%tiles(t)%field%vector_r,                       &
+                      error                                           )
+              ENDDO
+            ENDIF
 
-      IF (tl_check_result) THEN
-        fields = 0
-        fields(FIELD_U) = 1
-
-        IF (profiler_on) halo_time = timer()
-        CALL update_halo(fields,1)
-        IF (profiler_on) solve_time = solve_time + (timer()-halo_time)
-
-        IF(use_fortran_kernels) THEN
-          CALL tea_leaf_calc_residual(chunks(c)%field%x_min,&
-              chunks(c)%field%x_max,                        &
-              chunks(c)%field%y_min,                        &
-              chunks(c)%field%y_max,                        &
-              halo_exchange_depth,                        &
-              chunks(c)%field%u,                            &
-              chunks(c)%field%u0,                           &
-              chunks(c)%field%vector_r,                     &
-              chunks(c)%field%vector_Kx,                    &
-              chunks(c)%field%vector_Ky,                    &
-              rx, ry)
-          CALL tea_leaf_calc_2norm_kernel(chunks(c)%field%x_min,        &
-              chunks(c)%field%x_max,                                    &
-              chunks(c)%field%y_min,                                    &
-              chunks(c)%field%y_max,                                    &
-              halo_exchange_depth,                                    &
-              chunks(c)%field%vector_r,                                 &
-              exact_error)
+            IF (profiler_on) dot_product_time=timer()
+            CALL tea_allsum(error)
+            IF (profiler_on) profiler%dot_product= profiler%dot_product+ (timer() - dot_product_time)
+            IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
+          ENDIF
+        ENDIF
+      ELSE IF (tl_use_ppcg) THEN
+        IF (use_fortran_kernels) THEN
+          DO t=1,tiles_per_task
+            CALL tea_leaf_kernel_solve_cg_fortran_calc_w(chunk%tiles(t)%field%x_min,&
+                chunk%tiles(t)%field%x_max,                                         &
+                chunk%tiles(t)%field%y_min,                                         &
+                chunk%tiles(t)%field%y_max,                                         &
+                halo_exchange_depth,                                         &
+                chunk%tiles(t)%field%vector_p,                                      &
+                chunk%tiles(t)%field%vector_w,                                      &
+                chunk%tiles(t)%field%vector_Kx,                                     &
+                chunk%tiles(t)%field%vector_Ky,                                     &
+                rx, ry, pw)
+          ENDDO
         ENDIF
 
         IF (profiler_on) dot_product_time=timer()
-        CALL tea_allsum(exact_error)
+        CALL tea_allsum(pw)
         IF (profiler_on) profiler%dot_product= profiler%dot_product+ (timer() - dot_product_time)
         IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
 
-        exact_error = SQRT(exact_error)
+        alpha = rro/pw
+
+        IF (use_fortran_kernels) THEN
+          DO t=1,tiles_per_task
+            CALL tea_leaf_kernel_solve_cg_fortran_calc_ur(chunk%tiles(t)%field%x_min,&
+                chunk%tiles(t)%field%x_max,                                          &
+                chunk%tiles(t)%field%y_min,                                          &
+                chunk%tiles(t)%field%y_max,                                          &
+                halo_exchange_depth,                                          &
+                chunk%tiles(t)%field%u,                                              &
+                chunk%tiles(t)%field%vector_p,                                       &
+                chunk%tiles(t)%field%vector_r,                                       &
+                chunk%tiles(t)%field%vector_Mi,                                      &
+                chunk%tiles(t)%field%vector_w,                                       &
+                chunk%tiles(t)%field%vector_z,                                       &
+                chunk%tiles(t)%field%tri_cp,   &
+                chunk%tiles(t)%field%tri_bfp,    &
+                chunk%tiles(t)%field%vector_Kx,                              &
+                chunk%tiles(t)%field%vector_Ky,                              &
+                rx, ry, &
+                alpha, rrn, tl_preconditioner_type)
+          ENDDO
+        ENDIF
+
+        ! not using rrn, so don't do a tea_allsum
+
+        CALL tea_leaf_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
+            rx, ry, tl_ppcg_inner_steps, c, solve_time)
+        ppcg_inner_iters = ppcg_inner_iters + tl_ppcg_inner_steps
+
+        IF (use_fortran_kernels) THEN
+          DO t=1,tiles_per_task
+            CALL tea_leaf_ppcg_calc_zrnorm_kernel(chunk%tiles(t)%field%x_min, &
+                  chunk%tiles(t)%field%x_max,                           &
+                  chunk%tiles(t)%field%y_min,                           &
+                  chunk%tiles(t)%field%y_max,                           &
+                  halo_exchange_depth,                           &
+                  chunk%tiles(t)%field%vector_z,                        &
+                  chunk%tiles(t)%field%vector_r,                        &
+                  tl_preconditioner_type, rrn)
+          ENDDO
+        ENDIF
+
+        IF (profiler_on) dot_product_time=timer()
+        CALL tea_allsum(rrn)
+        IF (profiler_on) profiler%dot_product= profiler%dot_product+ (timer() - dot_product_time)
+        IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
+
+        beta = rrn/rro
+
+        IF (use_fortran_kernels) THEN
+          DO t=1,tiles_per_task
+            CALL tea_leaf_kernel_solve_cg_fortran_calc_p(chunk%tiles(t)%field%x_min,&
+                chunk%tiles(t)%field%x_max,                                         &
+                chunk%tiles(t)%field%y_min,                                         &
+                chunk%tiles(t)%field%y_max,                                         &
+                halo_exchange_depth,                                         &
+                chunk%tiles(t)%field%vector_p,                                      &
+                chunk%tiles(t)%field%vector_r,                                      &
+                chunk%tiles(t)%field%vector_z,                                      &
+                beta, tl_preconditioner_type)
+          ENDDO
+        ENDIF
+
+        error = rrn
+        rro = rrn
       ENDIF
 
-      IF (profiler_on) profiler%tea_solve = profiler%tea_solve + (timer() - solve_time)
+      cheby_calc_steps = cheby_calc_steps + 1
+    ELSEIF (tl_use_cg .OR. tl_use_chebyshev .OR. tl_use_ppcg) THEN
+      fields(FIELD_P) = 1
+      cg_calc_steps = cg_calc_steps + 1
 
-      IF (parallel%boss) THEN
-!$      IF(OMP_GET_THREAD_NUM().EQ.0) THEN
+      pw = 0.0_08
 
-102 FORMAT('Conduction error ',e14.7)
-          WRITE(g_out,102) error/initial_residual
-          WRITE(0,102) error/initial_residual
-
-          IF (tl_check_result) THEN
-101 FORMAT('EXACT error calculated as', e14.7)
-            WRITE(0, 101) exact_error/initial_residual
-            WRITE(g_out, 101) exact_error/initial_residual
-          ENDIF
-
-          WRITE(g_out,"('Iteration count ',i8)") n-1
-          WRITE(0,"('Iteration count ', i8)") n-1
-          IF(tl_use_ppcg) THEN
-103 FORMAT('PPCG Iteration count', i8, ' (Total ',i8,')')
-            WRITE(g_out,103) ppcg_inner_iters, ppcg_inner_iters + n-1
-            WRITE(0,103) ppcg_inner_iters, ppcg_inner_iters + n-1
-          ENDIF
-!$      ENDIF
+      IF (use_fortran_kernels) THEN
+        DO t=1,tiles_per_task
+          CALL tea_leaf_kernel_solve_cg_fortran_calc_w(chunk%tiles(t)%field%x_min,&
+              chunk%tiles(t)%field%x_max,                                         &
+              chunk%tiles(t)%field%y_min,                                         &
+              chunk%tiles(t)%field%y_max,                                         &
+              halo_exchange_depth,                                         &
+              chunk%tiles(t)%field%vector_p,                                      &
+              chunk%tiles(t)%field%vector_w,                                      &
+              chunk%tiles(t)%field%vector_Kx,                                     &
+              chunk%tiles(t)%field%vector_Ky,                                     &
+              rx, ry, pw)
+        ENDDO
       ENDIF
 
-      ! RESET
-      IF (profiler_on) reset_time=timer()
+      IF (profiler_on) dot_product_time=timer()
+      CALL tea_allsum(pw)
+      IF (profiler_on) profiler%dot_product= profiler%dot_product+ (timer() - dot_product_time)
+      IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
 
-      IF(use_fortran_kernels) THEN
-          CALL tea_leaf_kernel_finalise(chunks(c)%field%x_min, &
-              chunks(c)%field%x_max,                           &
-              chunks(c)%field%y_min,                           &
-              chunks(c)%field%y_max,                           &
-              halo_exchange_depth,                           &
-              chunks(c)%field%energy1,                         &
-              chunks(c)%field%density,                         &
-              chunks(c)%field%u)
+      alpha = rro/pw
+      cg_alphas(n) = alpha
+
+      rrn = 0.0_8
+
+      IF (use_fortran_kernels) THEN
+        DO t=1,tiles_per_task
+          CALL tea_leaf_kernel_solve_cg_fortran_calc_ur(chunk%tiles(t)%field%x_min,&
+              chunk%tiles(t)%field%x_max,                                          &
+              chunk%tiles(t)%field%y_min,                                          &
+              chunk%tiles(t)%field%y_max,                                          &
+              halo_exchange_depth,                                          &
+              chunk%tiles(t)%field%u,                                              &
+              chunk%tiles(t)%field%vector_p,                                       &
+              chunk%tiles(t)%field%vector_r,                                       &
+              chunk%tiles(t)%field%vector_Mi,                                      &
+              chunk%tiles(t)%field%vector_w,                                       &
+              chunk%tiles(t)%field%vector_z,                                       &
+              chunk%tiles(t)%field%tri_cp,   &
+              chunk%tiles(t)%field%tri_bfp,    &
+              chunk%tiles(t)%field%vector_Kx,                              &
+              chunk%tiles(t)%field%vector_Ky,                              &
+              rx, ry, &
+              alpha, rrn, tl_preconditioner_type)
+        ENDDO
       ENDIF
 
-      fields=0
-      fields(FIELD_ENERGY1) = 1
+      IF (profiler_on) dot_product_time=timer()
+      CALL tea_allsum(rrn)
+      IF (profiler_on) profiler%dot_product= profiler%dot_product+ (timer() - dot_product_time)
+      IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
 
-      IF (profiler_on) halo_time=timer()
-      CALL update_halo(fields,1)
-      IF (profiler_on) reset_time = reset_time + (timer()-halo_time)
+      beta = rrn/rro
+      cg_betas(n) = beta
 
-      IF (profiler_on) profiler%tea_reset = profiler%tea_reset + (timer() - reset_time)
+      IF (use_fortran_kernels) THEN
+        DO t=1,tiles_per_task
+          CALL tea_leaf_kernel_solve_cg_fortran_calc_p(chunk%tiles(t)%field%x_min,&
+              chunk%tiles(t)%field%x_max,                                         &
+              chunk%tiles(t)%field%y_min,                                         &
+              chunk%tiles(t)%field%y_max,                                         &
+              halo_exchange_depth,                                         &
+              chunk%tiles(t)%field%vector_p,                                      &
+              chunk%tiles(t)%field%vector_r,                                      &
+              chunk%tiles(t)%field%vector_z,                                      &
+              beta, tl_preconditioner_type)
+        ENDDO
+      ENDIF
 
+      error = rrn
+      rro = rrn
+    ELSEIF (tl_use_jacobi) THEN
+      IF (use_fortran_kernels) THEN
+        DO t=1,tiles_per_task
+          CALL tea_leaf_kernel_jacobi_solve(chunk%tiles(t)%field%x_min,&
+              chunk%tiles(t)%field%x_max,                       &
+              chunk%tiles(t)%field%y_min,                       &
+              chunk%tiles(t)%field%y_max,                       &
+              halo_exchange_depth,                       &
+              rx,                                          &
+              ry,                                          &
+              chunk%tiles(t)%field%vector_Kx,                   &
+              chunk%tiles(t)%field%vector_Ky,                   &
+              error,                                       &
+              chunk%tiles(t)%field%u0,                          &
+              chunk%tiles(t)%field%u,                           &
+              chunk%tiles(t)%field%vector_r)
+        ENDDO
+      ENDIF
+
+      IF (profiler_on) dot_product_time=timer()
+      CALL tea_allsum(error)
+      IF (profiler_on) profiler%dot_product= profiler%dot_product+ (timer() - dot_product_time)
+      IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
     ENDIF
 
+    ! updates u and possibly p
+    IF (profiler_on) halo_time = timer()
+    CALL update_halo(fields,1)
+    IF (profiler_on) solve_time = solve_time + (timer()-halo_time)
+
+    IF (profiler_on) THEN
+      IF (tl_use_chebyshev .AND. ch_switch_check) THEN
+        ch_time=ch_time+(timer()-iteration_time)
+      ELSE
+        cg_time=cg_time+(timer()-iteration_time)
+      ENDIF
+    ENDIF
+
+    error=SQRT(error)
+
+    IF (parallel%boss.AND.verbose_on) THEN
+!$    IF (OMP_GET_THREAD_NUM().EQ.0) THEN
+        WRITE(g_out,*)"Residual ",error
+!$    ENDIF
+    ENDIF
+
+    IF (ABS(error) .LT. eps*initial_residual) EXIT
+
+    old_error = error
+
   ENDDO
+
+  IF (tl_check_result) THEN
+    fields = 0
+    fields(FIELD_U) = 1
+
+    IF (profiler_on) halo_time = timer()
+    CALL update_halo(fields,1)
+    IF (profiler_on) solve_time = solve_time + (timer()-halo_time)
+
+    IF (use_fortran_kernels) THEN
+      DO t=1,tiles_per_task
+        CALL tea_leaf_calc_residual(chunk%tiles(t)%field%x_min,&
+            chunk%tiles(t)%field%x_max,                        &
+            chunk%tiles(t)%field%y_min,                        &
+            chunk%tiles(t)%field%y_max,                        &
+            halo_exchange_depth,                        &
+            chunk%tiles(t)%field%u,                            &
+            chunk%tiles(t)%field%u0,                           &
+            chunk%tiles(t)%field%vector_r,                     &
+            chunk%tiles(t)%field%vector_Kx,                    &
+            chunk%tiles(t)%field%vector_Ky,                    &
+            rx, ry)
+        CALL tea_leaf_calc_2norm_kernel(chunk%tiles(t)%field%x_min,        &
+            chunk%tiles(t)%field%x_max,                                    &
+            chunk%tiles(t)%field%y_min,                                    &
+            chunk%tiles(t)%field%y_max,                                    &
+            halo_exchange_depth,                                    &
+            chunk%tiles(t)%field%vector_r,                                 &
+            exact_error)
+      ENDDO
+    ENDIF
+
+    IF (profiler_on) dot_product_time=timer()
+    CALL tea_allsum(exact_error)
+    IF (profiler_on) profiler%dot_product= profiler%dot_product+ (timer() - dot_product_time)
+    IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
+
+    exact_error = SQRT(exact_error)
+  ENDIF
+
+  IF (profiler_on) profiler%tea_solve = profiler%tea_solve + (timer() - solve_time)
+
+  IF (parallel%boss) THEN
+!$  IF (OMP_GET_THREAD_NUM().EQ.0) THEN
+
+102 FORMAT('Conduction error ',e14.7)
+      WRITE(g_out,102) error/initial_residual
+      WRITE(0,102) error/initial_residual
+
+      IF (tl_check_result) THEN
+101 FORMAT('EXACT error calculated as', e14.7)
+        WRITE(0, 101) exact_error/initial_residual
+        WRITE(g_out, 101) exact_error/initial_residual
+      ENDIF
+
+      WRITE(g_out,"('Iteration count ',i8)") n-1
+      WRITE(0,"('Iteration count ', i8)") n-1
+      IF (tl_use_ppcg) THEN
+103 FORMAT('PPCG Iteration count', i8, ' (Total ',i8,')')
+        WRITE(g_out,103) ppcg_inner_iters, ppcg_inner_iters + n-1
+        WRITE(0,103) ppcg_inner_iters, ppcg_inner_iters + n-1
+      ENDIF
+!$  ENDIF
+  ENDIF
+
+  ! RESET
+  IF (profiler_on) reset_time=timer()
+
+  IF (use_fortran_kernels) THEN
+    DO t=1,tiles_per_task
+      CALL tea_leaf_kernel_finalise(chunk%tiles(t)%field%x_min, &
+          chunk%tiles(t)%field%x_max,                           &
+          chunk%tiles(t)%field%y_min,                           &
+          chunk%tiles(t)%field%y_max,                           &
+          halo_exchange_depth,                           &
+          chunk%tiles(t)%field%energy1,                         &
+          chunk%tiles(t)%field%density,                         &
+          chunk%tiles(t)%field%u)
+    ENDDO
+  ENDIF
+
+  fields=0
+  fields(FIELD_ENERGY1) = 1
+
+  IF (profiler_on) halo_time=timer()
+  CALL update_halo(fields,1)
+  IF (profiler_on) reset_time = reset_time + (timer()-halo_time)
+
+  IF (profiler_on) profiler%tea_reset = profiler%tea_reset + (timer() - reset_time)
 
   IF (profiler_on .AND. parallel%boss) THEN
     total_solve_time = (timer() - total_solve_time)
@@ -676,33 +698,24 @@ SUBROUTINE tea_leaf_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
   CALL update_halo(fields,1)
   IF (profiler_on) solve_time = solve_time + (timer() - halo_time)
 
-  IF(use_fortran_kernels) THEN
-!     CALL tea_leaf_calc_residual(chunks(c)%field%x_min,&
-!         chunks(c)%field%x_max,                        &
-!         chunks(c)%field%y_min,                        &
-!         chunks(c)%field%y_max,                        &
-!         halo_exchange_depth,                        &
-!         chunks(c)%field%u,                            &
-!         chunks(c)%field%u0,                           &
-!         chunks(c)%field%vector_r,                     &
-!         chunks(c)%field%vector_Kx,                    &
-!         chunks(c)%field%vector_Ky,                    &
-!         rx, ry)
-    CALL tea_leaf_kernel_ppcg_init_sd(chunks(c)%field%x_min,&
-        chunks(c)%field%x_max,                              &
-        chunks(c)%field%y_min,                              &
-        chunks(c)%field%y_max,                              &
-        halo_exchange_depth,                              &
-        chunks(c)%field%vector_r,                           &
-        chunks(c)%field%vector_Kx,                        &
-        chunks(c)%field%vector_Ky,                        &
-        chunks(c)%field%vector_sd,                          &
-        chunks(c)%field%vector_z,                          &
-        chunks(c)%field%tri_cp,                          &
-        chunks(c)%field%tri_bfp,                          &
-        chunks(c)%field%vector_Mi,                          &
-        rx, ry,                          &
-        theta, tl_preconditioner_type)
+  IF (use_fortran_kernels) THEN
+    DO t=1,tiles_per_task
+      CALL tea_leaf_kernel_ppcg_init_sd(chunk%tiles(t)%field%x_min,&
+          chunk%tiles(t)%field%x_max,                              &
+          chunk%tiles(t)%field%y_min,                              &
+          chunk%tiles(t)%field%y_max,                              &
+          halo_exchange_depth,                              &
+          chunk%tiles(t)%field%vector_r,                           &
+          chunk%tiles(t)%field%vector_Kx,                        &
+          chunk%tiles(t)%field%vector_Ky,                        &
+          chunk%tiles(t)%field%vector_sd,                          &
+          chunk%tiles(t)%field%vector_z,                          &
+          chunk%tiles(t)%field%tri_cp,                          &
+          chunk%tiles(t)%field%tri_bfp,                          &
+          chunk%tiles(t)%field%vector_Mi,                          &
+          rx, ry,                          &
+          theta, tl_preconditioner_type)
+    ENDDO
   ENDIF
 
   ! inner steps
@@ -719,53 +732,55 @@ SUBROUTINE tea_leaf_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
     inner_step = ppcg_cur_step
 
     DO bounds_extra = halo_exchange_depth-1, 0, -1
-      IF (chunks(c)%chunk_neighbours(CHUNK_LEFT).EQ.EXTERNAL_FACE) THEN
-        x_min_bound = chunks(c)%field%x_min
+      IF (chunk%tiles(t)%chunk_neighbours(CHUNK_LEFT).EQ.EXTERNAL_FACE) THEN
+        x_min_bound = chunk%tiles(t)%field%x_min
       ELSE
-        x_min_bound = chunks(c)%field%x_min - bounds_extra
+        x_min_bound = chunk%tiles(t)%field%x_min - bounds_extra
       ENDIF
 
-      IF (chunks(c)%chunk_neighbours(CHUNK_RIGHT).EQ.EXTERNAL_FACE) THEN
-        x_max_bound = chunks(c)%field%x_max
+      IF (chunk%tiles(t)%chunk_neighbours(CHUNK_RIGHT).EQ.EXTERNAL_FACE) THEN
+        x_max_bound = chunk%tiles(t)%field%x_max
       ELSE
-        x_max_bound = chunks(c)%field%x_max + bounds_extra
+        x_max_bound = chunk%tiles(t)%field%x_max + bounds_extra
       ENDIF
 
-      IF (chunks(c)%chunk_neighbours(CHUNK_BOTTOM).EQ.EXTERNAL_FACE) THEN
-        y_min_bound = chunks(c)%field%y_min
+      IF (chunk%tiles(t)%chunk_neighbours(CHUNK_BOTTOM).EQ.EXTERNAL_FACE) THEN
+        y_min_bound = chunk%tiles(t)%field%y_min
       ELSE
-        y_min_bound = chunks(c)%field%y_min - bounds_extra
+        y_min_bound = chunk%tiles(t)%field%y_min - bounds_extra
       ENDIF
 
-      IF (chunks(c)%chunk_neighbours(CHUNK_TOP).EQ.EXTERNAL_FACE) THEN
-        y_max_bound = chunks(c)%field%y_max
+      IF (chunk%tiles(t)%chunk_neighbours(CHUNK_TOP).EQ.EXTERNAL_FACE) THEN
+        y_max_bound = chunk%tiles(t)%field%y_max
       ELSE
-        y_max_bound = chunks(c)%field%y_max + bounds_extra
+        y_max_bound = chunk%tiles(t)%field%y_max + bounds_extra
       ENDIF
 
-      IF(use_fortran_kernels) THEN
-        CALL tea_leaf_kernel_ppcg_inner(chunks(c)%field%x_min,&
-            chunks(c)%field%x_max,                            &
-            chunks(c)%field%y_min,                            &
-            chunks(c)%field%y_max,                            &
-            halo_exchange_depth,                            &
-            x_min_bound,                                    &
-            x_max_bound,                                    &
-            y_min_bound,                                    &
-            y_max_bound,                                    &
-            ch_alphas, ch_betas,                              &
-            rx, ry,                                           &
-            inner_step,                                     &
-            chunks(c)%field%u,                                &
-            chunks(c)%field%vector_r,                         &
-            chunks(c)%field%vector_Kx,                        &
-            chunks(c)%field%vector_Ky,                        &
-            chunks(c)%field%vector_sd,                        &
-            chunks(c)%field%vector_z,                          &
-            chunks(c)%field%tri_cp,                          &
-            chunks(c)%field%tri_bfp,                          &
-            chunks(c)%field%vector_Mi,                          &
-            tl_preconditioner_type)
+      IF (use_fortran_kernels) THEN
+        DO t=1,tiles_per_task
+          CALL tea_leaf_kernel_ppcg_inner(chunk%tiles(t)%field%x_min,&
+              chunk%tiles(t)%field%x_max,                            &
+              chunk%tiles(t)%field%y_min,                            &
+              chunk%tiles(t)%field%y_max,                            &
+              halo_exchange_depth,                            &
+              x_min_bound,                                    &
+              x_max_bound,                                    &
+              y_min_bound,                                    &
+              y_max_bound,                                    &
+              ch_alphas, ch_betas,                              &
+              rx, ry,                                           &
+              inner_step,                                     &
+              chunk%tiles(t)%field%u,                                &
+              chunk%tiles(t)%field%vector_r,                         &
+              chunk%tiles(t)%field%vector_Kx,                        &
+              chunk%tiles(t)%field%vector_Ky,                        &
+              chunk%tiles(t)%field%vector_sd,                        &
+              chunk%tiles(t)%field%vector_z,                          &
+              chunk%tiles(t)%field%tri_cp,                          &
+              chunk%tiles(t)%field%tri_bfp,                          &
+              chunk%tiles(t)%field%vector_Mi,                          &
+              tl_preconditioner_type)
+        ENDDO
       ENDIF
 
       fields = 0
@@ -797,14 +812,16 @@ SUBROUTINE tea_leaf_cheby_first_step(c, ch_alphas, ch_betas, fields, &
   REAL(KIND=8) :: halo_time, timer, dot_product_time, solve_time
 
   ! calculate 2 norm of u0
-  IF(use_fortran_kernels) THEN
-    CALL tea_leaf_calc_2norm_kernel(chunks(c)%field%x_min,&
-          chunks(c)%field%x_max,                          &
-          chunks(c)%field%y_min,                          &
-          chunks(c)%field%y_max,                          &
-          halo_exchange_depth,                          &
-          chunks(c)%field%u0,                             &
-          bb)
+  IF (use_fortran_kernels) THEN
+    DO t=1,tiles_per_task
+      CALL tea_leaf_calc_2norm_kernel(chunk%tiles(t)%field%x_min,&
+            chunk%tiles(t)%field%x_max,                          &
+            chunk%tiles(t)%field%y_min,                          &
+            chunk%tiles(t)%field%y_max,                          &
+            halo_exchange_depth,                          &
+            chunk%tiles(t)%field%u0,                             &
+            bb)
+    ENDDO
   ENDIF
 
   IF (profiler_on) dot_product_time=timer()
@@ -813,60 +830,66 @@ SUBROUTINE tea_leaf_cheby_first_step(c, ch_alphas, ch_betas, fields, &
   IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
 
   ! initialise 'p' array
-  IF(use_fortran_kernels) THEN
-    CALL tea_leaf_kernel_cheby_init(chunks(c)%field%x_min,&
-          chunks(c)%field%x_max,                          &
-          chunks(c)%field%y_min,                          &
-          chunks(c)%field%y_max,                          &
-          halo_exchange_depth,                          &
-          chunks(c)%field%u,                              &
-          chunks(c)%field%u0,                             &
-          chunks(c)%field%vector_p,                       &
-          chunks(c)%field%vector_r,                       &
-          chunks(c)%field%vector_Mi,                      &
-          chunks(c)%field%vector_w,                       &
-          chunks(c)%field%vector_z,                       &
-          chunks(c)%field%vector_Kx,                      &
-          chunks(c)%field%vector_Ky,                      &
-          chunks(c)%field%tri_cp,   &
-          chunks(c)%field%tri_bfp,    &
-          ch_alphas, ch_betas, max_cheby_iters,           &
-          rx, ry, theta, error, tl_preconditioner_type)
+  IF (use_fortran_kernels) THEN
+    DO t=1,tiles_per_task
+      CALL tea_leaf_kernel_cheby_init(chunk%tiles(t)%field%x_min,&
+            chunk%tiles(t)%field%x_max,                          &
+            chunk%tiles(t)%field%y_min,                          &
+            chunk%tiles(t)%field%y_max,                          &
+            halo_exchange_depth,                          &
+            chunk%tiles(t)%field%u,                              &
+            chunk%tiles(t)%field%u0,                             &
+            chunk%tiles(t)%field%vector_p,                       &
+            chunk%tiles(t)%field%vector_r,                       &
+            chunk%tiles(t)%field%vector_Mi,                      &
+            chunk%tiles(t)%field%vector_w,                       &
+            chunk%tiles(t)%field%vector_z,                       &
+            chunk%tiles(t)%field%vector_Kx,                      &
+            chunk%tiles(t)%field%vector_Ky,                      &
+            chunk%tiles(t)%field%tri_cp,   &
+            chunk%tiles(t)%field%tri_bfp,    &
+            ch_alphas, ch_betas, max_cheby_iters,           &
+            rx, ry, theta, error, tl_preconditioner_type)
+    ENDDO
   ENDIF
 
   IF (profiler_on) halo_time = timer()
   CALL update_halo(fields,1)
   IF (profiler_on) solve_time = solve_time + (timer()-halo_time)
 
-  IF(use_fortran_kernels) THEN
-      CALL tea_leaf_kernel_cheby_iterate(chunks(c)%field%x_min,&
-          chunks(c)%field%x_max,                               &
-          chunks(c)%field%y_min,                               &
-          chunks(c)%field%y_max,                               &
+  IF (use_fortran_kernels) THEN
+    DO t=1,tiles_per_task
+      CALL tea_leaf_kernel_cheby_iterate(chunk%tiles(t)%field%x_min,&
+          chunk%tiles(t)%field%x_max,                               &
+          chunk%tiles(t)%field%y_min,                               &
+          chunk%tiles(t)%field%y_max,                               &
           halo_exchange_depth,                               &
-          chunks(c)%field%u,                                   &
-          chunks(c)%field%u0,                                  &
-          chunks(c)%field%vector_p,                            &
-          chunks(c)%field%vector_r,                            &
-          chunks(c)%field%vector_Mi,                           &
-          chunks(c)%field%vector_w,                            &
-          chunks(c)%field%vector_z,                            &
-          chunks(c)%field%vector_Kx,                           &
-          chunks(c)%field%vector_Ky,                           &
-          chunks(c)%field%tri_cp,   &
-          chunks(c)%field%tri_bfp,    &
+          chunk%tiles(t)%field%u,                                   &
+          chunk%tiles(t)%field%u0,                                  &
+          chunk%tiles(t)%field%vector_p,                            &
+          chunk%tiles(t)%field%vector_r,                            &
+          chunk%tiles(t)%field%vector_Mi,                           &
+          chunk%tiles(t)%field%vector_w,                            &
+          chunk%tiles(t)%field%vector_z,                            &
+          chunk%tiles(t)%field%vector_Kx,                           &
+          chunk%tiles(t)%field%vector_Ky,                           &
+          chunk%tiles(t)%field%tri_cp,   &
+          chunk%tiles(t)%field%tri_bfp,    &
           ch_alphas, ch_betas, max_cheby_iters,                &
           rx, ry, 1, tl_preconditioner_type)
+    ENDDO
   ENDIF
 
-  IF(use_fortran_kernels) THEN
-    CALL tea_leaf_calc_2norm_kernel(chunks(c)%field%x_min,&
-          chunks(c)%field%x_max,                          &
-          chunks(c)%field%y_min,                          &
-          chunks(c)%field%y_max,                          &
-          halo_exchange_depth,                          &
-          chunks(c)%field%vector_r,                       &
-          error)
+  IF (use_fortran_kernels) THEN
+    DO t=1,tiles_per_task
+      CALL tea_leaf_calc_2norm_kernel(chunk%tiles(t)%field%x_min,&
+            chunk%tiles(t)%field%x_max,                          &
+            chunk%tiles(t)%field%y_min,                          &
+            chunk%tiles(t)%field%y_max,                          &
+            halo_exchange_depth,                          &
+            chunk%tiles(t)%field%vector_r,                       &
+            error)
+    ENDDO
   ENDIF
 
   IF (profiler_on) dot_product_time=timer()
