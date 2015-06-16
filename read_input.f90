@@ -71,6 +71,8 @@ SUBROUTINE read_input()
   profiler%tea_reset=0.0
   profiler%dot_product=0.0
 
+  tiles_per_task = 1
+
   tl_ch_cg_presteps = 25
   tl_ch_cg_epslim = 1.0
   tl_check_result = .FALSE.
@@ -160,6 +162,9 @@ SUBROUTINE read_input()
       CASE('summary_frequency')
         summary_frequency=parse_getival(parse_getword(.TRUE.))
         IF(parallel%boss)WRITE(g_out,"(1x,a25,i12)")'summary_frequency',summary_frequency
+      CASE('tiles_per_task')
+        tiles_per_task=parse_getival(parse_getword(.TRUE.))
+        IF(parallel%boss)WRITE(g_out,"(1x,a25,i12)")'tiles_per_task',tiles_per_task
       CASE('tl_ch_cg_presteps')
         tl_ch_cg_presteps=parse_getival(parse_getword(.TRUE.))
         IF(parallel%boss)WRITE(g_out,"(1x,a25,i12)")'tl_ch_cg_presteps',tl_ch_cg_presteps

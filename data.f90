@@ -75,18 +75,16 @@ MODULE data_module
                                 ,TL_PREC_JAC_BLOCK  = 3
 
    TYPE parallel_type
-      LOGICAL           ::      parallel &
-                               ,boss
+      LOGICAL         ::        boss
       INTEGER         ::        max_task &
-                               ,task     &
                                ,boss_task
-
    END TYPE parallel_type
 
    TYPE(parallel_type) :: parallel
 
    INTEGER,        PARAMETER ::g_len_max=500
-   INTEGER,        PARAMETER ::chunks_per_task=1
+
+   INTEGER                   ::tiles_per_task
 
    ! cartesian communicator
    INTEGER                   ::mpi_cart_comm

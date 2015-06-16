@@ -175,6 +175,14 @@ MODULE definitions_module
                        ,chunk_x_max  &
                        ,chunk_y_max
 
+     INTEGER            :: x_cells              &
+                          ,y_cells
+
+     INTEGER         :: left            &
+                       ,right           &
+                       ,bottom          &
+                       ,top
+
      INTEGER         :: chunk_neighbours(4)
 
      ! Idealy, create an array to hold the buffers for each field so a commuincation only needs
@@ -184,15 +192,14 @@ MODULE definitions_module
      REAL(KIND=8),ALLOCATABLE:: left_rcv_buffer(:),right_rcv_buffer(:),bottom_rcv_buffer(:),top_rcv_buffer(:)
      REAL(KIND=8),ALLOCATABLE:: left_snd_buffer(:),right_snd_buffer(:),bottom_snd_buffer(:),top_snd_buffer(:)
 
-     TYPE(tile_type), DIMENSION(:) :: tiles
+     TYPE(tile_type), DIMENSION(:,:), ALLOCATABLE :: tiles
 
   END TYPE chunk_type
 
   ! depth of halo for matrix powers
-  integer :: halo_exchange_depth
+  INTEGER :: halo_exchange_depth
 
-  TYPE(chunk_type),  ALLOCATABLE       :: chunks(:)
-  INTEGER                              :: number_of_chunks
+  TYPE(chunk_type)                     :: chunk
 
   TYPE(grid_type)                      :: grid
 

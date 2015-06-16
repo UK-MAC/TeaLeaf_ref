@@ -107,18 +107,6 @@ SUBROUTINE tea_init_comms
 
 END SUBROUTINE tea_init_comms
 
-SUBROUTINE tea_get_num_chunks(count)
-
-  IMPLICIT NONE
-
-  INTEGER :: count
-
-! Should be changed so there can be more than one chunk per mpi task
-
-  count=parallel%max_task
-
-END SUBROUTINE tea_get_num_chunks
-
 SUBROUTINE tea_decompose(x_cells,y_cells,left,right,bottom,top)
 
   ! This decomposes the mesh into a number of chunks.
