@@ -117,80 +117,80 @@ SUBROUTINE call_packing_functions(chunk, fields, depth, face, packing, mpi_buffe
   DO t=1,tiles_per_chunk
     IF (fields(FIELD_DENSITY).EQ.1) THEN
         CALL pack_func(chunk%tiles(t)%field%x_min,                    &
-                                      chunk%tiles(t)%field%x_max,                    &
-                                      chunk%tiles(t)%field%y_min,                    &
-                                      chunk%tiles(t)%field%y_max,                    &
-                                      halo_exchange_depth,                    &
-                                      chunk%tiles(t)%field%density,                 &
-                                      mpi_buffer,                &
-                                      depth, xincs(CELL_DATA), yincs(CELL_DATA),   &
-                                      offsets(FIELD_DENSITY))
+                       chunk%tiles(t)%field%x_max,                    &
+                       chunk%tiles(t)%field%y_min,                    &
+                       chunk%tiles(t)%field%y_max,                    &
+                       halo_exchange_depth,                    &
+                       chunk%tiles(t)%field%density,                 &
+                       mpi_buffer,                &
+                       depth, xincs(CELL_DATA), yincs(CELL_DATA),   &
+                       offsets(FIELD_DENSITY))
     ENDIF
     IF (fields(FIELD_ENERGY0).EQ.1) THEN
         CALL pack_func(chunk%tiles(t)%field%x_min,                    &
-                                      chunk%tiles(t)%field%x_max,                    &
-                                      chunk%tiles(t)%field%y_min,                    &
-                                      chunk%tiles(t)%field%y_max,                    &
-                                      halo_exchange_depth,                    &
-                                      chunk%tiles(t)%field%energy0,                  &
-                                      mpi_buffer,                &
-                                      depth, xincs(CELL_DATA), yincs(CELL_DATA),   &
-                                      offsets(FIELD_ENERGY0))
+                       chunk%tiles(t)%field%x_max,                    &
+                       chunk%tiles(t)%field%y_min,                    &
+                       chunk%tiles(t)%field%y_max,                    &
+                       halo_exchange_depth,                    &
+                       chunk%tiles(t)%field%energy0,                  &
+                       mpi_buffer,                &
+                       depth, xincs(CELL_DATA), yincs(CELL_DATA),   &
+                       offsets(FIELD_ENERGY0))
     ENDIF
     IF (fields(FIELD_ENERGY1).EQ.1) THEN
         CALL pack_func(chunk%tiles(t)%field%x_min,                    &
-                                      chunk%tiles(t)%field%x_max,                    &
-                                      chunk%tiles(t)%field%y_min,                    &
-                                      chunk%tiles(t)%field%y_max,                    &
-                                      halo_exchange_depth,                    &
-                                      chunk%tiles(t)%field%energy1,                  &
-                                      mpi_buffer,                &
-                                      depth, xincs(CELL_DATA), yincs(CELL_DATA),   &
-                                      offsets(FIELD_ENERGY1))
+                       chunk%tiles(t)%field%x_max,                    &
+                       chunk%tiles(t)%field%y_min,                    &
+                       chunk%tiles(t)%field%y_max,                    &
+                       halo_exchange_depth,                    &
+                       chunk%tiles(t)%field%energy1,                  &
+                       mpi_buffer,                &
+                       depth, xincs(CELL_DATA), yincs(CELL_DATA),   &
+                       offsets(FIELD_ENERGY1))
     ENDIF
     IF (fields(FIELD_P).EQ.1) THEN
         CALL pack_func(chunk%tiles(t)%field%x_min,                    &
-                                      chunk%tiles(t)%field%x_max,                    &
-                                      chunk%tiles(t)%field%y_min,                    &
-                                      chunk%tiles(t)%field%y_max,                    &
-                                      halo_exchange_depth,                    &
-                                      chunk%tiles(t)%field%vector_p,                  &
-                                      mpi_buffer,                &
-                                      depth, xincs(CELL_DATA), yincs(CELL_DATA),   &
-                                      offsets(FIELD_P))
+                       chunk%tiles(t)%field%x_max,                    &
+                       chunk%tiles(t)%field%y_min,                    &
+                       chunk%tiles(t)%field%y_max,                    &
+                       halo_exchange_depth,                    &
+                       chunk%tiles(t)%field%vector_p,                  &
+                       mpi_buffer,                &
+                       depth, xincs(CELL_DATA), yincs(CELL_DATA),   &
+                       offsets(FIELD_P))
     ENDIF
     IF (fields(FIELD_U).EQ.1) THEN
         CALL pack_func(chunk%tiles(t)%field%x_min,                    &
-                                      chunk%tiles(t)%field%x_max,                    &
-                                      chunk%tiles(t)%field%y_min,                    &
-                                      chunk%tiles(t)%field%y_max,                    &
-                                      halo_exchange_depth,                    &
-                                      chunk%tiles(t)%field%u,                  &
-                                      mpi_buffer,                &
-                                      depth, xincs(CELL_DATA), yincs(CELL_DATA),   &
-                                      offsets(FIELD_U))
+                       chunk%tiles(t)%field%x_max,                    &
+                       chunk%tiles(t)%field%y_min,                    &
+                       chunk%tiles(t)%field%y_max,                    &
+                       halo_exchange_depth,                    &
+                       chunk%tiles(t)%field%u,                  &
+                       mpi_buffer,                &
+                       depth, xincs(CELL_DATA), yincs(CELL_DATA),   &
+                       offsets(FIELD_U))
     ENDIF
     IF (fields(FIELD_SD).EQ.1) THEN
         CALL pack_func(chunk%tiles(t)%field%x_min,                    &
-                                      chunk%tiles(t)%field%x_max,                    &
-                                      chunk%tiles(t)%field%y_min,                    &
-                                      chunk%tiles(t)%field%y_max,                    &
-                                      halo_exchange_depth,                    &
-                                      chunk%tiles(t)%field%vector_sd,                  &
-                                      mpi_buffer,                &
-                                      depth, xincs(CELL_DATA), yincs(CELL_DATA),   &
-                                      offsets(FIELD_SD))
+                       chunk%tiles(t)%field%x_max,                    &
+                       chunk%tiles(t)%field%y_min,                    &
+                       chunk%tiles(t)%field%y_max,                    &
+                       halo_exchange_depth,                    &
+                       chunk%tiles(t)%field%vector_sd,                  &
+                       mpi_buffer,                &
+                       depth, xincs(CELL_DATA), yincs(CELL_DATA),   &
+                       offsets(FIELD_SD))
     ENDIF
     IF (fields(FIELD_R).EQ.1) THEN
         CALL pack_func(chunk%tiles(t)%field%x_min,                    &
-                                      chunk%tiles(t)%field%x_max,                    &
-                                      chunk%tiles(t)%field%y_min,                    &
-                                      chunk%tiles(t)%field%y_max,                    &
-                                      halo_exchange_depth,                    &
-                                      chunk%tiles(t)%field%vector_r,                  &
-                                      mpi_buffer,                &
-                                      depth, xincs(CELL_DATA), yincs(CELL_DATA),   &
-                                      offsets(FIELD_R))
+                       chunk%tiles(t)%field%x_max,                    &
+                       chunk%tiles(t)%field%y_min,                    &
+                       chunk%tiles(t)%field%y_max,                    &
+                       halo_exchange_depth,                    &
+                       chunk%tiles(t)%field%vector_r,                  &
+                       mpi_buffer,                &
+                       depth, xincs(CELL_DATA), yincs(CELL_DATA),   &
+                       offsets(FIELD_R))
     ENDIF
   ENDDO
 
