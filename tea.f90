@@ -111,7 +111,7 @@ SUBROUTINE tea_decompose(x_cells,y_cells)
   IMPLICIT NONE
 
   INTEGER :: x_cells,y_cells
-  INTEGER :: c,delta_x,delta_y
+  INTEGER :: delta_x,delta_y
 
   INTEGER  :: chunk_x,chunk_y,mod_x,mod_y
 

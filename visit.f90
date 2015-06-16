@@ -27,7 +27,7 @@ SUBROUTINE visit
 
   IMPLICIT NONE
 
-  INTEGER :: j,k,c,err,get_unit,u,dummy
+  INTEGER :: j,k,err,get_unit,u,dummy
   INTEGER :: nxc,nyc,nxv,nyv,nblocks
 
   CHARACTER(len=80)           :: name
