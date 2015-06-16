@@ -96,7 +96,6 @@ SUBROUTINE tea_init_comms
   CALL MPI_CART_COORDS(mpi_cart_comm, rank, 2, mpi_coords, err)
 
   parallel%parallel=.TRUE.
-  parallel%task=rank
 
   IF(rank.EQ.0) THEN
     parallel%boss=.TRUE.

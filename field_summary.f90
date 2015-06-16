@@ -36,7 +36,7 @@ SUBROUTINE field_summary()
 
 !$ INTEGER :: OMP_GET_THREAD_NUM
 
-  INTEGER      :: c
+  INTEGER      :: t
 
   REAL(KIND=8) :: kernel_time,timer
 
@@ -44,24 +44,22 @@ SUBROUTINE field_summary()
     WRITE(g_out,*)
     WRITE(g_out,*) 'Time ',time
     WRITE(g_out,'(a13,5a26)')'           ','Volume','Mass','Density'       &
-                                          ,'Energy','U'
   ENDIF
 
   IF(profiler_on) kernel_time=timer()
   IF(use_fortran_kernels)THEN
-    DO c=1,chunks_per_task
-      IF(chunks(c)%task.EQ.parallel%task) THEN
-        CALL field_summary_kernel(chunks(c)%field%x_min,                   &
-                                  chunks(c)%field%x_max,                   &
-                                  chunks(c)%field%y_min,                   &
-                                  chunks(c)%field%y_max,                   &
-                                  halo_exchange_depth, &
-                                  chunks(c)%field%volume,                  &
-                                  chunks(c)%field%density,                 &
-                                  chunks(c)%field%energy1,                 &
-                                  chunks(c)%field%u,                       &
-                                  vol,mass,ie,temp                         )
-      ENDIF
+    !FIXME reductions
+    DO t=1,tiles_per_task
+      CALL field_summary_kernel(chunk%tiles(t)%field%x_min,                   &
+                                chunk%tiles(t)%field%x_max,                   &
+                                chunk%tiles(t)%field%y_min,                   &
+                                chunk%tiles(t)%field%y_max,                   &
+                                halo_exchange_depth, &
+                                chunk%tiles(t)%field%volume,                  &
+                                chunk%tiles(t)%field%density,                 &
+                                chunk%tiles(t)%field%energy1,                 &
+                                chunk%tiles(t)%field%u,                       &
+                                vol,mass,ie,temp                         )
     ENDDO
   ENDIF
 

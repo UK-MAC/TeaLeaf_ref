@@ -33,7 +33,7 @@ SUBROUTINE timestep()
 
   IMPLICIT NONE
 
-  INTEGER :: c
+  INTEGER :: t
 
   REAL(KIND=8)    :: dtlp
 
@@ -42,7 +42,7 @@ SUBROUTINE timestep()
 !$ INTEGER :: OMP_GET_THREAD_NUM
 
   IF(profiler_on) kernel_time=timer()
-  DO c = 1, chunks_per_task
+  DO t=1,tiles_per_task
     CALL calc_dt(c,dtlp)
 
     IF(dtlp.LE.dt) THEN

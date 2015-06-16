@@ -84,7 +84,7 @@ SUBROUTINE tea_leaf()
 
   total_solve_time = timer()
 
-  DO c=1,chunks_per_task
+  DO t=1,tiles_per_task
 
     IF(chunks(c)%task.EQ.parallel%task) THEN
 
