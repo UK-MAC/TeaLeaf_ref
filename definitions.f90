@@ -135,20 +135,6 @@ MODULE definitions_module
      REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: vector_sd
      REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: tri_cp, tri_bfp
 
-     INTEGER         :: left            &
-                       ,right           &
-                       ,bottom          &
-                       ,top             &
-                       ,left_boundary   &
-                       ,right_boundary  &
-                       ,bottom_boundary &
-                       ,top_boundary
-
-     INTEGER         :: x_min  &
-                       ,y_min  &
-                       ,x_max  &
-                       ,y_max
-
      REAL(KIND=8), DIMENSION(:),   ALLOCATABLE :: cellx    &
                                                  ,celly    &
                                                  ,vertexx  &
@@ -164,11 +150,32 @@ MODULE definitions_module
 
    END TYPE field_type
 
+   TYPE tile_type
+     TYPE(field_type):: field
+
+     INTEGER         :: left            &
+                       ,right           &
+                       ,bottom          &
+                       ,top
+
+     INTEGER         :: tile_x_min  &
+                       ,tile_y_min  &
+                       ,tile_x_max  &
+                       ,tile_y_max
+
+     INTEGER         :: tile_neighbours(4)
+   END TYPE tile_type
+
    TYPE chunk_type
 
      INTEGER         :: task   !mpi task
 
-     INTEGER         :: chunk_neighbours(4) ! Chunks, not tasks, so we can overload in the future
+     INTEGER         :: chunk_x_min  &
+                       ,chunk_y_min  &
+                       ,chunk_x_max  &
+                       ,chunk_y_max
+
+     INTEGER         :: chunk_neighbours(4)
 
      ! Idealy, create an array to hold the buffers for each field so a commuincation only needs
      !  one send and one receive per face, rather than per field.
@@ -177,7 +184,7 @@ MODULE definitions_module
      REAL(KIND=8),ALLOCATABLE:: left_rcv_buffer(:),right_rcv_buffer(:),bottom_rcv_buffer(:),top_rcv_buffer(:)
      REAL(KIND=8),ALLOCATABLE:: left_snd_buffer(:),right_snd_buffer(:),bottom_snd_buffer(:),top_snd_buffer(:)
 
-     TYPE(field_type):: field
+     TYPE(tile_type), DIMENSION(:) :: tiles
 
   END TYPE chunk_type
 
