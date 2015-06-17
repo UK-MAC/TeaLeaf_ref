@@ -23,7 +23,7 @@ MODULE tea_leaf_module
 
   USE report_module
   USE data_module
-  USE tea_leaf_kernel_common_module
+  USE tea_leaf_common_module
   USE tea_leaf_kernel_jacobi_module
   USE tea_leaf_kernel_cg_module
   USE tea_leaf_kernel_ppcg_module
@@ -95,32 +95,8 @@ SUBROUTINE tea_leaf()
   CALL update_halo(fields,halo_exchange_depth)
   IF (profiler_on) init_time = init_time + (timer()-halo_time)
 
-  IF (use_fortran_kernels) THEN
-    DO t=1,tiles_per_task
-      rx = dt/(chunk%tiles(t)%field%celldx(chunk%tiles(t)%field%x_min)**2)
-      ry = dt/(chunk%tiles(t)%field%celldy(chunk%tiles(t)%field%y_min)**2)
-
-      CALL tea_leaf_kernel_init_common(chunk%tiles(t)%field%x_min, &
-          chunk%tiles(t)%field%x_max,                                  &
-          chunk%tiles(t)%field%y_min,                                  &
-          chunk%tiles(t)%field%y_max,                                  &
-          halo_exchange_depth,                                  &
-          chunk%chunk_neighbours,                             &
-          reflective_boundary,                                    &
-          chunk%tiles(t)%field%density,                                &
-          chunk%tiles(t)%field%energy1,                                &
-          chunk%tiles(t)%field%u,                                      &
-          chunk%tiles(t)%field%u0,                                      &
-          chunk%tiles(t)%field%vector_r,                               &
-          chunk%tiles(t)%field%vector_w,                               &
-          chunk%tiles(t)%field%vector_Kx,                              &
-          chunk%tiles(t)%field%vector_Ky,                              &
-          chunk%tiles(t)%field%tri_cp,   &
-          chunk%tiles(t)%field%tri_bfp,    &
-          chunk%tiles(t)%field%vector_Mi,    &
-          rx, ry, tl_preconditioner_type, coefficient)
-    ENDDO
-  ENDIF
+  ! rx/ry should be the same for all tiles
+  CALL tea_leaf_init_common(rx, ry)
 
   fields=0
   fields(FIELD_U) = 1
@@ -129,28 +105,8 @@ SUBROUTINE tea_leaf()
   CALL update_halo(fields,1)
   IF (profiler_on) init_time = init_time + (timer()-halo_time)
 
-  IF (use_fortran_kernels) THEN
-    DO t=1,tiles_per_task
-      CALL tea_leaf_calc_residual(chunk%tiles(t)%field%x_min,&
-          chunk%tiles(t)%field%x_max,                        &
-          chunk%tiles(t)%field%y_min,                        &
-          chunk%tiles(t)%field%y_max,                        &
-          halo_exchange_depth,                        &
-          chunk%tiles(t)%field%u,                            &
-          chunk%tiles(t)%field%u0,                           &
-          chunk%tiles(t)%field%vector_r,                     &
-          chunk%tiles(t)%field%vector_Kx,                    &
-          chunk%tiles(t)%field%vector_Ky,                    &
-          rx, ry)
-      CALL tea_leaf_calc_2norm_kernel(chunk%tiles(t)%field%x_min,        &
-          chunk%tiles(t)%field%x_max,                                    &
-          chunk%tiles(t)%field%y_min,                                    &
-          chunk%tiles(t)%field%y_max,                                    &
-          halo_exchange_depth,                                    &
-          chunk%tiles(t)%field%vector_r,                                 &
-          initial_residual)
-    ENDDO
-  ENDIF
+  CALL tea_leaf_calc_residual(rx, ry)
+  CALL tea_leaf_calc_2norm(initial_residual)
 
   IF (profiler_on) dot_product_time=timer()
   CALL tea_allsum(initial_residual)
@@ -321,17 +277,7 @@ SUBROUTINE tea_leaf()
           ! chebyshev is typically O(300+)) but will greatly reduce global
           ! synchronisations needed
           IF ((n .GE. est_itc) .AND. (MOD(n, 10) .eq. 0)) THEN
-            IF (use_fortran_kernels) THEN
-              DO t=1,tiles_per_task
-                CALL tea_leaf_calc_2norm_kernel(chunk%tiles(t)%field%x_min,&
-                      chunk%tiles(t)%field%x_max,                          &
-                      chunk%tiles(t)%field%y_min,                          &
-                      chunk%tiles(t)%field%y_max,                          &
-                      halo_exchange_depth,                          &
-                      chunk%tiles(t)%field%vector_r,                       &
-                      error                                           )
-              ENDDO
-            ENDIF
+            CALL tea_leaf_calc_2norm(error)
 
             IF (profiler_on) dot_product_time=timer()
             CALL tea_allsum(error)
@@ -566,28 +512,8 @@ SUBROUTINE tea_leaf()
     CALL update_halo(fields,1)
     IF (profiler_on) solve_time = solve_time + (timer()-halo_time)
 
-    IF (use_fortran_kernels) THEN
-      DO t=1,tiles_per_task
-        CALL tea_leaf_calc_residual(chunk%tiles(t)%field%x_min,&
-            chunk%tiles(t)%field%x_max,                        &
-            chunk%tiles(t)%field%y_min,                        &
-            chunk%tiles(t)%field%y_max,                        &
-            halo_exchange_depth,                        &
-            chunk%tiles(t)%field%u,                            &
-            chunk%tiles(t)%field%u0,                           &
-            chunk%tiles(t)%field%vector_r,                     &
-            chunk%tiles(t)%field%vector_Kx,                    &
-            chunk%tiles(t)%field%vector_Ky,                    &
-            rx, ry)
-        CALL tea_leaf_calc_2norm_kernel(chunk%tiles(t)%field%x_min,        &
-            chunk%tiles(t)%field%x_max,                                    &
-            chunk%tiles(t)%field%y_min,                                    &
-            chunk%tiles(t)%field%y_max,                                    &
-            halo_exchange_depth,                                    &
-            chunk%tiles(t)%field%vector_r,                                 &
-            exact_error)
-      ENDDO
-    ENDIF
+    CALL tea_leaf_calc_residual(rx, ry)
+    CALL tea_leaf_calc_2norm(exact_error)
 
     IF (profiler_on) dot_product_time=timer()
     CALL tea_allsum(exact_error)
@@ -812,17 +738,7 @@ SUBROUTINE tea_leaf_cheby_first_step(ch_alphas, ch_betas, fields, &
   REAL(KIND=8) :: halo_time, timer, dot_product_time, solve_time
 
   ! calculate 2 norm of u0
-  IF (use_fortran_kernels) THEN
-    DO t=1,tiles_per_task
-      CALL tea_leaf_calc_2norm_kernel(chunk%tiles(t)%field%x_min,&
-            chunk%tiles(t)%field%x_max,                          &
-            chunk%tiles(t)%field%y_min,                          &
-            chunk%tiles(t)%field%y_max,                          &
-            halo_exchange_depth,                          &
-            chunk%tiles(t)%field%u0,                             &
-            bb)
-    ENDDO
-  ENDIF
+  CALL tea_leaf_calc_2norm(bb)
 
   IF (profiler_on) dot_product_time=timer()
   CALL tea_allsum(bb)
@@ -880,17 +796,7 @@ SUBROUTINE tea_leaf_cheby_first_step(ch_alphas, ch_betas, fields, &
     ENDDO
   ENDIF
 
-  IF (use_fortran_kernels) THEN
-    DO t=1,tiles_per_task
-      CALL tea_leaf_calc_2norm_kernel(chunk%tiles(t)%field%x_min,&
-            chunk%tiles(t)%field%x_max,                          &
-            chunk%tiles(t)%field%y_min,                          &
-            chunk%tiles(t)%field%y_max,                          &
-            halo_exchange_depth,                          &
-            chunk%tiles(t)%field%vector_r,                       &
-            error)
-    ENDDO
-  ENDIF
+  CALL tea_leaf_calc_2norm(error)
 
   IF (profiler_on) dot_product_time=timer()
   CALL tea_allsum(error)

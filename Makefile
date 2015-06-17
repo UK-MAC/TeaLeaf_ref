@@ -154,7 +154,8 @@ FORTRAN_FILES=\
 	timestep.o			\
 	set_field_kernel.o            \
 	set_field.o                   \
-	tea_leaf_common_kernels.o             \
+	tea_leaf_common_kernel.o             \
+	tea_leaf_common.o             \
 	tea_leaf_jacobi.o             \
 	tea_leaf_cg.o             	\
 	tea_leaf_cheby.o             	\

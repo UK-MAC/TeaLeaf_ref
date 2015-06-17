@@ -195,7 +195,7 @@ SUBROUTINE tea_leaf_kernel_finalise(x_min,    &
 
 END SUBROUTINE tea_leaf_kernel_finalise
 
-SUBROUTINE tea_leaf_calc_residual(x_min,       &
+SUBROUTINE tea_leaf_calc_residual_kernel(x_min,       &
                                   x_max,       &
                                   y_min,       &
                                   y_max,       &
@@ -231,7 +231,7 @@ SUBROUTINE tea_leaf_calc_residual(x_min,       &
 !$OMP END DO
 !$OMP END PARALLEL
 
-END SUBROUTINE tea_leaf_calc_residual
+END SUBROUTINE tea_leaf_calc_residual_kernel
 
 SUBROUTINE tea_leaf_calc_2norm_kernel(x_min, &
                           x_max,             &
