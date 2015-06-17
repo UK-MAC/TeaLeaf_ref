@@ -607,28 +607,7 @@ SUBROUTINE tea_leaf_cheby_first_step(ch_alphas, ch_betas, fields, &
   CALL update_halo(fields,1)
   IF (profiler_on) solve_time = solve_time + (timer()-halo_time)
 
-  IF (use_fortran_kernels) THEN
-    DO t=1,tiles_per_task
-      CALL tea_leaf_kernel_cheby_iterate(chunk%tiles(t)%field%x_min,&
-          chunk%tiles(t)%field%x_max,                               &
-          chunk%tiles(t)%field%y_min,                               &
-          chunk%tiles(t)%field%y_max,                               &
-          halo_exchange_depth,                               &
-          chunk%tiles(t)%field%u,                                   &
-          chunk%tiles(t)%field%u0,                                  &
-          chunk%tiles(t)%field%vector_p,                            &
-          chunk%tiles(t)%field%vector_r,                            &
-          chunk%tiles(t)%field%vector_Mi,                           &
-          chunk%tiles(t)%field%vector_w,                            &
-          chunk%tiles(t)%field%vector_z,                            &
-          chunk%tiles(t)%field%vector_Kx,                           &
-          chunk%tiles(t)%field%vector_Ky,                           &
-          chunk%tiles(t)%field%tri_cp,   &
-          chunk%tiles(t)%field%tri_bfp,    &
-          ch_alphas, ch_betas, max_cheby_iters,                &
-          rx, ry, 1, tl_preconditioner_type)
-    ENDDO
-  ENDIF
+  CALL tea_leaf_cheby_iterate(rx, ry, ch_alphas, ch_betas, max_cheby_iters, cheby_calc_steps)
 
   CALL tea_leaf_calc_2norm(error)
 
