@@ -607,7 +607,7 @@ SUBROUTINE tea_leaf_cheby_first_step(ch_alphas, ch_betas, fields, &
   CALL update_halo(fields,1)
   IF (profiler_on) solve_time = solve_time + (timer()-halo_time)
 
-  CALL tea_leaf_cheby_iterate(rx, ry, ch_alphas, ch_betas, max_cheby_iters, cheby_calc_steps)
+  CALL tea_leaf_cheby_iterate(rx, ry, ch_alphas, ch_betas, max_cheby_iters, 1)
 
   CALL tea_leaf_calc_2norm(error)
 
