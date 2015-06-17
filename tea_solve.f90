@@ -27,7 +27,7 @@ MODULE tea_leaf_module
   USE tea_leaf_cg_module
   USE tea_leaf_cheby_module
   USE tea_leaf_ppcg_module
-  USE tea_leaf_kernel_jacobi_module
+  USE tea_leaf_jacobi_module
   USE update_halo_module
 
   IMPLICIT NONE
@@ -308,23 +308,7 @@ SUBROUTINE tea_leaf()
       error = rrn
       rro = rrn
     ELSEIF (tl_use_jacobi) THEN
-      IF (use_fortran_kernels) THEN
-        DO t=1,tiles_per_task
-          CALL tea_leaf_kernel_jacobi_solve(chunk%tiles(t)%field%x_min,&
-              chunk%tiles(t)%field%x_max,                       &
-              chunk%tiles(t)%field%y_min,                       &
-              chunk%tiles(t)%field%y_max,                       &
-              halo_exchange_depth,                       &
-              rx,                                          &
-              ry,                                          &
-              chunk%tiles(t)%field%vector_Kx,                   &
-              chunk%tiles(t)%field%vector_Ky,                   &
-              error,                                       &
-              chunk%tiles(t)%field%u0,                          &
-              chunk%tiles(t)%field%u,                           &
-              chunk%tiles(t)%field%vector_r)
-        ENDDO
-      ENDIF
+      CALL tea_leaf_jacobi_solve(rx, ry, error)
 
       IF (profiler_on) dot_product_time=timer()
       CALL tea_allsum(error)
