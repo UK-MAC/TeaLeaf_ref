@@ -24,8 +24,8 @@ MODULE tea_leaf_module
   USE report_module
   USE data_module
   USE tea_leaf_common_module
+  USE tea_leaf_cg_module
   USE tea_leaf_kernel_jacobi_module
-  USE tea_leaf_kernel_cg_module
   USE tea_leaf_kernel_ppcg_module
   USE tea_leaf_kernel_cheby_module
   USE update_halo_module
@@ -125,28 +125,7 @@ SUBROUTINE tea_leaf()
 
   IF (tl_use_cg .OR. tl_use_chebyshev .OR. tl_use_ppcg) THEN
     ! All 3 of these solvers use the CG kernels
-    IF (use_fortran_kernels) THEN
-      DO t=1,tiles_per_task
-        CALL tea_leaf_kernel_init_cg_fortran(chunk%tiles(t)%field%x_min, &
-            chunk%tiles(t)%field%x_max,                                  &
-            chunk%tiles(t)%field%y_min,                                  &
-            chunk%tiles(t)%field%y_max,                                  &
-            halo_exchange_depth,                                  &
-            chunk%tiles(t)%field%density,                                &
-            chunk%tiles(t)%field%energy1,                                &
-            chunk%tiles(t)%field%u,                                      &
-            chunk%tiles(t)%field%vector_p,                               &
-            chunk%tiles(t)%field%vector_r,                               &
-            chunk%tiles(t)%field%vector_Mi,                              &
-            chunk%tiles(t)%field%vector_w,                               &
-            chunk%tiles(t)%field%vector_z,                               &
-            chunk%tiles(t)%field%vector_Kx,                              &
-            chunk%tiles(t)%field%vector_Ky,                              &
-            chunk%tiles(t)%field%tri_cp,   &
-            chunk%tiles(t)%field%tri_bfp,    &
-            rx, ry, rro, tl_preconditioner_type)
-      ENDDO
-    ENDIF
+    CALL tea_leaf_init_cg(rx, ry, rro)
 
     ! and globally sum rro
     IF (profiler_on) dot_product_time=timer()
@@ -286,20 +265,7 @@ SUBROUTINE tea_leaf()
           ENDIF
         ENDIF
       ELSE IF (tl_use_ppcg) THEN
-        IF (use_fortran_kernels) THEN
-          DO t=1,tiles_per_task
-            CALL tea_leaf_kernel_solve_cg_fortran_calc_w(chunk%tiles(t)%field%x_min,&
-                chunk%tiles(t)%field%x_max,                                         &
-                chunk%tiles(t)%field%y_min,                                         &
-                chunk%tiles(t)%field%y_max,                                         &
-                halo_exchange_depth,                                         &
-                chunk%tiles(t)%field%vector_p,                                      &
-                chunk%tiles(t)%field%vector_w,                                      &
-                chunk%tiles(t)%field%vector_Kx,                                     &
-                chunk%tiles(t)%field%vector_Ky,                                     &
-                rx, ry, pw)
-          ENDDO
-        ENDIF
+        CALL tea_leaf_cg_calc_w(rx, ry, pw)
 
         IF (profiler_on) dot_product_time=timer()
         CALL tea_allsum(pw)
@@ -308,27 +274,7 @@ SUBROUTINE tea_leaf()
 
         alpha = rro/pw
 
-        IF (use_fortran_kernels) THEN
-          DO t=1,tiles_per_task
-            CALL tea_leaf_kernel_solve_cg_fortran_calc_ur(chunk%tiles(t)%field%x_min,&
-                chunk%tiles(t)%field%x_max,                                          &
-                chunk%tiles(t)%field%y_min,                                          &
-                chunk%tiles(t)%field%y_max,                                          &
-                halo_exchange_depth,                                          &
-                chunk%tiles(t)%field%u,                                              &
-                chunk%tiles(t)%field%vector_p,                                       &
-                chunk%tiles(t)%field%vector_r,                                       &
-                chunk%tiles(t)%field%vector_Mi,                                      &
-                chunk%tiles(t)%field%vector_w,                                       &
-                chunk%tiles(t)%field%vector_z,                                       &
-                chunk%tiles(t)%field%tri_cp,   &
-                chunk%tiles(t)%field%tri_bfp,    &
-                chunk%tiles(t)%field%vector_Kx,                              &
-                chunk%tiles(t)%field%vector_Ky,                              &
-                rx, ry, &
-                alpha, rrn, tl_preconditioner_type)
-          ENDDO
-        ENDIF
+        CALL tea_leaf_cg_calc_ur(rx, ry, alpha, rrn)
 
         ! not using rrn, so don't do a tea_allsum
 
@@ -356,19 +302,7 @@ SUBROUTINE tea_leaf()
 
         beta = rrn/rro
 
-        IF (use_fortran_kernels) THEN
-          DO t=1,tiles_per_task
-            CALL tea_leaf_kernel_solve_cg_fortran_calc_p(chunk%tiles(t)%field%x_min,&
-                chunk%tiles(t)%field%x_max,                                         &
-                chunk%tiles(t)%field%y_min,                                         &
-                chunk%tiles(t)%field%y_max,                                         &
-                halo_exchange_depth,                                         &
-                chunk%tiles(t)%field%vector_p,                                      &
-                chunk%tiles(t)%field%vector_r,                                      &
-                chunk%tiles(t)%field%vector_z,                                      &
-                beta, tl_preconditioner_type)
-          ENDDO
-        ENDIF
+        CALL tea_leaf_cg_calc_p(rx, ry, beta)
 
         error = rrn
         rro = rrn
@@ -379,22 +313,7 @@ SUBROUTINE tea_leaf()
       fields(FIELD_P) = 1
       cg_calc_steps = cg_calc_steps + 1
 
-      pw = 0.0_08
-
-      IF (use_fortran_kernels) THEN
-        DO t=1,tiles_per_task
-          CALL tea_leaf_kernel_solve_cg_fortran_calc_w(chunk%tiles(t)%field%x_min,&
-              chunk%tiles(t)%field%x_max,                                         &
-              chunk%tiles(t)%field%y_min,                                         &
-              chunk%tiles(t)%field%y_max,                                         &
-              halo_exchange_depth,                                         &
-              chunk%tiles(t)%field%vector_p,                                      &
-              chunk%tiles(t)%field%vector_w,                                      &
-              chunk%tiles(t)%field%vector_Kx,                                     &
-              chunk%tiles(t)%field%vector_Ky,                                     &
-              rx, ry, pw)
-        ENDDO
-      ENDIF
+      CALL tea_leaf_cg_calc_w(rx, ry, pw)
 
       IF (profiler_on) dot_product_time=timer()
       CALL tea_allsum(pw)
@@ -406,27 +325,7 @@ SUBROUTINE tea_leaf()
 
       rrn = 0.0_8
 
-      IF (use_fortran_kernels) THEN
-        DO t=1,tiles_per_task
-          CALL tea_leaf_kernel_solve_cg_fortran_calc_ur(chunk%tiles(t)%field%x_min,&
-              chunk%tiles(t)%field%x_max,                                          &
-              chunk%tiles(t)%field%y_min,                                          &
-              chunk%tiles(t)%field%y_max,                                          &
-              halo_exchange_depth,                                          &
-              chunk%tiles(t)%field%u,                                              &
-              chunk%tiles(t)%field%vector_p,                                       &
-              chunk%tiles(t)%field%vector_r,                                       &
-              chunk%tiles(t)%field%vector_Mi,                                      &
-              chunk%tiles(t)%field%vector_w,                                       &
-              chunk%tiles(t)%field%vector_z,                                       &
-              chunk%tiles(t)%field%tri_cp,   &
-              chunk%tiles(t)%field%tri_bfp,    &
-              chunk%tiles(t)%field%vector_Kx,                              &
-              chunk%tiles(t)%field%vector_Ky,                              &
-              rx, ry, &
-              alpha, rrn, tl_preconditioner_type)
-        ENDDO
-      ENDIF
+      CALL tea_leaf_cg_calc_ur(rx, ry, alpha, rrn)
 
       IF (profiler_on) dot_product_time=timer()
       CALL tea_allsum(rrn)
@@ -436,19 +335,7 @@ SUBROUTINE tea_leaf()
       beta = rrn/rro
       cg_betas(n) = beta
 
-      IF (use_fortran_kernels) THEN
-        DO t=1,tiles_per_task
-          CALL tea_leaf_kernel_solve_cg_fortran_calc_p(chunk%tiles(t)%field%x_min,&
-              chunk%tiles(t)%field%x_max,                                         &
-              chunk%tiles(t)%field%y_min,                                         &
-              chunk%tiles(t)%field%y_max,                                         &
-              halo_exchange_depth,                                         &
-              chunk%tiles(t)%field%vector_p,                                      &
-              chunk%tiles(t)%field%vector_r,                                      &
-              chunk%tiles(t)%field%vector_z,                                      &
-              beta, tl_preconditioner_type)
-        ENDDO
-      ENDIF
+      CALL tea_leaf_cg_calc_p(rx, ry, beta)
 
       error = rrn
       rro = rrn

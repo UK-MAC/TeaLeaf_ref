@@ -2,7 +2,6 @@
 MODULE tea_leaf_common_module
 
   USE tea_leaf_kernel_common_module
-  USE data_module
   USE definitions_module
 
   IMPLICIT NONE
