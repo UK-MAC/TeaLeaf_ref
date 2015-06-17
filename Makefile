@@ -142,6 +142,7 @@ FORTRAN_FILES=\
 	initialise_chunk_kernel.o	\
 	initialise_chunk.o		\
 	build_field.o			\
+	update_internal_halo_kernel.o		\
 	update_halo_kernel.o		\
 	update_halo.o			\
 	start.o			\

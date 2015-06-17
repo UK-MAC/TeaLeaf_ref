@@ -23,7 +23,9 @@
 MODULE update_halo_module
 
   USE tea_module
+  USE report_module
   USE update_halo_kernel_module
+  USE update_internal_halo_kernel_module
 
 CONTAINS
 
@@ -78,7 +80,7 @@ SUBROUTINE update_boundary(fields,depth)
       IF (chunk%tiles(t)%tile_neighbours(CHUNK_RIGHT) .NE. EXTERNAL_FACE) THEN
         right_idx = chunk%tiles(t)%tile_neighbours(CHUNK_RIGHT)
 
-        IF (chunk%tiles(t)%field%y_cells .NE. chunk%tiles(right_idx)%field%y_cells) THEN
+        IF (chunk%tiles(t)%y_cells .NE. chunk%tiles(right_idx)%y_cells) THEN
           CALL report_error("update_halo", "Tried to exchange between tow tiles which ahd different sizes")
         ENDIF
 
@@ -87,7 +89,6 @@ SUBROUTINE update_boundary(fields,depth)
                                 chunk%tiles(t)%field%x_max,          &
                                 chunk%tiles(t)%field%y_min,          &
                                 chunk%tiles(t)%field%y_max,          &
-                                chunk%tiles(t)%tile_neighbours,     &
                                 chunk%tiles(t)%field%density,        &
                                 chunk%tiles(t)%field%energy0,        &
                                 chunk%tiles(t)%field%energy1,        &
@@ -98,7 +99,6 @@ SUBROUTINE update_boundary(fields,depth)
                                 chunk%tiles(right_idx)%field%x_max,          &
                                 chunk%tiles(right_idx)%field%y_min,          &
                                 chunk%tiles(right_idx)%field%y_max,          &
-                                chunk%tiles(right_idx)%tile_neighbours,     &
                                 chunk%tiles(right_idx)%field%density,        &
                                 chunk%tiles(right_idx)%field%energy0,        &
                                 chunk%tiles(right_idx)%field%energy1,        &

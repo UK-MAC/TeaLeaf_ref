@@ -19,7 +19,7 @@ MODULE update_internal_halo_kernel_module
 
 CONTAINS
 
-  SUBROUTINE update_internal_halo_left_right_kernel(
+  SUBROUTINE update_internal_halo_left_right_kernel(                                &
                         x_min,x_max,y_min,y_max,                                    &
                         density,                                                    &
                         energy0,                                                    &
@@ -34,14 +34,12 @@ CONTAINS
                         u_right,                                                    &
                         p_right,                                                    &
                         sd_right,                                                   &
-                        chunk_neighbours,                                           &
                         halo_exchange_depth,                                        &
                         fields,                                                     &
                         depth                                                       )
   IMPLICIT NONE
 
   INTEGER :: halo_exchange_depth
-  INTEGER, DIMENSION(4) :: chunk_neighbours
   INTEGER :: fields(NUM_FIELDS),depth
 
   INTEGER :: x_min,x_max,y_min,y_max
