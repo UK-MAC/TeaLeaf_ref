@@ -46,14 +46,13 @@ SUBROUTINE update_boundary(fields,depth)
 
   IMPLICIT NONE
 
-  INTEGER :: t,fields(NUM_FIELDS),depth
+  INTEGER :: t,fields(NUM_FIELDS),depth, right_idx, up_idx
   REAL(KIND=8) :: timer,halo_time
 
+  IF (profiler_on) halo_time=timer()
   IF (reflective_boundary .EQV. .TRUE.) THEN
-    IF (profiler_on) halo_time=timer()
-    DO t=1,tiles_per_task
-      ! FIXME intra-chunk comms
-      IF(use_fortran_kernels)THEN
+    IF(use_fortran_kernels)THEN
+      DO t=1,tiles_per_task
         CALL update_halo_kernel(chunk%tiles(t)%field%x_min,          &
                                 chunk%tiles(t)%field%x_max,          &
                                 chunk%tiles(t)%field%y_min,          &
@@ -68,9 +67,49 @@ SUBROUTINE update_boundary(fields,depth)
                                 chunk%tiles(t)%field%vector_sd,      &
                                 fields,                         &
                                 depth                           )
+      ENDDO
+    ENDIF
+  ENDIF
+  IF (profiler_on) profiler%halo_update = profiler%halo_update + (timer() - halo_time)
+
+  ! TODO profiling info
+  IF(use_fortran_kernels)THEN
+    DO t=1,tiles_per_task
+      IF (chunk%tiles(t)%tile_neighbours(CHUNK_RIGHT) .NE. EXTERNAL_FACE) THEN
+        right_idx = chunk%tiles(t)%tile_neighbours(CHUNK_RIGHT)
+
+        IF (chunk%tiles(t)%field%y_cells .NE. chunk%tiles(right_idx)%field%y_cells) THEN
+          CALL report_error("update_halo", "Tried to exchange between tow tiles which ahd different sizes")
+        ENDIF
+
+        CALL update_internal_halo_left_right_kernel(                &
+                                chunk%tiles(t)%field%x_min,          &
+                                chunk%tiles(t)%field%x_max,          &
+                                chunk%tiles(t)%field%y_min,          &
+                                chunk%tiles(t)%field%y_max,          &
+                                chunk%tiles(t)%tile_neighbours,     &
+                                chunk%tiles(t)%field%density,        &
+                                chunk%tiles(t)%field%energy0,        &
+                                chunk%tiles(t)%field%energy1,        &
+                                chunk%tiles(t)%field%u,              &
+                                chunk%tiles(t)%field%vector_p,       &
+                                chunk%tiles(t)%field%vector_sd,      &
+                                chunk%tiles(right_idx)%field%x_min,          &
+                                chunk%tiles(right_idx)%field%x_max,          &
+                                chunk%tiles(right_idx)%field%y_min,          &
+                                chunk%tiles(right_idx)%field%y_max,          &
+                                chunk%tiles(right_idx)%tile_neighbours,     &
+                                chunk%tiles(right_idx)%field%density,        &
+                                chunk%tiles(right_idx)%field%energy0,        &
+                                chunk%tiles(right_idx)%field%energy1,        &
+                                chunk%tiles(right_idx)%field%u,              &
+                                chunk%tiles(right_idx)%field%vector_p,       &
+                                chunk%tiles(right_idx)%field%vector_sd,      &
+                                halo_exchange_depth,          &
+                                fields,                         &
+                                depth                           )
       ENDIF
     ENDDO
-    IF (profiler_on) profiler%halo_update = profiler%halo_update + (timer() - halo_time)
   ENDIF
 
 END SUBROUTINE update_boundary

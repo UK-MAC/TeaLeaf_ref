@@ -229,6 +229,7 @@ SUBROUTINE tea_decompose_tiles(x_cells, y_cells)
       chunk%tiles(t)%tile_coords(1) = j
 
       chunk%tiles(t)%tile_neighbours = EXTERNAL_FACE
+      ! FIXME do tile neighours properly
 
       IF (k .NE. tile_dims(2)) THEN
         chunk%tiles(t)%tile_neighbours(CHUNK_BOTTOM) = CHUNK_TOP
