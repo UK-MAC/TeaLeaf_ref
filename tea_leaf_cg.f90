@@ -1,14 +1,14 @@
 
 MODULE tea_leaf_cg_module
 
-  USE tea_leaf_kernel_cg_module
+  USE tea_leaf_cg_kernel_module
   USE definitions_module
 
   IMPLICIT NONE
 
 CONTAINS
 
-SUBROUTINE tea_leaf_init_cg(rx, ry, rro)
+SUBROUTINE tea_leaf_cg_init(rx, ry, rro)
 
   IMPLICIT NONE
 
@@ -17,7 +17,7 @@ SUBROUTINE tea_leaf_init_cg(rx, ry, rro)
 
   IF (use_fortran_kernels) THEN
     DO t=1,tiles_per_task
-      CALL tea_leaf_init_cg_kernel(chunk%tiles(t)%field%x_min, &
+      CALL tea_leaf_cg_init_kernel(chunk%tiles(t)%field%x_min, &
           chunk%tiles(t)%field%x_max,                                  &
           chunk%tiles(t)%field%y_min,                                  &
           chunk%tiles(t)%field%y_max,                                  &
@@ -38,7 +38,7 @@ SUBROUTINE tea_leaf_init_cg(rx, ry, rro)
     ENDDO
   ENDIF
 
-END SUBROUTINE tea_leaf_init_cg
+END SUBROUTINE tea_leaf_cg_init
 
 SUBROUTINE tea_leaf_cg_calc_w(rx, ry, pw)
 

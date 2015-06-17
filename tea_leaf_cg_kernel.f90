@@ -19,13 +19,15 @@
 !>  @author Michael Boulton, Wayne Gaudin
 !>  @details Implicitly calculates the change in temperature using CG method
 
-MODULE tea_leaf_kernel_cg_module
+MODULE tea_leaf_cg_kernel_module
 
-USE tea_leaf_kernel_common_module
+  USE tea_leaf_common_kernel_module
+
+  IMPLICIT NONE
 
 CONTAINS
 
-SUBROUTINE tea_leaf_init_cg_kernel(x_min,  &
+SUBROUTINE tea_leaf_cg_init_kernel(x_min,  &
                            x_max,                  &
                            y_min,                  &
                            y_max,                  &
@@ -106,7 +108,7 @@ SUBROUTINE tea_leaf_init_cg_kernel(x_min,  &
 !$OMP END DO
 !$OMP END PARALLEL
 
-END SUBROUTINE tea_leaf_init_cg_kernel
+END SUBROUTINE tea_leaf_cg_init_kernel
 
 SUBROUTINE tea_leaf_cg_calc_w_kernel(x_min,             &
                                                    x_max,             &

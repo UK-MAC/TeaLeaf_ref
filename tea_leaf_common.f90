@@ -1,7 +1,7 @@
 
 MODULE tea_leaf_common_module
 
-  USE tea_leaf_kernel_common_module
+  USE tea_leaf_common_kernel_module
   USE definitions_module
 
   IMPLICIT NONE
@@ -89,6 +89,27 @@ SUBROUTINE tea_leaf_calc_2norm(norm)
   ENDIF
 
 END SUBROUTINE
+
+SUBROUTINE tea_leaf_finalise()
+
+  IMPLICIT NONE
+
+  INTEGER :: t
+
+  IF (use_fortran_kernels) THEN
+    DO t=1,tiles_per_task
+      CALL tea_leaf_kernel_finalise(chunk%tiles(t)%field%x_min, &
+          chunk%tiles(t)%field%x_max,                           &
+          chunk%tiles(t)%field%y_min,                           &
+          chunk%tiles(t)%field%y_max,                           &
+          halo_exchange_depth,                           &
+          chunk%tiles(t)%field%energy1,                         &
+          chunk%tiles(t)%field%density,                         &
+          chunk%tiles(t)%field%u)
+    ENDDO
+  ENDIF
+
+END SUBROUTINE tea_leaf_finalise
 
 END MODULE
 

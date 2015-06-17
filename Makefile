@@ -158,8 +158,9 @@ FORTRAN_FILES=\
 	tea_leaf_common.o             \
 	tea_leaf_cg_kernel.o             	\
 	tea_leaf_cg.o             	\
-	tea_leaf_jacobi.o             \
+	tea_leaf_cheby_kernel.o             	\
 	tea_leaf_cheby.o             	\
+	tea_leaf_jacobi.o             \
 	tea_leaf_ppcg.o             	\
 	tea_solve.o                   \
 	visit.o			\

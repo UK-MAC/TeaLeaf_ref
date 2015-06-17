@@ -1,4 +1,4 @@
-MODULE tea_leaf_kernel_common_module
+MODULE tea_leaf_common_kernel_module
 
   IMPLICIT NONE
 
@@ -448,5 +448,4 @@ SUBROUTINE tea_block_solve(x_min,             &
 
 END SUBROUTINE
 
-END MODULE tea_leaf_kernel_common_module
-
+END MODULE tea_leaf_common_kernel_module

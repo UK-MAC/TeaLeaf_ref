@@ -25,9 +25,9 @@ MODULE tea_leaf_module
   USE data_module
   USE tea_leaf_common_module
   USE tea_leaf_cg_module
+  USE tea_leaf_cheby_module
   USE tea_leaf_kernel_jacobi_module
   USE tea_leaf_kernel_ppcg_module
-  USE tea_leaf_kernel_cheby_module
   USE update_halo_module
 
   IMPLICIT NONE
@@ -125,7 +125,7 @@ SUBROUTINE tea_leaf()
 
   IF (tl_use_cg .OR. tl_use_chebyshev .OR. tl_use_ppcg) THEN
     ! All 3 of these solvers use the CG kernels
-    CALL tea_leaf_init_cg(rx, ry, rro)
+    CALL tea_leaf_cg_init(rx, ry, rro)
 
     ! and globally sum rro
     IF (profiler_on) dot_product_time=timer()
@@ -227,28 +227,7 @@ SUBROUTINE tea_leaf()
 
           cheby_calc_steps = 1
         ELSE
-          IF (use_fortran_kernels) THEN
-            DO t=1,tiles_per_task
-              CALL tea_leaf_kernel_cheby_iterate(chunk%tiles(t)%field%x_min,&
-                          chunk%tiles(t)%field%x_max,                       &
-                          chunk%tiles(t)%field%y_min,                       &
-                          chunk%tiles(t)%field%y_max,                       &
-                          halo_exchange_depth,                       &
-                          chunk%tiles(t)%field%u,                           &
-                          chunk%tiles(t)%field%u0,                          &
-                          chunk%tiles(t)%field%vector_p,                    &
-                          chunk%tiles(t)%field%vector_r,                    &
-                          chunk%tiles(t)%field%vector_Mi,                   &
-                          chunk%tiles(t)%field%vector_w,                    &
-                          chunk%tiles(t)%field%vector_z,                    &
-                          chunk%tiles(t)%field%vector_Kx,                   &
-                          chunk%tiles(t)%field%vector_Ky,                   &
-                          chunk%tiles(t)%field%tri_cp,   &
-                          chunk%tiles(t)%field%tri_bfp,    &
-                          ch_alphas, ch_betas, max_cheby_iters,        &
-                          rx, ry, cheby_calc_steps, tl_preconditioner_type)
-            ENDDO
-          ENDIF
+          CALL tea_leaf_cheby_iterate(rx, ry, ch_alphas, ch_betas, max_cheby_iters, cheby_calc_steps)
 
           ! after estimated number of iterations has passed, calc resid.
           ! Leaving 10 iterations between each global reduction won't affect
@@ -438,18 +417,7 @@ SUBROUTINE tea_leaf()
   ! RESET
   IF (profiler_on) reset_time=timer()
 
-  IF (use_fortran_kernels) THEN
-    DO t=1,tiles_per_task
-      CALL tea_leaf_kernel_finalise(chunk%tiles(t)%field%x_min, &
-          chunk%tiles(t)%field%x_max,                           &
-          chunk%tiles(t)%field%y_min,                           &
-          chunk%tiles(t)%field%y_max,                           &
-          halo_exchange_depth,                           &
-          chunk%tiles(t)%field%energy1,                         &
-          chunk%tiles(t)%field%density,                         &
-          chunk%tiles(t)%field%u)
-    ENDDO
-  ENDIF
+  CALL tea_leaf_finalise()
 
   fields=0
   fields(FIELD_ENERGY1) = 1
@@ -633,28 +601,7 @@ SUBROUTINE tea_leaf_cheby_first_step(ch_alphas, ch_betas, fields, &
   IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
 
   ! initialise 'p' array
-  IF (use_fortran_kernels) THEN
-    DO t=1,tiles_per_task
-      CALL tea_leaf_kernel_cheby_init(chunk%tiles(t)%field%x_min,&
-            chunk%tiles(t)%field%x_max,                          &
-            chunk%tiles(t)%field%y_min,                          &
-            chunk%tiles(t)%field%y_max,                          &
-            halo_exchange_depth,                          &
-            chunk%tiles(t)%field%u,                              &
-            chunk%tiles(t)%field%u0,                             &
-            chunk%tiles(t)%field%vector_p,                       &
-            chunk%tiles(t)%field%vector_r,                       &
-            chunk%tiles(t)%field%vector_Mi,                      &
-            chunk%tiles(t)%field%vector_w,                       &
-            chunk%tiles(t)%field%vector_z,                       &
-            chunk%tiles(t)%field%vector_Kx,                      &
-            chunk%tiles(t)%field%vector_Ky,                      &
-            chunk%tiles(t)%field%tri_cp,   &
-            chunk%tiles(t)%field%tri_bfp,    &
-            ch_alphas, ch_betas, max_cheby_iters,           &
-            rx, ry, theta, error, tl_preconditioner_type)
-    ENDDO
-  ENDIF
+  CALL tea_leaf_cheby_init(rx, ry, ch_alphas, ch_betas, max_cheby_iters, theta)
 
   IF (profiler_on) halo_time = timer()
   CALL update_halo(fields,1)

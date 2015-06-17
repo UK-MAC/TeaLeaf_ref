@@ -1,7 +1,7 @@
 MODULE tea_leaf_kernel_ppcg_module
 
-USE tea_leaf_kernel_common_module
-USE tea_leaf_kernel_cheby_module
+USE tea_leaf_common_kernel_module
+USE tea_leaf_cheby_kernel_module
 
 IMPLICIT NONE
 
