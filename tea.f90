@@ -229,22 +229,21 @@ SUBROUTINE tea_decompose_tiles(x_cells, y_cells)
       chunk%tiles(t)%tile_coords(1) = j
 
       chunk%tiles(t)%tile_neighbours = EXTERNAL_FACE
-      ! FIXME do tile neighours properly
 
-      IF (k .NE. tile_dims(2)) THEN
-        chunk%tiles(t)%tile_neighbours(CHUNK_BOTTOM) = CHUNK_TOP
+      IF (k .NE. tile_dims(2)-1) THEN
+        chunk%tiles(t)%tile_neighbours(CHUNK_TOP) = (k+1)*tile_dims(1) + (j+0) + 1
       ENDIF
 
-      IF (j .NE. tile_dims(1)) THEN
-        chunk%tiles(t)%tile_neighbours(CHUNK_LEFT) = CHUNK_RIGHT
+      IF (j .NE. tile_dims(1)-1) THEN
+        chunk%tiles(t)%tile_neighbours(CHUNK_RIGHT) = (k+0)*tile_dims(1) + (j+1) + 1
       ENDIF
 
-      IF (k .NE. 1) THEN
-        chunk%tiles(t)%tile_neighbours(CHUNK_BOTTOM) = CHUNK_BOTTOM
+      IF (k .NE. 0) THEN
+        chunk%tiles(t)%tile_neighbours(CHUNK_BOTTOM) = (k-1)*tile_dims(1) + (j+0) + 1
       ENDIF
 
-      IF (j .NE. 1) THEN
-        chunk%tiles(t)%tile_neighbours(CHUNK_LEFT) = CHUNK_LEFT
+      IF (j .NE. 0) THEN
+        chunk%tiles(t)%tile_neighbours(CHUNK_LEFT) = (k+0)*tile_dims(1) + (j-1) + 1
       ENDIF
     ENDDO
   ENDDO
