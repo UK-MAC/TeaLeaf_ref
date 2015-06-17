@@ -196,9 +196,9 @@ SUBROUTINE tea_decompose_tiles(x_cells, y_cells)
   mod_x=MOD(x_cells,tiles_x)
   mod_y=MOD(y_cells,tiles_y)
 
-  DO k=1,tile_dims(2)
-    DO j=1,tile_dims(1)
-      t = k*tile_dims(1) + j
+  DO k=0,tile_dims(2)-1
+    DO j=0,tile_dims(1)-1
+      t = k*tile_dims(1) + j + 1
 
       tile_coords(2) = k
       tile_coords(1) = j

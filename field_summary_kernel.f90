@@ -45,8 +45,7 @@ SUBROUTINE field_summary_kernel(x_min,x_max,y_min,y_max,halo_exchange_depth, &
   ie=0.0
   temp=0.0
 
-!$OMP PARALLEL PRIVATE(cell_vol,cell_mass) REDUCTION(+ : vol,mass,ie,temp)
-!$OMP DO
+!$OMP DO REDUCTION(+ : vol,mass,ie,temp)
   DO k=y_min,y_max
     DO j=x_min,x_max
       cell_vol=volume(j,k)
@@ -58,7 +57,6 @@ SUBROUTINE field_summary_kernel(x_min,x_max,y_min,y_max,halo_exchange_depth, &
     ENDDO
   ENDDO
 !$OMP END DO
-!$OMP END PARALLEL
 
 END SUBROUTINE field_summary_kernel
 

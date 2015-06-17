@@ -73,7 +73,7 @@ SUBROUTINE call_packing_functions(fields, depth, face, packing, mpi_buffer, offs
       IMPLICIT NONE
 
       INTEGER      :: depth,x_min,x_max,y_min,y_max,buffer_offset, x_inc, y_inc,halo_exchange_depth
-      REAL(KIND=8) :: field(:,:)
+      REAL(KIND=8) :: field(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth)
       REAL(KIND=8) :: mpi_buffer(:)
     END SUBROUTINE
   END INTERFACE

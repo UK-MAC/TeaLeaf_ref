@@ -32,6 +32,7 @@ SUBROUTINE field_summary()
   IMPLICIT NONE
 
   REAL(KIND=8) :: vol,mass,ie,temp
+  REAL(KIND=8) :: private_vol,private_mass,private_ie,private_temp
   REAL(KIND=8) :: qa_diff
 
 !$ INTEGER :: OMP_GET_THREAD_NUM
@@ -47,21 +48,33 @@ SUBROUTINE field_summary()
                                           ,'Energy','U'
   ENDIF
 
+  vol=0.0
+  mass=0.0
+  ie=0.0
+  temp=0.0
+
   IF(profiler_on) kernel_time=timer()
   IF(use_fortran_kernels)THEN
-    !FIXME reductions
+!$OMP PARALLEL &
+!$OMP REDUCTION(+ : vol,mass,ie,temp) &
+!$OMP PRIVATE(private_vol,private_mass,private_ie,private_temp)
     DO t=1,tiles_per_task
       CALL field_summary_kernel(chunk%tiles(t)%field%x_min,                   &
                                 chunk%tiles(t)%field%x_max,                   &
                                 chunk%tiles(t)%field%y_min,                   &
                                 chunk%tiles(t)%field%y_max,                   &
-                                halo_exchange_depth, &
+                                halo_exchange_depth,                          &
                                 chunk%tiles(t)%field%volume,                  &
                                 chunk%tiles(t)%field%density,                 &
                                 chunk%tiles(t)%field%energy1,                 &
                                 chunk%tiles(t)%field%u,                       &
-                                vol,mass,ie,temp                         )
+                                private_vol,private_mass,private_ie,private_temp)
+      vol = vol + private_vol
+      mass = mass + private_mass
+      ie = ie + private_ie
+      temp = temp + private_temp
     ENDDO
+!$OMP END PARALLEL
   ENDIF
 
   ! For mpi I need a reduction here
