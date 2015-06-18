@@ -44,6 +44,7 @@ CONTAINS
 
   SUBROUTINE update_halo_kernel(x_min,x_max,y_min,y_max,halo_exchange_depth, &
                         chunk_neighbours,                                           &
+                        tile_neighbours,                                           &
                         density,                                                    &
                         energy0,                                                    &
                         energy1,                                                    &
@@ -55,7 +56,7 @@ CONTAINS
   IMPLICIT NONE
 
   INTEGER :: x_min,x_max,y_min,y_max,halo_exchange_depth
-  INTEGER, DIMENSION(4) :: chunk_neighbours
+  INTEGER, DIMENSION(4) :: chunk_neighbours, tile_neighbours
   REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: density,energy0,energy1, u, sd, p
 
   INTEGER :: fields(NUM_FIELDS),depth
@@ -64,27 +65,33 @@ CONTAINS
 
   ! Update values in external halo cells based on depth and fields requested
   IF (fields(FIELD_DENSITY).EQ.1) THEN
-    CALL update_halo_cell(x_min, x_max, y_min, y_max, halo_exchange_depth, chunk_neighbours, density, depth)
+    CALL update_halo_cell(x_min, x_max, y_min, y_max, halo_exchange_depth,  &
+      chunk_neighbours, tile_neighbours, density, depth)
   ENDIF
 
   IF (fields(FIELD_ENERGY0).EQ.1) THEN
-    CALL update_halo_cell(x_min, x_max, y_min, y_max, halo_exchange_depth, chunk_neighbours, energy0, depth)
+    CALL update_halo_cell(x_min, x_max, y_min, y_max, halo_exchange_depth,  &
+      chunk_neighbours, tile_neighbours, energy0, depth)
   ENDIF
 
   IF (fields(FIELD_ENERGY1).EQ.1) THEN
-    CALL update_halo_cell(x_min, x_max, y_min, y_max, halo_exchange_depth, chunk_neighbours, energy1, depth)
+    CALL update_halo_cell(x_min, x_max, y_min, y_max, halo_exchange_depth,  &
+      chunk_neighbours, tile_neighbours, energy1, depth)
   ENDIF
 
   IF (fields(FIELD_U).EQ.1) THEN
-    CALL update_halo_cell(x_min, x_max, y_min, y_max, halo_exchange_depth, chunk_neighbours, u, depth)
+    CALL update_halo_cell(x_min, x_max, y_min, y_max, halo_exchange_depth,  &
+      chunk_neighbours, tile_neighbours, u, depth)
   ENDIF
 
   IF (fields(FIELD_p).EQ.1) THEN
-    CALL update_halo_cell(x_min, x_max, y_min, y_max, halo_exchange_depth, chunk_neighbours, p, depth)
+    CALL update_halo_cell(x_min, x_max, y_min, y_max, halo_exchange_depth,  &
+      chunk_neighbours, tile_neighbours, p, depth)
   ENDIF
 
   IF (fields(FIELD_sd).EQ.1) THEN
-    CALL update_halo_cell(x_min, x_max, y_min, y_max, halo_exchange_depth, chunk_neighbours, sd, depth)
+    CALL update_halo_cell(x_min, x_max, y_min, y_max, halo_exchange_depth,  &
+      chunk_neighbours, tile_neighbours, sd, depth)
   ENDIF
 
 !$OMP END PARALLEL
@@ -93,60 +100,61 @@ END SUBROUTINE update_halo_kernel
 
 SUBROUTINE update_halo_cell(x_min,x_max,y_min,y_max,halo_exchange_depth,    &
                         chunk_neighbours,               &
+                        tile_neighbours,               &
                         mesh,                           &
                         depth                           )
   IMPLICIT NONE
 
   INTEGER :: x_min,x_max,y_min,y_max,halo_exchange_depth
-  INTEGER, DIMENSION(4) :: chunk_neighbours
+  INTEGER, DIMENSION(4) :: chunk_neighbours, tile_neighbours
   REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: mesh
 
   INTEGER :: depth
 
   INTEGER :: j,k
 
-    IF (chunk_neighbours(CHUNK_LEFT).EQ.EXTERNAL_FACE) THEN
+  IF (chunk_neighbours(CHUNK_LEFT).EQ.EXTERNAL_FACE .AND. tile_neighbours(CHUNK_LEFT).EQ.EXTERNAL_FACE) THEN
 !$OMP DO COLLAPSE(2)
-      DO k=y_min-depth,y_max+depth
-        DO j=1,depth
-          mesh(1-j,k)=mesh(0+j,k)
-        ENDDO
+    DO k=y_min-depth,y_max+depth
+      DO j=1,depth
+        mesh(1-j,k)=mesh(0+j,k)
       ENDDO
+    ENDDO
 !$OMP END DO NOWAIT
-    ENDIF
-    IF (chunk_neighbours(CHUNK_RIGHT).EQ.EXTERNAL_FACE) THEN
+  ENDIF
+  IF (chunk_neighbours(CHUNK_RIGHT).EQ.EXTERNAL_FACE .AND. tile_neighbours(CHUNK_RIGHT).EQ.EXTERNAL_FACE) THEN
 !$OMP DO COLLAPSE(2)
-      DO k=y_min-depth,y_max+depth
-        DO j=1,depth
-          mesh(x_max+j,k)=mesh(x_max+1-j,k)
-        ENDDO
+    DO k=y_min-depth,y_max+depth
+      DO j=1,depth
+        mesh(x_max+j,k)=mesh(x_max+1-j,k)
       ENDDO
+    ENDDO
 !$OMP END DO NOWAIT
-    ENDIF
+  ENDIF
 
-    ! Don't need barrier if depth is only 1
-    IF (depth .gt. 1) then
+  ! Don't need barrier if depth is only 1
+!$  IF (depth .gt. 1) then
 !$OMP BARRIER
-    ENDIF
+!$  ENDIF
 
-    IF (chunk_neighbours(CHUNK_BOTTOM).EQ.EXTERNAL_FACE) THEN
+  IF (chunk_neighbours(CHUNK_BOTTOM).EQ.EXTERNAL_FACE .AND. tile_neighbours(CHUNK_BOTTOM).EQ.EXTERNAL_FACE) THEN
 !$OMP DO COLLAPSE(2)
-      DO k=1,depth
-        DO j=x_min-depth,x_max+depth
-          mesh(j,1-k)=mesh(j,0+k)
-        ENDDO
+    DO k=1,depth
+      DO j=x_min-depth,x_max+depth
+        mesh(j,1-k)=mesh(j,0+k)
       ENDDO
+    ENDDO
 !$OMP END DO NOWAIT
-    ENDIF
-    IF (chunk_neighbours(CHUNK_TOP).EQ.EXTERNAL_FACE) THEN
+  ENDIF
+  IF (chunk_neighbours(CHUNK_TOP).EQ.EXTERNAL_FACE .AND. tile_neighbours(CHUNK_TOP).EQ.EXTERNAL_FACE) THEN
 !$OMP DO COLLAPSE(2)
-      DO k=1,depth
-        DO j=x_min-depth,x_max+depth
-          mesh(j,y_max+k)=mesh(j,y_max+1-k)
-        ENDDO
+    DO k=1,depth
+      DO j=x_min-depth,x_max+depth
+        mesh(j,y_max+k)=mesh(j,y_max+1-k)
       ENDDO
+    ENDDO
 !$OMP END DO NOWAIT
-    ENDIF
+  ENDIF
 
 END SUBROUTINE update_halo_cell
 
