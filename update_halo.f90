@@ -58,6 +58,7 @@ SUBROUTINE update_boundary(fields,depth)
 !$OMP PARALLEL
 !$OMP DO
       DO t=1,tiles_per_task
+! FIXME chunk neighbours and tile neighbours
         CALL update_halo_kernel(chunk%tiles(t)%field%x_min,          &
                                 chunk%tiles(t)%field%x_max,          &
                                 chunk%tiles(t)%field%y_min,          &
