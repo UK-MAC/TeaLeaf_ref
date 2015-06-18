@@ -78,6 +78,9 @@ SUBROUTINE update_boundary(fields,depth)
     ENDIF
   ENDIF
 
+  IF (profiler_on) profiler%halo_update = profiler%halo_update + (timer() - halo_time)
+  IF (profiler_on) halo_time=timer()
+
   IF(use_fortran_kernels)THEN
 !$OMP PARALLEL PRIVATE(right_idx, up_idx)
 !$OMP DO
@@ -156,7 +159,7 @@ SUBROUTINE update_boundary(fields,depth)
 !$OMP END PARALLEL
   ENDIF
 
-  IF (profiler_on) profiler%halo_update = profiler%halo_update + (timer() - halo_time)
+  IF (profiler_on) profiler%internal_halo_update = profiler%internal_halo_update + (timer() - halo_time)
 
 END SUBROUTINE update_boundary
 

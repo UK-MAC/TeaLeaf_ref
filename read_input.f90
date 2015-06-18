@@ -66,6 +66,8 @@ SUBROUTINE read_input()
   profiler%visit=0.0
   profiler%summary=0.0
   profiler%halo_exchange=0.0
+  profiler%halo_update=0.0
+  profiler%internal_halo_update=0.0
   profiler%tea_init=0.0
   profiler%tea_solve=0.0
   profiler%tea_reset=0.0

@@ -103,6 +103,7 @@ MODULE definitions_module
                           ,set_field       &
                           ,dot_product     &
                           ,halo_update     &
+                          ,internal_halo_update     &
                           ,halo_exchange
 
    END TYPE profiler_type
