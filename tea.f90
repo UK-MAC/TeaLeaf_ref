@@ -31,44 +31,14 @@
 
 MODULE tea_module
 
-  USE data_module
   USE definitions_module
   USE pack_module
-  !USE MPI
+  USE global_mpi_module
+  USE report_module
 
   IMPLICIT NONE
 
-  include "mpif.h"
-
 CONTAINS
-
-SUBROUTINE tea_barrier
-
-  INTEGER :: err
-
-  CALL MPI_BARRIER(mpi_cart_comm,err)
-
-END SUBROUTINE tea_barrier
-
-SUBROUTINE tea_abort
-
-  INTEGER :: ierr,err
-
-  CALL MPI_ABORT(mpi_cart_comm,ierr,err)
-
-END SUBROUTINE tea_abort
-
-SUBROUTINE tea_finalize
-
-  INTEGER :: err
-
-  CLOSE(g_out)
-  CALL FLUSH(0)
-  CALL FLUSH(6)
-  CALL FLUSH(g_out)
-  CALL MPI_FINALIZE(err)
-
-END SUBROUTINE tea_finalize
 
 SUBROUTINE tea_init_comms
 
@@ -103,6 +73,18 @@ SUBROUTINE tea_init_comms
   parallel%max_task=size
 
 END SUBROUTINE tea_init_comms
+
+SUBROUTINE tea_finalize
+
+  INTEGER :: err
+
+  CLOSE(g_out)
+  CALL FLUSH(0)
+  CALL FLUSH(6)
+  CALL FLUSH(g_out)
+  CALL MPI_FINALIZE(err)
+
+END SUBROUTINE tea_finalize
 
 SUBROUTINE tea_decompose(x_cells,y_cells)
 
@@ -319,9 +301,9 @@ SUBROUTINE tea_exchange(fields,depth)
     INTEGER, dimension(MPI_STATUS_SIZE,4) :: status_lr, status_ud
     LOGICAL :: test_complete
 
-    CALL report_error("tea_exchange", "Not yet implemented")
-
     IF (ALL(chunk%chunk_neighbours .eq. EXTERNAL_FACE)) return
+
+    CALL report_error("tea_exchange", "Not yet implemented")
 
     exchange_size_lr = depth*(chunk%y_cells+2*depth)
     exchange_size_ud = depth*(chunk%x_cells+2*depth)
@@ -544,116 +526,5 @@ SUBROUTINE tea_send_recv_message_bottom(bottom_snd_buffer, bottom_rcv_buffer,   
                 ,mpi_cart_comm,req_recv,err)
 
 END SUBROUTINE tea_send_recv_message_bottom
-
-SUBROUTINE tea_sum(value)
-
-  ! Only sums to the master
-
-  IMPLICIT NONE
-
-  REAL(KIND=8) :: value
-
-  REAL(KIND=8) :: total
-
-  INTEGER :: err
-
-  total=value
-
-  CALL MPI_REDUCE(value,total,1,MPI_DOUBLE_PRECISION,MPI_SUM,0,mpi_cart_comm,err)
-
-  value=total
-
-END SUBROUTINE tea_sum
-
-SUBROUTINE tea_allsum(value)
-
-  ! Global reduction for CG solver
-
-  IMPLICIT NONE
-
-  REAL(KIND=8) :: value
-
-  REAL(KIND=8) :: total
-
-  INTEGER :: err
-
-  total=value
-
-  CALL MPI_ALLREDUCE(value,total,1,MPI_DOUBLE_PRECISION,MPI_SUM,mpi_cart_comm,err)
-
-  value=total
-
-END SUBROUTINE tea_allsum
-
-SUBROUTINE tea_min(value)
-
-  IMPLICIT NONE
-
-  REAL(KIND=8) :: value
-
-  REAL(KIND=8) :: minimum
-
-  INTEGER :: err
-
-  minimum=value
-
-  CALL MPI_ALLREDUCE(value,minimum,1,MPI_DOUBLE_PRECISION,MPI_MIN,mpi_cart_comm,err)
-
-  value=minimum
-
-END SUBROUTINE tea_min
-
-SUBROUTINE tea_max(value)
-
-  IMPLICIT NONE
-
-  REAL(KIND=8) :: value
-
-  REAL(KIND=8) :: maximum
-
-  INTEGER :: err
-
-  maximum=value
-
-  CALL MPI_ALLREDUCE(value,maximum,1,MPI_DOUBLE_PRECISION,MPI_MAX,mpi_cart_comm,err)
-
-  value=maximum
-
-END SUBROUTINE tea_max
-
-SUBROUTINE tea_allgather(value,values)
-
-  IMPLICIT NONE
-
-  REAL(KIND=8) :: value
-
-  REAL(KIND=8) :: values(parallel%max_task)
-
-  INTEGER :: err
-
-  values(1)=value ! Just to ensure it will work in serial
-
-  CALL MPI_ALLGATHER(value,1,MPI_DOUBLE_PRECISION,values,1,MPI_DOUBLE_PRECISION,mpi_cart_comm,err)
-
-END SUBROUTINE tea_allgather
-
-SUBROUTINE tea_check_error(error)
-
-  IMPLICIT NONE
-
-  INTEGER :: error
-
-  INTEGER :: maximum
-
-  INTEGER :: err
-
-  maximum=error
-
-  CALL MPI_ALLREDUCE(error,maximum,1,MPI_INTEGER,MPI_MAX,mpi_cart_comm,err)
-
-  error=maximum
-
-END SUBROUTINE tea_check_error
-
 
 END MODULE tea_module

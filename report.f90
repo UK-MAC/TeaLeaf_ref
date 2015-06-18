@@ -22,7 +22,7 @@
 MODULE report_module
 
   USE data_module
-  USE tea_module
+  USE global_mpi_module
 
 CONTAINS
 

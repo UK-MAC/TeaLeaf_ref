@@ -134,6 +134,7 @@ FORTRAN_FILES=\
 	definitions.o			\
 	pack.o			\
 	pack_kernel.o			\
+	global_mpi.o				\
 	tea.o				\
 	report.o			\
 	timer.o			\

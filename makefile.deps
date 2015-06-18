@@ -19,10 +19,7 @@ tea_solve.o :  \
 	update_halo.o \
 	tea_leaf_common.o
 
-start.o :  \
-	set_field.o \
-	update_halo.o \
-	parse.o \
+build_field.o :  \
 	tea.o
 
 tea_leaf_common.o :  \
@@ -84,12 +81,17 @@ definitions.o :  \
 tea_leaf_cg_kernel.o :  \
 	tea_leaf_common_kernel.o
 
-generate_chunk_kernel.o : 
-
-build_field.o :  \
+start.o :  \
+	set_field.o \
+	update_halo.o \
+	parse.o \
 	tea.o
 
+generate_chunk_kernel.o : 
+
 timer.o : 
+
+initialise_chunk_kernel.o : 
 
 update_halo.o :  \
 	update_halo_kernel.o \
@@ -97,11 +99,13 @@ update_halo.o :  \
 	report.o \
 	tea.o
 
-initialise_chunk_kernel.o : 
+global_mpi.o :  \
+	definitions.o
 
 tea.o :  \
 	pack.o \
-	data.o \
+	global_mpi.o \
+	report.o \
 	definitions.o
 
 tea_leaf_ppcg.o :  \
@@ -138,10 +142,10 @@ diffuse.o :  \
 	tea_solve.o \
 	tea.o
 
-report.o :  \
-	data.o \
-	tea.o
-
 set_field.o :  \
 	set_field_kernel.o \
 	tea.o
+
+report.o :  \
+	global_mpi.o \
+	data.o
