@@ -17,6 +17,8 @@ SUBROUTINE tea_leaf_cheby_init(rx, ry, ch_alphas, ch_betas, max_cheby_iters, the
   REAL(KIND=8), DIMENSION(:) :: ch_alphas, ch_betas
 
   IF (use_fortran_kernels) THEN
+!$OMP PARALLEL
+!$OMP DO
     DO t=1,tiles_per_task
       CALL tea_leaf_kernel_cheby_init(chunk%tiles(t)%field%x_min,&
             chunk%tiles(t)%field%x_max,                          &
@@ -37,6 +39,8 @@ SUBROUTINE tea_leaf_cheby_init(rx, ry, ch_alphas, ch_betas, max_cheby_iters, the
             ch_alphas, ch_betas, max_cheby_iters,           &
             rx, ry, theta, tl_preconditioner_type)
     ENDDO
+!$OMP END DO
+!$OMP END PARALLEL
   ENDIF
 
 END SUBROUTINE tea_leaf_cheby_init
@@ -50,6 +54,8 @@ SUBROUTINE tea_leaf_cheby_iterate(rx, ry, ch_alphas, ch_betas, max_cheby_iters, 
   REAL(KIND=8), DIMENSION(:) :: ch_alphas, ch_betas
 
   IF (use_fortran_kernels) THEN
+!$OMP PARALLEL
+!$OMP DO
     DO t=1,tiles_per_task
       CALL tea_leaf_kernel_cheby_iterate(chunk%tiles(t)%field%x_min,&
                   chunk%tiles(t)%field%x_max,                       &
@@ -70,6 +76,11 @@ SUBROUTINE tea_leaf_cheby_iterate(rx, ry, ch_alphas, ch_betas, max_cheby_iters, 
                   ch_alphas, ch_betas, max_cheby_iters,        &
                   rx, ry, cheby_calc_steps, tl_preconditioner_type)
     ENDDO
+!$OMP END DO
+!$OMP END PARALLEL
+  ENDIF
+
+END SUBROUTINE tea_leaf_cg_calc_p
   ENDIF
 
 END SUBROUTINE tea_leaf_cheby_iterate
