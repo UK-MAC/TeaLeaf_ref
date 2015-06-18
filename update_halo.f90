@@ -119,7 +119,10 @@ SUBROUTINE update_boundary(fields,depth)
                                 fields,                         &
                                 depth                           )
       ENDIF
-
+    ENDDO
+!$OMP END DO
+!$OMP DO
+    DO t=1,tiles_per_task
       IF (chunk%tiles(t)%tile_neighbours(CHUNK_TOP) .NE. EXTERNAL_FACE) THEN
         up_idx = chunk%tiles(t)%tile_neighbours(CHUNK_TOP)
 
