@@ -80,9 +80,6 @@ SUBROUTINE tea_leaf_cheby_iterate(rx, ry, ch_alphas, ch_betas, max_cheby_iters, 
 !$OMP END PARALLEL
   ENDIF
 
-END SUBROUTINE tea_leaf_cg_calc_p
-  ENDIF
-
 END SUBROUTINE tea_leaf_cheby_iterate
 
 END MODULE tea_leaf_cheby_module
