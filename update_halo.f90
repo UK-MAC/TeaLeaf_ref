@@ -85,11 +85,11 @@ SUBROUTINE update_boundary(fields,depth)
       IF (chunk%tiles(t)%tile_neighbours(CHUNK_RIGHT) .NE. EXTERNAL_FACE) THEN
         right_idx = chunk%tiles(t)%tile_neighbours(CHUNK_RIGHT)
 
-        IF (chunk%tiles(t)%y_cells .NE. chunk%tiles(right_idx)%y_cells) THEN
-!$OMP MASTER
-          CALL report_error("update_halo", "Tried to exchange between two tiles left/right which had different sizes")
-!$OMP END MASTER
-        ENDIF
+!        IF (chunk%tiles(t)%y_cells .NE. chunk%tiles(right_idx)%y_cells) THEN
+!!$OMP MASTER
+!          CALL report_error("update_halo", "Tried to exchange between two tiles left/right which had different sizes")
+!!$OMP END MASTER
+!        ENDIF
 
         CALL update_internal_halo_left_right_kernel(                &
                                 chunk%tiles(t)%field%x_min,          &
@@ -120,11 +120,11 @@ SUBROUTINE update_boundary(fields,depth)
       IF (chunk%tiles(t)%tile_neighbours(CHUNK_TOP) .NE. EXTERNAL_FACE) THEN
         up_idx = chunk%tiles(t)%tile_neighbours(CHUNK_TOP)
 
-        IF (chunk%tiles(t)%x_cells .NE. chunk%tiles(up_idx)%x_cells) THEN
-!$OMP MASTER
-          CALL report_error("update_halo", "Tried to exchange between two tiles bottom/top which had different sizes")
-!$OMP END MASTER
-        ENDIF
+!        IF (chunk%tiles(t)%x_cells .NE. chunk%tiles(up_idx)%x_cells) THEN
+!!$OMP MASTER
+!          CALL report_error("update_halo", "Tried to exchange between two tiles bottom/top which had different sizes")
+!!$OMP END MASTER
+!        ENDIF
 
         CALL update_internal_halo_bottom_top_kernel(                &
                                 chunk%tiles(t)%field%x_min,          &
