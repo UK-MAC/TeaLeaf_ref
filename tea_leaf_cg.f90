@@ -21,6 +21,8 @@ SUBROUTINE tea_leaf_cg_init(rx, ry, rro)
 !$OMP PARALLEL PRIVATE(private_rro)
 !$OMP DO REDUCTION(+:rro)
     DO t=1,tiles_per_task
+      private_rro = 0.0_8
+
       CALL tea_leaf_cg_init_kernel(chunk%tiles(t)%field%x_min, &
           chunk%tiles(t)%field%x_max,                                  &
           chunk%tiles(t)%field%y_min,                                  &
@@ -61,6 +63,8 @@ SUBROUTINE tea_leaf_cg_calc_w(rx, ry, pw)
 !$OMP PARALLEL PRIVATE(private_pw)
 !$OMP DO REDUCTION(+:pw)
     DO t=1,tiles_per_task
+      private_pw = 0.0_8
+
       CALL tea_leaf_cg_calc_w_kernel(chunk%tiles(t)%field%x_min,&
           chunk%tiles(t)%field%x_max,                                         &
           chunk%tiles(t)%field%y_min,                                         &
@@ -93,6 +97,8 @@ SUBROUTINE tea_leaf_cg_calc_ur(rx, ry, alpha, rrn)
 !$OMP PARALLEL PRIVATE(private_rrn)
 !$OMP DO REDUCTION(+:rrn)
     DO t=1,tiles_per_task
+      private_rrn = 0.0_8
+
       CALL tea_leaf_cg_calc_ur_kernel(chunk%tiles(t)%field%x_min,&
           chunk%tiles(t)%field%x_max,                                          &
           chunk%tiles(t)%field%y_min,                                          &

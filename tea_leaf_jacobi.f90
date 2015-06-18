@@ -21,6 +21,8 @@ SUBROUTINE tea_leaf_jacobi_solve(rx, ry, error)
 !$OMP PARALLEL PRIVATE(private_error)
 !$OMP DO REDUCTION(+:error)
     DO t=1,tiles_per_task
+      private_error = 0.0_8
+
       CALL tea_leaf_jacobi_solve_kernel(chunk%tiles(t)%field%x_min,&
           chunk%tiles(t)%field%x_max,                       &
           chunk%tiles(t)%field%y_min,                       &

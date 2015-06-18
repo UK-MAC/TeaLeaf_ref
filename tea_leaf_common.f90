@@ -90,6 +90,8 @@ SUBROUTINE tea_leaf_calc_2norm(norm)
 !$OMP PARALLEL PRIVATE(private_norm)
 !$OMP DO REDUCTION(+:norm)
     DO t=1,tiles_per_task
+      private_norm = 0.0_8
+
       CALL tea_leaf_calc_2norm_kernel(chunk%tiles(t)%field%x_min,        &
           chunk%tiles(t)%field%x_max,                                    &
           chunk%tiles(t)%field%y_min,                                    &

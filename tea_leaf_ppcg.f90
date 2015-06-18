@@ -120,6 +120,8 @@ SUBROUTINE tea_leaf_ppcg_calc_zrnorm(rrn)
 !$OMP PARALLEL PRIVATE(private_rrn)
 !$OMP DO REDUCTION(+:rrn)
     DO t=1,tiles_per_task
+      private_rrn = 0.0_8
+
       CALL tea_leaf_ppcg_calc_zrnorm_kernel(chunk%tiles(t)%field%x_min, &
             chunk%tiles(t)%field%x_max,                           &
             chunk%tiles(t)%field%y_min,                           &

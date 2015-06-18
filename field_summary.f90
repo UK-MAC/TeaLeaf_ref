@@ -59,6 +59,11 @@ SUBROUTINE field_summary()
 !$OMP PARALLEL PRIVATE(private_vol,private_mass,private_ie,private_temp)
 !$OMP DO REDUCTION(+ : vol,mass,ie,temp)
     DO t=1,tiles_per_task
+      private_vol=0.0
+      private_mass=0.0
+      private_ie=0.0
+      private_temp=0.0
+
       CALL field_summary_kernel(chunk%tiles(t)%field%x_min,                   &
                                 chunk%tiles(t)%field%x_max,                   &
                                 chunk%tiles(t)%field%y_min,                   &
