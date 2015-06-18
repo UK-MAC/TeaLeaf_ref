@@ -81,7 +81,7 @@ SUBROUTINE call_packing_functions(fields, depth, face, packing, mpi_buffer, offs
   INTEGER      :: fields(:),depth
   INTEGER      :: offsets(:)
   REAL(KIND=8) :: mpi_buffer(:)
-  INTEGER      :: face,t
+  INTEGER      :: face,t,tile_offset
   LOGICAL      :: packing
 
   PROCEDURE(pack_or_unpack), POINTER :: pack_func => NULL()
@@ -114,11 +114,25 @@ SUBROUTINE call_packing_functions(fields, depth, face, packing, mpi_buffer, offs
     END SELECT
   ENDIF
 
-  ! FIXME make these pack correctly
-
-!$OMP PARALLEL
+!$OMP PARALLEL PRIVATE(tile_offset)
 !$OMP DO
   DO t=1,tiles_per_task
+
+    IF (chunk%tiles(t)%tile_neighbours(face) .NE. EXTERNAL_FACE) THEN
+      CYCLE
+    ENDIF
+
+    SELECT CASE (face)
+    CASE (CHUNK_LEFT)
+      tile_offset = (chunk%tiles(t)%bottom - chunk%bottom)*depth
+    CASE (CHUNK_RIGHT)
+      tile_offset = (chunk%tiles(t)%bottom - chunk%bottom)*depth
+    CASE (CHUNK_BOTTOM)
+      tile_offset = (chunk%tiles(t)%left - chunk%left)*depth
+    CASE (CHUNK_TOP)
+      tile_offset = (chunk%tiles(t)%left - chunk%left)*depth
+    END SELECT
+
     IF (fields(FIELD_DENSITY).EQ.1) THEN
         CALL pack_func(chunk%tiles(t)%field%x_min,                    &
                        chunk%tiles(t)%field%x_max,                    &

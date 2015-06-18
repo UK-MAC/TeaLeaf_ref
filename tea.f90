@@ -303,8 +303,6 @@ SUBROUTINE tea_exchange(fields,depth)
 
     IF (ALL(chunk%chunk_neighbours .eq. EXTERNAL_FACE)) return
 
-    CALL report_error("tea_exchange", "Not yet implemented")
-
     exchange_size_lr = depth*(chunk%y_cells+2*depth)
     exchange_size_ud = depth*(chunk%x_cells+2*depth)
 
