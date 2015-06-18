@@ -279,6 +279,8 @@ SUBROUTINE tea_leaf()
       fields(FIELD_P) = 1
       cg_calc_steps = cg_calc_steps + 1
 
+      ! w = Ap
+      ! pw = p.w
       CALL tea_leaf_cg_calc_w(rx, ry, pw)
 
       IF (profiler_on) dot_product_time=timer()
@@ -289,6 +291,8 @@ SUBROUTINE tea_leaf()
       alpha = rro/pw
       cg_alphas(n) = alpha
 
+      ! u = u + a*p
+      ! r = r - a*w
       CALL tea_leaf_cg_calc_ur(rx, ry, alpha, rrn)
 
       IF (profiler_on) dot_product_time=timer()
@@ -299,6 +303,7 @@ SUBROUTINE tea_leaf()
       beta = rrn/rro
       cg_betas(n) = beta
 
+      ! p = r + b*p
       CALL tea_leaf_cg_calc_p(rx, ry, beta)
 
       error = rrn

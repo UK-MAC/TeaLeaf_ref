@@ -15,6 +15,8 @@ SUBROUTINE tea_leaf_jacobi_solve(rx, ry, error)
   INTEGER :: t
   REAL(KIND=8) :: ry,rx, error, private_error
 
+  error = 0.0_8
+
   IF (use_fortran_kernels) THEN
 !$OMP PARALLEL PRIVATE(private_error)
 !$OMP DO REDUCTION(+:error)
@@ -32,6 +34,8 @@ SUBROUTINE tea_leaf_jacobi_solve(rx, ry, error)
           chunk%tiles(t)%field%u0,                          &
           chunk%tiles(t)%field%u,                           &
           chunk%tiles(t)%field%vector_r)
+
+      error = error + private_error
     ENDDO
 !$OMP END DO
 !$OMP END PARALLEL
