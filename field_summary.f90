@@ -56,9 +56,8 @@ SUBROUTINE field_summary()
   IF(profiler_on) kernel_time=timer()
 
   IF(use_fortran_kernels)THEN
-!$OMP PARALLEL &
-!$OMP REDUCTION(+ : vol,mass,ie,temp) &
-!$OMP PRIVATE(private_vol,private_mass,private_ie,private_temp)
+!$OMP PARALLEL PRIVATE(private_vol,private_mass,private_ie,private_temp)
+!$OMP DO REDUCTION(+ : vol,mass,ie,temp)
     DO t=1,tiles_per_task
       CALL field_summary_kernel(chunk%tiles(t)%field%x_min,                   &
                                 chunk%tiles(t)%field%x_max,                   &
@@ -76,6 +75,7 @@ SUBROUTINE field_summary()
       ie = ie + private_ie
       temp = temp + private_temp
     ENDDO
+!$OMP END DO
 !$OMP END PARALLEL
   ENDIF
 

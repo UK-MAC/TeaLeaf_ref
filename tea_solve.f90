@@ -80,8 +80,6 @@ SUBROUTINE tea_leaf()
   cheby_calc_steps = 0
   cg_calc_steps = 0
 
-  initial_residual = 0.0_8
-
   total_solve_time = timer()
 
   ! INIT
@@ -290,8 +288,6 @@ SUBROUTINE tea_leaf()
 
       alpha = rro/pw
       cg_alphas(n) = alpha
-
-      rrn = 0.0_8
 
       CALL tea_leaf_cg_calc_ur(rx, ry, alpha, rrn)
 

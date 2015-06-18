@@ -209,6 +209,7 @@ SUBROUTINE tea_decompose_tiles(x_cells, y_cells)
       else
         chunk%tiles(t)%bottom = chunk%tiles(t)%bottom + mod_y
       endif
+
       chunk%tiles(t)%top = chunk%tiles(t)%bottom+delta_y - 1
       if (tile_coords(2) .lt. mod_y) then
         chunk%tiles(t)%top = chunk%tiles(t)%top + 1
@@ -220,13 +221,14 @@ SUBROUTINE tea_decompose_tiles(x_cells, y_cells)
       else
         chunk%tiles(t)%left = chunk%tiles(t)%left + mod_x
       endif
+
       chunk%tiles(t)%right = chunk%tiles(t)%left+delta_x - 1
       if (tile_coords(1) .lt. mod_x) then
         chunk%tiles(t)%right = chunk%tiles(t)%right + 1
       endif
 
-      chunk%tiles(t)%tile_coords(2) = k
-      chunk%tiles(t)%tile_coords(1) = j
+      chunk%tiles(t)%tile_coords(2) = k+1
+      chunk%tiles(t)%tile_coords(1) = j+1
 
       chunk%tiles(t)%tile_neighbours = EXTERNAL_FACE
 
@@ -245,6 +247,7 @@ SUBROUTINE tea_decompose_tiles(x_cells, y_cells)
       IF (j .NE. 0) THEN
         chunk%tiles(t)%tile_neighbours(CHUNK_LEFT) = (k+0)*tile_dims(1) + (j-1) + 1
       ENDIF
+
     ENDDO
   ENDDO
 

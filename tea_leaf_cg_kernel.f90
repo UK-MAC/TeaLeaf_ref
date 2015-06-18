@@ -133,8 +133,10 @@ SUBROUTINE tea_leaf_cg_calc_w_kernel(x_min,             &
     INTEGER(KIND=4) :: j,k
     REAL(kind=8) :: pw
 
-!$OMP PARALLEL
-!$OMP DO REDUCTION(+:pw)
+  pw = 0.0_8
+
+!$OMP PARALLEL REDUCTION(+:pw)
+!$OMP DO
     DO k=y_min,y_max
         DO j=x_min,x_max
             w(j, k) = (1.0_8                                      &
@@ -180,8 +182,10 @@ SUBROUTINE tea_leaf_cg_calc_ur_kernel(x_min,             &
   REAL(KIND=8), DIMENSION(x_min:x_max,y_min:y_max) :: cp, bfp
   REAL(KIND=8) :: rx, ry
 
-    INTEGER(KIND=4) :: j,k
-    REAL(kind=8) :: alpha, rrn
+  INTEGER(KIND=4) :: j,k
+  REAL(kind=8) :: alpha, rrn
+
+  rrn = 0.0_8
 
 !$OMP PARALLEL
 !$OMP DO

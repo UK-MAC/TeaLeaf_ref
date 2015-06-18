@@ -42,13 +42,20 @@ SUBROUTINE timestep()
 !$ INTEGER :: OMP_GET_THREAD_NUM
 
   IF(profiler_on) kernel_time=timer()
+
+!$OMP PARALLEL PRIVATE(dtlp)
+!$OMP DO
   DO t=1,tiles_per_task
     CALL calc_dt(dtlp)
 
+!$OMP CRITICAL
     IF(dtlp.LE.dt) THEN
       dt=dtlp
     ENDIF
+!$OMP END CRITICAL
   END DO
+!$OMP END DO
+!$OMP END PARALLEL
 
   CALL tea_min(dt)
 

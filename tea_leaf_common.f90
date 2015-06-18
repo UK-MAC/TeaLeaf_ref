@@ -16,6 +16,8 @@ SUBROUTINE tea_leaf_init_common(rx, ry)
   REAL(KIND=8) :: ry,rx
 
   IF (use_fortran_kernels) THEN
+!$OMP PARALLEL
+!$OMP DO LASTPRIVATE(rx, ry)
     DO t=1,tiles_per_task
       rx = dt/(chunk%tiles(t)%field%celldx(chunk%tiles(t)%field%x_min)**2)
       ry = dt/(chunk%tiles(t)%field%celldy(chunk%tiles(t)%field%y_min)**2)
@@ -40,6 +42,8 @@ SUBROUTINE tea_leaf_init_common(rx, ry)
           chunk%tiles(t)%field%vector_Mi,    &
           rx, ry, tl_preconditioner_type, coefficient)
     ENDDO
+!$OMP END DO
+!$OMP END PARALLEL
   ENDIF
 
 END SUBROUTINE tea_leaf_init_common
@@ -52,6 +56,8 @@ SUBROUTINE tea_leaf_calc_residual(rx, ry)
   REAL(KIND=8) :: ry,rx
 
   IF (use_fortran_kernels) THEN
+!$OMP PARALLEL
+!$OMP DO
     DO t=1,tiles_per_task
       CALL tea_leaf_calc_residual_kernel(chunk%tiles(t)%field%x_min,&
           chunk%tiles(t)%field%x_max,                        &
@@ -65,6 +71,8 @@ SUBROUTINE tea_leaf_calc_residual(rx, ry)
           chunk%tiles(t)%field%vector_Ky,                    &
           rx, ry)
     ENDDO
+!$OMP END DO
+!$OMP END PARALLEL
   ENDIF
 
 END SUBROUTINE
@@ -74,9 +82,13 @@ SUBROUTINE tea_leaf_calc_2norm(norm)
   IMPLICIT NONE
 
   INTEGER :: t
-  REAL(KIND=8) :: norm
+  REAL(KIND=8) :: norm, private_norm
+
+  norm = 0.0_8
 
   IF (use_fortran_kernels) THEN
+!$OMP PARALLEL PRIVATE(private_norm)
+!$OMP DO REDUCTION(+:norm)
     DO t=1,tiles_per_task
       CALL tea_leaf_calc_2norm_kernel(chunk%tiles(t)%field%x_min,        &
           chunk%tiles(t)%field%x_max,                                    &
@@ -84,8 +96,12 @@ SUBROUTINE tea_leaf_calc_2norm(norm)
           chunk%tiles(t)%field%y_max,                                    &
           halo_exchange_depth,                                    &
           chunk%tiles(t)%field%vector_r,                                 &
-          norm)
+          private_norm)
+
+      norm = norm + private_norm
     ENDDO
+!$OMP END DO
+!$OMP END PARALLEL
   ENDIF
 
 END SUBROUTINE
@@ -97,6 +113,8 @@ SUBROUTINE tea_leaf_finalise()
   INTEGER :: t
 
   IF (use_fortran_kernels) THEN
+!$OMP PARALLEL
+!$OMP DO
     DO t=1,tiles_per_task
       CALL tea_leaf_kernel_finalise(chunk%tiles(t)%field%x_min, &
           chunk%tiles(t)%field%x_max,                           &
@@ -107,6 +125,8 @@ SUBROUTINE tea_leaf_finalise()
           chunk%tiles(t)%field%density,                         &
           chunk%tiles(t)%field%u)
     ENDDO
+!$OMP END DO
+!$OMP END PARALLEL
   ENDIF
 
 END SUBROUTINE tea_leaf_finalise
