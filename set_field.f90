@@ -35,8 +35,11 @@ SUBROUTINE set_field()
   REAL(KIND=8) :: kernel_time,timer
 
   IF(profiler_on) kernel_time=timer()
-  DO t=1,tiles_per_task
-    IF(use_fortran_kernels)THEN
+
+  IF(use_fortran_kernels)THEN
+!$OMP PARALLEL
+!$OMP DO
+    DO t=1,tiles_per_task
       CALL set_field_kernel(chunk%tiles(t)%field%x_min,     &
                             chunk%tiles(t)%field%x_max,     &
                             chunk%tiles(t)%field%y_min,     &
@@ -44,8 +47,11 @@ SUBROUTINE set_field()
                             halo_exchange_depth,     &
                             chunk%tiles(t)%field%energy0,   &
                             chunk%tiles(t)%field%energy1)
-    ENDIF
-  ENDDO
+    ENDDO
+!$OMP END DO
+!$OMP END PARALLEL
+  ENDIF
+
   IF(profiler_on) profiler%set_field=profiler%set_field+(timer()-kernel_time)
 
 END SUBROUTINE set_field

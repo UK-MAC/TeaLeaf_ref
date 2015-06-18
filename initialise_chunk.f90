@@ -34,12 +34,14 @@ SUBROUTINE initialise_chunk()
   dx=(grid%xmax - grid%xmin)/REAL(grid%x_cells)
   dy=(grid%ymax - grid%ymin)/REAL(grid%y_cells)
 
-  DO t=1,tiles_per_task
-    xmin=grid%xmin + dx*REAL(chunk%tiles(t)%left-1)
+  IF(use_fortran_kernels) THEN
+!$OMP PARALLEL PRIVATE(xmin, ymin)
+!$OMP DO
+    DO t=1,tiles_per_task
+      xmin=grid%xmin + dx*REAL(chunk%tiles(t)%left-1)
   
-    ymin=grid%ymin + dy*REAL(chunk%tiles(t)%bottom-1)
+      ymin=grid%ymin + dy*REAL(chunk%tiles(t)%bottom-1)
   
-    IF(use_fortran_kernels) THEN
       CALL initialise_chunk_kernel(chunk%tiles(t)%field%x_min,    &
                                    chunk%tiles(t)%field%x_max,    &
                                    chunk%tiles(t)%field%y_min,    &
@@ -56,7 +58,9 @@ SUBROUTINE initialise_chunk()
                                    chunk%tiles(t)%field%volume,   &
                                    chunk%tiles(t)%field%xarea,    &
                                    chunk%tiles(t)%field%yarea     )
-    ENDIF
-  ENDDO
+    ENDDO
+!$OMP END DO
+!$OMP END PARALLEL
+  ENDIF
 
 END SUBROUTINE initialise_chunk

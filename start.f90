@@ -80,19 +80,15 @@ SUBROUTINE start
 
   CALL build_field()
 
-  CALL tea_barrier()
-
   CALL tea_allocate_buffers()
 
   CALL initialise_chunk()
 
-  IF(parallel%boss)THEN
+  IF (parallel%boss)THEN
     WRITE(g_out,*) 'Generating chunk'
   ENDIF
 
   CALL generate_chunk()
-
-  CALL tea_barrier()
 
   ! Prime all halo data for the first step
   fields=0

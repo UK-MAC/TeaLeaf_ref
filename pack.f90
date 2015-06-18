@@ -114,6 +114,10 @@ SUBROUTINE call_packing_functions(fields, depth, face, packing, mpi_buffer, offs
     END SELECT
   ENDIF
 
+  ! FIXME make these pack correctly
+
+!$OMP PARALLEL
+!$OMP DO
   DO t=1,tiles_per_task
     IF (fields(FIELD_DENSITY).EQ.1) THEN
         CALL pack_func(chunk%tiles(t)%field%x_min,                    &
@@ -193,6 +197,8 @@ SUBROUTINE call_packing_functions(fields, depth, face, packing, mpi_buffer, offs
                        offsets(FIELD_R))
     ENDIF
   ENDDO
+!$OMP END DO
+!$OMP END PARALLEL
 
 END SUBROUTINE
 

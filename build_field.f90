@@ -29,6 +29,8 @@ SUBROUTINE build_field()
   INTEGER :: j,k
   INTEGER :: t
 
+!$OMP PARALLEL
+!$OMP DO
   DO t=1,tiles_per_task
     chunk%tiles(t)%field%x_min=1
     chunk%tiles(t)%field%y_min=1
@@ -85,6 +87,8 @@ SUBROUTINE build_field()
     ALLOCATE(chunk%tiles(t)%field%yarea   (chunk%tiles(t)%field%x_min-2:chunk%tiles(t)%field%x_max+2, &
          chunk%tiles(t)%field%y_min-2:chunk%tiles(t)%field%y_max+3))
   ENDDO
+!$OMP END DO
+!$OMP END PARALLEL
 
   return
   ! TODO nested parallelism would require nested zero allocation...?

@@ -54,6 +54,7 @@ SUBROUTINE field_summary()
   temp=0.0
 
   IF(profiler_on) kernel_time=timer()
+
   IF(use_fortran_kernels)THEN
 !$OMP PARALLEL &
 !$OMP REDUCTION(+ : vol,mass,ie,temp) &
@@ -69,6 +70,7 @@ SUBROUTINE field_summary()
                                 chunk%tiles(t)%field%energy1,                 &
                                 chunk%tiles(t)%field%u,                       &
                                 private_vol,private_mass,private_ie,private_temp)
+
       vol = vol + private_vol
       mass = mass + private_mass
       ie = ie + private_ie

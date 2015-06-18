@@ -44,8 +44,10 @@ SUBROUTINE generate_chunk()
    state_geometry(state)=states(state)%geometry
   ENDDO
 
-  DO t=1,tiles_per_task
-    IF(use_fortran_kernels) THEN
+  IF(use_fortran_kernels) THEN
+!$OMP PARALLEL
+!$OMP DO
+    DO t=1,tiles_per_task
       CALL generate_chunk_kernel(chunk%tiles(t)%field%x_min,             &
                                  chunk%tiles(t)%field%x_max,             &
                                  chunk%tiles(t)%field%y_min,             &
@@ -69,7 +71,9 @@ SUBROUTINE generate_chunk()
                                  g_rect,                                &
                                  g_circ,                                &
                                  g_point)
-    ENDIF
-  ENDDO
+    ENDDO
+!$OMP END DO
+!$OMP END PARALLEL
+  ENDIF
 
 END SUBROUTINE generate_chunk

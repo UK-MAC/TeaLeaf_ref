@@ -141,7 +141,7 @@ SUBROUTINE initialise
 
   step=0
 
-  CALL start
+  CALL start()
 
   CALL tea_barrier
 
