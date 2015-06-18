@@ -319,6 +319,8 @@ SUBROUTINE tea_exchange(fields,depth)
     INTEGER, dimension(MPI_STATUS_SIZE,4) :: status_lr, status_ud
     LOGICAL :: test_complete
 
+    CALL report_error("tea_exchange", "Not yet implemented")
+
     IF (ALL(chunk%chunk_neighbours .eq. EXTERNAL_FACE)) return
 
     exchange_size_lr = depth*(chunk%y_cells+2*depth)
