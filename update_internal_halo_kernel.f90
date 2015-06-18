@@ -111,7 +111,7 @@ CONTAINS
       ENDDO
     ENDDO
 !$OMP END DO NOWAIT
-!$OMP DO COLLAPSE(2)
+!$OMP DO
     DO k=y_min_left-depth,y_max_left+depth
       DO j=1,depth
         mesh_left(x_max_left+j,k)=mesh_right(0+j,k)

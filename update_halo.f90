@@ -52,6 +52,7 @@ SUBROUTINE update_boundary(fields,depth)
   REAL(KIND=8) :: timer,halo_time
 
   IF (profiler_on) halo_time=timer()
+
   IF (reflective_boundary .EQV. .TRUE.) THEN
     IF(use_fortran_kernels)THEN
       DO t=1,tiles_per_task
@@ -72,16 +73,14 @@ SUBROUTINE update_boundary(fields,depth)
       ENDDO
     ENDIF
   ENDIF
-  IF (profiler_on) profiler%halo_update = profiler%halo_update + (timer() - halo_time)
 
-  ! TODO profiling info
   IF(use_fortran_kernels)THEN
     DO t=1,tiles_per_task
       IF (chunk%tiles(t)%tile_neighbours(CHUNK_RIGHT) .NE. EXTERNAL_FACE) THEN
         right_idx = chunk%tiles(t)%tile_neighbours(CHUNK_RIGHT)
 
         IF (chunk%tiles(t)%y_cells .NE. chunk%tiles(right_idx)%y_cells) THEN
-          CALL report_error("update_halo", "Tried to exchange between tow tiles which ahd different sizes")
+          CALL report_error("update_halo", "Tried to exchange between two tiles which had different sizes")
         ENDIF
 
         CALL update_internal_halo_left_right_kernel(                &
@@ -114,7 +113,7 @@ SUBROUTINE update_boundary(fields,depth)
         up_idx = chunk%tiles(t)%tile_neighbours(CHUNK_TOP)
 
         IF (chunk%tiles(t)%x_cells .NE. chunk%tiles(right_idx)%x_cells) THEN
-          CALL report_error("update_halo", "Tried to exchange between tow tiles which ahd different sizes")
+          CALL report_error("update_halo", "Tried to exchange between two tiles which had different sizes")
         ENDIF
 
         CALL update_internal_halo_bottom_top_kernel(                &
@@ -144,6 +143,8 @@ SUBROUTINE update_boundary(fields,depth)
       ENDIF
     ENDDO
   ENDIF
+
+  IF (profiler_on) profiler%halo_update = profiler%halo_update + (timer() - halo_time)
 
 END SUBROUTINE update_boundary
 
