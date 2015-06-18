@@ -142,7 +142,7 @@ SUBROUTINE call_packing_functions(fields, depth, face, packing, mpi_buffer, offs
                        chunk%tiles(t)%field%density,                 &
                        mpi_buffer,                &
                        depth, xincs(CELL_DATA), yincs(CELL_DATA),   &
-                       offsets(FIELD_DENSITY))
+                       tile_offset + offsets(FIELD_DENSITY))
     ENDIF
     IF (fields(FIELD_ENERGY0).EQ.1) THEN
         CALL pack_func(chunk%tiles(t)%field%x_min,                    &
@@ -153,7 +153,7 @@ SUBROUTINE call_packing_functions(fields, depth, face, packing, mpi_buffer, offs
                        chunk%tiles(t)%field%energy0,                  &
                        mpi_buffer,                &
                        depth, xincs(CELL_DATA), yincs(CELL_DATA),   &
-                       offsets(FIELD_ENERGY0))
+                       tile_offset + offsets(FIELD_ENERGY0))
     ENDIF
     IF (fields(FIELD_ENERGY1).EQ.1) THEN
         CALL pack_func(chunk%tiles(t)%field%x_min,                    &
@@ -164,7 +164,7 @@ SUBROUTINE call_packing_functions(fields, depth, face, packing, mpi_buffer, offs
                        chunk%tiles(t)%field%energy1,                  &
                        mpi_buffer,                &
                        depth, xincs(CELL_DATA), yincs(CELL_DATA),   &
-                       offsets(FIELD_ENERGY1))
+                       tile_offset + offsets(FIELD_ENERGY1))
     ENDIF
     IF (fields(FIELD_P).EQ.1) THEN
         CALL pack_func(chunk%tiles(t)%field%x_min,                    &
@@ -175,7 +175,7 @@ SUBROUTINE call_packing_functions(fields, depth, face, packing, mpi_buffer, offs
                        chunk%tiles(t)%field%vector_p,                  &
                        mpi_buffer,                &
                        depth, xincs(CELL_DATA), yincs(CELL_DATA),   &
-                       offsets(FIELD_P))
+                       tile_offset + offsets(FIELD_P))
     ENDIF
     IF (fields(FIELD_U).EQ.1) THEN
         CALL pack_func(chunk%tiles(t)%field%x_min,                    &
@@ -186,7 +186,7 @@ SUBROUTINE call_packing_functions(fields, depth, face, packing, mpi_buffer, offs
                        chunk%tiles(t)%field%u,                  &
                        mpi_buffer,                &
                        depth, xincs(CELL_DATA), yincs(CELL_DATA),   &
-                       offsets(FIELD_U))
+                       tile_offset + offsets(FIELD_U))
     ENDIF
     IF (fields(FIELD_SD).EQ.1) THEN
         CALL pack_func(chunk%tiles(t)%field%x_min,                    &
@@ -197,7 +197,7 @@ SUBROUTINE call_packing_functions(fields, depth, face, packing, mpi_buffer, offs
                        chunk%tiles(t)%field%vector_sd,                  &
                        mpi_buffer,                &
                        depth, xincs(CELL_DATA), yincs(CELL_DATA),   &
-                       offsets(FIELD_SD))
+                       tile_offset + offsets(FIELD_SD))
     ENDIF
     IF (fields(FIELD_R).EQ.1) THEN
         CALL pack_func(chunk%tiles(t)%field%x_min,                    &
@@ -208,7 +208,7 @@ SUBROUTINE call_packing_functions(fields, depth, face, packing, mpi_buffer, offs
                        chunk%tiles(t)%field%vector_r,                  &
                        mpi_buffer,                &
                        depth, xincs(CELL_DATA), yincs(CELL_DATA),   &
-                       offsets(FIELD_R))
+                       tile_offset + offsets(FIELD_R))
     ENDIF
   ENDDO
 !$OMP END DO
