@@ -22,12 +22,13 @@ SUBROUTINE tea_leaf_init_common(rx, ry)
       rx = dt/(chunk%tiles(t)%field%celldx(chunk%tiles(t)%field%x_min)**2)
       ry = dt/(chunk%tiles(t)%field%celldy(chunk%tiles(t)%field%y_min)**2)
 
-      CALL tea_leaf_kernel_init_common(chunk%tiles(t)%field%x_min, &
+      CALL tea_leaf_common_init_kernel(chunk%tiles(t)%field%x_min, &
           chunk%tiles(t)%field%x_max,                                  &
           chunk%tiles(t)%field%y_min,                                  &
           chunk%tiles(t)%field%y_max,                                  &
           halo_exchange_depth,                                  &
           chunk%chunk_neighbours,                             &
+          chunk%tiles(t)%tile_neighbours,                               &
           reflective_boundary,                                    &
           chunk%tiles(t)%field%density,                                &
           chunk%tiles(t)%field%energy1,                                &
