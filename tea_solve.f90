@@ -448,8 +448,6 @@ SUBROUTINE tea_leaf_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
   CALL update_halo(fields,1)
   IF (profiler_on) solve_time = solve_time + (timer() - halo_time)
 
-  CALL report_error("tea_solve ppcg inner steps", "Not yet implemented")
-
   CALL tea_leaf_ppcg_init_sd(rx, ry, theta)
 
   ! inner steps

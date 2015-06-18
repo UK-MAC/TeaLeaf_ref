@@ -128,6 +128,8 @@ SUBROUTINE tea_leaf_ppcg_calc_zrnorm(rrn)
             chunk%tiles(t)%field%vector_z,                        &
             chunk%tiles(t)%field%vector_r,                        &
             tl_preconditioner_type, private_rrn)
+
+      rrn = rrn + private_rrn
     ENDDO
 !$OMP END DO
 !$OMP END PARALLEL
