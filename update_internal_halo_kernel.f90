@@ -20,70 +20,208 @@ MODULE update_internal_halo_kernel_module
 CONTAINS
 
   SUBROUTINE update_internal_halo_left_right_kernel(                                &
-                        x_min,x_max,y_min,y_max,                                    &
-                        density,                                                    &
-                        energy0,                                                    &
-                        energy1,                                                    &
-                        u,                                                          &
-                        p,                                                          &
-                        sd,                                                         &
-                        x_min_right,x_max_right,y_min_right,y_max_right,            &
-                        density_right,                                              &
-                        energy0_right,                                              &
-                        energy1_right,                                              &
-                        u_right,                                                    &
-                        p_right,                                                    &
-                        sd_right,                                                   &
-                        halo_exchange_depth,                                        &
-                        fields,                                                     &
-                        depth                                                       )
-  IMPLICIT NONE
+                          x_min,x_max,y_min,y_max,                                    &
+                          density,                                                    &
+                          energy0,                                                    &
+                          energy1,                                                    &
+                          u,                                                          &
+                          p,                                                          &
+                          sd,                                                         &
+                          x_min_right,x_max_right,y_min_right,y_max_right,            &
+                          density_right,                                              &
+                          energy0_right,                                              &
+                          energy1_right,                                              &
+                          u_right,                                                    &
+                          p_right,                                                    &
+                          sd_right,                                                   &
+                          halo_exchange_depth,                                        &
+                          fields,                                                     &
+                          depth                                                       )
+    IMPLICIT NONE
 
-  INTEGER :: halo_exchange_depth
-  INTEGER :: fields(NUM_FIELDS),depth
+    INTEGER :: halo_exchange_depth
+    INTEGER :: fields(NUM_FIELDS),depth
 
-  INTEGER :: x_min,x_max,y_min,y_max
-  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: density,energy0,energy1, u, sd, p
+    INTEGER :: x_min,x_max,y_min,y_max
+    REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: density,energy0,energy1, u, sd, p
 
-  INTEGER :: x_min_right,x_max_right,y_min_right,y_max_right
-  REAL(KIND=8), DIMENSION(x_min_right-halo_exchange_depth:x_max_right+halo_exchange_depth,y_min_right-halo_exchange_depth:y_max_right+halo_exchange_depth) :: density_right,energy0_right,energy1_right, u_right, sd_right, p_right
+    INTEGER :: x_min_right,x_max_right,y_min_right,y_max_right
+    REAL(KIND=8), DIMENSION(x_min_right-halo_exchange_depth:x_max_right+halo_exchange_depth,y_min_right-halo_exchange_depth:y_max_right+halo_exchange_depth) :: density_right,energy0_right,energy1_right, u_right, sd_right, p_right
 
-  ! TODO
+    IF (fields(FIELD_DENSITY).EQ.1) THEN
+      CALL update_internal_halo_cell_left_right(x_min, x_max, y_min, y_max, density, &
+        x_min_right, x_max_right, y_min_right, y_max_right, density_right, &
+        halo_exchange_depth, depth)
+    ENDIF
+
+    IF (fields(FIELD_ENERGY0).EQ.1) THEN
+      CALL update_internal_halo_cell_left_right(x_min, x_max, y_min, y_max, energy0, &
+        x_min_right, x_max_right, y_min_right, y_max_right, energy0_right, &
+        halo_exchange_depth, depth)
+    ENDIF
+
+    IF (fields(FIELD_ENERGY1).EQ.1) THEN
+      CALL update_internal_halo_cell_left_right(x_min, x_max, y_min, y_max, energy1, &
+        x_min_right, x_max_right, y_min_right, y_max_right, energy1_right, &
+        halo_exchange_depth, depth)
+    ENDIF
+
+    IF (fields(FIELD_U).EQ.1) THEN
+      CALL update_internal_halo_cell_left_right(x_min, x_max, y_min, y_max, u, &
+        x_min_right, x_max_right, y_min_right, y_max_right, u_right, &
+        halo_exchange_depth, depth)
+    ENDIF
+
+    IF (fields(FIELD_p).EQ.1) THEN
+      CALL update_internal_halo_cell_left_right(x_min, x_max, y_min, y_max, p, &
+        x_min_right, x_max_right, y_min_right, y_max_right, p_right, &
+        halo_exchange_depth, depth)
+    ENDIF
+
+    IF (fields(FIELD_sd).EQ.1) THEN
+      CALL update_internal_halo_cell_left_right(x_min, x_max, y_min, y_max, sd, &
+        x_min_right, x_max_right, y_min_right, y_max_right, sd_right, &
+        halo_exchange_depth, depth)
+    ENDIF
 
   END SUBROUTINE
 
+  SUBROUTINE update_internal_halo_cell_left_right(x_min_left,x_max_left,y_min_left,y_max_left,  &
+                          mesh_left,   &
+                          x_min_right,x_max_right,y_min_right,y_max_right,            &
+                          mesh_right,                           &
+                          halo_exchange_depth, &
+                          depth                           )
+    IMPLICIT NONE
+
+    INTEGER :: halo_exchange_depth, depth
+
+    INTEGER :: x_min_left,x_max_left,y_min_left,y_max_left
+    REAL(KIND=8), DIMENSION(x_min_left-halo_exchange_depth:x_max_left+halo_exchange_depth,y_min_left-halo_exchange_depth:y_max_left+halo_exchange_depth) :: mesh_left
+
+    INTEGER :: x_min_right,x_max_right,y_min_right,y_max_right
+    REAL(KIND=8), DIMENSION(x_min_right-halo_exchange_depth:x_max_right+halo_exchange_depth,y_min_right-halo_exchange_depth:y_max_right+halo_exchange_depth) :: mesh_right
+
+    INTEGER :: j,k
+
+!$OMP DO
+    DO k=y_min_left-depth,y_max_left+depth
+      DO j=1,depth
+        mesh_right(1-j,k)=mesh_left(x_max_left+1-j,k)
+      ENDDO
+    ENDDO
+!$OMP END DO NOWAIT
+!$OMP DO COLLAPSE(2)
+    DO k=y_min_left-depth,y_max_left+depth
+      DO j=1,depth
+        mesh_left(x_max_left+j,k)=mesh_right(0+j,k)
+      ENDDO
+    ENDDO
+!$OMP END DO NOWAIT
+
+  END SUBROUTINE update_internal_halo_cell_left_right
+
   SUBROUTINE update_internal_halo_bottom_top_kernel(                                &
-                        x_min,x_max,y_min,y_max,                                    &
-                        density,                                                    &
-                        energy0,                                                    &
-                        energy1,                                                    &
-                        u,                                                          &
-                        p,                                                          &
-                        sd,                                                         &
-                        x_min_top,x_max_top,y_min_top,y_max_top,            &
-                        density_top,                                              &
-                        energy0_top,                                              &
-                        energy1_top,                                              &
-                        u_top,                                                    &
-                        p_top,                                                    &
-                        sd_top,                                                   &
-                        halo_exchange_depth,                                        &
-                        fields,                                                     &
-                        depth                                                       )
-  IMPLICIT NONE
+                          x_min,x_max,y_min,y_max,                                    &
+                          density,                                                    &
+                          energy0,                                                    &
+                          energy1,                                                    &
+                          u,                                                          &
+                          p,                                                          &
+                          sd,                                                         &
+                          x_min_top,x_max_top,y_min_top,y_max_top,            &
+                          density_top,                                              &
+                          energy0_top,                                              &
+                          energy1_top,                                              &
+                          u_top,                                                    &
+                          p_top,                                                    &
+                          sd_top,                                                   &
+                          halo_exchange_depth,                                        &
+                          fields,                                                     &
+                          depth                                                       )
+    IMPLICIT NONE
 
-  INTEGER :: halo_exchange_depth
-  INTEGER :: fields(NUM_FIELDS),depth
+    INTEGER :: halo_exchange_depth
+    INTEGER :: fields(NUM_FIELDS),depth
 
-  INTEGER :: x_min,x_max,y_min,y_max
-  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: density,energy0,energy1, u, sd, p
+    INTEGER :: x_min,x_max,y_min,y_max
+    REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: density,energy0,energy1, u, sd, p
 
-  INTEGER :: x_min_top,x_max_top,y_min_top,y_max_top
-  REAL(KIND=8), DIMENSION(x_min_top-halo_exchange_depth:x_max_top+halo_exchange_depth,y_min_top-halo_exchange_depth:y_max_top+halo_exchange_depth) :: density_top,energy0_top,energy1_top, u_top, sd_top, p_top
+    INTEGER :: x_min_top,x_max_top,y_min_top,y_max_top
+    REAL(KIND=8), DIMENSION(x_min_top-halo_exchange_depth:x_max_top+halo_exchange_depth,y_min_top-halo_exchange_depth:y_max_top+halo_exchange_depth) :: density_top,energy0_top,energy1_top, u_top, sd_top, p_top
 
-  ! TODO
+    IF (fields(FIELD_DENSITY).EQ.1) THEN
+      CALL update_internal_halo_cell_bottom_top(x_min, x_max, y_min, y_max, density, &
+        x_min_top, x_max_top, y_min_top, y_max_top, density_top, &
+        halo_exchange_depth, depth)
+    ENDIF
+
+    IF (fields(FIELD_ENERGY0).EQ.1) THEN
+      CALL update_internal_halo_cell_bottom_top(x_min, x_max, y_min, y_max, energy0, &
+        x_min_top, x_max_top, y_min_top, y_max_top, energy0_top, &
+        halo_exchange_depth, depth)
+    ENDIF
+
+    IF (fields(FIELD_ENERGY1).EQ.1) THEN
+      CALL update_internal_halo_cell_bottom_top(x_min, x_max, y_min, y_max, energy1, &
+        x_min_top, x_max_top, y_min_top, y_max_top, energy1_top, &
+        halo_exchange_depth, depth)
+    ENDIF
+
+    IF (fields(FIELD_U).EQ.1) THEN
+      CALL update_internal_halo_cell_bottom_top(x_min, x_max, y_min, y_max, u, &
+        x_min_top, x_max_top, y_min_top, y_max_top, u_top, &
+        halo_exchange_depth, depth)
+    ENDIF
+
+    IF (fields(FIELD_p).EQ.1) THEN
+      CALL update_internal_halo_cell_bottom_top(x_min, x_max, y_min, y_max, p, &
+        x_min_top, x_max_top, y_min_top, y_max_top, p_top, &
+        halo_exchange_depth, depth)
+    ENDIF
+
+    IF (fields(FIELD_sd).EQ.1) THEN
+      CALL update_internal_halo_cell_bottom_top(x_min, x_max, y_min, y_max, sd, &
+        x_min_top, x_max_top, y_min_top, y_max_top, sd_top, &
+        halo_exchange_depth, depth)
+    ENDIF
 
   END SUBROUTINE update_internal_halo_bottom_top_kernel
+
+  SUBROUTINE update_internal_halo_cell_bottom_top(x_min_bottom,x_max_bottom,y_min_bottom,y_max_bottom,  &
+                          mesh_bottom,   &
+                          x_min_top,x_max_top,y_min_top,y_max_top,            &
+                          mesh_top,                           &
+                          halo_exchange_depth, &
+                          depth                           )
+    IMPLICIT NONE
+
+    INTEGER :: halo_exchange_depth, depth
+
+    INTEGER :: x_min_bottom,x_max_bottom,y_min_bottom,y_max_bottom
+    REAL(KIND=8), DIMENSION(x_min_bottom-halo_exchange_depth:x_max_bottom+halo_exchange_depth,y_min_bottom-halo_exchange_depth:y_max_bottom+halo_exchange_depth) :: mesh_bottom
+
+    INTEGER :: x_min_top,x_max_top,y_min_top,y_max_top
+    REAL(KIND=8), DIMENSION(x_min_top-halo_exchange_depth:x_max_top+halo_exchange_depth,y_min_top-halo_exchange_depth:y_max_top+halo_exchange_depth) :: mesh_top
+
+    INTEGER :: j,k
+
+!$OMP DO
+    DO k=1,depth
+      DO j=x_min_bottom-depth,x_max_bottom+depth
+        mesh_top(j,1-k)=mesh_bottom(j,y_max_bottom+1-k)
+      ENDDO
+    ENDDO
+!$OMP END DO NOWAIT
+!$OMP DO
+    DO k=1,depth
+      DO j=x_min_bottom-depth,x_max_bottom+depth
+        mesh_bottom(j,y_max_bottom+k)=mesh_top(j,0+k)
+      ENDDO
+    ENDDO
+!$OMP END DO NOWAIT
+
+  END SUBROUTINE update_internal_halo_cell_bottom_top
 
 END MODULE update_internal_halo_kernel_module
 

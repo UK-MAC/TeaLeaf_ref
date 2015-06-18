@@ -63,31 +63,28 @@ CONTAINS
 !$OMP PARALLEL
 
   ! Update values in external halo cells based on depth and fields requested
-  ! Even though half of these loops look the wrong way around, it should be noted
-  ! that depth is either 1 or 2 so that it is more efficient to always thread
-  ! loop along the mesh edge.
-  IF(fields(FIELD_DENSITY).EQ.1) THEN
-    call update_halo_cell(x_min, x_max, y_min, y_max, halo_exchange_depth, chunk_neighbours, density, depth)
+  IF (fields(FIELD_DENSITY).EQ.1) THEN
+    CALL update_halo_cell(x_min, x_max, y_min, y_max, halo_exchange_depth, chunk_neighbours, density, depth)
   ENDIF
 
-  IF(fields(FIELD_ENERGY0).EQ.1) THEN
-    call update_halo_cell(x_min, x_max, y_min, y_max, halo_exchange_depth, chunk_neighbours, energy0, depth)
+  IF (fields(FIELD_ENERGY0).EQ.1) THEN
+    CALL update_halo_cell(x_min, x_max, y_min, y_max, halo_exchange_depth, chunk_neighbours, energy0, depth)
   ENDIF
 
-  IF(fields(FIELD_ENERGY1).EQ.1) THEN
-    call update_halo_cell(x_min, x_max, y_min, y_max, halo_exchange_depth, chunk_neighbours, energy1, depth)
+  IF (fields(FIELD_ENERGY1).EQ.1) THEN
+    CALL update_halo_cell(x_min, x_max, y_min, y_max, halo_exchange_depth, chunk_neighbours, energy1, depth)
   ENDIF
 
-  IF(fields(FIELD_U).EQ.1) THEN
-    call update_halo_cell(x_min, x_max, y_min, y_max, halo_exchange_depth, chunk_neighbours, u, depth)
+  IF (fields(FIELD_U).EQ.1) THEN
+    CALL update_halo_cell(x_min, x_max, y_min, y_max, halo_exchange_depth, chunk_neighbours, u, depth)
   ENDIF
 
-  IF(fields(FIELD_p).EQ.1) THEN
-    call update_halo_cell(x_min, x_max, y_min, y_max, halo_exchange_depth, chunk_neighbours, p, depth)
+  IF (fields(FIELD_p).EQ.1) THEN
+    CALL update_halo_cell(x_min, x_max, y_min, y_max, halo_exchange_depth, chunk_neighbours, p, depth)
   ENDIF
 
-  IF(fields(FIELD_sd).EQ.1) THEN
-    call update_halo_cell(x_min, x_max, y_min, y_max, halo_exchange_depth, chunk_neighbours, sd, depth)
+  IF (fields(FIELD_sd).EQ.1) THEN
+    CALL update_halo_cell(x_min, x_max, y_min, y_max, halo_exchange_depth, chunk_neighbours, sd, depth)
   ENDIF
 
 !$OMP END PARALLEL
@@ -108,7 +105,7 @@ SUBROUTINE update_halo_cell(x_min,x_max,y_min,y_max,halo_exchange_depth,    &
 
   INTEGER :: j,k
 
-    IF(chunk_neighbours(CHUNK_LEFT).EQ.EXTERNAL_FACE) THEN
+    IF (chunk_neighbours(CHUNK_LEFT).EQ.EXTERNAL_FACE) THEN
 !$OMP DO COLLAPSE(2)
       DO k=y_min-depth,y_max+depth
         DO j=1,depth
@@ -117,7 +114,7 @@ SUBROUTINE update_halo_cell(x_min,x_max,y_min,y_max,halo_exchange_depth,    &
       ENDDO
 !$OMP END DO NOWAIT
     ENDIF
-    IF(chunk_neighbours(CHUNK_RIGHT).EQ.EXTERNAL_FACE) THEN
+    IF (chunk_neighbours(CHUNK_RIGHT).EQ.EXTERNAL_FACE) THEN
 !$OMP DO COLLAPSE(2)
       DO k=y_min-depth,y_max+depth
         DO j=1,depth
@@ -128,11 +125,11 @@ SUBROUTINE update_halo_cell(x_min,x_max,y_min,y_max,halo_exchange_depth,    &
     ENDIF
 
     ! Don't need barrier if depth is only 1
-    IF(depth .gt. 1) then
+    IF (depth .gt. 1) then
 !$OMP BARRIER
     ENDIF
 
-    IF(chunk_neighbours(CHUNK_BOTTOM).EQ.EXTERNAL_FACE) THEN
+    IF (chunk_neighbours(CHUNK_BOTTOM).EQ.EXTERNAL_FACE) THEN
 !$OMP DO COLLAPSE(2)
       DO k=1,depth
         DO j=x_min-depth,x_max+depth
@@ -141,7 +138,7 @@ SUBROUTINE update_halo_cell(x_min,x_max,y_min,y_max,halo_exchange_depth,    &
       ENDDO
 !$OMP END DO NOWAIT
     ENDIF
-    IF(chunk_neighbours(CHUNK_TOP).EQ.EXTERNAL_FACE) THEN
+    IF (chunk_neighbours(CHUNK_TOP).EQ.EXTERNAL_FACE) THEN
 !$OMP DO COLLAPSE(2)
       DO k=1,depth
         DO j=x_min-depth,x_max+depth

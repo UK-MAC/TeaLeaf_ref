@@ -93,6 +93,8 @@ timer.o :
 
 update_halo.o :  \
 	update_halo_kernel.o \
+	update_internal_halo_kernel.o \
+	report.o \
 	tea.o
 
 initialise_chunk_kernel.o : 
@@ -113,6 +115,8 @@ tea_leaf_jacobi.o :  \
 	definitions.o
 
 pack_kernel.o : 
+
+update_internal_halo_kernel.o : 
 
 read_input.o :  \
 	report.o \
