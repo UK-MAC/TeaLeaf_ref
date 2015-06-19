@@ -108,6 +108,7 @@ CONTAINS
 
 !$OMP DO
     DO k=y_min_left-depth,y_max_left+depth
+!DIR$ IVDEP
       DO j=1,depth
         mesh_right(1-j,k)=mesh_left(x_max_left+1-j,k)
       ENDDO
@@ -115,6 +116,7 @@ CONTAINS
 !$OMP END DO NOWAIT
 !$OMP DO
     DO k=y_min_left-depth,y_max_left+depth
+!DIR$ IVDEP
       DO j=1,depth
         mesh_left(x_max_left+j,k)=mesh_right(0+j,k)
       ENDDO
@@ -212,6 +214,7 @@ CONTAINS
 
 !$OMP DO
     DO k=1,depth
+!DIR$ IVDEP
       DO j=x_min_bottom-depth,x_max_bottom+depth
         mesh_top(j,1-k)=mesh_bottom(j,y_max_bottom+1-k)
       ENDDO
@@ -219,6 +222,7 @@ CONTAINS
 !$OMP END DO NOWAIT
 !$OMP DO
     DO k=1,depth
+!DIR$ IVDEP
       DO j=x_min_bottom-depth,x_max_bottom+depth
         mesh_bottom(j,y_max_bottom+k)=mesh_top(j,0+k)
       ENDDO

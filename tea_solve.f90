@@ -475,7 +475,7 @@ SUBROUTINE tea_leaf_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
       fields(FIELD_SD) = 1
 
       IF (profiler_on) halo_time = timer()
-      CALL update_boundary(fields, bounds_extra)
+      CALL update_boundary(fields, 1)
       IF (profiler_on) solve_time = solve_time + (timer()-halo_time)
 
       inner_step = inner_step + 1

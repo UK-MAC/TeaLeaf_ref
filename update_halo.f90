@@ -121,7 +121,12 @@ SUBROUTINE update_boundary(fields,depth)
                                 depth                           )
       ENDIF
     ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
+
+!$  IF (depth .GT. 1) THEN
+!$OMP BARRIER
+!$  ENDIF
+
 !$OMP DO
     DO t=1,tiles_per_task
       IF (chunk%tiles(t)%tile_neighbours(CHUNK_TOP) .NE. EXTERNAL_FACE) THEN
@@ -168,3 +173,4 @@ SUBROUTINE update_boundary(fields,depth)
 END SUBROUTINE update_boundary
 
 END MODULE update_halo_module
+
