@@ -104,7 +104,6 @@ SUBROUTINE tea_leaf_kernel_ppcg_inner(x_min,             &
   INTEGER(KIND=4) :: x_min_bound, x_max_bound, y_min_bound, y_max_bound, inner_step
 
 !$OMP PARALLEL PRIVATE(smvp)
-
 !$OMP DO
     DO k=y_min_bound,y_max_bound
         DO j=x_min_bound,x_max_bound
