@@ -63,7 +63,7 @@ ifndef COMPILER
   MESSAGE=select a compiler to compile in OpenMP, e.g. make COMPILER=INTEL
 endif
 
-OMP_INTEL     = -openmp -ip -g
+OMP_INTEL     = -openmp
 OMP_SUN       = -xopenmp=parallel -vpara
 OMP_GNU       = -fopenmp
 OMP_CRAY      = -e Z
@@ -71,7 +71,7 @@ OMP_PGI       = -mp=nonuma
 OMP_PATHSCALE = -mp
 OMP_XL        = -qsmp=omp -qthreaded
 
-FLAGS_INTEL     = -O3 -no-prec-div -fpp -align array64byte
+FLAGS_INTEL     = -O3 -no-prec-div -fpp -align array64byte -ip -g
 FLAGS_SUN       = -fast -xipo=2 -Xlistv4
 FLAGS_GNU       = -O3 -march=native -funroll-loops -cpp -ffree-line-length-none
 FLAGS_CRAY      = -em -ra -h acc_model=fast_addr:no_deep_copy:auto_async_all
@@ -120,14 +120,23 @@ ifneq (,$(filter $(COMPILER), GNU INTEL))
 OMP4=-D WITH_OMP4
 endif
 
-FLAGS=$(FLAGS_$(COMPILER)) $(I3E_$(COMPILER)) $(OPTIONS) $(OMP_$(COMPILER)) $(OMP4)
+FLAGS=$(FLAGS_$(COMPILER)) $(I3E_$(COMPILER)) $(OPTIONS)
 KERNEL_FLAGS=$(FLAGS_$(COMPILER)) $(I3E_$(COMPILER)) $(OPTIONS)
 CFLAGS=$(CFLAGS_$(COMPILER)) $(OMP_$(COMPILER)) $(I3E_$(COMPILER)) $(C_OPTIONS) -c
 MPI_COMPILER=mpif90
 C_MPI_COMPILER=mpicc
 
-ifndef NO_NESTED
+ifndef TL_OMP_LEVEL
 KERNEL_FLAGS+=$(OMP_$(COMPILER)) $(OMP4)
+else ifeq '$(TL_OMP_LEVEL)' 'TILE'
+FLAGS+=$(OMP_$(COMPILER)) $(OMP4)
+else ifeq '$(TL_OMP_LEVEL)' 'KERNEL'
+KERNEL_FLAGS+=$(OMP_$(COMPILER)) $(OMP4)
+else ifeq '$(TL_OMP_LEVEL)' 'BOTH'
+KERNEL_FLAGS+=$(OMP_$(COMPILER)) $(OMP4)
+FLAGS+=$(OMP_$(COMPILER)) $(OMP4)
+else
+$(error Unknown value '$(TL_OMP_LEVEL)' set for TL_OMP_LEVEL - expected 'TILE', 'KERNEL', or 'BOTH')
 endif
 
 C_FILES=\
@@ -178,7 +187,9 @@ KERNEL_FILES= \
 	tea_leaf_jacobi_kernel.o
 
 tea_leaf: Makefile $(KERNEL_FILES) $(FORTRAN_FILES) $(C_FILES)
-	$(MPI_COMPILER) $(FLAGS)	\
+	$(MPI_COMPILER) \
+	$(FLAGS)	\
+	$(OMP_$(COMPILER)) $(OMP4) \
 	$(FORTRAN_FILES)	\
 	$(KERNEL_FILES) \
 	$(C_FILES)	\
