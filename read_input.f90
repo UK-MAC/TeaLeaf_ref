@@ -30,6 +30,7 @@ SUBROUTINE read_input()
   IMPLICIT NONE
 
   INTEGER            :: state,stat,state_max,n
+!$ INTEGER            :: omp_get_max_threads
 
   REAL(KIND=8) :: dx,dy
 
@@ -74,6 +75,7 @@ SUBROUTINE read_input()
   profiler%dot_product=0.0
 
   tiles_per_task = 1
+!$ tiles_per_task = omp_get_max_threads()
 
   tl_ch_cg_presteps = 25
   tl_ch_cg_epslim = 1.0
