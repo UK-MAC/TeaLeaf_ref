@@ -101,7 +101,7 @@ SUBROUTINE tea_leaf_ppcg_inner(rx, ry, ch_alphas, ch_betas, inner_step, bounds_e
           chunk%tiles(t)%field%vector_Mi,                          &
           tl_preconditioner_type)
     ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
 !$OMP END PARALLEL
   ENDIF
 
