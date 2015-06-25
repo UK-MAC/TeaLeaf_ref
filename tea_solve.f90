@@ -468,11 +468,11 @@ SUBROUTINE tea_leaf_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
 
     inner_step = ppcg_cur_step
 
+    fields = 0
+    fields(FIELD_SD) = 1
+
     DO bounds_extra = halo_exchange_depth-1, 0, -1
       CALL tea_leaf_ppcg_inner(rx, ry, ch_alphas, ch_betas, inner_step, bounds_extra)
-
-      fields = 0
-      fields(FIELD_SD) = 1
 
       IF (profiler_on) halo_time = timer()
       CALL update_boundary(fields, 1)

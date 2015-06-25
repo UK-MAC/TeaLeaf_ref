@@ -120,11 +120,15 @@ ifneq (,$(filter $(COMPILER), GNU INTEL))
 OMP4=-D WITH_OMP4
 endif
 
-
-FLAGS=$(FLAGS_$(COMPILER)) $(OMP_$(COMPILER)) $(I3E_$(COMPILER)) $(OPTIONS) $(OMP4)
+FLAGS=$(FLAGS_$(COMPILER)) $(I3E_$(COMPILER)) $(OPTIONS) $(OMP_$(COMPILER)) $(OMP4)
+KERNEL_FLAGS=$(FLAGS_$(COMPILER)) $(I3E_$(COMPILER)) $(OPTIONS)
 CFLAGS=$(CFLAGS_$(COMPILER)) $(OMP_$(COMPILER)) $(I3E_$(COMPILER)) $(C_OPTIONS) -c
 MPI_COMPILER=mpif90
 C_MPI_COMPILER=mpicc
+
+ifndef NO_NESTED
+KERNEL_FLAGS+=$(OMP_$(COMPILER)) $(OMP4)
+endif
 
 C_FILES=\
 	timer_c.o
@@ -133,47 +137,50 @@ FORTRAN_FILES=\
 	data.o			\
 	definitions.o			\
 	pack.o			\
-	pack_kernel.o			\
 	global_mpi.o				\
 	tea.o				\
 	report.o			\
 	timer.o			\
 	parse.o			\
 	read_input.o			\
-	initialise_chunk_kernel.o	\
 	initialise_chunk.o		\
 	build_field.o			\
-	update_internal_halo_kernel.o		\
-	update_halo_kernel.o		\
 	update_halo.o			\
 	start.o			\
-	generate_chunk_kernel.o	\
 	generate_chunk.o		\
 	initialise.o			\
-	field_summary_kernel.o	\
 	field_summary.o		\
 	calc_dt.o			\
 	timestep.o			\
-	set_field_kernel.o            \
 	set_field.o                   \
-	tea_leaf_common_kernel.o             \
 	tea_leaf_common.o             \
-	tea_leaf_cg_kernel.o             	\
 	tea_leaf_cg.o             	\
-	tea_leaf_cheby_kernel.o             	\
 	tea_leaf_cheby.o             	\
-	tea_leaf_ppcg_kernel.o             	\
 	tea_leaf_ppcg.o             	\
-	tea_leaf_jacobi_kernel.o             \
 	tea_leaf_jacobi.o             \
 	tea_solve.o                   \
 	visit.o			\
 	tea_leaf.o			\
 	diffuse.o
 
-tea_leaf: Makefile $(FORTRAN_FILES) $(C_FILES)
+KERNEL_FILES= \
+	pack_kernel.o			\
+	initialise_chunk_kernel.o	\
+	update_internal_halo_kernel.o		\
+	update_halo_kernel.o		\
+	generate_chunk_kernel.o	\
+	field_summary_kernel.o	\
+	set_field_kernel.o            \
+	tea_leaf_common_kernel.o             \
+	tea_leaf_cg_kernel.o             	\
+	tea_leaf_cheby_kernel.o             	\
+	tea_leaf_ppcg_kernel.o             	\
+	tea_leaf_jacobi_kernel.o
+
+tea_leaf: Makefile $(KERNEL_FILES) $(FORTRAN_FILES) $(C_FILES)
 	$(MPI_COMPILER) $(FLAGS)	\
 	$(FORTRAN_FILES)	\
+	$(KERNEL_FILES) \
 	$(C_FILES)	\
 	$(LDFLAGS) \
 	$(LDLIBS) \
@@ -184,10 +191,12 @@ include makefile.deps
 
 %_module.mod: %.f90 %.o
 	@true
+%_kernel.o: %_kernel.f90 Makefile makefile.deps
+	$(MPI_COMPILER) $(KERNEL_FLAGS) -c $< -o $@
 %.o: %.f90 Makefile makefile.deps
-	$(MPI_COMPILER) $(FLAGS) -c $< -o $*.o
+	$(MPI_COMPILER) $(FLAGS) -c $< -o $@
 %.o: %.c Makefile makefile.deps
-	$(C_MPI_COMPILER) $(CFLAGS) -c $< -o $*.o
+	$(C_MPI_COMPILER) $(CFLAGS) -c $< -o $@
 
 clean:
 	rm -f *.o *.mod *genmod* *.lst *.cub *.ptx tea_leaf *.s *.i
