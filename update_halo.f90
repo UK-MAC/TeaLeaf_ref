@@ -42,13 +42,15 @@ SUBROUTINE update_halo(fields,depth)
 
   CALL update_boundary(fields, depth)
 
+  CALL update_tile_boundary(fields, depth)
+
 END SUBROUTINE update_halo
 
 SUBROUTINE update_boundary(fields,depth)
 
   IMPLICIT NONE
 
-  INTEGER :: t,fields(NUM_FIELDS),depth, right_idx, up_idx
+  INTEGER :: t,fields(NUM_FIELDS),depth
   REAL(KIND=8) :: timer,halo_time
 
   IF (profiler_on) halo_time=timer()
@@ -80,42 +82,53 @@ SUBROUTINE update_boundary(fields,depth)
   ENDIF
 
   IF (profiler_on) profiler%halo_update = profiler%halo_update + (timer() - halo_time)
+
+END SUBROUTINE update_boundary
+
+SUBROUTINE update_tile_boundary(fields, depth)
+
+  IMPLICIT NONE
+
+  INTEGER :: t,fields(NUM_FIELDS),depth, right_idx, up_idx
+  REAL(KIND=8) :: timer,halo_time
+
   IF (profiler_on) halo_time=timer()
 
-  IF (use_fortran_kernels)THEN
+  IF (tiles_per_task .GT. 1) THEN
+    IF (use_fortran_kernels)THEN
 !$OMP PARALLEL PRIVATE(right_idx, up_idx)
 !$OMP DO
-    DO t=1,tiles_per_task
-      right_idx = chunk%tiles(t)%tile_neighbours(CHUNK_RIGHT)
+      DO t=1,tiles_per_task
+        right_idx = chunk%tiles(t)%tile_neighbours(CHUNK_RIGHT)
 
-      IF (right_idx .NE. EXTERNAL_FACE) THEN
+        IF (right_idx .NE. EXTERNAL_FACE) THEN
 
-        CALL update_internal_halo_left_right_kernel(                &
-                                chunk%tiles(t)%field%x_min,          &
-                                chunk%tiles(t)%field%x_max,          &
-                                chunk%tiles(t)%field%y_min,          &
-                                chunk%tiles(t)%field%y_max,          &
-                                chunk%tiles(t)%field%density,        &
-                                chunk%tiles(t)%field%energy0,        &
-                                chunk%tiles(t)%field%energy1,        &
-                                chunk%tiles(t)%field%u,              &
-                                chunk%tiles(t)%field%vector_p,       &
-                                chunk%tiles(t)%field%vector_sd,      &
-                                chunk%tiles(right_idx)%field%x_min,          &
-                                chunk%tiles(right_idx)%field%x_max,          &
-                                chunk%tiles(right_idx)%field%y_min,          &
-                                chunk%tiles(right_idx)%field%y_max,          &
-                                chunk%tiles(right_idx)%field%density,        &
-                                chunk%tiles(right_idx)%field%energy0,        &
-                                chunk%tiles(right_idx)%field%energy1,        &
-                                chunk%tiles(right_idx)%field%u,              &
-                                chunk%tiles(right_idx)%field%vector_p,       &
-                                chunk%tiles(right_idx)%field%vector_sd,      &
-                                halo_exchange_depth,          &
-                                fields,                         &
-                                depth                           )
-      ENDIF
-    ENDDO
+          CALL update_internal_halo_left_right_kernel(                &
+                                  chunk%tiles(t)%field%x_min,          &
+                                  chunk%tiles(t)%field%x_max,          &
+                                  chunk%tiles(t)%field%y_min,          &
+                                  chunk%tiles(t)%field%y_max,          &
+                                  chunk%tiles(t)%field%density,        &
+                                  chunk%tiles(t)%field%energy0,        &
+                                  chunk%tiles(t)%field%energy1,        &
+                                  chunk%tiles(t)%field%u,              &
+                                  chunk%tiles(t)%field%vector_p,       &
+                                  chunk%tiles(t)%field%vector_sd,      &
+                                  chunk%tiles(right_idx)%field%x_min,          &
+                                  chunk%tiles(right_idx)%field%x_max,          &
+                                  chunk%tiles(right_idx)%field%y_min,          &
+                                  chunk%tiles(right_idx)%field%y_max,          &
+                                  chunk%tiles(right_idx)%field%density,        &
+                                  chunk%tiles(right_idx)%field%energy0,        &
+                                  chunk%tiles(right_idx)%field%energy1,        &
+                                  chunk%tiles(right_idx)%field%u,              &
+                                  chunk%tiles(right_idx)%field%vector_p,       &
+                                  chunk%tiles(right_idx)%field%vector_sd,      &
+                                  halo_exchange_depth,          &
+                                  fields,                         &
+                                  depth                           )
+        ENDIF
+      ENDDO
 !$OMP END DO NOWAIT
 
 !$  IF (depth .GT. 1) THEN
@@ -123,44 +136,45 @@ SUBROUTINE update_boundary(fields,depth)
 !$  ENDIF
 
 !$OMP DO
-    DO t=1,tiles_per_task
-      up_idx = chunk%tiles(t)%tile_neighbours(CHUNK_TOP)
+      DO t=1,tiles_per_task
+        up_idx = chunk%tiles(t)%tile_neighbours(CHUNK_TOP)
 
-      IF (up_idx .NE. EXTERNAL_FACE) THEN
+        IF (up_idx .NE. EXTERNAL_FACE) THEN
 
-        CALL update_internal_halo_bottom_top_kernel(                &
-                                chunk%tiles(t)%field%x_min,          &
-                                chunk%tiles(t)%field%x_max,          &
-                                chunk%tiles(t)%field%y_min,          &
-                                chunk%tiles(t)%field%y_max,          &
-                                chunk%tiles(t)%field%density,        &
-                                chunk%tiles(t)%field%energy0,        &
-                                chunk%tiles(t)%field%energy1,        &
-                                chunk%tiles(t)%field%u,              &
-                                chunk%tiles(t)%field%vector_p,       &
-                                chunk%tiles(t)%field%vector_sd,      &
-                                chunk%tiles(up_idx)%field%x_min,          &
-                                chunk%tiles(up_idx)%field%x_max,          &
-                                chunk%tiles(up_idx)%field%y_min,          &
-                                chunk%tiles(up_idx)%field%y_max,          &
-                                chunk%tiles(up_idx)%field%density,        &
-                                chunk%tiles(up_idx)%field%energy0,        &
-                                chunk%tiles(up_idx)%field%energy1,        &
-                                chunk%tiles(up_idx)%field%u,              &
-                                chunk%tiles(up_idx)%field%vector_p,       &
-                                chunk%tiles(up_idx)%field%vector_sd,      &
-                                halo_exchange_depth,          &
-                                fields,                         &
-                                depth                           )
-      ENDIF
-    ENDDO
+          CALL update_internal_halo_bottom_top_kernel(                &
+                                  chunk%tiles(t)%field%x_min,          &
+                                  chunk%tiles(t)%field%x_max,          &
+                                  chunk%tiles(t)%field%y_min,          &
+                                  chunk%tiles(t)%field%y_max,          &
+                                  chunk%tiles(t)%field%density,        &
+                                  chunk%tiles(t)%field%energy0,        &
+                                  chunk%tiles(t)%field%energy1,        &
+                                  chunk%tiles(t)%field%u,              &
+                                  chunk%tiles(t)%field%vector_p,       &
+                                  chunk%tiles(t)%field%vector_sd,      &
+                                  chunk%tiles(up_idx)%field%x_min,          &
+                                  chunk%tiles(up_idx)%field%x_max,          &
+                                  chunk%tiles(up_idx)%field%y_min,          &
+                                  chunk%tiles(up_idx)%field%y_max,          &
+                                  chunk%tiles(up_idx)%field%density,        &
+                                  chunk%tiles(up_idx)%field%energy0,        &
+                                  chunk%tiles(up_idx)%field%energy1,        &
+                                  chunk%tiles(up_idx)%field%u,              &
+                                  chunk%tiles(up_idx)%field%vector_p,       &
+                                  chunk%tiles(up_idx)%field%vector_sd,      &
+                                  halo_exchange_depth,          &
+                                  fields,                         &
+                                  depth                           )
+        ENDIF
+      ENDDO
 !$OMP END DO NOWAIT
 !$OMP END PARALLEL
+    ENDIF
   ENDIF
 
   IF (profiler_on) profiler%internal_halo_update = profiler%internal_halo_update + (timer() - halo_time)
 
-END SUBROUTINE update_boundary
+END SUBROUTINE update_tile_boundary
 
 END MODULE update_halo_module
 
