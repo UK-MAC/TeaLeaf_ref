@@ -37,13 +37,15 @@ SUBROUTINE tea_allsum(value)
 
   REAL(KIND=8) :: value
 
-  REAL(KIND=8) :: total
+  REAL(KIND=8) :: total, dot_product_time, timer
 
   INTEGER :: err
 
   total=value
 
+  IF (profiler_on) dot_product_time=timer()
   CALL MPI_ALLREDUCE(value,total,1,MPI_DOUBLE_PRECISION,MPI_SUM,mpi_cart_comm,err)
+  IF (profiler_on) profiler%dot_product= profiler%dot_product+ (timer() - dot_product_time)
 
   value=total
 

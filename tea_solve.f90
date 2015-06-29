@@ -71,7 +71,6 @@ SUBROUTINE tea_leaf()
   init_time = 0.0_8
   halo_time = 0.0_8
   solve_time = 0.0_8
-  dot_product_time = 0.0_8
 
   IF (coefficient .NE. RECIP_CONDUCTIVITY .AND. coefficient .NE. conductivity) THEN
     CALL report_error('tea_leaf', 'unknown coefficient option')
@@ -108,7 +107,6 @@ SUBROUTINE tea_leaf()
 
   IF (profiler_on) dot_product_time=timer()
   CALL tea_allsum(initial_residual)
-  IF (profiler_on) profiler%dot_product= profiler%dot_product+ (timer() - dot_product_time)
   IF (profiler_on) init_time = init_time + (timer()-dot_product_time)
 
   old_error = initial_residual
@@ -128,7 +126,6 @@ SUBROUTINE tea_leaf()
     ! and globally sum rro
     IF (profiler_on) dot_product_time=timer()
     CALL tea_allsum(rro)
-    IF (profiler_on) profiler%dot_product= profiler%dot_product+ (timer() - dot_product_time)
     IF (profiler_on) init_time = init_time + (timer()-dot_product_time)
 
     ! need to update p when using CG due to matrix/vector multiplication
@@ -237,7 +234,6 @@ SUBROUTINE tea_leaf()
 
             IF (profiler_on) dot_product_time=timer()
             CALL tea_allsum(error)
-            IF (profiler_on) profiler%dot_product= profiler%dot_product+ (timer() - dot_product_time)
             IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
           ENDIF
         ENDIF
@@ -246,7 +242,6 @@ SUBROUTINE tea_leaf()
 
         IF (profiler_on) dot_product_time=timer()
         CALL tea_allsum(pw)
-        IF (profiler_on) profiler%dot_product= profiler%dot_product+ (timer() - dot_product_time)
         IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
 
         alpha = rro/pw
@@ -263,7 +258,6 @@ SUBROUTINE tea_leaf()
 
         IF (profiler_on) dot_product_time=timer()
         CALL tea_allsum(rrn)
-        IF (profiler_on) profiler%dot_product= profiler%dot_product+ (timer() - dot_product_time)
         IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
 
         beta = rrn/rro
@@ -285,7 +279,6 @@ SUBROUTINE tea_leaf()
 
       IF (profiler_on) dot_product_time=timer()
       CALL tea_allsum(pw)
-      IF (profiler_on) profiler%dot_product= profiler%dot_product+ (timer() - dot_product_time)
       IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
 
       alpha = rro/pw
@@ -297,7 +290,6 @@ SUBROUTINE tea_leaf()
 
       IF (profiler_on) dot_product_time=timer()
       CALL tea_allsum(rrn)
-      IF (profiler_on) profiler%dot_product= profiler%dot_product+ (timer() - dot_product_time)
       IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
 
       beta = rrn/rro
@@ -313,7 +305,6 @@ SUBROUTINE tea_leaf()
 
       IF (profiler_on) dot_product_time=timer()
       CALL tea_allsum(error)
-      IF (profiler_on) profiler%dot_product= profiler%dot_product+ (timer() - dot_product_time)
       IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
     ENDIF
 
@@ -357,7 +348,6 @@ SUBROUTINE tea_leaf()
 
     IF (profiler_on) dot_product_time=timer()
     CALL tea_allsum(exact_error)
-    IF (profiler_on) profiler%dot_product= profiler%dot_product+ (timer() - dot_product_time)
     IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
 
     exact_error = SQRT(exact_error)
@@ -504,7 +494,6 @@ SUBROUTINE tea_leaf_cheby_first_step(ch_alphas, ch_betas, fields, &
 
   IF (profiler_on) dot_product_time=timer()
   CALL tea_allsum(bb)
-  IF (profiler_on) profiler%dot_product= profiler%dot_product+ (timer() - dot_product_time)
   IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
 
   ! initialise 'p' array
@@ -520,7 +509,6 @@ SUBROUTINE tea_leaf_cheby_first_step(ch_alphas, ch_betas, fields, &
 
   IF (profiler_on) dot_product_time=timer()
   CALL tea_allsum(error)
-  IF (profiler_on) profiler%dot_product= profiler%dot_product+ (timer() - dot_product_time)
   IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
 
   it_alpha = eps*bb/(4.0_8*error)

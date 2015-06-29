@@ -102,7 +102,6 @@ SUBROUTINE update_tile_boundary(fields, depth)
         right_idx = chunk%tiles(t)%tile_neighbours(CHUNK_RIGHT)
 
         IF (right_idx .NE. EXTERNAL_FACE) THEN
-
           CALL update_internal_halo_left_right_kernel(                &
                                   chunk%tiles(t)%field%x_min,          &
                                   chunk%tiles(t)%field%x_max,          &
@@ -140,7 +139,6 @@ SUBROUTINE update_tile_boundary(fields, depth)
         up_idx = chunk%tiles(t)%tile_neighbours(CHUNK_TOP)
 
         IF (up_idx .NE. EXTERNAL_FACE) THEN
-
           CALL update_internal_halo_bottom_top_kernel(                &
                                   chunk%tiles(t)%field%x_min,          &
                                   chunk%tiles(t)%field%x_max,          &

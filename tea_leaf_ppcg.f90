@@ -35,7 +35,7 @@ SUBROUTINE tea_leaf_ppcg_init_sd(rx, ry, theta)
           rx, ry,                          &
           theta, tl_preconditioner_type)
     ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
 !$OMP END PARALLEL
   ENDIF
 
@@ -133,7 +133,7 @@ SUBROUTINE tea_leaf_ppcg_calc_zrnorm(rrn)
 
       rrn = rrn + private_rrn
     ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
 !$OMP END PARALLEL
   ENDIF
 

@@ -44,7 +44,7 @@ SUBROUTINE tea_leaf_cg_init(rx, ry, rro)
 
       rro = rro + private_rro
     ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
 !$OMP END PARALLEL
   ENDIF
 
@@ -78,7 +78,7 @@ SUBROUTINE tea_leaf_cg_calc_w(rx, ry, pw)
 
       pw = pw + private_pw
     ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
 !$OMP END PARALLEL
   ENDIF
 
@@ -119,7 +119,7 @@ SUBROUTINE tea_leaf_cg_calc_ur(rx, ry, alpha, rrn)
 
       rrn = rrn + private_rrn
     ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
 !$OMP END PARALLEL
   ENDIF
 
@@ -146,7 +146,7 @@ SUBROUTINE tea_leaf_cg_calc_p(rx, ry, beta)
           chunk%tiles(t)%field%vector_z,                                      &
           beta, tl_preconditioner_type)
     ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
 !$OMP END PARALLEL
   ENDIF
 
