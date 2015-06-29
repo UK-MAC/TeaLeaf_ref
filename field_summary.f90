@@ -80,7 +80,7 @@ SUBROUTINE field_summary()
       ie = ie + private_ie
       temp = temp + private_temp
     ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
 !$OMP END PARALLEL
   ENDIF
 

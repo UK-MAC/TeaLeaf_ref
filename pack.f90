@@ -211,7 +211,7 @@ SUBROUTINE call_packing_functions(fields, depth, face, packing, mpi_buffer, offs
                        tile_offset + offsets(FIELD_R))
     ENDIF
   ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
 !$OMP END PARALLEL
 
 END SUBROUTINE

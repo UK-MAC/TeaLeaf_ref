@@ -39,7 +39,7 @@ SUBROUTINE tea_leaf_cheby_init(rx, ry, ch_alphas, ch_betas, max_cheby_iters, the
             ch_alphas, ch_betas, max_cheby_iters,           &
             rx, ry, theta, tl_preconditioner_type)
     ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
 !$OMP END PARALLEL
   ENDIF
 
@@ -76,7 +76,7 @@ SUBROUTINE tea_leaf_cheby_iterate(rx, ry, ch_alphas, ch_betas, max_cheby_iters, 
                   ch_alphas, ch_betas, max_cheby_iters,        &
                   rx, ry, cheby_calc_steps, tl_preconditioner_type)
     ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
 !$OMP END PARALLEL
   ENDIF
 

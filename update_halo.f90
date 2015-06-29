@@ -76,7 +76,7 @@ SUBROUTINE update_boundary(fields,depth)
                                 fields,                         &
                                 depth                           )
       ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
 !$OMP END PARALLEL
     ENDIF
   ENDIF

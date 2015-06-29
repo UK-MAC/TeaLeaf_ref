@@ -72,7 +72,7 @@ SUBROUTINE generate_chunk()
                                  g_circ,                                &
                                  g_point)
     ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
 !$OMP END PARALLEL
   ENDIF
 

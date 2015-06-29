@@ -39,7 +39,7 @@ SUBROUTINE tea_leaf_jacobi_solve(rx, ry, error)
 
       error = error + private_error
     ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
 !$OMP END PARALLEL
   ENDIF
 

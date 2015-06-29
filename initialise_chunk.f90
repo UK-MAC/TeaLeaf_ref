@@ -59,7 +59,7 @@ SUBROUTINE initialise_chunk()
                                    chunk%tiles(t)%field%xarea,    &
                                    chunk%tiles(t)%field%yarea     )
     ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
 !$OMP END PARALLEL
   ENDIF
 

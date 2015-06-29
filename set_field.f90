@@ -48,7 +48,7 @@ SUBROUTINE set_field()
                             chunk%tiles(t)%field%energy0,   &
                             chunk%tiles(t)%field%energy1)
     ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
 !$OMP END PARALLEL
   ENDIF
 
