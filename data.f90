@@ -77,7 +77,8 @@ MODULE data_module
    TYPE parallel_type
       LOGICAL         ::        boss
       INTEGER         ::        max_task &
-                               ,boss_task
+                               ,boss_task &
+                               ,task
    END TYPE parallel_type
 
    TYPE(parallel_type) :: parallel

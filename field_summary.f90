@@ -89,6 +89,7 @@ SUBROUTINE field_summary()
   CALL tea_sum(mass)
   CALL tea_sum(ie)
   CALL tea_sum(temp)
+
   IF(profiler_on) profiler%summary=profiler%summary+(timer()-kernel_time)
 
   IF(parallel%boss) THEN

@@ -69,6 +69,7 @@ SUBROUTINE tea_init_comms
     parallel%boss=.TRUE.
   ENDIF
 
+  parallel%task = rank
   parallel%boss_task=0
   parallel%max_task=size
 
@@ -185,7 +186,7 @@ SUBROUTINE tea_decompose_tiles(x_cells, y_cells)
       tile_coords(2) = k
       tile_coords(1) = j
 
-      chunk%tiles(t)%bottom = tile_coords(2)*delta_y + 1
+      chunk%tiles(t)%bottom = chunk%bottom + tile_coords(2)*delta_y
       if (tile_coords(2) .le. mod_y) then
         chunk%tiles(t)%bottom = chunk%tiles(t)%bottom + tile_coords(2)
       else
@@ -197,7 +198,7 @@ SUBROUTINE tea_decompose_tiles(x_cells, y_cells)
         chunk%tiles(t)%top = chunk%tiles(t)%top + 1
       endif
 
-      chunk%tiles(t)%left = tile_coords(1)*delta_x + 1
+      chunk%tiles(t)%left = chunk%left + tile_coords(1)*delta_x
       if (tile_coords(1) .le. mod_x) then
         chunk%tiles(t)%left = chunk%tiles(t)%left + tile_coords(1)
       else
@@ -254,8 +255,8 @@ SUBROUTINE tea_allocate_buffers()
 
   allocate_extra_size = max(2, halo_exchange_depth)
 
-  lr_size = num_buffered*(chunk%chunk_y_max + 2*allocate_extra_size)*halo_exchange_depth
-  bt_size = num_buffered*(chunk%chunk_x_max + 2*allocate_extra_size)*halo_exchange_depth
+  lr_size = num_buffered*(chunk%y_cells + 2*allocate_extra_size)*halo_exchange_depth
+  bt_size = num_buffered*(chunk%x_cells + 2*allocate_extra_size)*halo_exchange_depth
 
   ! Unallocated buffers for external boundaries caused issues on some systems so they are now
   !  all allocated
@@ -426,7 +427,7 @@ SUBROUTINE tea_exchange(fields,depth)
     CALL MPI_WAITALL(message_count_ud,request_ud,status_ud,err)
 
     !unpack in top direction
-    IF (chunk%chunk_neighbours(CHUNK_TOP).NE.EXTERNAL_FACE ) THEN
+    IF (chunk%chunk_neighbours(CHUNK_TOP).NE.EXTERNAL_FACE) THEN
       CALL tea_unpack_buffers(fields, depth, CHUNK_TOP, &
         chunk%top_rcv_buffer, bottom_top_offset)
     ENDIF
@@ -526,3 +527,4 @@ SUBROUTINE tea_send_recv_message_bottom(bottom_snd_buffer, bottom_rcv_buffer,   
 END SUBROUTINE tea_send_recv_message_bottom
 
 END MODULE tea_module
+

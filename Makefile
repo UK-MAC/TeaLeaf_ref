@@ -127,12 +127,16 @@ MPI_COMPILER=mpif90
 C_MPI_COMPILER=mpicc
 
 ifndef TL_OMP_LEVEL
+# default - openmp in kernels
+KERNEL_FLAGS+=$(OMP_$(COMPILER)) $(OMP4)
+else ifeq '$(TL_OMP_LEVEL)' 'KERNEL'
+# the same if this is specified
 KERNEL_FLAGS+=$(OMP_$(COMPILER)) $(OMP4)
 else ifeq '$(TL_OMP_LEVEL)' 'TILE'
+# openmp across tiles
 FLAGS+=$(OMP_$(COMPILER)) $(OMP4)
-else ifeq '$(TL_OMP_LEVEL)' 'KERNEL'
-KERNEL_FLAGS+=$(OMP_$(COMPILER)) $(OMP4)
 else ifeq '$(TL_OMP_LEVEL)' 'BOTH'
+# both
 KERNEL_FLAGS+=$(OMP_$(COMPILER)) $(OMP4)
 FLAGS+=$(OMP_$(COMPILER)) $(OMP4)
 else
