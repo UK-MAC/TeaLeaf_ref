@@ -9,7 +9,6 @@ MODULE tea_leaf_common_kernel_module
                             ,CHUNK_TOP    =4    &
                             ,EXTERNAL_FACE=-1
 
-   ! 3 different options for preconditioners
    INTEGER,PARAMETER        ::   TL_PREC_NONE       = 1 &
                                 ,TL_PREC_JAC_DIAG   = 2 &
                                 ,TL_PREC_JAC_BLOCK  = 3
@@ -167,7 +166,6 @@ SUBROUTINE tea_leaf_common_init_kernel(x_min,  &
 
 END SUBROUTINE tea_leaf_common_init_kernel
 
-! Finalise routine is used by both implementations
 SUBROUTINE tea_leaf_kernel_finalise(x_min,    &
                            x_max,             &
                            y_min,             &
