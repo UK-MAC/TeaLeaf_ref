@@ -168,6 +168,9 @@ SUBROUTINE tea_decompose_tiles(x_cells, y_cells)
 
   tile_dims = 0
 
+  ! TODO input parameter to say how to split it - rows, columns, etc
+  tile_dims(1) = 1
+
   ! get good split for tiles
   CALL MPI_DIMS_CREATE(tiles_per_task, 2, tile_dims, err)
 
