@@ -94,6 +94,9 @@ MODULE data_module
    ! this rank's coordinates
    INTEGER, dimension(2)     ::mpi_coords
 
+   ! depth of halo for matrix powers
+   INTEGER :: halo_exchange_depth
+
    INTEGER                   ::lr_pack_buffer_size,bt_pack_buffer_size
 
 END MODULE data_module

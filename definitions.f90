@@ -205,9 +205,6 @@ MODULE definitions_module
 
   END TYPE chunk_type
 
-  ! depth of halo for matrix powers
-  INTEGER :: halo_exchange_depth
-
   TYPE(chunk_type)                     :: chunk
 
   TYPE(grid_type)                      :: grid
