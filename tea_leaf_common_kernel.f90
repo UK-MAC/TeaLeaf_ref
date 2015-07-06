@@ -30,7 +30,7 @@ SUBROUTINE tea_leaf_common_init_kernel(x_min,  &
                            y_max,                  &
                            halo_exchange_depth,                  &
                            chunk_neighbours,       &
-                           tile_neighbours,       &
+                           zero_boundary,       &
                            reflective_boundary,    &
                            density,                &
                            energy,                 &
@@ -53,7 +53,7 @@ SUBROUTINE tea_leaf_common_init_kernel(x_min,  &
   LOGICAL :: reflective_boundary
   INTEGER :: preconditioner_type
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
-  INTEGER, DIMENSION(4) :: chunk_neighbours, tile_neighbours
+  INTEGER, DIMENSION(4) :: chunk_neighbours, zero_boundary
   REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: density, energy, u, r, w, Kx, Ky, Mi, u0
   REAL(KIND=8), DIMENSION(x_min:x_max,y_min:y_max) :: cp, bfp
 
@@ -102,7 +102,7 @@ SUBROUTINE tea_leaf_common_init_kernel(x_min,  &
 
 ! Whether to apply reflective boundary conditions to all external faces
   IF (reflective_boundary .EQV. .FALSE.) THEN
-    IF (chunk_neighbours(CHUNK_LEFT).EQ.EXTERNAL_FACE .AND. tile_neighbours(CHUNK_LEFT).EQ.EXTERNAL_FACE) THEN
+    IF (chunk_neighbours(CHUNK_LEFT).EQ.EXTERNAL_FACE .AND. zero_boundary(CHUNK_LEFT).EQ.EXTERNAL_FACE) THEN
 !$OMP DO
       DO k=y_min-halo_exchange_depth,y_max+halo_exchange_depth
         DO j=x_min-halo_exchange_depth,x_min
@@ -111,16 +111,16 @@ SUBROUTINE tea_leaf_common_init_kernel(x_min,  &
       ENDDO
 !$OMP END DO
     ENDIF
-    IF (chunk_neighbours(CHUNK_RIGHT).EQ.EXTERNAL_FACE .AND. tile_neighbours(CHUNK_RIGHT).EQ.EXTERNAL_FACE) THEN
+    IF (chunk_neighbours(CHUNK_RIGHT).EQ.EXTERNAL_FACE .AND. zero_boundary(CHUNK_RIGHT).EQ.EXTERNAL_FACE) THEN
 !$OMP DO
       DO k=y_min-halo_exchange_depth,y_max+halo_exchange_depth
-        DO j=x_max,x_max+halo_exchange_depth
+        DO j=x_max + 1,x_max+halo_exchange_depth
           Kx(j,k)=0.0_8
         ENDDO
       ENDDO
 !$OMP END DO
     ENDIF
-    IF (chunk_neighbours(CHUNK_BOTTOM).EQ.EXTERNAL_FACE .AND. tile_neighbours(CHUNK_BOTTOM).EQ.EXTERNAL_FACE) THEN
+    IF (chunk_neighbours(CHUNK_BOTTOM).EQ.EXTERNAL_FACE .AND. zero_boundary(CHUNK_BOTTOM).EQ.EXTERNAL_FACE) THEN
 !$OMP DO
       DO k=y_min-halo_exchange_depth,y_min
         DO j=x_min-halo_exchange_depth,x_max+halo_exchange_depth
@@ -129,9 +129,9 @@ SUBROUTINE tea_leaf_common_init_kernel(x_min,  &
       ENDDO
 !$OMP END DO
     ENDIF
-    IF (chunk_neighbours(CHUNK_TOP).EQ.EXTERNAL_FACE .AND. tile_neighbours(CHUNK_TOP).EQ.EXTERNAL_FACE) THEN
+    IF (chunk_neighbours(CHUNK_TOP).EQ.EXTERNAL_FACE .AND. zero_boundary(CHUNK_TOP).EQ.EXTERNAL_FACE) THEN
 !$OMP DO
-      DO k=y_max,y_max+halo_exchange_depth
+      DO k=y_max + 1,y_max+halo_exchange_depth
         DO j=x_min-halo_exchange_depth,x_max+halo_exchange_depth
           Ky(j,k)=0.0_8
         ENDDO
