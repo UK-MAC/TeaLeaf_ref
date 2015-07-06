@@ -30,27 +30,24 @@ SUBROUTINE set_field()
 
   IMPLICIT NONE
 
-  INTEGER :: c
+  INTEGER :: t
 
   REAL(KIND=8) :: kernel_time,timer
 
   IF(profiler_on) kernel_time=timer()
-  DO c=1,chunks_per_task
 
-    IF(chunks(c)%task.EQ.parallel%task) THEN
+  IF(use_fortran_kernels)THEN
+    DO t=1,tiles_per_task
+      CALL set_field_kernel(chunk%tiles(t)%field%x_min,     &
+                            chunk%tiles(t)%field%x_max,     &
+                            chunk%tiles(t)%field%y_min,     &
+                            chunk%tiles(t)%field%y_max,     &
+                            halo_exchange_depth,     &
+                            chunk%tiles(t)%field%energy0,   &
+                            chunk%tiles(t)%field%energy1)
+    ENDDO
+  ENDIF
 
-      IF(use_fortran_kernels)THEN
-        CALL set_field_kernel(chunks(c)%field%x_min,     &
-                              chunks(c)%field%x_max,     &
-                              chunks(c)%field%y_min,     &
-                              chunks(c)%field%y_max,     &
-                              halo_exchange_depth,     &
-                              chunks(c)%field%energy0,   &
-                              chunks(c)%field%energy1)
-      ENDIF
-    ENDIF
-
-  ENDDO
   IF(profiler_on) profiler%set_field=profiler%set_field+(timer()-kernel_time)
 
 END SUBROUTINE set_field

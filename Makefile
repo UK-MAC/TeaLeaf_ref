@@ -133,40 +133,52 @@ FORTRAN_FILES=\
 	data.o			\
 	definitions.o			\
 	pack.o			\
-	pack_kernel.o			\
+	global_mpi.o				\
 	tea.o				\
 	report.o			\
 	timer.o			\
 	parse.o			\
 	read_input.o			\
-	initialise_chunk_kernel.o	\
 	initialise_chunk.o		\
 	build_field.o			\
-	update_halo_kernel.o		\
 	update_halo.o			\
 	start.o			\
-	generate_chunk_kernel.o	\
 	generate_chunk.o		\
 	initialise.o			\
-	field_summary_kernel.o	\
 	field_summary.o		\
 	calc_dt.o			\
 	timestep.o			\
-	set_field_kernel.o            \
 	set_field.o                   \
-	tea_leaf_common_kernels.o             \
-	tea_leaf_jacobi.o             \
+	tea_leaf_common.o             \
 	tea_leaf_cg.o             	\
 	tea_leaf_cheby.o             	\
 	tea_leaf_ppcg.o             	\
+	tea_leaf_jacobi.o             \
 	tea_solve.o                   \
 	visit.o			\
 	tea_leaf.o			\
 	diffuse.o
 
-tea_leaf: Makefile $(FORTRAN_FILES) $(C_FILES)
-	$(MPI_COMPILER) $(FLAGS)	\
+KERNEL_FILES= \
+	pack_kernel.o			\
+	initialise_chunk_kernel.o	\
+	update_internal_halo_kernel.o		\
+	update_halo_kernel.o		\
+	generate_chunk_kernel.o	\
+	field_summary_kernel.o	\
+	set_field_kernel.o            \
+	tea_leaf_common_kernel.o             \
+	tea_leaf_cg_kernel.o             	\
+	tea_leaf_cheby_kernel.o             	\
+	tea_leaf_ppcg_kernel.o             	\
+	tea_leaf_jacobi_kernel.o
+
+tea_leaf: Makefile $(KERNEL_FILES) $(FORTRAN_FILES) $(C_FILES)
+	$(MPI_COMPILER) \
+	$(FLAGS)	\
+	$(OMP_$(COMPILER)) $(OMP4) \
 	$(FORTRAN_FILES)	\
+	$(KERNEL_FILES) \
 	$(C_FILES)	\
 	$(LDFLAGS) \
 	$(LDLIBS) \
@@ -178,9 +190,9 @@ include makefile.deps
 %_module.mod: %.f90 %.o
 	@true
 %.o: %.f90 Makefile makefile.deps
-	$(MPI_COMPILER) $(FLAGS) -c $< -o $*.o
+	$(MPI_COMPILER) $(FLAGS) -c $< -o $@
 %.o: %.c Makefile makefile.deps
-	$(C_MPI_COMPILER) $(CFLAGS) -c $< -o $*.o
+	$(C_MPI_COMPILER) $(CFLAGS) -c $< -o $@
 
 clean:
 	rm -f *.o *.mod *genmod* *.lst *.cub *.ptx tea_leaf *.s *.i

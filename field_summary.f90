@@ -32,36 +32,51 @@ SUBROUTINE field_summary()
   IMPLICIT NONE
 
   REAL(KIND=8) :: vol,mass,ie,temp
+  REAL(KIND=8) :: tile_vol,tile_mass,tile_ie,tile_temp
   REAL(KIND=8) :: qa_diff
 
 !$ INTEGER :: OMP_GET_THREAD_NUM
 
-  INTEGER      :: c
+  INTEGER      :: t
 
   REAL(KIND=8) :: kernel_time,timer
 
-  IF(parallel%boss)THEN
+  IF(parallel%boss) THEN
     WRITE(g_out,*)
     WRITE(g_out,*) 'Time ',time
     WRITE(g_out,'(a13,5a26)')'           ','Volume','Mass','Density'       &
                                           ,'Energy','U'
   ENDIF
 
+  vol=0.0
+  mass=0.0
+  ie=0.0
+  temp=0.0
+
   IF(profiler_on) kernel_time=timer()
+
   IF(use_fortran_kernels)THEN
-    DO c=1,chunks_per_task
-      IF(chunks(c)%task.EQ.parallel%task) THEN
-        CALL field_summary_kernel(chunks(c)%field%x_min,                   &
-                                  chunks(c)%field%x_max,                   &
-                                  chunks(c)%field%y_min,                   &
-                                  chunks(c)%field%y_max,                   &
-                                  halo_exchange_depth, &
-                                  chunks(c)%field%volume,                  &
-                                  chunks(c)%field%density,                 &
-                                  chunks(c)%field%energy1,                 &
-                                  chunks(c)%field%u,                       &
-                                  vol,mass,ie,temp                         )
-      ENDIF
+    DO t=1,tiles_per_task
+      tile_vol=0.0
+      tile_mass=0.0
+      tile_ie=0.0
+      tile_temp=0.0
+
+      CALL field_summary_kernel(chunk%tiles(t)%field%x_min,                   &
+                                chunk%tiles(t)%field%x_max,                   &
+                                chunk%tiles(t)%field%y_min,                   &
+                                chunk%tiles(t)%field%y_max,                   &
+                                halo_exchange_depth,                          &
+                                chunk%tiles(t)%field%volume,                  &
+                                chunk%tiles(t)%field%density,                 &
+                                chunk%tiles(t)%field%energy1,                 &
+                                chunk%tiles(t)%field%u,                       &
+                                tile_vol,tile_mass,tile_ie,tile_temp)
+
+      vol = vol + tile_vol
+      mass = mass + tile_mass
+      ie = ie + tile_ie
+      temp = temp + tile_temp
     ENDDO
   ENDIF
 
@@ -70,6 +85,7 @@ SUBROUTINE field_summary()
   CALL tea_sum(mass)
   CALL tea_sum(ie)
   CALL tea_sum(temp)
+
   IF(profiler_on) profiler%summary=profiler%summary+(timer()-kernel_time)
 
   IF(parallel%boss) THEN

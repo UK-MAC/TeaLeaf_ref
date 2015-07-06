@@ -1,27 +1,38 @@
 
 set_field_kernel.o : 
 
+tea_leaf_common_kernel.o : 
+
+tea_leaf_ppcg_kernel.o :  \
+	tea_leaf_common_kernel.o \
+	tea_leaf_cheby_kernel.o
+
+tea_leaf_jacobi_kernel.o : 
+
 tea_solve.o :  \
+	tea_leaf_cheby.o \
+	tea_leaf_cg.o \
+	data.o \
 	tea_leaf_ppcg.o \
 	tea_leaf_jacobi.o \
-	tea_leaf_common_kernels.o \
 	report.o \
-	tea_leaf_cg.o \
 	update_halo.o \
-	data.o \
-	tea_leaf_cheby.o
+	tea_leaf_common.o
 
 build_field.o :  \
 	tea.o
 
+tea_leaf_common.o :  \
+	tea_leaf_common_kernel.o \
+	definitions.o
+
 tea_leaf_cheby.o :  \
-	tea_leaf_common_kernels.o
+	tea_leaf_cheby_kernel.o \
+	definitions.o
 
 generate_chunk.o :  \
 	generate_chunk_kernel.o \
 	tea.o
-
-calc_dt_kernel.o : 
 
 pack.o :  \
 	pack_kernel.o \
@@ -46,7 +57,8 @@ visit.o :  \
 	tea.o
 
 tea_leaf_cg.o :  \
-	tea_leaf_common_kernels.o
+	tea_leaf_cg_kernel.o \
+	definitions.o
 
 tea_leaf.o :  \
 	tea.o
@@ -57,13 +69,17 @@ field_summary.o :  \
 
 initialise_chunk.o :  \
 	initialise_chunk_kernel.o \
-	tea.o
+	tea.o \
+	definitions.o
 
 calc_dt.o :  \
 	tea.o
 
 definitions.o :  \
 	data.o
+
+tea_leaf_cg_kernel.o :  \
+	tea_leaf_common_kernel.o
 
 start.o :  \
 	set_field.o \
@@ -73,30 +89,38 @@ start.o :  \
 
 generate_chunk_kernel.o : 
 
-tea_leaf_common_kernels.o : 
-
 timer.o : 
-
-update_halo.o :  \
-	update_halo_kernel.o \
-	tea.o
 
 initialise_chunk_kernel.o : 
 
+update_halo.o :  \
+	update_halo_kernel.o \
+	update_internal_halo_kernel.o \
+	report.o \
+	tea.o
+
+global_mpi.o :  \
+	definitions.o
+
 tea.o :  \
 	pack.o \
-	data.o \
+	global_mpi.o \
+	report.o \
 	definitions.o
 
 tea_leaf_ppcg.o :  \
-	tea_leaf_cheby.o \
-	tea_leaf_common_kernels.o
+	tea_leaf_ppcg_kernel.o \
+	definitions.o
 
 update_halo_kernel.o : 
 
-tea_leaf_jacobi.o : 
+tea_leaf_jacobi.o :  \
+	tea_leaf_jacobi_kernel.o \
+	definitions.o
 
 pack_kernel.o : 
+
+update_internal_halo_kernel.o : 
 
 read_input.o :  \
 	report.o \
@@ -110,6 +134,9 @@ initialise.o :  \
 	parse.o \
 	tea.o
 
+tea_leaf_cheby_kernel.o :  \
+	tea_leaf_common_kernel.o
+
 diffuse.o :  \
 	timestep.o \
 	tea_solve.o \
@@ -120,5 +147,5 @@ set_field.o :  \
 	tea.o
 
 report.o :  \
-	data.o \
-	tea.o
+	global_mpi.o \
+	data.o

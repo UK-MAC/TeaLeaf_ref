@@ -1,4 +1,4 @@
-MODULE tea_leaf_kernel_common_module
+MODULE tea_leaf_common_kernel_module
 
   IMPLICIT NONE
 
@@ -9,7 +9,6 @@ MODULE tea_leaf_kernel_common_module
                             ,CHUNK_TOP    =4    &
                             ,EXTERNAL_FACE=-1
 
-   ! 3 different options for preconditioners
    INTEGER,PARAMETER        ::   TL_PREC_NONE       = 1 &
                                 ,TL_PREC_JAC_DIAG   = 2 &
                                 ,TL_PREC_JAC_BLOCK  = 3
@@ -24,12 +23,13 @@ MODULE tea_leaf_kernel_common_module
 
 CONTAINS
 
-SUBROUTINE tea_leaf_kernel_init_common(x_min,  &
+SUBROUTINE tea_leaf_common_init_kernel(x_min,  &
                            x_max,                  &
                            y_min,                  &
                            y_max,                  &
                            halo_exchange_depth,                  &
                            chunk_neighbours,       &
+                           zero_boundary,       &
                            reflective_boundary,    &
                            density,                &
                            energy,                 &
@@ -52,7 +52,7 @@ SUBROUTINE tea_leaf_kernel_init_common(x_min,  &
   LOGICAL :: reflective_boundary
   INTEGER :: preconditioner_type
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
-  INTEGER, DIMENSION(4) :: chunk_neighbours
+  INTEGER, DIMENSION(4) :: chunk_neighbours, zero_boundary
   REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: density, energy, u, r, w, Kx, Ky, Mi, u0
   REAL(KIND=8), DIMENSION(x_min:x_max,y_min:y_max) :: cp, bfp
 
@@ -71,7 +71,7 @@ SUBROUTINE tea_leaf_kernel_init_common(x_min,  &
   ENDDO
 !$OMP END DO
 
-  IF(coef .EQ. RECIP_CONDUCTIVITY) THEN
+  IF (coef .EQ. RECIP_CONDUCTIVITY) THEN
 !$OMP DO
     ! use w as temp val
     DO k=y_min-halo_exchange_depth,y_max+halo_exchange_depth
@@ -80,7 +80,7 @@ SUBROUTINE tea_leaf_kernel_init_common(x_min,  &
       ENDDO
     ENDDO
 !$OMP END DO
-  ELSE IF(coef .EQ. CONDUCTIVITY) THEN
+  ELSE IF (coef .EQ. CONDUCTIVITY) THEN
 !$OMP DO
     DO k=y_min-halo_exchange_depth,y_max+halo_exchange_depth
       DO j=x_min-halo_exchange_depth,x_max+halo_exchange_depth
@@ -100,8 +100,8 @@ SUBROUTINE tea_leaf_kernel_init_common(x_min,  &
 !$OMP END DO
 
 ! Whether to apply reflective boundary conditions to all external faces
-  IF (reflective_boundary .eqv. .FALSE.) THEN
-    IF(chunk_neighbours(CHUNK_LEFT).EQ.EXTERNAL_FACE) THEN
+  IF (reflective_boundary .EQV. .FALSE.) THEN
+    IF (chunk_neighbours(CHUNK_LEFT).EQ.EXTERNAL_FACE .AND. zero_boundary(CHUNK_LEFT).EQ.EXTERNAL_FACE) THEN
 !$OMP DO
       DO k=y_min-halo_exchange_depth,y_max+halo_exchange_depth
         DO j=x_min-halo_exchange_depth,x_min
@@ -110,16 +110,16 @@ SUBROUTINE tea_leaf_kernel_init_common(x_min,  &
       ENDDO
 !$OMP END DO
     ENDIF
-    IF(chunk_neighbours(CHUNK_RIGHT).EQ.EXTERNAL_FACE) THEN
+    IF (chunk_neighbours(CHUNK_RIGHT).EQ.EXTERNAL_FACE .AND. zero_boundary(CHUNK_RIGHT).EQ.EXTERNAL_FACE) THEN
 !$OMP DO
       DO k=y_min-halo_exchange_depth,y_max+halo_exchange_depth
-        DO j=x_max,x_max+halo_exchange_depth
+        DO j=x_max + 1,x_max+halo_exchange_depth
           Kx(j,k)=0.0_8
         ENDDO
       ENDDO
 !$OMP END DO
     ENDIF
-    IF(chunk_neighbours(CHUNK_BOTTOM).EQ.EXTERNAL_FACE) THEN
+    IF (chunk_neighbours(CHUNK_BOTTOM).EQ.EXTERNAL_FACE .AND. zero_boundary(CHUNK_BOTTOM).EQ.EXTERNAL_FACE) THEN
 !$OMP DO
       DO k=y_min-halo_exchange_depth,y_min
         DO j=x_min-halo_exchange_depth,x_max+halo_exchange_depth
@@ -128,9 +128,9 @@ SUBROUTINE tea_leaf_kernel_init_common(x_min,  &
       ENDDO
 !$OMP END DO
     ENDIF
-    IF(chunk_neighbours(CHUNK_TOP).EQ.EXTERNAL_FACE) THEN
+    IF (chunk_neighbours(CHUNK_TOP).EQ.EXTERNAL_FACE .AND. zero_boundary(CHUNK_TOP).EQ.EXTERNAL_FACE) THEN
 !$OMP DO
-      DO k=y_max,y_max+halo_exchange_depth
+      DO k=y_max + 1,y_max+halo_exchange_depth
         DO j=x_min-halo_exchange_depth,x_max+halo_exchange_depth
           Ky(j,k)=0.0_8
         ENDDO
@@ -164,9 +164,8 @@ SUBROUTINE tea_leaf_kernel_init_common(x_min,  &
 !$OMP END DO
 !$OMP END PARALLEL
 
-END SUBROUTINE tea_leaf_kernel_init_common
+END SUBROUTINE tea_leaf_common_init_kernel
 
-! Finalise routine is used by both implementations
 SUBROUTINE tea_leaf_kernel_finalise(x_min,    &
                            x_max,             &
                            y_min,             &
@@ -195,7 +194,7 @@ SUBROUTINE tea_leaf_kernel_finalise(x_min,    &
 
 END SUBROUTINE tea_leaf_kernel_finalise
 
-SUBROUTINE tea_leaf_calc_residual(x_min,       &
+SUBROUTINE tea_leaf_calc_residual_kernel(x_min,       &
                                   x_max,       &
                                   y_min,       &
                                   y_max,       &
@@ -231,7 +230,7 @@ SUBROUTINE tea_leaf_calc_residual(x_min,       &
 !$OMP END DO
 !$OMP END PARALLEL
 
-END SUBROUTINE tea_leaf_calc_residual
+END SUBROUTINE tea_leaf_calc_residual_kernel
 
 SUBROUTINE tea_leaf_calc_2norm_kernel(x_min, &
                           x_max,             &
@@ -448,5 +447,4 @@ SUBROUTINE tea_block_solve(x_min,             &
 
 END SUBROUTINE
 
-END MODULE tea_leaf_kernel_common_module
-
+END MODULE tea_leaf_common_kernel_module

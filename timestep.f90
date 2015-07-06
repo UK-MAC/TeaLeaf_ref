@@ -33,17 +33,17 @@ SUBROUTINE timestep()
 
   IMPLICIT NONE
 
-  INTEGER :: c
+  INTEGER :: t
 
   REAL(KIND=8)    :: dtlp
 
   REAL(KIND=8)    :: kernel_time,timer
 
-!$ INTEGER :: OMP_GET_THREAD_NUM
 
   IF(profiler_on) kernel_time=timer()
-  DO c = 1, chunks_per_task
-    CALL calc_dt(c,dtlp)
+
+  DO t=1,tiles_per_task
+    CALL calc_dt(dtlp)
 
     IF(dtlp.LE.dt) THEN
       dt=dtlp
@@ -55,10 +55,8 @@ SUBROUTINE timestep()
   IF(profiler_on) profiler%timestep=profiler%timestep+(timer()-kernel_time)
 
   IF (parallel%boss) THEN
-!$  IF(OMP_GET_THREAD_NUM().EQ.0) THEN
       WRITE(g_out,"(' Step ', i7,' time ', f11.7,' timestep  ',1pe9.2,i8)") step,time,dt
       WRITE(0,    "(' Step ', i7,' time ', f11.7,' timestep  ',1pe9.2,i8)") step,time,dt
-!$  ENDIF
   ENDIF
 
 END SUBROUTINE timestep

@@ -19,42 +19,44 @@
 !>  @author David Beckingsale, Wayne Gaudin
 !>  @details Invokes the user specified chunk initialisation kernel.
 
-SUBROUTINE initialise_chunk(chunk)
+SUBROUTINE initialise_chunk()
 
+  USE definitions_module
   USE tea_module
   USE initialise_chunk_kernel_module
 
   IMPLICIT NONE
 
-  INTEGER :: chunk
+  INTEGER :: t
 
   REAL(KIND=8) :: xmin,ymin,dx,dy
 
-  dx=(grid%xmax-grid%xmin)/REAL(grid%x_cells)
-  dy=(grid%ymax-grid%ymin)/REAL(grid%y_cells)
-
-  xmin=grid%xmin+dx*REAL(chunks(chunk)%field%left-1)
-
-  ymin=grid%ymin+dy*REAL(chunks(chunk)%field%bottom-1)
+  dx=(grid%xmax - grid%xmin)/REAL(grid%x_cells)
+  dy=(grid%ymax - grid%ymin)/REAL(grid%y_cells)
 
   IF(use_fortran_kernels) THEN
-    CALL initialise_chunk_kernel(chunks(chunk)%field%x_min,    &
-                                 chunks(chunk)%field%x_max,    &
-                                 chunks(chunk)%field%y_min,    &
-                                 chunks(chunk)%field%y_max,    &
-                                 xmin,ymin,dx,dy,              &
-                                 chunks(chunk)%field%vertexx,  &
-                                 chunks(chunk)%field%vertexdx, &
-                                 chunks(chunk)%field%vertexy,  &
-                                 chunks(chunk)%field%vertexdy, &
-                                 chunks(chunk)%field%cellx,    &
-                                 chunks(chunk)%field%celldx,   &
-                                 chunks(chunk)%field%celly,    &
-                                 chunks(chunk)%field%celldy,   &
-                                 chunks(chunk)%field%volume,   &
-                                 chunks(chunk)%field%xarea,    &
-                                 chunks(chunk)%field%yarea     )
+    DO t=1,tiles_per_task
+      xmin=grid%xmin + dx*REAL(chunk%tiles(t)%left-1)
+  
+      ymin=grid%ymin + dy*REAL(chunk%tiles(t)%bottom-1)
+  
+      CALL initialise_chunk_kernel(chunk%tiles(t)%field%x_min,    &
+                                   chunk%tiles(t)%field%x_max,    &
+                                   chunk%tiles(t)%field%y_min,    &
+                                   chunk%tiles(t)%field%y_max,    &
+                                   xmin,ymin,dx,dy,              &
+                                   chunk%tiles(t)%field%vertexx,  &
+                                   chunk%tiles(t)%field%vertexdx, &
+                                   chunk%tiles(t)%field%vertexy,  &
+                                   chunk%tiles(t)%field%vertexdy, &
+                                   chunk%tiles(t)%field%cellx,    &
+                                   chunk%tiles(t)%field%celldx,   &
+                                   chunk%tiles(t)%field%celly,    &
+                                   chunk%tiles(t)%field%celldy,   &
+                                   chunk%tiles(t)%field%volume,   &
+                                   chunk%tiles(t)%field%xarea,    &
+                                   chunk%tiles(t)%field%yarea     )
+    ENDDO
   ENDIF
-
 
 END SUBROUTINE initialise_chunk

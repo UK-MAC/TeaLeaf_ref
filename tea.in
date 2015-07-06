@@ -19,5 +19,5 @@ tl_use_ppcg
 tl_check_result
 tl_eps=1.0e-15
 profiler_on
-halo_depth=1
+halo_depth=4
 *endtea

@@ -30,16 +30,20 @@ SUBROUTINE start
 
   IMPLICIT NONE
 
-  INTEGER :: c
+  INTEGER :: t
 
   INTEGER :: x_cells,y_cells
-  INTEGER, ALLOCATABLE :: right(:),left(:),top(:),bottom(:)
 
   INTEGER :: fields(NUM_FIELDS)
 
-  LOGICAL :: profiler_off
+  LOGICAL :: profiler_original
 
-  IF(parallel%boss)THEN
+  ! Do no profile the start up costs otherwise the total times will not add up
+  ! at the end
+  profiler_original=profiler_on
+  profiler_on=.FALSE.
+
+  IF (parallel%boss)THEN
     WRITE(g_out,*) 'Setting up initial geometry'
     WRITE(g_out,*)
   ENDIF
@@ -48,78 +52,43 @@ SUBROUTINE start
   step  = 0
   dt    = dtinit
 
-  CALL tea_barrier
+  CALL tea_barrier()
 
-  CALL tea_get_num_chunks(number_of_chunks)
+  CALL tea_decompose(grid%x_cells, grid%y_cells)
 
-  ALLOCATE(chunks(1:chunks_per_task))
-  ALLOCATE(left(1:chunks_per_task))
-  ALLOCATE(right(1:chunks_per_task))
-  ALLOCATE(bottom(1:chunks_per_task))
-  ALLOCATE(top(1:chunks_per_task))
+  ALLOCATE(chunk%tiles(tiles_per_task))
 
-  CALL tea_decompose(grid%x_cells,grid%y_cells,left,right,bottom,top)
+  chunk%x_cells = chunk%right -chunk%left  +1
+  chunk%y_cells = chunk%top   -chunk%bottom+1
 
-  DO c=1,chunks_per_task
+  chunk%chunk_x_min = 1
+  chunk%chunk_y_min = 1
+  chunk%chunk_x_max = chunk%x_cells
+  chunk%chunk_y_max = chunk%y_cells
 
-    ! Needs changing so there can be more than 1 chunk per task
-    chunks(c)%task = parallel%task
+  CALL tea_decompose_tiles(chunk%x_cells, chunk%y_cells)
 
-    !chunk_task_responsible_for = parallel%task+1
+  DO t=1,tiles_per_task
+    chunk%tiles(t)%x_cells = chunk%tiles(t)%right -chunk%tiles(t)%left  +1
+    chunk%tiles(t)%y_cells = chunk%tiles(t)%top   -chunk%tiles(t)%bottom+1
 
-    x_cells = right(c) -left(c)  +1
-    y_cells = top(c)   -bottom(c)+1
-
-    IF(chunks(c)%task.EQ.parallel%task)THEN
-      CALL build_field(c,x_cells,y_cells)
-    ENDIF
-    chunks(c)%field%left    = left(c)
-    chunks(c)%field%bottom  = bottom(c)
-    chunks(c)%field%right   = right(c)
-    chunks(c)%field%top     = top(c)
-    chunks(c)%field%left_boundary   = 1
-    chunks(c)%field%bottom_boundary = 1
-    chunks(c)%field%right_boundary  = grid%x_cells
-    chunks(c)%field%top_boundary    = grid%y_cells
-    chunks(c)%field%x_min = 1
-    chunks(c)%field%y_min = 1
-    chunks(c)%field%x_max = right(c)-left(c)+1
-    chunks(c)%field%y_max = top(c)-bottom(c)+1
-
+    chunk%tiles(t)%field%x_min = 1
+    chunk%tiles(t)%field%y_min = 1
+    chunk%tiles(t)%field%x_max = chunk%tiles(t)%x_cells
+    chunk%tiles(t)%field%y_max = chunk%tiles(t)%y_cells
   ENDDO
 
-  DEALLOCATE(left,right,bottom,top)
+  CALL build_field()
 
-  CALL tea_barrier
+  CALL tea_allocate_buffers()
 
-  DO c=1,chunks_per_task
-    IF(chunks(c)%task.EQ.parallel%task)THEN
-      CALL tea_allocate_buffers(c)
-    ENDIF
-  ENDDO
+  CALL initialise_chunk()
 
-  DO c=1,chunks_per_task
-    IF(chunks(c)%task.EQ.parallel%task)THEN
-      CALL initialise_chunk(c)
-    ENDIF
-  ENDDO
-
-  IF(parallel%boss)THEN
-     WRITE(g_out,*) 'Generating chunks'
+  IF (parallel%boss)THEN
+    WRITE(g_out,*) 'Generating chunk'
   ENDIF
 
-  DO c=1,chunks_per_task
-    IF(chunks(c)%task.EQ.parallel%task)THEN
-      CALL generate_chunk(c)
-    ENDIF
-  ENDDO
-
-  CALL tea_barrier
-
-  ! Do no profile the start up costs otherwise the total times will not add up
-  ! at the end
-  profiler_off=profiler_on
-  profiler_on=.FALSE.
+  CALL generate_chunk()
 
   ! Prime all halo data for the first step
   fields=0
@@ -129,9 +98,9 @@ SUBROUTINE start
 
   CALL update_halo(fields,halo_exchange_depth)
 
-  IF(parallel%boss)THEN
-     WRITE(g_out,*)
-     WRITE(g_out,*) 'Problem initialised and generated'
+  IF (parallel%boss)THEN
+    WRITE(g_out,*)
+    WRITE(g_out,*) 'Problem initialised and generated'
   ENDIF
 
   ! copy time level 0 to time level 1 before the first print
@@ -139,10 +108,11 @@ SUBROUTINE start
 
   CALL field_summary()
 
-  IF(visit_frequency.NE.0) CALL visit()
+  IF (visit_frequency.NE.0) CALL visit()
 
-  CALL tea_barrier
+  CALL tea_barrier()
 
-  profiler_on=profiler_off
+  profiler_on=profiler_original
 
 END SUBROUTINE start
+
