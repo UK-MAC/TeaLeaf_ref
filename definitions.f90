@@ -154,6 +154,7 @@ MODULE definitions_module
                        ,x_max  &
                        ,y_max
 
+     REAL(KIND=8)    :: rx, ry
    END TYPE field_type
 
    TYPE tile_type

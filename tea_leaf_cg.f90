@@ -8,12 +8,12 @@ MODULE tea_leaf_cg_module
 
 CONTAINS
 
-SUBROUTINE tea_leaf_cg_init(rx, ry, rro)
+SUBROUTINE tea_leaf_cg_init(rro)
 
   IMPLICIT NONE
 
   INTEGER :: t
-  REAL(KIND=8) :: ry, rx, rro, private_rro
+  REAL(KIND=8) :: rro, private_rro
 
   rro = 0.0_8
 
@@ -40,7 +40,9 @@ SUBROUTINE tea_leaf_cg_init(rx, ry, rro)
           chunk%tiles(t)%field%vector_Ky,                              &
           chunk%tiles(t)%field%tri_cp,   &
           chunk%tiles(t)%field%tri_bfp,    &
-          rx, ry, private_rro, tl_preconditioner_type)
+          chunk%tiles(t)%field%rx,  &
+          chunk%tiles(t)%field%ry,  &
+          private_rro, tl_preconditioner_type)
 
       rro = rro + private_rro
     ENDDO
@@ -50,12 +52,12 @@ SUBROUTINE tea_leaf_cg_init(rx, ry, rro)
 
 END SUBROUTINE tea_leaf_cg_init
 
-SUBROUTINE tea_leaf_cg_calc_w(rx, ry, pw)
+SUBROUTINE tea_leaf_cg_calc_w(pw)
 
   IMPLICIT NONE
 
   INTEGER :: t
-  REAL(KIND=8) :: ry, rx, pw, private_pw
+  REAL(KIND=8) :: pw, private_pw
 
   pw = 0.0_08
 
@@ -74,7 +76,9 @@ SUBROUTINE tea_leaf_cg_calc_w(rx, ry, pw)
           chunk%tiles(t)%field%vector_w,                                      &
           chunk%tiles(t)%field%vector_Kx,                                     &
           chunk%tiles(t)%field%vector_Ky,                                     &
-          rx, ry, private_pw)
+          chunk%tiles(t)%field%rx,  &
+          chunk%tiles(t)%field%ry,  &
+          private_pw)
 
       pw = pw + private_pw
     ENDDO
@@ -84,12 +88,12 @@ SUBROUTINE tea_leaf_cg_calc_w(rx, ry, pw)
 
 END SUBROUTINE tea_leaf_cg_calc_w
 
-SUBROUTINE tea_leaf_cg_calc_ur(rx, ry, alpha, rrn)
+SUBROUTINE tea_leaf_cg_calc_ur(alpha, rrn)
 
   IMPLICIT NONE
 
   INTEGER :: t
-  REAL(KIND=8) :: ry, rx, alpha, rrn, private_rrn
+  REAL(KIND=8) :: alpha, rrn, private_rrn
 
   rrn = 0.0_8
 
@@ -114,7 +118,8 @@ SUBROUTINE tea_leaf_cg_calc_ur(rx, ry, alpha, rrn)
           chunk%tiles(t)%field%tri_bfp,    &
           chunk%tiles(t)%field%vector_Kx,                              &
           chunk%tiles(t)%field%vector_Ky,                              &
-          rx, ry, &
+          chunk%tiles(t)%field%rx,  &
+          chunk%tiles(t)%field%ry, &
           alpha, private_rrn, tl_preconditioner_type)
 
       rrn = rrn + private_rrn
@@ -125,12 +130,12 @@ SUBROUTINE tea_leaf_cg_calc_ur(rx, ry, alpha, rrn)
 
 END SUBROUTINE tea_leaf_cg_calc_ur
 
-SUBROUTINE tea_leaf_cg_calc_p(rx, ry, beta)
+SUBROUTINE tea_leaf_cg_calc_p(beta)
 
   IMPLICIT NONE
 
   INTEGER :: t
-  REAL(KIND=8) :: ry, rx, beta
+  REAL(KIND=8) :: beta
 
   IF (use_fortran_kernels) THEN
 !$OMP PARALLEL

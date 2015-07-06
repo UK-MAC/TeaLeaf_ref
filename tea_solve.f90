@@ -40,7 +40,7 @@ SUBROUTINE tea_leaf()
 
 !$ INTEGER :: OMP_GET_THREAD_NUM
   INTEGER :: n, t
-  REAL(KIND=8) :: ry,rx,old_error,error,exact_error,initial_residual
+  REAL(KIND=8) :: old_error,error,exact_error,initial_residual
 
   INTEGER :: fields(NUM_FIELDS)
 
@@ -92,8 +92,7 @@ SUBROUTINE tea_leaf()
   CALL update_halo(fields,halo_exchange_depth)
   IF (profiler_on) init_time = init_time + (timer()-halo_time)
 
-  ! rx/ry should be the same for all tiles
-  CALL tea_leaf_init_common(rx, ry)
+  CALL tea_leaf_init_common()
 
   fields=0
   fields(FIELD_U) = 1
@@ -102,7 +101,7 @@ SUBROUTINE tea_leaf()
   CALL update_halo(fields,1)
   IF (profiler_on) init_time = init_time + (timer()-halo_time)
 
-  CALL tea_leaf_calc_residual(rx, ry)
+  CALL tea_leaf_calc_residual()
   CALL tea_leaf_calc_2norm(initial_residual)
 
   IF (profiler_on) dot_product_time=timer()
@@ -121,7 +120,7 @@ SUBROUTINE tea_leaf()
 
   IF (tl_use_cg .OR. tl_use_chebyshev .OR. tl_use_ppcg) THEN
     ! All 3 of these solvers use the CG kernels
-    CALL tea_leaf_cg_init(rx, ry, rro)
+    CALL tea_leaf_cg_init(rro)
 
     ! and globally sum rro
     IF (profiler_on) dot_product_time=timer()
@@ -218,11 +217,11 @@ SUBROUTINE tea_leaf()
       IF (tl_use_chebyshev) THEN
         IF (cheby_calc_steps .EQ. 0) THEN
           CALL tea_leaf_cheby_first_step(ch_alphas, ch_betas, fields, &
-              old_error, rx, ry, theta, cn, max_cheby_iters, est_itc, solve_time)
+              old_error, theta, cn, max_cheby_iters, est_itc, solve_time)
 
           cheby_calc_steps = 1
         ELSE
-          CALL tea_leaf_cheby_iterate(rx, ry, ch_alphas, ch_betas, max_cheby_iters, cheby_calc_steps)
+          CALL tea_leaf_cheby_iterate(ch_alphas, ch_betas, max_cheby_iters, cheby_calc_steps)
 
           ! after estimated number of iterations has passed, calc resid.
           ! Leaving 10 iterations between each global reduction won't affect
@@ -238,7 +237,7 @@ SUBROUTINE tea_leaf()
           ENDIF
         ENDIF
       ELSE IF (tl_use_ppcg) THEN
-        CALL tea_leaf_cg_calc_w(rx, ry, pw)
+        CALL tea_leaf_cg_calc_w(pw)
 
         IF (profiler_on) dot_product_time=timer()
         CALL tea_allsum(pw)
@@ -246,12 +245,12 @@ SUBROUTINE tea_leaf()
 
         alpha = rro/pw
 
-        CALL tea_leaf_cg_calc_ur(rx, ry, alpha, rrn)
+        CALL tea_leaf_cg_calc_ur(alpha, rrn)
 
         ! not using rrn, so don't do a tea_allsum
 
         CALL tea_leaf_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
-            rx, ry, tl_ppcg_inner_steps, solve_time)
+            tl_ppcg_inner_steps, solve_time)
         ppcg_inner_iters = ppcg_inner_iters + tl_ppcg_inner_steps
 
         CALL tea_leaf_ppcg_calc_zrnorm(rrn)
@@ -262,7 +261,7 @@ SUBROUTINE tea_leaf()
 
         beta = rrn/rro
 
-        CALL tea_leaf_cg_calc_p(rx, ry, beta)
+        CALL tea_leaf_cg_calc_p(beta)
 
         error = rrn
         rro = rrn
@@ -275,7 +274,7 @@ SUBROUTINE tea_leaf()
 
       ! w = Ap
       ! pw = p.w
-      CALL tea_leaf_cg_calc_w(rx, ry, pw)
+      CALL tea_leaf_cg_calc_w(pw)
 
       IF (profiler_on) dot_product_time=timer()
       CALL tea_allsum(pw)
@@ -286,7 +285,7 @@ SUBROUTINE tea_leaf()
 
       ! u = u + a*p
       ! r = r - a*w
-      CALL tea_leaf_cg_calc_ur(rx, ry, alpha, rrn)
+      CALL tea_leaf_cg_calc_ur(alpha, rrn)
 
       IF (profiler_on) dot_product_time=timer()
       CALL tea_allsum(rrn)
@@ -296,12 +295,12 @@ SUBROUTINE tea_leaf()
       cg_betas(n) = beta
 
       ! p = r + b*p
-      CALL tea_leaf_cg_calc_p(rx, ry, beta)
+      CALL tea_leaf_cg_calc_p(beta)
 
       error = rrn
       rro = rrn
     ELSEIF (tl_use_jacobi) THEN
-      CALL tea_leaf_jacobi_solve(rx, ry, error)
+      CALL tea_leaf_jacobi_solve(error)
 
       IF (profiler_on) dot_product_time=timer()
       CALL tea_allsum(error)
@@ -343,7 +342,7 @@ SUBROUTINE tea_leaf()
     CALL update_halo(fields,1)
     IF (profiler_on) solve_time = solve_time + (timer()-halo_time)
 
-    CALL tea_leaf_calc_residual(rx, ry)
+    CALL tea_leaf_calc_residual()
     CALL tea_leaf_calc_2norm(exact_error)
 
     IF (profiler_on) dot_product_time=timer()
@@ -426,13 +425,13 @@ SUBROUTINE tea_leaf()
 END SUBROUTINE tea_leaf
 
 SUBROUTINE tea_leaf_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
-    rx, ry, tl_ppcg_inner_steps, solve_time)
+    tl_ppcg_inner_steps, solve_time)
 
   IMPLICIT NONE
 
   INTEGER :: fields(NUM_FIELDS)
   INTEGER :: t, tl_ppcg_inner_steps, ppcg_cur_step
-  REAL(KIND=8) :: rx, ry, theta
+  REAL(KIND=8) :: theta
   REAL(KIND=8) :: halo_time, timer, solve_time
   REAL(KIND=8), DIMENSION(max_iters) :: ch_alphas, ch_betas
 
@@ -445,7 +444,7 @@ SUBROUTINE tea_leaf_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
   CALL update_halo(fields,1)
   IF (profiler_on) solve_time = solve_time + (timer() - halo_time)
 
-  CALL tea_leaf_ppcg_init_sd(rx, ry, theta)
+  CALL tea_leaf_ppcg_init_sd(theta)
 
   ! inner steps
   DO ppcg_cur_step=1,tl_ppcg_inner_steps,halo_exchange_depth
@@ -464,7 +463,7 @@ SUBROUTINE tea_leaf_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
     fields(FIELD_SD) = 1
 
     DO bounds_extra = halo_exchange_depth-1, 0, -1
-      CALL tea_leaf_ppcg_inner(rx, ry, ch_alphas, ch_betas, inner_step, bounds_extra)
+      CALL tea_leaf_ppcg_inner(ch_alphas, ch_betas, inner_step, bounds_extra)
 
       IF (profiler_on) halo_time = timer()
       CALL update_boundary(fields, 1)
@@ -481,13 +480,13 @@ SUBROUTINE tea_leaf_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
 END SUBROUTINE tea_leaf_run_ppcg_inner_steps
 
 SUBROUTINE tea_leaf_cheby_first_step(ch_alphas, ch_betas, fields, &
-    error, rx, ry, theta, cn, max_cheby_iters, est_itc, solve_time)
+    error, theta, cn, max_cheby_iters, est_itc, solve_time)
 
   IMPLICIT NONE
 
   integer :: t, est_itc, max_cheby_iters
   integer, dimension(:) :: fields
-  REAL(KIND=8) :: it_alpha, cn, gamm, bb, error, rx, ry, theta
+  REAL(KIND=8) :: it_alpha, cn, gamm, bb, error, theta
   REAL(KIND=8), DIMENSION(:) :: ch_alphas, ch_betas
   REAL(KIND=8) :: halo_time, timer, dot_product_time, solve_time
 
@@ -499,13 +498,13 @@ SUBROUTINE tea_leaf_cheby_first_step(ch_alphas, ch_betas, fields, &
   IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
 
   ! initialise 'p' array
-  CALL tea_leaf_cheby_init(rx, ry, ch_alphas, ch_betas, max_cheby_iters, theta)
+  CALL tea_leaf_cheby_init(ch_alphas, ch_betas, max_cheby_iters, theta)
 
   IF (profiler_on) halo_time = timer()
   CALL update_halo(fields,1)
   IF (profiler_on) solve_time = solve_time + (timer()-halo_time)
 
-  CALL tea_leaf_cheby_iterate(rx, ry, ch_alphas, ch_betas, max_cheby_iters, 1)
+  CALL tea_leaf_cheby_iterate(ch_alphas, ch_betas, max_cheby_iters, 1)
 
   CALL tea_leaf_calc_2norm(error)
 
@@ -527,3 +526,4 @@ SUBROUTINE tea_leaf_cheby_first_step(ch_alphas, ch_betas, fields, &
 END SUBROUTINE tea_leaf_cheby_first_step
 
 END MODULE tea_leaf_module
+

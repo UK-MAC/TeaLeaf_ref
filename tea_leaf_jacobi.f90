@@ -8,12 +8,12 @@ MODULE tea_leaf_jacobi_module
 
 CONTAINS
 
-SUBROUTINE tea_leaf_jacobi_solve(rx, ry, error)
+SUBROUTINE tea_leaf_jacobi_solve(error)
 
   IMPLICIT NONE
 
   INTEGER :: t
-  REAL(KIND=8) :: ry,rx, error, private_error
+  REAL(KIND=8) :: error, private_error
 
   error = 0.0_8
 
@@ -28,8 +28,8 @@ SUBROUTINE tea_leaf_jacobi_solve(rx, ry, error)
           chunk%tiles(t)%field%y_min,                       &
           chunk%tiles(t)%field%y_max,                       &
           halo_exchange_depth,                       &
-          rx,                                          &
-          ry,                                          &
+          chunk%tiles(t)%field%rx,                                          &
+          chunk%tiles(t)%field%ry,                                          &
           chunk%tiles(t)%field%vector_Kx,                   &
           chunk%tiles(t)%field%vector_Ky,                   &
           private_error,                                       &

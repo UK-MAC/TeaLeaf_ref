@@ -9,12 +9,12 @@ MODULE tea_leaf_ppcg_module
 
 CONTAINS
 
-SUBROUTINE tea_leaf_ppcg_init_sd(rx, ry, theta)
+SUBROUTINE tea_leaf_ppcg_init_sd(theta)
 
   IMPLICIT NONE
 
   INTEGER :: t
-  REAL(KIND=8) :: ry,rx,theta
+  REAL(KIND=8) :: theta
 
   IF (use_fortran_kernels) THEN
 !$OMP PARALLEL
@@ -33,7 +33,8 @@ SUBROUTINE tea_leaf_ppcg_init_sd(rx, ry, theta)
           chunk%tiles(t)%field%tri_cp,                          &
           chunk%tiles(t)%field%tri_bfp,                          &
           chunk%tiles(t)%field%vector_Mi,                          &
-          rx, ry,                          &
+          chunk%tiles(t)%field%rx,  &
+          chunk%tiles(t)%field%ry,                          &
           theta, tl_preconditioner_type)
     ENDDO
 !$OMP END DO NOWAIT
@@ -42,12 +43,11 @@ SUBROUTINE tea_leaf_ppcg_init_sd(rx, ry, theta)
 
 END SUBROUTINE tea_leaf_ppcg_init_sd
 
-SUBROUTINE tea_leaf_ppcg_inner(rx, ry, ch_alphas, ch_betas, inner_step, bounds_extra)
+SUBROUTINE tea_leaf_ppcg_inner(ch_alphas, ch_betas, inner_step, bounds_extra)
 
   IMPLICIT NONE
 
   INTEGER :: t, inner_step, bounds_extra
-  REAL(KIND=8) :: ry,rx
   INTEGER :: x_min_bound, x_max_bound, y_min_bound, y_max_bound
   REAL(KIND=8), DIMENSION(:) :: ch_alphas, ch_betas
 
@@ -89,7 +89,8 @@ SUBROUTINE tea_leaf_ppcg_inner(rx, ry, ch_alphas, ch_betas, inner_step, bounds_e
           y_min_bound,                                    &
           y_max_bound,                                    &
           ch_alphas, ch_betas,                              &
-          rx, ry,                                           &
+          chunk%tiles(t)%field%rx,  &
+          chunk%tiles(t)%field%ry,                                           &
           inner_step,                                     &
           chunk%tiles(t)%field%u,                                &
           chunk%tiles(t)%field%vector_r,                         &
