@@ -428,6 +428,8 @@ END SUBROUTINE tea_leaf
 SUBROUTINE tea_leaf_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
     rx, ry, tl_ppcg_inner_steps, solve_time)
 
+  IMPLICIT NONE
+
   INTEGER :: fields(NUM_FIELDS)
   INTEGER :: t, tl_ppcg_inner_steps, ppcg_cur_step
   REAL(KIND=8) :: rx, ry, theta

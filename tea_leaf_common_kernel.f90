@@ -101,7 +101,7 @@ SUBROUTINE tea_leaf_common_init_kernel(x_min,  &
 !$OMP END DO
 
 ! Whether to apply reflective boundary conditions to all external faces
-  IF (reflective_boundary .eqv. .FALSE.) THEN
+  IF (reflective_boundary .EQV. .FALSE.) THEN
     IF (chunk_neighbours(CHUNK_LEFT).EQ.EXTERNAL_FACE .AND. tile_neighbours(CHUNK_LEFT).EQ.EXTERNAL_FACE) THEN
 !$OMP DO
       DO k=y_min-halo_exchange_depth,y_max+halo_exchange_depth

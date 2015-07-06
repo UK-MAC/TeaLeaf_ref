@@ -1,7 +1,6 @@
 MODULE tea_leaf_ppcg_kernel_module
 
 USE tea_leaf_common_kernel_module
-USE tea_leaf_cheby_kernel_module
 
 IMPLICIT NONE
 
@@ -188,19 +187,6 @@ SUBROUTINE tea_leaf_ppcg_calc_zrnorm_kernel(x_min, &
 !$OMP END PARALLEL
 
 end SUBROUTINE tea_leaf_ppcg_calc_zrnorm_kernel
-
-SUBROUTINE tea_calc_ls_coefs(ch_alphas, ch_betas, eigmin, eigmax, &
-                             theta, ppcg_inner_steps)
-
-  INTEGER :: ppcg_inner_steps
-  REAL(KIND=8), DIMENSION(ppcg_inner_steps) :: ch_alphas, ch_betas
-  REAL(KIND=8) :: eigmin, eigmax, theta
-
-  ! TODO
-  CALL tea_calc_ch_coefs(ch_alphas, ch_betas, eigmin, eigmax, &
-                         theta, ppcg_inner_steps)
-
-END SUBROUTINE
 
 END MODULE
 
