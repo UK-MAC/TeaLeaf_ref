@@ -85,13 +85,13 @@ SUBROUTINE tea_leaf_calc_2norm(norm)
   IMPLICIT NONE
 
   INTEGER :: t
-  REAL(KIND=8) :: norm, private_norm
+  REAL(KIND=8) :: norm, tile_norm
 
   norm = 0.0_8
 
   IF (use_fortran_kernels) THEN
     DO t=1,tiles_per_task
-      private_norm = 0.0_8
+      tile_norm = 0.0_8
 
       CALL tea_leaf_calc_2norm_kernel(chunk%tiles(t)%field%x_min,        &
           chunk%tiles(t)%field%x_max,                                    &
@@ -99,9 +99,9 @@ SUBROUTINE tea_leaf_calc_2norm(norm)
           chunk%tiles(t)%field%y_max,                                    &
           halo_exchange_depth,                                    &
           chunk%tiles(t)%field%vector_r,                                 &
-          private_norm)
+          tile_norm)
 
-      norm = norm + private_norm
+      norm = norm + tile_norm
     ENDDO
   ENDIF
 
