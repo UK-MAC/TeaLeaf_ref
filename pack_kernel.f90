@@ -116,10 +116,6 @@ SUBROUTINE pack_all(x_min, x_max, y_min, y_max, halo_exchange_depth, &
 
   PROCEDURE(pack_or_unpack), POINTER :: pack_func => NULL()
 
-  IF (tile_neighbours(face) .NE. EXTERNAL_FACE) THEN
-    return
-  ENDIF
-
   SELECT CASE (face)
   CASE (CHUNK_LEFT, CHUNK_RIGHT)
     IF (tile_neighbours(CHUNK_BOTTOM) .EQ. EXTERNAL_FACE) THEN

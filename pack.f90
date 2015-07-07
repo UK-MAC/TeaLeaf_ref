@@ -53,6 +53,10 @@ SUBROUTINE call_packing_functions(fields, depth, face, packing, mpi_buffer, offs
       tile_offset = (chunk%tiles(t)%left - chunk%left)*depth
     END SELECT
 
+    IF (chunk%tiles(t)%tile_neighbours(face) .NE. EXTERNAL_FACE) THEN
+      CYCLE
+    ENDIF
+
     CALL pack_all(chunk%tiles(t)%field%x_min,                    &
                   chunk%tiles(t)%field%x_max,                    &
                   chunk%tiles(t)%field%y_min,                    &
