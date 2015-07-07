@@ -33,7 +33,7 @@ SUBROUTINE update_halo(fields,depth)
 
   IMPLICIT NONE
 
-  INTEGER :: t,fields(NUM_FIELDS),depth
+  INTEGER :: fields(NUM_FIELDS),depth
   REAL(KIND=8) :: timer,halo_time
 
   IF (profiler_on) halo_time=timer()

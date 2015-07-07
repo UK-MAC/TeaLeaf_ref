@@ -15,7 +15,6 @@ SUBROUTINE tea_pack_buffers(fields, depth, face, mpi_buffer, offsets)
   INTEGER      :: offsets(:)
   REAL(KIND=8) :: mpi_buffer(:)
   INTEGER       :: face
-  LOGICAL       :: packing
 
   CALL call_packing_functions(fields, depth, face, .TRUE., mpi_buffer, offsets)
 
@@ -29,7 +28,6 @@ SUBROUTINE tea_unpack_buffers(fields, depth, face, mpi_buffer, offsets)
   INTEGER      :: offsets(:)
   REAL(KIND=8) :: mpi_buffer(:)
   INTEGER       :: face
-  LOGICAL       :: packing
 
   CALL call_packing_functions(fields, depth, face, .FALSE., mpi_buffer, offsets)
 
@@ -44,7 +42,6 @@ SUBROUTINE call_packing_functions(fields, depth, face, packing, mpi_buffer, offs
   REAL(KIND=8) :: mpi_buffer(:)
   INTEGER      :: face,t,tile_offset
   LOGICAL      :: packing
-  INTEGER      :: edge_minus, edge_plus
 
   DO t=1,tiles_per_task
     SELECT CASE (face)
@@ -65,7 +62,6 @@ SUBROUTINE call_packing_functions(fields, depth, face, packing, mpi_buffer, offs
                   chunk%tiles(t)%field%y_min,                    &
                   chunk%tiles(t)%field%y_max,                    &
                   halo_exchange_depth,                    &
-                  chunk%chunk_neighbours,                    &
                   chunk%tiles(t)%tile_neighbours,     &
                   chunk%tiles(t)%field%density,        &
                   chunk%tiles(t)%field%energy0,        &

@@ -8,13 +8,12 @@ MODULE tea_leaf_cheby_module
 
 CONTAINS
 
-SUBROUTINE tea_leaf_cheby_init(ch_alphas, ch_betas, max_cheby_iters, theta)
+SUBROUTINE tea_leaf_cheby_init(theta)
 
   IMPLICIT NONE
 
-  INTEGER :: t, max_cheby_iters
+  INTEGER :: t
   REAL(KIND=8) :: theta
-  REAL(KIND=8), DIMENSION(:) :: ch_alphas, ch_betas
 
   IF (use_fortran_kernels) THEN
     DO t=1,tiles_per_task
@@ -34,7 +33,6 @@ SUBROUTINE tea_leaf_cheby_init(ch_alphas, ch_betas, max_cheby_iters, theta)
             chunk%tiles(t)%field%vector_Ky,                      &
             chunk%tiles(t)%field%tri_cp,   &
             chunk%tiles(t)%field%tri_bfp,    &
-            ch_alphas, ch_betas, max_cheby_iters,           &
             chunk%tiles(t)%field%rx,    &
             chunk%tiles(t)%field%ry,    &
             theta, tl_preconditioner_type)

@@ -26,13 +26,9 @@ SUBROUTINE tea_leaf_cg_init(rro)
           chunk%tiles(t)%field%y_min,                                  &
           chunk%tiles(t)%field%y_max,                                  &
           halo_exchange_depth,                                  &
-          chunk%tiles(t)%field%density,                                &
-          chunk%tiles(t)%field%energy1,                                &
-          chunk%tiles(t)%field%u,                                      &
           chunk%tiles(t)%field%vector_p,                               &
           chunk%tiles(t)%field%vector_r,                               &
           chunk%tiles(t)%field%vector_Mi,                              &
-          chunk%tiles(t)%field%vector_w,                               &
           chunk%tiles(t)%field%vector_z,                               &
           chunk%tiles(t)%field%vector_Kx,                              &
           chunk%tiles(t)%field%vector_Ky,                              &

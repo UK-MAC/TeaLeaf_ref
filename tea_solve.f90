@@ -39,7 +39,7 @@ SUBROUTINE tea_leaf()
   IMPLICIT NONE
 
 !$ INTEGER :: OMP_GET_THREAD_NUM
-  INTEGER :: n, t
+  INTEGER :: n
   REAL(KIND=8) :: old_error,error,exact_error,initial_residual
 
   INTEGER :: fields(NUM_FIELDS)
@@ -430,7 +430,7 @@ SUBROUTINE tea_leaf_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
   IMPLICIT NONE
 
   INTEGER :: fields(NUM_FIELDS)
-  INTEGER :: t, tl_ppcg_inner_steps, ppcg_cur_step
+  INTEGER :: tl_ppcg_inner_steps, ppcg_cur_step
   REAL(KIND=8) :: theta
   REAL(KIND=8) :: halo_time, timer, solve_time
   REAL(KIND=8), DIMENSION(max_iters) :: ch_alphas, ch_betas
@@ -484,8 +484,8 @@ SUBROUTINE tea_leaf_cheby_first_step(ch_alphas, ch_betas, fields, &
 
   IMPLICIT NONE
 
-  integer :: t, est_itc, max_cheby_iters
-  integer, dimension(:) :: fields
+  INTEGER :: est_itc, max_cheby_iters
+  INTEGER, DIMENSION(:) :: fields
   REAL(KIND=8) :: it_alpha, cn, gamm, bb, error, theta
   REAL(KIND=8), DIMENSION(:) :: ch_alphas, ch_betas
   REAL(KIND=8) :: halo_time, timer, dot_product_time, solve_time
@@ -498,7 +498,7 @@ SUBROUTINE tea_leaf_cheby_first_step(ch_alphas, ch_betas, fields, &
   IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
 
   ! initialise 'p' array
-  CALL tea_leaf_cheby_init(ch_alphas, ch_betas, max_cheby_iters, theta)
+  CALL tea_leaf_cheby_init(theta)
 
   IF (profiler_on) halo_time = timer()
   CALL update_halo(fields,1)

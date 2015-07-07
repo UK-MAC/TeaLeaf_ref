@@ -98,7 +98,7 @@ SUBROUTINE tea_decompose(x_cells,y_cells)
 
   INTEGER  :: chunk_x,chunk_y,mod_x,mod_y
 
-  INTEGER  :: err,mpi_comm
+  INTEGER  :: err
 
   ! Get destinations/sources
   CALL mpi_cart_shift(mpi_cart_comm, 0, 1,      &

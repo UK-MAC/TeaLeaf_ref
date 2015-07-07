@@ -32,8 +32,6 @@ SUBROUTINE start
 
   INTEGER :: t
 
-  INTEGER :: x_cells,y_cells
-
   INTEGER :: fields(NUM_FIELDS)
 
   LOGICAL :: profiler_original
