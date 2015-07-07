@@ -48,6 +48,8 @@ FUNCTION yincs(field_type) RESULT(y_inc)
 
   integer :: field_type, y_inc
 
+  y_inc = 0
+
   IF (field_type.EQ.CELL_DATA) THEN
     y_inc=0
   ELSEIF (field_type.EQ.VERTEX_DATA) THEN
@@ -64,6 +66,8 @@ FUNCTION xincs(field_type) RESULT(x_inc)
 
   integer :: field_type, x_inc
 
+  x_inc = 0
+
   IF (field_type.EQ.CELL_DATA) THEN
     x_inc=0
   ELSEIF (field_type.EQ.VERTEX_DATA) THEN
@@ -77,7 +81,6 @@ FUNCTION xincs(field_type) RESULT(x_inc)
 END FUNCTION
 
 SUBROUTINE pack_all(x_min, x_max, y_min, y_max, halo_exchange_depth, &
-    chunk_neighbours,                                           &
     tile_neighbours, &
     density,                                                    &
     energy0,                                                    &
@@ -85,6 +88,7 @@ SUBROUTINE pack_all(x_min, x_max, y_min, y_max, halo_exchange_depth, &
     u,                                                          &
     p,                                                          &
     sd,                                                         &
+    r,                                                         &
     fields, depth, face, packing, mpi_buffer, offsets, tile_offset)
 
   IMPLICIT NONE
@@ -106,18 +110,14 @@ SUBROUTINE pack_all(x_min, x_max, y_min, y_max, halo_exchange_depth, &
   INTEGER      :: fields(:)
   INTEGER      :: offsets(:)
   REAL(KIND=8) :: mpi_buffer(:)
-  INTEGER      :: face,t,tile_offset
+  INTEGER      :: face,tile_offset
   LOGICAL      :: packing
-  INTEGER      :: depth,x_min,x_max,y_min,y_max,buffer_offset, x_inc, y_inc,halo_exchange_depth, edge_minus, edge_plus
-  INTEGER, DIMENSION(4) :: chunk_neighbours, tile_neighbours
+  INTEGER      :: depth,x_min,x_max,y_min,y_max, halo_exchange_depth, edge_minus, edge_plus
+  INTEGER, DIMENSION(4) :: tile_neighbours
 
   REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: density,energy0,energy1, u, sd, p, r
 
   PROCEDURE(pack_or_unpack), POINTER :: pack_func => NULL()
-
-  IF (tile_neighbours(face) .NE. EXTERNAL_FACE) THEN
-    return
-  ENDIF
 
   SELECT CASE (face)
   CASE (CHUNK_LEFT, CHUNK_RIGHT)
@@ -156,8 +156,6 @@ SUBROUTINE pack_all(x_min, x_max, y_min, y_max, halo_exchange_depth, &
       pack_func => tea_pack_message_bottom
     CASE (CHUNK_TOP)
       pack_func => tea_pack_message_top
-    CASE DEFAULT
-      !call report_error("pack.f90","Invalid face pased to buffer packing")
     END SELECT
   ELSE
     SELECT CASE (face)
@@ -169,8 +167,6 @@ SUBROUTINE pack_all(x_min, x_max, y_min, y_max, halo_exchange_depth, &
       pack_func => tea_unpack_message_bottom
     CASE (CHUNK_TOP)
       pack_func => tea_unpack_message_top
-    CASE DEFAULT
-      !call report_error("pack.f90","Invalid face pased to buffer packing")
     END SELECT
   ENDIF
 

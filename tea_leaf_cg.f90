@@ -13,28 +13,24 @@ SUBROUTINE tea_leaf_cg_init(rro)
   IMPLICIT NONE
 
   INTEGER :: t
-  REAL(KIND=8) :: rro, private_rro
+  REAL(KIND=8) :: rro, tile_rro
 
   rro = 0.0_8
 
   IF (use_fortran_kernels) THEN
-!$OMP PARALLEL PRIVATE(private_rro)
+!$OMP PARALLEL PRIVATE(tile_rro)
 !$OMP DO REDUCTION(+:rro)
     DO t=1,tiles_per_task
-      private_rro = 0.0_8
+      tile_rro = 0.0_8
 
       CALL tea_leaf_cg_init_kernel(chunk%tiles(t)%field%x_min, &
           chunk%tiles(t)%field%x_max,                                  &
           chunk%tiles(t)%field%y_min,                                  &
           chunk%tiles(t)%field%y_max,                                  &
           halo_exchange_depth,                                  &
-          chunk%tiles(t)%field%density,                                &
-          chunk%tiles(t)%field%energy1,                                &
-          chunk%tiles(t)%field%u,                                      &
           chunk%tiles(t)%field%vector_p,                               &
           chunk%tiles(t)%field%vector_r,                               &
           chunk%tiles(t)%field%vector_Mi,                              &
-          chunk%tiles(t)%field%vector_w,                               &
           chunk%tiles(t)%field%vector_z,                               &
           chunk%tiles(t)%field%vector_Kx,                              &
           chunk%tiles(t)%field%vector_Ky,                              &
@@ -42,9 +38,9 @@ SUBROUTINE tea_leaf_cg_init(rro)
           chunk%tiles(t)%field%tri_bfp,    &
           chunk%tiles(t)%field%rx,  &
           chunk%tiles(t)%field%ry,  &
-          private_rro, tl_preconditioner_type)
+          tile_rro, tl_preconditioner_type)
 
-      rro = rro + private_rro
+      rro = rro + tile_rro
     ENDDO
 !$OMP END DO NOWAIT
 !$OMP END PARALLEL
@@ -57,15 +53,15 @@ SUBROUTINE tea_leaf_cg_calc_w(pw)
   IMPLICIT NONE
 
   INTEGER :: t
-  REAL(KIND=8) :: pw, private_pw
+  REAL(KIND=8) :: pw, tile_pw
 
   pw = 0.0_08
 
   IF (use_fortran_kernels) THEN
-!$OMP PARALLEL PRIVATE(private_pw)
+!$OMP PARALLEL PRIVATE(tile_pw)
 !$OMP DO REDUCTION(+:pw)
     DO t=1,tiles_per_task
-      private_pw = 0.0_8
+      tile_pw = 0.0_8
 
       CALL tea_leaf_cg_calc_w_kernel(chunk%tiles(t)%field%x_min,&
           chunk%tiles(t)%field%x_max,                                         &
@@ -78,9 +74,9 @@ SUBROUTINE tea_leaf_cg_calc_w(pw)
           chunk%tiles(t)%field%vector_Ky,                                     &
           chunk%tiles(t)%field%rx,  &
           chunk%tiles(t)%field%ry,  &
-          private_pw)
+          tile_pw)
 
-      pw = pw + private_pw
+      pw = pw + tile_pw
     ENDDO
 !$OMP END DO NOWAIT
 !$OMP END PARALLEL
@@ -93,15 +89,15 @@ SUBROUTINE tea_leaf_cg_calc_ur(alpha, rrn)
   IMPLICIT NONE
 
   INTEGER :: t
-  REAL(KIND=8) :: alpha, rrn, private_rrn
+  REAL(KIND=8) :: alpha, rrn, tile_rrn
 
   rrn = 0.0_8
 
   IF (use_fortran_kernels) THEN
-!$OMP PARALLEL PRIVATE(private_rrn)
+!$OMP PARALLEL PRIVATE(tile_rrn)
 !$OMP DO REDUCTION(+:rrn)
     DO t=1,tiles_per_task
-      private_rrn = 0.0_8
+      tile_rrn = 0.0_8
 
       CALL tea_leaf_cg_calc_ur_kernel(chunk%tiles(t)%field%x_min,&
           chunk%tiles(t)%field%x_max,                                          &
@@ -120,9 +116,9 @@ SUBROUTINE tea_leaf_cg_calc_ur(alpha, rrn)
           chunk%tiles(t)%field%vector_Ky,                              &
           chunk%tiles(t)%field%rx,  &
           chunk%tiles(t)%field%ry, &
-          alpha, private_rrn, tl_preconditioner_type)
+          alpha, tile_rrn, tl_preconditioner_type)
 
-      rrn = rrn + private_rrn
+      rrn = rrn + tile_rrn
     ENDDO
 !$OMP END DO NOWAIT
 !$OMP END PARALLEL

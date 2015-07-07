@@ -114,15 +114,15 @@ SUBROUTINE tea_leaf_ppcg_calc_zrnorm(rrn)
   IMPLICIT NONE
 
   INTEGER :: t
-  REAL(KIND=8) :: rrn, private_rrn
+  REAL(KIND=8) :: rrn, tile_rrn
 
   rrn = 0.0_8
 
   IF (use_fortran_kernels) THEN
-!$OMP PARALLEL PRIVATE(private_rrn)
+!$OMP PARALLEL PRIVATE(tile_rrn)
 !$OMP DO REDUCTION(+:rrn)
     DO t=1,tiles_per_task
-      private_rrn = 0.0_8
+      tile_rrn = 0.0_8
 
       CALL tea_leaf_ppcg_calc_zrnorm_kernel(chunk%tiles(t)%field%x_min, &
             chunk%tiles(t)%field%x_max,                           &
@@ -131,9 +131,9 @@ SUBROUTINE tea_leaf_ppcg_calc_zrnorm(rrn)
             halo_exchange_depth,                           &
             chunk%tiles(t)%field%vector_z,                        &
             chunk%tiles(t)%field%vector_r,                        &
-            tl_preconditioner_type, private_rrn)
+            tl_preconditioner_type, tile_rrn)
 
-      rrn = rrn + private_rrn
+      rrn = rrn + tile_rrn
     ENDDO
 !$OMP END DO NOWAIT
 !$OMP END PARALLEL

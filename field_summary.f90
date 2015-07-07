@@ -32,7 +32,7 @@ SUBROUTINE field_summary()
   IMPLICIT NONE
 
   REAL(KIND=8) :: vol,mass,ie,temp
-  REAL(KIND=8) :: private_vol,private_mass,private_ie,private_temp
+  REAL(KIND=8) :: tile_vol,tile_mass,tile_ie,tile_temp
   REAL(KIND=8) :: qa_diff
 
 !$ INTEGER :: OMP_GET_THREAD_NUM
@@ -56,13 +56,13 @@ SUBROUTINE field_summary()
   IF(profiler_on) kernel_time=timer()
 
   IF(use_fortran_kernels)THEN
-!$OMP PARALLEL PRIVATE(private_vol,private_mass,private_ie,private_temp)
+!$OMP PARALLEL PRIVATE(tile_vol,tile_mass,tile_ie,tile_temp)
 !$OMP DO REDUCTION(+ : vol,mass,ie,temp)
     DO t=1,tiles_per_task
-      private_vol=0.0
-      private_mass=0.0
-      private_ie=0.0
-      private_temp=0.0
+      tile_vol=0.0
+      tile_mass=0.0
+      tile_ie=0.0
+      tile_temp=0.0
 
       CALL field_summary_kernel(chunk%tiles(t)%field%x_min,                   &
                                 chunk%tiles(t)%field%x_max,                   &
@@ -73,12 +73,12 @@ SUBROUTINE field_summary()
                                 chunk%tiles(t)%field%density,                 &
                                 chunk%tiles(t)%field%energy1,                 &
                                 chunk%tiles(t)%field%u,                       &
-                                private_vol,private_mass,private_ie,private_temp)
+                                tile_vol,tile_mass,tile_ie,tile_temp)
 
-      vol = vol + private_vol
-      mass = mass + private_mass
-      ie = ie + private_ie
-      temp = temp + private_temp
+      vol = vol + tile_vol
+      mass = mass + tile_mass
+      ie = ie + tile_ie
+      temp = temp + tile_temp
     ENDDO
 !$OMP END DO NOWAIT
 !$OMP END PARALLEL

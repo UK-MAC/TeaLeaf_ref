@@ -13,15 +13,15 @@ SUBROUTINE tea_leaf_jacobi_solve(error)
   IMPLICIT NONE
 
   INTEGER :: t
-  REAL(KIND=8) :: error, private_error
+  REAL(KIND=8) :: error, tile_error
 
   error = 0.0_8
 
   IF (use_fortran_kernels) THEN
-!$OMP PARALLEL PRIVATE(private_error)
+!$OMP PARALLEL PRIVATE(tile_error)
 !$OMP DO REDUCTION(+:error)
     DO t=1,tiles_per_task
-      private_error = 0.0_8
+      tile_error = 0.0_8
 
       CALL tea_leaf_jacobi_solve_kernel(chunk%tiles(t)%field%x_min,&
           chunk%tiles(t)%field%x_max,                       &
@@ -32,12 +32,12 @@ SUBROUTINE tea_leaf_jacobi_solve(error)
           chunk%tiles(t)%field%ry,                                          &
           chunk%tiles(t)%field%vector_Kx,                   &
           chunk%tiles(t)%field%vector_Ky,                   &
-          private_error,                                       &
+          tile_error,                                       &
           chunk%tiles(t)%field%u0,                          &
           chunk%tiles(t)%field%u,                           &
           chunk%tiles(t)%field%vector_r)
 
-      error = error + private_error
+      error = error + tile_error
     ENDDO
 !$OMP END DO NOWAIT
 !$OMP END PARALLEL

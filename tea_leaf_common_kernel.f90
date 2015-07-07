@@ -261,10 +261,6 @@ SUBROUTINE tea_leaf_calc_2norm_kernel(x_min, &
 
 END SUBROUTINE tea_leaf_calc_2norm_kernel
 
-#define COEF_A (-Ky(j, k)*ry)
-#define COEF_B (1.0_8 + ry*(Ky(j, k+1) + Ky(j, k)) + rx*(Kx(j+1, k) + Kx(j, k)))
-#define COEF_C (-Ky(j, k+1)*ry)
-
 SUBROUTINE tea_diag_init(x_min,             &
                          x_max,             &
                          y_min,             &
@@ -281,8 +277,8 @@ SUBROUTINE tea_diag_init(x_min,             &
   REAL(KIND=8) :: rx, ry
 
 !$OMP DO
-    DO k=y_min,y_max
-      DO j=x_min,x_max
+    DO k=y_min-halo_exchange_depth,y_max+halo_exchange_depth
+      DO j=x_min-halo_exchange_depth,x_max+halo_exchange_depth
         Mi(j, k) = 1.0_8/(1.0_8                 &
                 + ry*(Ky(j, k+1) + Ky(j, k))    &
                 + rx*(Kx(j+1, k) + Kx(j, k)))
@@ -310,14 +306,18 @@ SUBROUTINE tea_diag_solve(x_min,             &
   REAL(KIND=8) :: rx, ry
 
 !$OMP DO
-    DO k=y_min,y_max
-      DO j=x_min,x_max
+    DO k=y_min-halo_exchange_depth,y_max+halo_exchange_depth
+      DO j=x_min-halo_exchange_depth,x_max+halo_exchange_depth
         z(j, k) = Mi(j, k)*r(j, k)
       ENDDO
     ENDDO
-!$OMP END DO NOWAIT
+!$OMP END DO
 
 END SUBROUTINE
+
+#define COEF_A (-Ky(j, k)*ry)
+#define COEF_B (1.0_8 + ry*(Ky(j, k+1) + Ky(j, k)) + rx*(Kx(j+1, k) + Kx(j, k)))
+#define COEF_C (-Ky(j, k+1)*ry)
 
 SUBROUTINE tea_block_init(x_min,             &
                            x_max,             &

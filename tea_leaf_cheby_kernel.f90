@@ -43,9 +43,6 @@ SUBROUTINE tea_leaf_kernel_cheby_init(x_min,  &
                            Ky,                &
                            cp,                     &
                            bfp,                     &
-                           ch_alphas,         &
-                           ch_betas,          &
-                           max_cheby_iters,   &
                            rx,                &
                            ry,                &
                            theta,             &
@@ -57,9 +54,8 @@ SUBROUTINE tea_leaf_kernel_cheby_init(x_min,  &
   REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: u, u0, p , w , r, Mi, z , Kx, Ky
   REAL(KIND=8), DIMENSION(x_min:x_max,y_min:y_max) :: cp, bfp
 
-  INTEGER :: j,k, max_cheby_iters
+  INTEGER :: j,k
   REAL(KIND=8) ::  rx, ry, theta
-  REAL(KIND=8), DIMENSION(max_cheby_iters) :: ch_alphas, ch_betas
 
 !$OMP PARALLEL
 !$OMP DO
