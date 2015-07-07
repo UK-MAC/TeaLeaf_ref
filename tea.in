@@ -15,7 +15,6 @@ end_step=20
 tl_max_iters=10000
  test_problem 6
 tl_use_ppcg
-!tl_preconditioner_type=jac_block
 tl_check_result
 tl_eps=1.0e-15
 profiler_on

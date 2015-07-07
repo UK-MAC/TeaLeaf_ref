@@ -17,8 +17,6 @@ SUBROUTINE tea_leaf_init_common()
   INTEGER :: zero_boundary(4)
 
   IF (use_fortran_kernels) THEN
-!$OMP PARALLEL PRIVATE(zero_boundary)
-!$OMP DO
     DO t=1,tiles_per_task
       chunk%tiles(t)%field%rx = dt/(chunk%tiles(t)%field%celldx(chunk%tiles(t)%field%x_min)**2)
       chunk%tiles(t)%field%ry = dt/(chunk%tiles(t)%field%celldy(chunk%tiles(t)%field%y_min)**2)
@@ -28,7 +26,6 @@ SUBROUTINE tea_leaf_init_common()
         zero_boundary = chunk%tiles(t)%tile_neighbours
       ELSE
         zero_boundary = chunk%chunk_neighbours
-        zero_boundary = chunk%tiles(t)%tile_neighbours
       ENDIF
 
       CALL tea_leaf_common_init_kernel(chunk%tiles(t)%field%x_min, &
@@ -54,8 +51,6 @@ SUBROUTINE tea_leaf_init_common()
           chunk%tiles(t)%field%ry,  &
           tl_preconditioner_type, coefficient)
     ENDDO
-!$OMP END DO
-!$OMP END PARALLEL
   ENDIF
 
 END SUBROUTINE tea_leaf_init_common
@@ -67,8 +62,6 @@ SUBROUTINE tea_leaf_calc_residual()
   INTEGER :: t
 
   IF (use_fortran_kernels) THEN
-!$OMP PARALLEL
-!$OMP DO
     DO t=1,tiles_per_task
       CALL tea_leaf_calc_residual_kernel(chunk%tiles(t)%field%x_min,&
           chunk%tiles(t)%field%x_max,                        &
@@ -83,8 +76,6 @@ SUBROUTINE tea_leaf_calc_residual()
           chunk%tiles(t)%field%rx,  &
           chunk%tiles(t)%field%ry)
     ENDDO
-!$OMP END DO
-!$OMP END PARALLEL
   ENDIF
 
 END SUBROUTINE
@@ -99,8 +90,6 @@ SUBROUTINE tea_leaf_calc_2norm(norm)
   norm = 0.0_8
 
   IF (use_fortran_kernels) THEN
-!$OMP PARALLEL PRIVATE(private_norm)
-!$OMP DO REDUCTION(+:norm)
     DO t=1,tiles_per_task
       private_norm = 0.0_8
 
@@ -114,8 +103,6 @@ SUBROUTINE tea_leaf_calc_2norm(norm)
 
       norm = norm + private_norm
     ENDDO
-!$OMP END DO
-!$OMP END PARALLEL
   ENDIF
 
 END SUBROUTINE
@@ -127,8 +114,6 @@ SUBROUTINE tea_leaf_finalise()
   INTEGER :: t
 
   IF (use_fortran_kernels) THEN
-!$OMP PARALLEL
-!$OMP DO
     DO t=1,tiles_per_task
       CALL tea_leaf_kernel_finalise(chunk%tiles(t)%field%x_min, &
           chunk%tiles(t)%field%x_max,                           &
@@ -139,8 +124,6 @@ SUBROUTINE tea_leaf_finalise()
           chunk%tiles(t)%field%density,                         &
           chunk%tiles(t)%field%u)
     ENDDO
-!$OMP END DO
-!$OMP END PARALLEL
   ENDIF
 
 END SUBROUTINE tea_leaf_finalise

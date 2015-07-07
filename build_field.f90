@@ -82,14 +82,12 @@ SUBROUTINE build_field()
          chunk%tiles(t)%field%y_min-2:chunk%tiles(t)%field%y_max+2))
     ALLOCATE(chunk%tiles(t)%field%yarea   (chunk%tiles(t)%field%x_min-2:chunk%tiles(t)%field%x_max+2, &
          chunk%tiles(t)%field%y_min-2:chunk%tiles(t)%field%y_max+3))
-  ENDDO
 
   ! Zeroing isn't strictly neccessary but it ensures physical pages
   ! are allocated. This prevents first touch overheads in the main code
   ! cycle which can skew timings in the first step
   ! Explicit loop limits ensures correct NUMA access, which array syntax does
   ! not
-  DO t=1,tiles_per_task
 !$OMP PARALLEL
 !$OMP DO
   DO k=chunk%tiles(t)%field%y_min-halo_exchange_depth,chunk%tiles(t)%field%y_max+halo_exchange_depth
@@ -168,3 +166,4 @@ SUBROUTINE build_field()
   ENDDO
 
 END SUBROUTINE build_field
+

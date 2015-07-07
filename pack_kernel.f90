@@ -85,6 +85,7 @@ SUBROUTINE pack_all(x_min, x_max, y_min, y_max, halo_exchange_depth, &
     u,                                                          &
     p,                                                          &
     sd,                                                         &
+    r,                                                         &
     fields, depth, face, packing, mpi_buffer, offsets, tile_offset)
 
   IMPLICIT NONE
