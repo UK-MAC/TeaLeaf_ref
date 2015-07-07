@@ -153,8 +153,6 @@ SUBROUTINE pack_all(x_min, x_max, y_min, y_max, halo_exchange_depth, &
       pack_func => tea_pack_message_bottom
     CASE (CHUNK_TOP)
       pack_func => tea_pack_message_top
-    CASE DEFAULT
-      !call report_error("pack.f90","Invalid face pased to buffer packing")
     END SELECT
   ELSE
     SELECT CASE (face)
@@ -166,8 +164,6 @@ SUBROUTINE pack_all(x_min, x_max, y_min, y_max, halo_exchange_depth, &
       pack_func => tea_unpack_message_bottom
     CASE (CHUNK_TOP)
       pack_func => tea_unpack_message_top
-    CASE DEFAULT
-      !call report_error("pack.f90","Invalid face pased to buffer packing")
     END SELECT
   ENDIF
 
