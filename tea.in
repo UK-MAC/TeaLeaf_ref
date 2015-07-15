@@ -11,13 +11,14 @@ ymin=0.0
 xmax=10.0
 ymax=10.0
 initial_timestep=0.004
-end_step=20
+end_step=200
 tl_max_iters=10000
  test_problem 6
-tl_use_ppcg
+tl_use_cg
 !tl_preconditioner_type=jac_block
 tl_check_result
 tl_eps=1.0e-15
 profiler_on
-halo_depth=1
+tiles_per_task=60
+halo_depth=4
 *endtea

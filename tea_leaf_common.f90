@@ -18,7 +18,7 @@ SUBROUTINE tea_leaf_init_common()
   INTEGER :: zero_boundary(4)
 
   IF (use_fortran_kernels) THEN
-!$OMP PARALLEL PRIVATE(zero_boundary)
+!$OMP PARALLEL NUM_THREADS(tiles_per_task) PRIVATE(zero_boundary)
 !$OMP DO
     DO t=1,tiles_per_task
       chunk%tiles(t)%field%rx = dt/(chunk%tiles(t)%field%celldx(chunk%tiles(t)%field%x_min)**2)
@@ -67,7 +67,7 @@ SUBROUTINE tea_leaf_calc_residual()
   INTEGER :: t
 
   IF (use_fortran_kernels) THEN
-!$OMP PARALLEL
+!$OMP PARALLEL NUM_THREADS(tiles_per_task)
 !$OMP DO
     DO t=1,tiles_per_task
       CALL tea_leaf_calc_residual_kernel(chunk%tiles(t)%field%x_min,&
@@ -99,7 +99,7 @@ SUBROUTINE tea_leaf_calc_2norm(norm_array, norm)
   norm = 0.0_8
 
   IF (use_fortran_kernels) THEN
-!$OMP PARALLEL PRIVATE(tile_norm)
+!$OMP PARALLEL NUM_THREADS(tiles_per_task) PRIVATE(tile_norm)
 !$OMP DO REDUCTION(+:norm)
     DO t=1,tiles_per_task
       tile_norm = 0.0_8
@@ -142,7 +142,7 @@ SUBROUTINE tea_leaf_finalise()
   INTEGER :: t
 
   IF (use_fortran_kernels) THEN
-!$OMP PARALLEL
+!$OMP PARALLEL NUM_THREADS(tiles_per_task)
 !$OMP DO
     DO t=1,tiles_per_task
       CALL tea_leaf_kernel_finalise(chunk%tiles(t)%field%x_min, &

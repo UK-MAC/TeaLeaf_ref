@@ -43,7 +43,7 @@ SUBROUTINE timestep()
 
   IF(profiler_on) kernel_time=timer()
 
-!$OMP PARALLEL PRIVATE(dtlp)
+!$OMP PARALLEL NUM_THREADS(tiles_per_task) PRIVATE(dtlp)
 !$OMP DO
   DO t=1,tiles_per_task
     CALL calc_dt(dtlp)

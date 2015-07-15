@@ -56,7 +56,7 @@ SUBROUTINE field_summary()
   IF(profiler_on) kernel_time=timer()
 
   IF(use_fortran_kernels)THEN
-!$OMP PARALLEL PRIVATE(tile_vol,tile_mass,tile_ie,tile_temp)
+!$OMP PARALLEL NUM_THREADS(tiles_per_task) PRIVATE(tile_vol,tile_mass,tile_ie,tile_temp)
 !$OMP DO REDUCTION(+ : vol,mass,ie,temp)
     DO t=1,tiles_per_task
       tile_vol=0.0

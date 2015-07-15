@@ -35,7 +35,7 @@ SUBROUTINE tea_leaf_kernel_ppcg_init_sd(x_min,             &
 
   theta_r = 1.0_8/theta
 
-!$OMP PARALLEL
+!$OMP PARALLEL NUM_THREADS(INNER_NUM_THREADS)
 
   IF (preconditioner_type .NE. TL_PREC_NONE) THEN
 
@@ -102,7 +102,7 @@ SUBROUTINE tea_leaf_kernel_ppcg_inner(x_min,             &
 
   INTEGER(KIND=4) :: x_min_bound, x_max_bound, y_min_bound, y_max_bound, inner_step
 
-!$OMP PARALLEL PRIVATE(smvp)
+!$OMP PARALLEL NUM_THREADS(INNER_NUM_THREADS) PRIVATE(smvp)
 !$OMP DO
     DO k=y_min_bound,y_max_bound
         DO j=x_min_bound,x_max_bound
@@ -166,7 +166,7 @@ SUBROUTINE tea_leaf_ppcg_calc_zrnorm_kernel(x_min, &
 
   norm = 0.0_8
 
-!$OMP PARALLEL
+!$OMP PARALLEL NUM_THREADS(INNER_NUM_THREADS)
   IF (preconditioner_type .NE. TL_PREC_NONE) THEN
 !$OMP DO REDUCTION(+:norm)
     DO k=y_min,y_max

@@ -57,7 +57,7 @@ SUBROUTINE tea_leaf_kernel_cheby_init(x_min,  &
   INTEGER :: j,k
   REAL(KIND=8) ::  rx, ry, theta
 
-!$OMP PARALLEL
+!$OMP PARALLEL NUM_THREADS(INNER_NUM_THREADS)
 !$OMP DO
     DO k=y_min,y_max
         DO j=x_min,x_max
@@ -146,7 +146,7 @@ SUBROUTINE tea_leaf_kernel_cheby_iterate(x_min, &
     INTEGER :: step, max_cheby_iters
     REAL(KIND=8), DIMENSION(max_cheby_iters) :: ch_alphas, ch_betas
 
-!$OMP PARALLEL
+!$OMP PARALLEL NUM_THREADS(INNER_NUM_THREADS)
 !$OMP DO
     DO k=y_min,y_max
         DO j=x_min,x_max

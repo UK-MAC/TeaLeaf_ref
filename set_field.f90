@@ -37,7 +37,7 @@ SUBROUTINE set_field()
   IF(profiler_on) kernel_time=timer()
 
   IF(use_fortran_kernels)THEN
-!$OMP PARALLEL
+!$OMP PARALLEL NUM_THREADS(tiles_per_task)
 !$OMP DO
     DO t=1,tiles_per_task
       CALL set_field_kernel(chunk%tiles(t)%field%x_min,     &

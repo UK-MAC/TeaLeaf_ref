@@ -18,7 +18,7 @@ SUBROUTINE tea_leaf_cg_init(rro)
   rro = 0.0_8
 
   IF (use_fortran_kernels) THEN
-!$OMP PARALLEL PRIVATE(tile_rro)
+!$OMP PARALLEL NUM_THREADS(tiles_per_task) PRIVATE(tile_rro)
 !$OMP DO REDUCTION(+:rro)
     DO t=1,tiles_per_task
       tile_rro = 0.0_8
@@ -58,7 +58,7 @@ SUBROUTINE tea_leaf_cg_calc_w(pw)
   pw = 0.0_08
 
   IF (use_fortran_kernels) THEN
-!$OMP PARALLEL PRIVATE(tile_pw)
+!$OMP PARALLEL NUM_THREADS(tiles_per_task) PRIVATE(tile_pw)
 !$OMP DO REDUCTION(+:pw)
     DO t=1,tiles_per_task
       tile_pw = 0.0_8
@@ -94,7 +94,7 @@ SUBROUTINE tea_leaf_cg_calc_ur(alpha, rrn)
   rrn = 0.0_8
 
   IF (use_fortran_kernels) THEN
-!$OMP PARALLEL PRIVATE(tile_rrn)
+!$OMP PARALLEL NUM_THREADS(tiles_per_task) PRIVATE(tile_rrn)
 !$OMP DO REDUCTION(+:rrn)
     DO t=1,tiles_per_task
       tile_rrn = 0.0_8
@@ -134,7 +134,7 @@ SUBROUTINE tea_leaf_cg_calc_p(beta)
   REAL(KIND=8) :: beta
 
   IF (use_fortran_kernels) THEN
-!$OMP PARALLEL
+!$OMP PARALLEL NUM_THREADS(tiles_per_task)
 !$OMP DO
     DO t=1,tiles_per_task
       CALL tea_leaf_cg_calc_p_kernel(chunk%tiles(t)%field%x_min,&

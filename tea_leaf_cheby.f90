@@ -16,7 +16,7 @@ SUBROUTINE tea_leaf_cheby_init(theta)
   REAL(KIND=8) :: theta
 
   IF (use_fortran_kernels) THEN
-!$OMP PARALLEL
+!$OMP PARALLEL NUM_THREADS(tiles_per_task)
 !$OMP DO
     DO t=1,tiles_per_task
       CALL tea_leaf_kernel_cheby_init(chunk%tiles(t)%field%x_min,&
@@ -53,7 +53,7 @@ SUBROUTINE tea_leaf_cheby_iterate(ch_alphas, ch_betas, max_cheby_iters, cheby_ca
   REAL(KIND=8), DIMENSION(:) :: ch_alphas, ch_betas
 
   IF (use_fortran_kernels) THEN
-!$OMP PARALLEL
+!$OMP PARALLEL NUM_THREADS(tiles_per_task)
 !$OMP DO
     DO t=1,tiles_per_task
       CALL tea_leaf_kernel_cheby_iterate(chunk%tiles(t)%field%x_min,&

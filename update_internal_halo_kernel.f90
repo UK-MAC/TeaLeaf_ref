@@ -48,7 +48,7 @@ CONTAINS
     INTEGER :: x_min_right,x_max_right,y_min_right,y_max_right
     REAL(KIND=8), DIMENSION(x_min_right-halo_exchange_depth:x_max_right+halo_exchange_depth,y_min_right-halo_exchange_depth:y_max_right+halo_exchange_depth) :: density_right,energy0_right,energy1_right, u_right, sd_right, p_right
 
-!$OMP PARALLEL
+!$OMP PARALLEL NUM_THREADS(INNER_NUM_THREADS)
     IF (fields(FIELD_DENSITY).EQ.1) THEN
       CALL update_internal_halo_cell_left_right(x_min, x_max, y_min, y_max, density, &
         x_min_right, x_max_right, y_min_right, y_max_right, density_right, &
@@ -154,7 +154,7 @@ CONTAINS
     INTEGER :: x_min_top,x_max_top,y_min_top,y_max_top
     REAL(KIND=8), DIMENSION(x_min_top-halo_exchange_depth:x_max_top+halo_exchange_depth,y_min_top-halo_exchange_depth:y_max_top+halo_exchange_depth) :: density_top,energy0_top,energy1_top, u_top, sd_top, p_top
 
-!$OMP PARALLEL
+!$OMP PARALLEL NUM_THREADS(INNER_NUM_THREADS)
     IF (fields(FIELD_DENSITY).EQ.1) THEN
       CALL update_internal_halo_cell_bottom_top(x_min, x_max, y_min, y_max, density, &
         x_min_top, x_max_top, y_min_top, y_max_top, density_top, &

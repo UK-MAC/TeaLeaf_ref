@@ -18,7 +18,7 @@ SUBROUTINE tea_leaf_jacobi_solve(error)
   error = 0.0_8
 
   IF (use_fortran_kernels) THEN
-!$OMP PARALLEL PRIVATE(tile_error)
+!$OMP PARALLEL NUM_THREADS(tiles_per_task) PRIVATE(tile_error)
 !$OMP DO REDUCTION(+:error)
     DO t=1,tiles_per_task
       tile_error = 0.0_8

@@ -45,7 +45,7 @@ SUBROUTINE generate_chunk()
   ENDDO
 
   IF(use_fortran_kernels) THEN
-!$OMP PARALLEL
+!$OMP PARALLEL NUM_THREADS(tiles_per_task)
 !$OMP DO
     DO t=1,tiles_per_task
       CALL generate_chunk_kernel(chunk%tiles(t)%field%x_min,             &

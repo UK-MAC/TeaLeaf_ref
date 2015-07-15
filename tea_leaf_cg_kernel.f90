@@ -59,7 +59,7 @@ SUBROUTINE tea_leaf_cg_init_kernel(x_min,  &
 
   rro = 0.0_8
 
-!$OMP PARALLEL
+!$OMP PARALLEL NUM_THREADS(INNER_NUM_THREADS)
 !$OMP DO
   DO k=y_min,y_max
     DO j=x_min,x_max
@@ -101,7 +101,7 @@ SUBROUTINE tea_leaf_cg_init_kernel(x_min,  &
       rro = rro + r(j, k)*p(j, k);
     ENDDO
   ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
 !$OMP END PARALLEL
 
 END SUBROUTINE tea_leaf_cg_init_kernel
@@ -131,7 +131,7 @@ SUBROUTINE tea_leaf_cg_calc_w_kernel(x_min,             &
 
   pw = 0.0_8
 
-!$OMP PARALLEL REDUCTION(+:pw)
+!$OMP PARALLEL NUM_THREADS(INNER_NUM_THREADS) REDUCTION(+:pw)
 !$OMP DO
     DO k=y_min,y_max
         DO j=x_min,x_max
@@ -144,7 +144,7 @@ SUBROUTINE tea_leaf_cg_calc_w_kernel(x_min,             &
             pw = pw + w(j, k)*p(j, k)
         ENDDO
     ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
 !$OMP END PARALLEL
 
 END SUBROUTINE tea_leaf_cg_calc_w_kernel
@@ -183,7 +183,7 @@ SUBROUTINE tea_leaf_cg_calc_ur_kernel(x_min,             &
 
   rrn = 0.0_8
 
-!$OMP PARALLEL
+!$OMP PARALLEL NUM_THREADS(INNER_NUM_THREADS)
 !$OMP DO
     DO k=y_min,y_max
         DO j=x_min,x_max
@@ -216,7 +216,7 @@ SUBROUTINE tea_leaf_cg_calc_ur_kernel(x_min,             &
             rrn = rrn + r(j, k)*z(j, k)
         ENDDO
     ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
   ELSE
 !$OMP DO REDUCTION(+:rrn)
     DO k=y_min,y_max
@@ -225,7 +225,7 @@ SUBROUTINE tea_leaf_cg_calc_ur_kernel(x_min,             &
             rrn = rrn + r(j, k)*r(j, k)
         ENDDO
     ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
   ENDIF
 !$OMP END PARALLEL
 
@@ -251,7 +251,7 @@ SUBROUTINE tea_leaf_cg_calc_p_kernel(x_min,             &
   INTEGER(KIND=4) :: j,k
   REAL(kind=8) :: beta
 
-!$OMP PARALLEL
+!$OMP PARALLEL NUM_THREADS(INNER_NUM_THREADS)
   IF (preconditioner_type .NE. TL_PREC_NONE) THEN
 !$OMP DO
     DO k=y_min,y_max
