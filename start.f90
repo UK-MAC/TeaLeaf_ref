@@ -76,6 +76,10 @@ SUBROUTINE start
     chunk%tiles(t)%field%y_max = chunk%tiles(t)%y_cells
   ENDDO
 
+  IF (parallel%boss)THEN
+    WRITE(g_out,*)"Tile size ",chunk%tiles(1)%x_cells," by ",chunk%tiles(1)%y_cells," cells"
+  ENDIF
+
   CALL build_field()
 
   CALL tea_allocate_buffers()
