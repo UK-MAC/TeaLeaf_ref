@@ -43,7 +43,7 @@ SUBROUTINE call_packing_functions(fields, depth, face, packing, mpi_buffer, offs
   INTEGER      :: face,t,tile_offset
   LOGICAL      :: packing
 
-!$OMP PARALLEL NUM_THREADS(tiles_per_task) PRIVATE(tile_offset)
+!$OMP PARALLEL PRIVATE(tile_offset)
 !$OMP DO
   DO t=1,tiles_per_task
     SELECT CASE (face)

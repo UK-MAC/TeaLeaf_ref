@@ -35,7 +35,7 @@ SUBROUTINE set_field_kernel(x_min,x_max,y_min,y_max,halo_exchange_depth,    &
 
   INTEGER :: j,k
 
-!$OMP PARALLEL NUM_THREADS(INNER_NUM_THREADS)
+!$OMP PARALLEL
 
 !$OMP DO
   DO k=y_min,y_max

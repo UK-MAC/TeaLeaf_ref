@@ -35,7 +35,7 @@ SUBROUTINE initialise_chunk()
   dy=(grid%ymax - grid%ymin)/REAL(grid%y_cells)
 
   IF(use_fortran_kernels) THEN
-!$OMP PARALLEL NUM_THREADS(tiles_per_task) PRIVATE(xmin, ymin)
+!$OMP PARALLEL PRIVATE(xmin, ymin)
 !$OMP DO
     DO t=1,tiles_per_task
       xmin=grid%xmin + dx*REAL(chunk%tiles(t)%left-1)

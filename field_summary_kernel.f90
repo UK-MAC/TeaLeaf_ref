@@ -45,7 +45,7 @@ SUBROUTINE field_summary_kernel(x_min,x_max,y_min,y_max,halo_exchange_depth, &
   ie=0.0
   temp=0.0
 
-!$OMP PARALLEL NUM_THREADS(INNER_NUM_THREADS)
+!$OMP PARALLEL
 !$OMP DO REDUCTION(+ : vol,mass,ie,temp)
   DO k=y_min,y_max
     DO j=x_min,x_max

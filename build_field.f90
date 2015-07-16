@@ -29,7 +29,7 @@ SUBROUTINE build_field()
   INTEGER :: j,k
   INTEGER :: t
 
-!$OMP PARALLEL NUM_THREADS(tiles_per_task)
+!$OMP PARALLEL
 !$OMP DO
   DO t=1,tiles_per_task
     chunk%tiles(t)%field%x_min=1
@@ -98,7 +98,7 @@ SUBROUTINE build_field()
   ! cycle which can skew timings in the first step
   ! Explicit loop limits ensures correct NUMA access, which array syntax does
   ! not
-!$OMP PARALLEL NUM_THREADS(tiles_per_task)
+!$OMP PARALLEL
 !$OMP DO
   DO k=chunk%tiles(t)%field%y_min-halo_exchange_depth,chunk%tiles(t)%field%y_max+halo_exchange_depth
     DO j=chunk%tiles(t)%field%x_min-halo_exchange_depth,chunk%tiles(t)%field%x_max+halo_exchange_depth

@@ -55,7 +55,7 @@ SUBROUTINE initialise_chunk_kernel(x_min,x_max,y_min,y_max,       &
 
   INTEGER      :: j,k
 
-!$OMP PARALLEL NUM_THREADS(INNER_NUM_THREADS)
+!$OMP PARALLEL
 !$OMP DO
   DO j=x_min-2,x_max+3
      vertexx(j)=xmin+dx*float(j-x_min)

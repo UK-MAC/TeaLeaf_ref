@@ -57,7 +57,7 @@ SUBROUTINE update_boundary(fields,depth)
 
   IF (reflective_boundary .EQV. .TRUE. .AND. ANY(chunk%chunk_neighbours .EQ. EXTERNAL_FACE)) THEN
     IF (use_fortran_kernels)THEN
-!$OMP PARALLEL NUM_THREADS(tiles_per_task)
+!$OMP PARALLEL
 !$OMP DO
       DO t=1,tiles_per_task
         CALL update_halo_kernel(chunk%tiles(t)%field%x_min,          &
@@ -96,7 +96,7 @@ SUBROUTINE update_tile_boundary(fields, depth)
 
   IF (tiles_per_task .GT. 1) THEN
     IF (use_fortran_kernels)THEN
-!$OMP PARALLEL NUM_THREADS(tiles_per_task) PRIVATE(right_idx, up_idx)
+!$OMP PARALLEL PRIVATE(right_idx, up_idx)
 !$OMP DO
       DO t=1,tiles_per_task
         right_idx = chunk%tiles(t)%tile_neighbours(CHUNK_RIGHT)

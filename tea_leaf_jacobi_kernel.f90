@@ -49,7 +49,7 @@ SUBROUTINE tea_leaf_jacobi_solve_kernel(x_min,       &
 
   error = 0.0_8
 
-!$OMP PARALLEL NUM_THREADS(INNER_NUM_THREADS)
+!$OMP PARALLEL
 !$OMP DO
     DO k=y_min, y_max
       DO j=x_min, x_max

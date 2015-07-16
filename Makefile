@@ -143,11 +143,10 @@ else
 $(error Unknown value '$(TL_OMP_LEVEL)' set for TL_OMP_LEVEL - expected 'TILE', 'KERNEL', or 'BOTH')
 endif
 
-INNER_NUM_THREADS=3
-ARCH=-mmic
+ARCH=-xhost
 FLAGS+=$(ARCH)
 CFLAGS+=$(ARCH)
-KERNEL_FLAGS+=$(ARCH) -D INNER_NUM_THREADS=$(INNER_NUM_THREADS)
+KERNEL_FLAGS+=$(ARCH)
 
 C_FILES=\
 	timer_c.o

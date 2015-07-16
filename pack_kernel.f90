@@ -170,7 +170,7 @@ SUBROUTINE pack_all(x_min, x_max, y_min, y_max, halo_exchange_depth, &
     END SELECT
   ENDIF
 
-!$OMP PARALLEL NUM_THREADS(INNER_NUM_THREADS)
+!$OMP PARALLEL
   IF (fields(FIELD_DENSITY).EQ.1) THEN
       CALL pack_func(x_min,                    &
                      x_max,                    &

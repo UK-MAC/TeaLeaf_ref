@@ -17,7 +17,7 @@ SUBROUTINE tea_leaf_ppcg_init_sd(theta)
   REAL(KIND=8) :: theta
 
   IF (use_fortran_kernels) THEN
-!$OMP PARALLEL NUM_THREADS(tiles_per_task)
+!$OMP PARALLEL
 !$OMP DO
     DO t=1,tiles_per_task
       CALL tea_leaf_kernel_ppcg_init_sd(chunk%tiles(t)%field%x_min,&
@@ -52,7 +52,7 @@ SUBROUTINE tea_leaf_ppcg_inner(ch_alphas, ch_betas, inner_step, bounds_extra)
   REAL(KIND=8), DIMENSION(:) :: ch_alphas, ch_betas
 
   IF (use_fortran_kernels) THEN
-!$OMP PARALLEL NUM_THREADS(tiles_per_task) PRIVATE(x_min_bound, x_max_bound, y_min_bound, y_max_bound)
+!$OMP PARALLEL PRIVATE(x_min_bound, x_max_bound, y_min_bound, y_max_bound)
 !$OMP DO
     DO t=1,tiles_per_task
       IF (chunk%chunk_neighbours(CHUNK_LEFT).EQ.EXTERNAL_FACE) THEN
@@ -119,7 +119,7 @@ SUBROUTINE tea_leaf_ppcg_calc_zrnorm(rrn)
   rrn = 0.0_8
 
   IF (use_fortran_kernels) THEN
-!$OMP PARALLEL NUM_THREADS(tiles_per_task) PRIVATE(tile_rrn)
+!$OMP PARALLEL PRIVATE(tile_rrn)
 !$OMP DO REDUCTION(+:rrn)
     DO t=1,tiles_per_task
       tile_rrn = 0.0_8

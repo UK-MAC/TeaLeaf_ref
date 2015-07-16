@@ -61,7 +61,7 @@ SUBROUTINE tea_leaf_common_init_kernel(x_min,  &
 
   REAL(KIND=8) ::  rx, ry
 
-!$OMP PARALLEL NUM_THREADS(INNER_NUM_THREADS)
+!$OMP PARALLEL
 !$OMP DO
   DO k=y_min, y_max
     DO j=x_min, x_max
@@ -182,7 +182,7 @@ SUBROUTINE tea_leaf_kernel_finalise(x_min,    &
 
   INTEGER(KIND=4) :: j,k
 
-!$OMP PARALLEL NUM_THREADS(INNER_NUM_THREADS)
+!$OMP PARALLEL
 !$OMP DO
   DO k=y_min, y_max
     DO j=x_min, x_max
@@ -215,7 +215,7 @@ SUBROUTINE tea_leaf_calc_residual_kernel(x_min,       &
 
   INTEGER(KIND=4) :: j,k
 
-!$OMP PARALLEL NUM_THREADS(INNER_NUM_THREADS) PRIVATE(smvp)
+!$OMP PARALLEL PRIVATE(smvp)
 !$OMP DO
     DO k=y_min, y_max
       DO j=x_min, x_max
@@ -249,7 +249,7 @@ SUBROUTINE tea_leaf_calc_2norm_kernel(x_min, &
 
   norm = 0.0_8
 
-!$OMP PARALLEL NUM_THREADS(INNER_NUM_THREADS)
+!$OMP PARALLEL
 !$OMP DO REDUCTION(+:norm)
     DO k=y_min,y_max
         DO j=x_min,x_max

@@ -61,7 +61,7 @@ CONTAINS
 
   INTEGER :: fields(NUM_FIELDS),depth
 
-!$OMP PARALLEL NUM_THREADS(INNER_NUM_THREADS)
+!$OMP PARALLEL
 
   ! Update values in external halo cells based on depth and fields requested
   IF (fields(FIELD_DENSITY).EQ.1) THEN

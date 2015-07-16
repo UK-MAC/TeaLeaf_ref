@@ -76,7 +76,7 @@ SUBROUTINE generate_chunk_kernel(x_min,x_max,y_min,y_max,halo_exchange_depth, &
 
   ! State 1 is always the background state
 
-!$OMP PARALLEL NUM_THREADS(INNER_NUM_THREADS) PRIVATE(x_cent,y_cent, state,radius,jt,kt)
+!$OMP PARALLEL PRIVATE(x_cent,y_cent, state,radius,jt,kt)
 
 !$OMP DO
   DO k=y_min,y_max
