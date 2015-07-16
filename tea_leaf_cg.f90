@@ -18,6 +18,7 @@ SUBROUTINE tea_leaf_cg_init(rro)
   rro = 0.0_8
 
   IF (use_fortran_kernels) THEN
+!$OMP PARALLEL PRIVATE(tile_rro)
 !$OMP DO REDUCTION(+:rro)
     DO t=1,tiles_per_task
       tile_rro = 0.0_8
@@ -41,7 +42,8 @@ SUBROUTINE tea_leaf_cg_init(rro)
 
       rro = rro + tile_rro
     ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
+!$OMP END PARALLEL
   ENDIF
 
 END SUBROUTINE tea_leaf_cg_init
@@ -56,6 +58,7 @@ SUBROUTINE tea_leaf_cg_calc_w(pw)
   pw = 0.0_08
 
   IF (use_fortran_kernels) THEN
+!$OMP PARALLEL PRIVATE(tile_pw)
 !$OMP DO REDUCTION(+:pw)
     DO t=1,tiles_per_task
       tile_pw = 0.0_8
@@ -75,7 +78,8 @@ SUBROUTINE tea_leaf_cg_calc_w(pw)
 
       pw = pw + tile_pw
     ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
+!$OMP END PARALLEL
   ENDIF
 
 END SUBROUTINE tea_leaf_cg_calc_w
@@ -90,6 +94,7 @@ SUBROUTINE tea_leaf_cg_calc_ur(alpha, rrn)
   rrn = 0.0_8
 
   IF (use_fortran_kernels) THEN
+!$OMP PARALLEL PRIVATE(tile_rrn)
 !$OMP DO REDUCTION(+:rrn)
     DO t=1,tiles_per_task
       tile_rrn = 0.0_8
@@ -115,7 +120,8 @@ SUBROUTINE tea_leaf_cg_calc_ur(alpha, rrn)
 
       rrn = rrn + tile_rrn
     ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
+!$OMP END PARALLEL
   ENDIF
 
 END SUBROUTINE tea_leaf_cg_calc_ur
@@ -128,6 +134,7 @@ SUBROUTINE tea_leaf_cg_calc_p(beta)
   REAL(KIND=8) :: beta
 
   IF (use_fortran_kernels) THEN
+!$OMP PARALLEL
 !$OMP DO
     DO t=1,tiles_per_task
       CALL tea_leaf_cg_calc_p_kernel(chunk%tiles(t)%field%x_min,&
@@ -141,6 +148,7 @@ SUBROUTINE tea_leaf_cg_calc_p(beta)
           beta, tl_preconditioner_type)
     ENDDO
 !$OMP END DO NOWAIT
+!$OMP END PARALLEL
   ENDIF
 
 END SUBROUTINE tea_leaf_cg_calc_p

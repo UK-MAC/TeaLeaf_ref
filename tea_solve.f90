@@ -271,34 +271,28 @@ SUBROUTINE tea_leaf()
 
       ! w = Ap
       ! pw = p.w
-!$OMP PARALLEL
       CALL tea_leaf_cg_calc_w(pw)
 
-      !IF (profiler_on) dot_product_time=timer()
-!$OMP SINGLE
+      IF (profiler_on) dot_product_time=timer()
       CALL tea_allsum(pw)
-      !IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
+      IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
 
       alpha = rro/pw
       cg_alphas(n) = alpha
-!$OMP END SINGLE
 
       ! u = u + a*p
       ! r = r - a*w
       CALL tea_leaf_cg_calc_ur(alpha, rrn)
 
-      !IF (profiler_on) dot_product_time=timer()
-!$OMP SINGLE
+      IF (profiler_on) dot_product_time=timer()
       CALL tea_allsum(rrn)
-      !IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
+      IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
 
       beta = rrn/rro
       cg_betas(n) = beta
-!$OMP END SINGLE
 
       ! p = r + b*p
       CALL tea_leaf_cg_calc_p(beta)
-!$OMP END PARALLEL
 
       error = rrn
       rro = rrn
