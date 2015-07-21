@@ -3,6 +3,7 @@ MODULE tea_leaf_common_module
 
   USE tea_leaf_common_kernel_module
   USE definitions_module
+  USE report_module
 
   IMPLICIT NONE
 
@@ -80,11 +81,11 @@ SUBROUTINE tea_leaf_calc_residual()
 
 END SUBROUTINE
 
-SUBROUTINE tea_leaf_calc_2norm(norm)
+SUBROUTINE tea_leaf_calc_2norm(norm_array, norm)
 
   IMPLICIT NONE
 
-  INTEGER :: t
+  INTEGER :: t, norm_array
   REAL(KIND=8) :: norm, tile_norm
 
   norm = 0.0_8
@@ -93,13 +94,28 @@ SUBROUTINE tea_leaf_calc_2norm(norm)
     DO t=1,tiles_per_task
       tile_norm = 0.0_8
 
-      CALL tea_leaf_calc_2norm_kernel(chunk%tiles(t)%field%x_min,        &
-          chunk%tiles(t)%field%x_max,                                    &
-          chunk%tiles(t)%field%y_min,                                    &
-          chunk%tiles(t)%field%y_max,                                    &
-          halo_exchange_depth,                                    &
-          chunk%tiles(t)%field%vector_r,                                 &
-          tile_norm)
+      ! 0 = u0.u0
+      ! 1 = r.r
+      ! XXX add some parameters in defintions.f90?
+      IF (norm_array .EQ. 0) THEN
+        CALL tea_leaf_calc_2norm_kernel(chunk%tiles(t)%field%x_min,        &
+            chunk%tiles(t)%field%x_max,                                    &
+            chunk%tiles(t)%field%y_min,                                    &
+            chunk%tiles(t)%field%y_max,                                    &
+            halo_exchange_depth,                                    &
+            chunk%tiles(t)%field%u0,                                 &
+            tile_norm)
+      ELSE IF (norm_array .EQ. 1) THEN
+        CALL tea_leaf_calc_2norm_kernel(chunk%tiles(t)%field%x_min,        &
+            chunk%tiles(t)%field%x_max,                                    &
+            chunk%tiles(t)%field%y_min,                                    &
+            chunk%tiles(t)%field%y_max,                                    &
+            halo_exchange_depth,                                    &
+            chunk%tiles(t)%field%vector_r,                                 &
+            tile_norm)
+      ELSE
+        CALL report_error("tea_leaf_common.f90", "Invalid value for norm_array")
+      ENDIF
 
       norm = norm + tile_norm
     ENDDO

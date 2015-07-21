@@ -101,7 +101,7 @@ SUBROUTINE tea_leaf_cg_init_kernel(x_min,  &
       rro = rro + r(j, k)*p(j, k);
     ENDDO
   ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
 !$OMP END PARALLEL
 
 END SUBROUTINE tea_leaf_cg_init_kernel
@@ -144,7 +144,7 @@ SUBROUTINE tea_leaf_cg_calc_w_kernel(x_min,             &
             pw = pw + w(j, k)*p(j, k)
         ENDDO
     ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
 !$OMP END PARALLEL
 
 END SUBROUTINE tea_leaf_cg_calc_w_kernel
@@ -216,7 +216,7 @@ SUBROUTINE tea_leaf_cg_calc_ur_kernel(x_min,             &
             rrn = rrn + r(j, k)*z(j, k)
         ENDDO
     ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
   ELSE
 !$OMP DO REDUCTION(+:rrn)
     DO k=y_min,y_max
@@ -225,7 +225,7 @@ SUBROUTINE tea_leaf_cg_calc_ur_kernel(x_min,             &
             rrn = rrn + r(j, k)*r(j, k)
         ENDDO
     ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
   ENDIF
 !$OMP END PARALLEL
 

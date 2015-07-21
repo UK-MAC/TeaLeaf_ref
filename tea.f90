@@ -164,12 +164,12 @@ SUBROUTINE tea_decompose_tiles(x_cells, y_cells)
 
   ! create a fake communicator to easily decompose the tiles as before
   INTEGER :: err, j, k, t
-  INTEGER, dimension(2)     :: tile_dims, tile_coords
+  INTEGER, DIMENSION(2)     :: tile_dims, tile_coords
 
   tile_dims = 0
 
   ! TODO input parameter to say how to split it - rows, columns, etc
-  tile_dims(1) = 1
+  !tile_dims(1) = 1
 
   ! get good split for tiles
   CALL MPI_DIMS_CREATE(tiles_per_task, 2, tile_dims, err)
@@ -252,7 +252,7 @@ SUBROUTINE tea_allocate_buffers()
   IMPLICIT NONE
 
   INTEGER      :: bt_size, lr_size
-  INTEGER,parameter :: num_buffered=6
+  INTEGER,PARAMETER :: num_buffered=NUM_FIELDS
 
   INTEGER           :: allocate_extra_size
 
@@ -301,8 +301,8 @@ SUBROUTINE tea_exchange(fields,depth)
     INTEGER      :: end_pack_index_left_right, end_pack_index_bottom_top,field
     INTEGER      :: message_count_lr, message_count_ud
     INTEGER      :: exchange_size_lr, exchange_size_ud
-    INTEGER, dimension(4)                 :: request_lr, request_ud
-    INTEGER, dimension(MPI_STATUS_SIZE,4) :: status_lr, status_ud
+    INTEGER, DIMENSION(4)                 :: request_lr, request_ud
+    INTEGER, DIMENSION(MPI_STATUS_SIZE,4) :: status_lr, status_ud
     LOGICAL :: test_complete
 
     IF (ALL(chunk%chunk_neighbours .eq. EXTERNAL_FACE)) return
@@ -357,7 +357,7 @@ SUBROUTINE tea_exchange(fields,depth)
       message_count_lr = message_count_lr + 2
     ENDIF
 
-    IF (depth .eq. 1) THEN
+    IF (depth .EQ. 1) THEN
       test_complete = .false.
       ! don't have to transfer now
       CALL MPI_TESTALL(message_count_lr, request_lr, test_complete, status_lr, err)
@@ -367,7 +367,7 @@ SUBROUTINE tea_exchange(fields,depth)
       CALL MPI_WAITALL(message_count_lr,request_lr,status_lr,err)
     ENDIF
 
-    IF (test_complete .eqv. .true.) THEN
+    IF (test_complete .EQV. .TRUE.) THEN
       !unpack in left direction
       IF (chunk%chunk_neighbours(CHUNK_LEFT).NE.EXTERNAL_FACE) THEN
         CALL tea_unpack_buffers(fields, depth, CHUNK_LEFT, &
@@ -409,7 +409,7 @@ SUBROUTINE tea_exchange(fields,depth)
       message_count_ud = message_count_ud + 2
     ENDIF
 
-    IF (test_complete .eqv. .false.) THEN
+    IF (test_complete .EQV. .FALSE.) THEN
       !make a call to wait / sync
       CALL MPI_WAITALL(message_count_lr,request_lr,status_lr,err)
 
