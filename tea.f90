@@ -47,7 +47,7 @@ SUBROUTINE tea_init_comms
   INTEGER :: err,rank,size
   INTEGER, dimension(2)  :: periodic
   ! not periodic
-  data periodic/0, 0/
+  DATA periodic/0, 0/
 
   mpi_dims = 0
 
