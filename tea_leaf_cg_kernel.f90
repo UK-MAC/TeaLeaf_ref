@@ -59,7 +59,7 @@ SUBROUTINE tea_leaf_cg_init_kernel(x_min,  &
 
   rro = 0.0_8
 
-!$OMP PARALLEL
+!$OMP PARALLEL REDUCTION(+:rro)
 !$OMP DO
   DO k=y_min,y_max
     DO j=x_min,x_max
@@ -95,7 +95,7 @@ SUBROUTINE tea_leaf_cg_init_kernel(x_min,  &
     ENDDO
 !$OMP END DO NOWAIT
   ENDIF
-!$OMP DO REDUCTION(+:rro)
+!$OMP DO
   DO k=y_min,y_max
     DO j=x_min,x_max
       rro = rro + r(j, k)*p(j, k);
@@ -183,7 +183,7 @@ SUBROUTINE tea_leaf_cg_calc_ur_kernel(x_min,             &
 
   rrn = 0.0_8
 
-!$OMP PARALLEL
+!$OMP PARALLEL REDUCTION(+:rrn)
 !$OMP DO
     DO k=y_min,y_max
         DO j=x_min,x_max
@@ -210,7 +210,7 @@ SUBROUTINE tea_leaf_cg_calc_ur_kernel(x_min,             &
                              r, z, Mi, Kx, Ky, rx, ry)
     ENDIF
 
-!$OMP DO REDUCTION(+:rrn)
+!$OMP DO
     DO k=y_min,y_max
         DO j=x_min,x_max
             rrn = rrn + r(j, k)*z(j, k)
@@ -218,7 +218,7 @@ SUBROUTINE tea_leaf_cg_calc_ur_kernel(x_min,             &
     ENDDO
 !$OMP END DO NOWAIT
   ELSE
-!$OMP DO REDUCTION(+:rrn)
+!$OMP DO
     DO k=y_min,y_max
         DO j=x_min,x_max
             r(j, k) = r(j, k) - alpha*w(j, k)
