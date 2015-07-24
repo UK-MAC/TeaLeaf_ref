@@ -86,11 +86,7 @@ SUBROUTINE build_field()
          chunk%tiles(t)%field%y_min-2:chunk%tiles(t)%field%y_max+2))
     ALLOCATE(chunk%tiles(t)%field%yarea   (chunk%tiles(t)%field%x_min-2:chunk%tiles(t)%field%x_max+2, &
          chunk%tiles(t)%field%y_min-2:chunk%tiles(t)%field%y_max+3))
-  ENDDO
-!$OMP END DO
-!$OMP END PARALLEL
 
-  return
   ! TODO nested parallelism would require nested zero allocation...?
 
   ! Zeroing isn't strictly neccessary but it ensures physical pages
@@ -170,6 +166,10 @@ SUBROUTINE build_field()
   DO k=chunk%tiles(t)%field%y_min-2,chunk%tiles(t)%field%y_max+3
       chunk%tiles(t)%field%vertexy(k)=0.0
       chunk%tiles(t)%field%vertexdy(k)=0.0
+  ENDDO
+!$OMP END DO
+!$OMP END PARALLEL
+
   ENDDO
 !$OMP END DO
 !$OMP END PARALLEL
