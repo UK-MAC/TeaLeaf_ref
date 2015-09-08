@@ -54,7 +54,7 @@ SUBROUTINE tea_leaf_init_common()
           chunk%tiles(t)%field%ry,  &
           tl_preconditioner_type, coefficient)
     ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
 !$OMP END PARALLEL
   ENDIF
 
@@ -83,7 +83,7 @@ SUBROUTINE tea_leaf_calc_residual()
           chunk%tiles(t)%field%rx,  &
           chunk%tiles(t)%field%ry)
     ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
 !$OMP END PARALLEL
   ENDIF
 
@@ -129,7 +129,7 @@ SUBROUTINE tea_leaf_calc_2norm(norm_array, norm)
 
       norm = norm + tile_norm
     ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
 !$OMP END PARALLEL
   ENDIF
 
@@ -154,7 +154,7 @@ SUBROUTINE tea_leaf_finalise()
           chunk%tiles(t)%field%density,                         &
           chunk%tiles(t)%field%u)
     ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
 !$OMP END PARALLEL
   ENDIF
 
