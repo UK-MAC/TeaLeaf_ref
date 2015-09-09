@@ -116,10 +116,13 @@ ifdef IEEE
   I3E_XL       = -qfloat=nomaf
 endif
 
-ifneq (,$(filter $(COMPILER), GNU INTEL))
-OMP4=-D WITH_OMP4
+ifneq (,$(filter $(COMPILER), INTEL))
+WITH_OMP4=1
 endif
 
+ifdef WITH_OMP4
+OMP4=-D WITH_OMP4
+endif
 
 FLAGS=$(FLAGS_$(COMPILER)) $(OMP_$(COMPILER)) $(I3E_$(COMPILER)) $(OPTIONS) $(OMP4)
 CFLAGS=$(CFLAGS_$(COMPILER)) $(OMP_$(COMPILER)) $(I3E_$(COMPILER)) $(C_OPTIONS) -c
