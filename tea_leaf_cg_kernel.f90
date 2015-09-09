@@ -49,7 +49,8 @@ SUBROUTINE tea_leaf_cg_init_kernel(x_min,  &
 
   INTEGER :: preconditioner_type
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
-  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: r, Kx, Ky, z, Mi, p
+  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth)&
+                          :: r, Kx, Ky, z, Mi, p
   REAL(KIND=8), DIMENSION(x_min:x_max,y_min:y_max) :: cp, bfp
 
   INTEGER(KIND=4) :: j,k
@@ -122,7 +123,8 @@ SUBROUTINE tea_leaf_cg_calc_w_kernel(x_min,             &
   IMPLICIT NONE
 
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
-  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: w, Kx, Ky, p
+  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth)&
+                          :: w, Kx, Ky, p
 
     REAL(KIND=8) ::  rx, ry
 
@@ -174,7 +176,8 @@ SUBROUTINE tea_leaf_cg_calc_ur_kernel(x_min,             &
 
   INTEGER :: preconditioner_type
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
-  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: u, r, Mi, w, z, Kx, Ky, p
+  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth)&
+                          :: u, r, Mi, w, z, Kx, Ky, p
   REAL(KIND=8), DIMENSION(x_min:x_max,y_min:y_max) :: cp, bfp
   REAL(KIND=8) :: rx, ry
 
@@ -246,7 +249,8 @@ SUBROUTINE tea_leaf_cg_calc_p_kernel(x_min,             &
 
   INTEGER :: preconditioner_type
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
-  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: z, r, p
+  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth)&
+                          :: z, r, p
 
   INTEGER(KIND=4) :: j,k
   REAL(kind=8) :: beta

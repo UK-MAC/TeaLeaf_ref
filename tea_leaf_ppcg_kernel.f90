@@ -27,7 +27,8 @@ SUBROUTINE tea_leaf_kernel_ppcg_init_sd(x_min,             &
 
   INTEGER :: preconditioner_type
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
-  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: r, sd, kx, ky , z, Mi
+  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth)&
+                          :: r, sd, kx, ky , z, Mi
   REAL(KIND=8), DIMENSION(x_min:x_max,y_min:y_max) :: cp, bfp
   REAL(KIND=8) :: theta, theta_r, rx, ry
 
@@ -94,7 +95,8 @@ SUBROUTINE tea_leaf_kernel_ppcg_inner(x_min,             &
 
   INTEGER :: preconditioner_type
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
-  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: u, r, Kx, Ky, sd , z, Mi
+  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth)&
+                          :: u, r, Kx, Ky, sd , z, Mi
   REAL(KIND=8), DIMENSION(x_min:x_max,y_min:y_max) :: cp, bfp
   INTEGER(KIND=4) :: j,k
   REAL(KIND=8), DIMENSION(:) :: alpha, beta
@@ -160,7 +162,8 @@ SUBROUTINE tea_leaf_ppcg_calc_zrnorm_kernel(x_min, &
 
   INTEGER :: preconditioner_type
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
-  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: r, z
+  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth)&
+                          :: r, z
   REAL(KIND=8) :: norm
   integer :: j, k
 

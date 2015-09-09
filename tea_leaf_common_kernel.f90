@@ -53,7 +53,8 @@ SUBROUTINE tea_leaf_common_init_kernel(x_min,  &
   INTEGER :: preconditioner_type
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
   INTEGER, DIMENSION(4) :: chunk_neighbours, zero_boundary
-  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: density, energy, u, r, w, Kx, Ky, Mi, u0
+  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) &
+                          :: density, energy, u, r, w, Kx, Ky, Mi, u0
   REAL(KIND=8), DIMENSION(x_min:x_max,y_min:y_max) :: cp, bfp
 
   INTEGER(KIND=4) :: coef
@@ -178,7 +179,8 @@ SUBROUTINE tea_leaf_kernel_finalise(x_min,    &
   IMPLICIT NONE
 
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
-  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: u, energy, density
+  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) &
+                          :: u, energy, density
 
   INTEGER(KIND=4) :: j,k
 
@@ -209,7 +211,8 @@ SUBROUTINE tea_leaf_calc_residual_kernel(x_min,       &
   IMPLICIT NONE
 
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
-  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: Kx, u, r, Ky, u0
+  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) &
+                          :: Kx, u, r, Ky, u0
 
   REAL(KIND=8) :: smvp, rx, ry
 
@@ -243,7 +246,8 @@ SUBROUTINE tea_leaf_calc_2norm_kernel(x_min, &
   IMPLICIT NONE
 
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
-  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: arr
+  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth)&
+                          :: arr
   REAL(KIND=8) :: norm
   integer :: j, k
 
@@ -273,7 +277,8 @@ SUBROUTINE tea_diag_init(x_min,             &
 
   INTEGER(KIND=4):: j, k
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
-  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: Kx, Ky, Mi
+  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) &
+                          :: Kx, Ky, Mi
   REAL(KIND=8) :: rx, ry
 
 !$OMP DO
@@ -302,7 +307,8 @@ SUBROUTINE tea_diag_solve(x_min,             &
 
   INTEGER(KIND=4):: j, k
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
-  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: Kx, Ky, r, z, Mi
+  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) &
+                          :: Kx, Ky, r, z, Mi
   REAL(KIND=8) :: rx, ry
 
 !$OMP DO
@@ -314,10 +320,6 @@ SUBROUTINE tea_diag_solve(x_min,             &
 !$OMP END DO
 
 END SUBROUTINE
-
-#define COEF_A (-Ky(j, k)*ry)
-#define COEF_B (1.0_8 + ry*(Ky(j, k+1) + Ky(j, k)) + rx*(Kx(j+1, k) + Kx(j, k)))
-#define COEF_C (-Ky(j, k+1)*ry)
 
 SUBROUTINE tea_block_init(x_min,             &
                            x_max,             &
@@ -332,7 +334,8 @@ SUBROUTINE tea_block_init(x_min,             &
 
   INTEGER(KIND=4):: j, ko, k, bottom, top
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
-  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: Kx, Ky
+  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth)&
+                          :: Kx, Ky
   REAL(KIND=8), DIMENSION(x_min:x_max,y_min:y_max) :: cp, bfp
   REAL(KIND=8) :: rx, ry
 
@@ -347,11 +350,11 @@ SUBROUTINE tea_block_init(x_min,             &
 #endif
       DO j=x_min, x_max
         k = bottom
-        cp(j,k) = COEF_C/COEF_B
+        cp(j,k) = (-Ky(j, k+1)*ry)/(1.0_8 + ry*(Ky(j, k+1) + Ky(j, k)) + rx*(Kx(j+1, k) + Kx(j, k)))
 
         DO k=bottom+1,top
-            bfp(j, k) = 1.0_8/(COEF_B - COEF_A*cp(j, k-1))
-            cp(j, k) = COEF_C*bfp(j, k)
+            bfp(j, k) = 1.0_8/((1.0_8 + ry*(Ky(j, k+1) + Ky(j, k)) + rx*(Kx(j+1, k) + Kx(j, k))) - (-Ky(j, k)*ry)*cp(j, k-1))
+            cp(j, k) = (-Ky(j, k+1)*ry)*bfp(j, k)
         ENDDO
       ENDDO
     ENDDO
@@ -374,7 +377,8 @@ SUBROUTINE tea_block_solve(x_min,             &
 
   INTEGER(KIND=4):: j, ko, k, bottom, top, ki, upper_k, k_extra
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
-  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: Kx, Ky, r, z
+  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth)&
+                          :: Kx, Ky, r, z
   REAL(KIND=8), DIMENSION(x_min:x_max,y_min:y_max) :: cp, bfp
   REAL(KIND=8) :: rx, ry
   REAL(KIND=8), dimension(0:jac_block_size-1) :: dp_l, z_l
@@ -394,10 +398,10 @@ SUBROUTINE tea_block_solve(x_min,             &
 #endif
         DO j=x_min,x_max
           k = bottom
-          dp_l(k-bottom) = r(j, k)/COEF_B
+          dp_l(k-bottom) = r(j, k)/(1.0_8 + ry*(Ky(j, k+1) + Ky(j, k)) + rx*(Kx(j+1, k) + Kx(j, k)))
 
           DO k=bottom+1,top
-            dp_l(k-bottom) = (r(j, k) - COEF_A*dp_l(k-bottom-1))*bfp(j, k)
+            dp_l(k-bottom) = (r(j, k) - (-Ky(j, k)*ry)*dp_l(k-bottom-1))*bfp(j, k)
           ENDDO
 
           k=top
@@ -425,10 +429,10 @@ SUBROUTINE tea_block_solve(x_min,             &
 #endif
       DO j=x_min,x_max
         k = bottom
-        dp_l(k-bottom) = r(j, k)/COEF_B
+        dp_l(k-bottom) = r(j, k)/(1.0_8 + ry*(Ky(j, k+1) + Ky(j, k)) + rx*(Kx(j+1, k) + Kx(j, k)))
 
         DO k=bottom+1,top
-          dp_l(k-bottom) = (r(j, k) - COEF_A*dp_l(k-bottom-1))*bfp(j, k)
+          dp_l(k-bottom) = (r(j, k) - (-Ky(j, k)*ry)*dp_l(k-bottom-1))*bfp(j, k)
         ENDDO
 
         k=top

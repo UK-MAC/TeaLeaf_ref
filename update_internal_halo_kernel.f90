@@ -43,10 +43,12 @@ CONTAINS
     INTEGER :: fields(NUM_FIELDS),depth
 
     INTEGER :: x_min,x_max,y_min,y_max
-    REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: density,energy0,energy1, u, sd, p
+    REAL(KIND=8),DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth)&
+                           :: density,energy0,energy1, u, sd, p
 
     INTEGER :: x_min_right,x_max_right,y_min_right,y_max_right
-    REAL(KIND=8), DIMENSION(x_min_right-halo_exchange_depth:x_max_right+halo_exchange_depth,y_min_right-halo_exchange_depth:y_max_right+halo_exchange_depth) :: density_right,energy0_right,energy1_right, u_right, sd_right, p_right
+    REAL(KIND=8),DIMENSION(x_min_right-halo_exchange_depth:x_max_right+halo_exchange_depth,y_min_right-halo_exchange_depth:&
+                           y_max_right+halo_exchange_depth) :: density_right,energy0_right,energy1_right,u_right,sd_right,p_right
 
 !$OMP PARALLEL
     IF (fields(FIELD_DENSITY).EQ.1) THEN
@@ -99,10 +101,12 @@ CONTAINS
     INTEGER :: halo_exchange_depth, depth
 
     INTEGER :: x_min_left,x_max_left,y_min_left,y_max_left
-    REAL(KIND=8), DIMENSION(x_min_left-halo_exchange_depth:x_max_left+halo_exchange_depth,y_min_left-halo_exchange_depth:y_max_left+halo_exchange_depth) :: mesh_left
+    REAL(KIND=8), DIMENSION(x_min_left-halo_exchange_depth:x_max_left+halo_exchange_depth,y_min_left-halo_exchange_depth:&
+                            y_max_left+halo_exchange_depth) :: mesh_left
 
     INTEGER :: x_min_right,x_max_right,y_min_right,y_max_right
-    REAL(KIND=8), DIMENSION(x_min_right-halo_exchange_depth:x_max_right+halo_exchange_depth,y_min_right-halo_exchange_depth:y_max_right+halo_exchange_depth) :: mesh_right
+    REAL(KIND=8), DIMENSION(x_min_right-halo_exchange_depth:x_max_right+halo_exchange_depth,y_min_right-halo_exchange_depth:&
+    y_max_right+halo_exchange_depth) :: mesh_right
 
     INTEGER :: j,k
 
@@ -149,10 +153,12 @@ CONTAINS
     INTEGER :: fields(NUM_FIELDS),depth
 
     INTEGER :: x_min,x_max,y_min,y_max
-    REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: density,energy0,energy1, u, sd, p
+    REAL(KIND=8),DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth)&
+                           :: density,energy0,energy1, u, sd, p
 
     INTEGER :: x_min_top,x_max_top,y_min_top,y_max_top
-    REAL(KIND=8), DIMENSION(x_min_top-halo_exchange_depth:x_max_top+halo_exchange_depth,y_min_top-halo_exchange_depth:y_max_top+halo_exchange_depth) :: density_top,energy0_top,energy1_top, u_top, sd_top, p_top
+    REAL(KIND=8), DIMENSION(x_min_top-halo_exchange_depth:x_max_top+halo_exchange_depth,y_min_top-halo_exchange_depth:&
+                            y_max_top+halo_exchange_depth) :: density_top,energy0_top,energy1_top, u_top, sd_top, p_top
 
 !$OMP PARALLEL
     IF (fields(FIELD_DENSITY).EQ.1) THEN
@@ -205,11 +211,11 @@ CONTAINS
     INTEGER :: halo_exchange_depth, depth
 
     INTEGER :: x_min_bottom,x_max_bottom,y_min_bottom,y_max_bottom
-    REAL(KIND=8), DIMENSION(x_min_bottom-halo_exchange_depth:x_max_bottom+halo_exchange_depth,y_min_bottom-halo_exchange_depth:y_max_bottom+halo_exchange_depth) :: mesh_bottom
-
+    REAL(KIND=8), DIMENSION(x_min_bottom-halo_exchange_depth:x_max_bottom+halo_exchange_depth,y_min_bottom-halo_exchange_depth:&
+                            y_max_bottom+halo_exchange_depth) :: mesh_bottom
     INTEGER :: x_min_top,x_max_top,y_min_top,y_max_top
-    REAL(KIND=8), DIMENSION(x_min_top-halo_exchange_depth:x_max_top+halo_exchange_depth,y_min_top-halo_exchange_depth:y_max_top+halo_exchange_depth) :: mesh_top
-
+    REAL(KIND=8), DIMENSION(x_min_top-halo_exchange_depth:x_max_top+halo_exchange_depth,y_min_top-halo_exchange_depth:&
+                            y_max_top+halo_exchange_depth) :: mesh_top
     INTEGER :: j,k
 
 !$OMP DO

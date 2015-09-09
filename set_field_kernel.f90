@@ -31,7 +31,8 @@ SUBROUTINE set_field_kernel(x_min,x_max,y_min,y_max,halo_exchange_depth,    &
   IMPLICIT NONE
 
   INTEGER :: x_min,x_max,y_min,y_max,halo_exchange_depth
-  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: energy0, energy1
+  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) &
+                          :: energy0, energy1
 
   INTEGER :: j,k
 
