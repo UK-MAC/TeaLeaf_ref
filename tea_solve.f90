@@ -27,6 +27,7 @@ MODULE tea_leaf_module
   USE tea_leaf_cg_module
   USE tea_leaf_cheby_module
   USE tea_leaf_ppcg_module
+  USE tea_leaf_dpcg_module
   USE tea_leaf_jacobi_module
   USE update_halo_module
 
@@ -118,7 +119,9 @@ SUBROUTINE tea_leaf()
 !$  ENDIF
   ENDIF
 
-  IF (tl_use_cg .OR. tl_use_chebyshev .OR. tl_use_ppcg) THEN
+  IF (tl_use_dpcg) THEN
+    CALL tea_leaf_dpcg_init()
+  ELSEIF (tl_use_cg .OR. tl_use_chebyshev .OR. tl_use_ppcg) THEN
     ! All 3 of these solvers use the CG kernels
     CALL tea_leaf_cg_init(rro)
 

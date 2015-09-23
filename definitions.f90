@@ -68,6 +68,7 @@ MODULE definitions_module
    LOGICAL      :: tl_use_chebyshev
    LOGICAL      :: tl_use_cg
    LOGICAL      :: tl_use_ppcg
+   LOGICAL      :: tl_use_dpcg
    LOGICAL      :: tl_use_jacobi
    LOGICAL      :: verbose_on
    INTEGER      :: max_iters
@@ -172,6 +173,14 @@ MODULE definitions_module
      INTEGER         :: tile_coords(2)
    END TYPE tile_type
 
+   TYPE deflate_type
+     REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: t1, t2
+     INTEGER         :: x_min  &
+                       ,y_min  &
+                       ,x_max  &
+                       ,y_max
+   END TYPE deflate_type
+
    TYPE chunk_type
 
      INTEGER         :: task   !mpi task
@@ -199,6 +208,7 @@ MODULE definitions_module
      REAL(KIND=8),ALLOCATABLE:: left_snd_buffer(:),right_snd_buffer(:),bottom_snd_buffer(:),top_snd_buffer(:)
 
      TYPE(tile_type), DIMENSION(:), ALLOCATABLE :: tiles
+     TYPE(deflate_type) :: def
 
      ! how tiles are arranged
      INTEGER,DIMENSION(2) :: tile_dims

@@ -92,6 +92,7 @@ SUBROUTINE read_input()
   tl_use_chebyshev = .FALSE.
   tl_use_cg = .FALSE.
   tl_use_ppcg = .FALSE.
+  tl_use_dpcg = .FALSE.
   tl_use_jacobi = .TRUE.
   verbose_on = .FALSE.
 
@@ -206,21 +207,31 @@ SUBROUTINE read_input()
         tl_use_chebyshev = .FALSE.
         tl_use_cg = .FALSE.
         tl_use_ppcg=.FALSE.
+        tl_use_dpcg=.FALSE.
         tl_use_jacobi = .TRUE.
       CASE('tl_use_cg')
         tl_use_chebyshev = .FALSE.
         tl_use_cg = .TRUE.
         tl_use_ppcg=.FALSE.
+        tl_use_dpcg=.FALSE.
         tl_use_jacobi = .FALSE.
       CASE('tl_use_ppcg')
         tl_use_chebyshev = .FALSE.
         tl_use_cg = .FALSE.
         tl_use_ppcg=.TRUE.
+        tl_use_dpcg=.FALSE.
+        tl_use_jacobi = .FALSE.
+      CASE('tl_use_dpcg')
+        tl_use_chebyshev = .FALSE.
+        tl_use_cg = .FALSE.
+        tl_use_ppcg=.FALSE.
+        tl_use_dpcg=.TRUE.
         tl_use_jacobi = .FALSE.
       CASE('tl_use_chebyshev')
         tl_use_chebyshev = .TRUE.
         tl_use_cg = .FALSE.
         tl_use_ppcg=.FALSE.
+        tl_use_dpcg=.FALSE.
         tl_use_jacobi = .FALSE.
       CASE('reflective_boundary')
         reflective_boundary=.TRUE.

@@ -174,4 +174,7 @@ SUBROUTINE build_field()
 !$OMP END DO
 !$OMP END PARALLEL
 
+  ALLOCATE(chunk%def%t1(chunk%chunk_x_min - halo_exchange_depth:chunk%chunk_x_max+halo_exchange_depth, &
+      chunk%chunk_y_min - halo_exchange_depth:chunk%chunk_y_max+halo_exchange_depth))
+
 END SUBROUTINE build_field
