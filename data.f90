@@ -23,7 +23,7 @@ MODULE data_module
 
    IMPLICIT NONE
 
-   REAL(KIND=8), PARAMETER :: g_version=1.3
+   REAL(KIND=8), PARAMETER :: g_version=1.4
 
    INTEGER,      PARAMETER :: g_ibig=640000
 

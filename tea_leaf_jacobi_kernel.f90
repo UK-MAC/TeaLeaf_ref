@@ -41,7 +41,8 @@ SUBROUTINE tea_leaf_jacobi_solve_kernel(x_min,       &
   IMPLICIT NONE
 
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
-  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: un , u1, u0 , Kx , Ky
+  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth)&
+                          :: un , u1, u0 , Kx , Ky
 
   REAL(KIND=8) :: ry,rx, error
 

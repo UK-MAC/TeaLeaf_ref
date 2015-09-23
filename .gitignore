@@ -1,6 +1,8 @@
 *.mod
 *.o
 *.vtk
+*.i
+*.lst
 tea_leaf
 tea.out
 tea.in.tmp

@@ -63,7 +63,7 @@ ifndef COMPILER
   MESSAGE=select a compiler to compile in OpenMP, e.g. make COMPILER=INTEL
 endif
 
-OMP_INTEL     = -openmp
+OMP_INTEL     = -openmp -ip -g
 OMP_SUN       = -xopenmp=parallel -vpara
 OMP_GNU       = -fopenmp
 OMP_CRAY      = -e Z
@@ -71,9 +71,9 @@ OMP_PGI       = -mp=nonuma
 OMP_PATHSCALE = -mp
 OMP_XL        = -qsmp=omp -qthreaded
 
-FLAGS_INTEL     = -O3 -no-prec-div -fpp -align array64byte -ip -g
+FLAGS_INTEL     = -O3 -no-prec-div -fpp -align array64byte
 FLAGS_SUN       = -fast -xipo=2 -Xlistv4
-FLAGS_GNU       = -O3 -funroll-loops -cpp -ffree-line-length-none
+FLAGS_GNU       = -O3 -march=native -funroll-loops -cpp -ffree-line-length-none
 FLAGS_CRAY      = -em -ra -h acc_model=fast_addr:no_deep_copy:auto_async_all
 FLAGS_PGI       = -fastsse -gopt -Mipa=fast -Mlist
 FLAGS_PATHSCALE = -O3
@@ -81,7 +81,7 @@ FLAGS_XL       = -O5 -qipa=partition=large -g -qfullpath -Q -qsigtrap -qextname=
 FLAGS_          = -O3
 CFLAGS_INTEL     = -O3 -no-prec-div -restrict -fno-alias
 CFLAGS_SUN       = -fast -xipo=2
-CFLAGS_GNU       = -O3 -funroll-loops
+CFLAGS_GNU       = -O3 -march=native -funroll-loops
 CFLAGS_CRAY      = -em -h list=a
 CFLAGS_PGI       = -fastsse -gopt -Mipa=fast -Mlist
 CFLAGS_PATHSCALE = -O3
@@ -116,7 +116,11 @@ ifdef IEEE
   I3E_XL       = -qfloat=nomaf
 endif
 
-ifneq (,$(filter $(COMPILER), GNU INTEL))
+ifneq (,$(filter $(COMPILER), INTEL))
+WITH_OMP4=1
+endif
+
+ifdef WITH_OMP4
 OMP4=-D WITH_OMP4
 endif
 

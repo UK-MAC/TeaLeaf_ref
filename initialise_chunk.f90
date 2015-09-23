@@ -39,9 +39,9 @@ SUBROUTINE initialise_chunk()
 !$OMP DO
     DO t=1,tiles_per_task
       xmin=grid%xmin + dx*REAL(chunk%tiles(t)%left-1)
-  
+
       ymin=grid%ymin + dy*REAL(chunk%tiles(t)%bottom-1)
-  
+
       CALL initialise_chunk_kernel(chunk%tiles(t)%field%x_min,    &
                                    chunk%tiles(t)%field%x_max,    &
                                    chunk%tiles(t)%field%y_min,    &
