@@ -59,24 +59,33 @@ SUBROUTINE tea_leaf_dpcg_sum_r_kernel(x_min,  &
                            y_max,                  &
                            halo_exchange_depth,                  &
                            ztr, &
+                           e, &
+                           kx, &
+                           ky, &
                            r)
 
   IMPLICIT NONE
 
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
-  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: r
+  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: r, kx, ky
 
   INTEGER(KIND=4) :: j,k
 
-  REAL(kind=8) :: ztr
+  REAL(kind=8) :: ztr, e
 
   ztr = 0.0_8
+  e = 0.0_8
 
-!$OMP PARALLEL REDUCTION(+:ztr)
+!$OMP PARALLEL REDUCTION(+:ztr, e)
 !$OMP DO
   DO k=y_min,y_max
     DO j=x_min,x_max
       ztr = ztr + r(j, k)
+      e = e + (1.0_8                    &
+            + (Ky(j, k+1) + Ky(j, k))   &
+            + (Kx(j+1, k) + Kx(j, k)))  &
+            + (Ky(j, k+1) + Ky(j, k))   &
+            + (Kx(j+1, k) + Kx(j, k))
     ENDDO
   ENDDO
 !$OMP END DO

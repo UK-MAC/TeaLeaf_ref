@@ -178,6 +178,7 @@ MODULE definitions_module
    TYPE deflate_type
      ! Arrays the size of mpi_dims*tile_dims
      REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: t1, t2
+     REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: def_kx, def_ky, def_E
      INTEGER            :: x_cells              &
                           ,y_cells
      INTEGER         :: x_min  &

@@ -51,9 +51,14 @@ SUBROUTINE tea_leaf_dpcg_solve_E
           chunk%tiles(t)%field%y_max,                                   &
           halo_exchange_depth,                                          &
           ztr,                                                          &
+          e,                                                          &
+          chunk%tiles(t)%field%vector_kx, &
+          chunk%tiles(t)%field%vector_ky, &
           chunk%tiles(t)%field%vector_r)
       
-      chunk%def%t1(chunk%tiles(t)%tile_coords(1), chunk%tiles(t)%tile_coords(2)) = ztr
+      ! write back into the GLOBAL vector
+      chunk%def%t1(chunk%tiles(t)%def_tile_coords(1), chunk%tiles(t)%def_tile_coords(2)) = ztr
+      chunk%def%def_e(chunk%tiles(t)%def_tile_coords(1), chunk%tiles(t)%def_tile_coords(2)) = e
     ENDDO
 !$OMP END DO NOWAIT
 !$OMP END PARALLEL
