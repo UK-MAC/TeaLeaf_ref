@@ -174,7 +174,23 @@ SUBROUTINE build_field()
 !$OMP END DO
 !$OMP END PARALLEL
 
-  ALLOCATE(chunk%def%t1(chunk%chunk_x_min - halo_exchange_depth:chunk%chunk_x_max+halo_exchange_depth, &
-      chunk%chunk_y_min - halo_exchange_depth:chunk%chunk_y_max+halo_exchange_depth))
+  ALLOCATE(chunk%def%t1(                                                            &
+    chunk%def%x_min - halo_exchange_depth:chunk%def%x_max + halo_exchange_depth,    &
+    chunk%def%y_min - halo_exchange_depth:chunk%def%y_max + halo_exchange_depth))
+  ALLOCATE(chunk%def%t2(                                                            &
+    chunk%def%x_min - halo_exchange_depth:chunk%def%x_max + halo_exchange_depth,    &
+    chunk%def%y_min - halo_exchange_depth:chunk%def%y_max + halo_exchange_depth))
+
+!$OMP PARALLEL
+!$OMP DO
+  DO k=chunk%def%y_min - halo_exchange_depth,chunk%def%y_max + halo_exchange_depth
+    DO j=chunk%def%x_min - halo_exchange_depth,chunk%def%x_max + halo_exchange_depth
+      chunk%def%t1(j, k) = 0.0
+      chunk%def%t2(j, k) = 0.0
+    ENDDO
+  ENDDO
+!$OMP END DO
+!$OMP END PARALLEL
 
 END SUBROUTINE build_field
+

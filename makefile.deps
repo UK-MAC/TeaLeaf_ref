@@ -14,6 +14,7 @@ tea_solve.o :  \
 	data.o \
 	tea_leaf_ppcg.o \
 	tea_leaf_jacobi.o \
+	tea_leaf_dpcg.o \
 	report.o \
 	update_halo.o \
 	tea_leaf_common.o
@@ -23,6 +24,7 @@ build_field.o :  \
 
 tea_leaf_common.o :  \
 	tea_leaf_common_kernel.o \
+	report.o \
 	definitions.o
 
 tea_leaf_cheby.o :  \
@@ -32,8 +34,6 @@ tea_leaf_cheby.o :  \
 generate_chunk.o :  \
 	generate_chunk_kernel.o \
 	tea.o
-
-calc_dt_kernel.o : 
 
 pack.o :  \
 	report.o \
@@ -72,6 +72,13 @@ field_summary.o :  \
 initialise_chunk.o :  \
 	initialise_chunk_kernel.o \
 	tea.o \
+	definitions.o
+
+tea_leaf_dpcg_kernel.o :  \
+	tea_leaf_common_kernel.o
+
+tea_leaf_dpcg.o :  \
+	tea_leaf_dpcg_kernel.o \
 	definitions.o
 
 calc_dt.o :  \

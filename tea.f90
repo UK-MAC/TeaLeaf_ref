@@ -189,6 +189,9 @@ SUBROUTINE tea_decompose_tiles(x_cells, y_cells)
       tile_coords(2) = k
       tile_coords(1) = j
 
+      chunk%tiles(t)%def_tile_coords(2) = mpi_coords(2)*tile_dims(2) + (k + 1)
+      chunk%tiles(t)%def_tile_coords(1) = mpi_coords(1)*tile_dims(1) + (j + 1)
+
       chunk%tiles(t)%bottom = chunk%bottom + tile_coords(2)*delta_y
       if (tile_coords(2) .le. mod_y) then
         chunk%tiles(t)%bottom = chunk%tiles(t)%bottom + tile_coords(2)

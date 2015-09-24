@@ -80,9 +80,20 @@ SUBROUTINE start
     WRITE(g_out,*)"Tile size ",chunk%tiles(1)%x_cells," by ",chunk%tiles(1)%y_cells," cells"
   ENDIF
 
+  ! Each chunk has an array the size of the _total_ deflation vector size
+  chunk%def%x_cells = mpi_dims(1)*chunk%tile_dims(1)
+  chunk%def%y_cells = mpi_dims(2)*chunk%tile_dims(2)
+
+  chunk%def%x_min = 1
+  chunk%def%y_min = 1
+  chunk%def%x_max = chunk%def%x_cells
+  chunk%def%y_max = chunk%def%y_cells
+
   CALL build_field()
 
   CALL tea_allocate_buffers()
+
+  CALL tea_create_block_datatype()
 
   CALL initialise_chunk()
 

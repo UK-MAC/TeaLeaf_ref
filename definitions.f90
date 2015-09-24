@@ -171,10 +171,15 @@ MODULE definitions_module
 
      INTEGER         :: tile_neighbours(4)
      INTEGER         :: tile_coords(2)
+     ! coordinate in the total deflation vector array for this tile
+     INTEGER         :: def_tile_coords(2)
    END TYPE tile_type
 
    TYPE deflate_type
+     ! Arrays the size of mpi_dims*tile_dims
      REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: t1, t2
+     INTEGER            :: x_cells              &
+                          ,y_cells
      INTEGER         :: x_min  &
                        ,y_min  &
                        ,x_max  &
