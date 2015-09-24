@@ -35,14 +35,17 @@ END SUBROUTINE tea_leaf_dpcg_init
 
 SUBROUTINE tea_leaf_dpcg_solve_E
 
+  use global_mpi_module
+  USE tea_leaf_common_module
+
   IMPLICIT NONE
 
-  INTEGER :: t
+  INTEGER :: t, err
 
-  REAL(KIND=8) :: ztr
+  REAL(KIND=8) :: ztr, e
 
   IF (use_fortran_kernels) THEN
-!$OMP PARALLEL PRIVATE(ztr)
+!$OMP PARALLEL PRIVATE(ztr, e)
 !$OMP DO
     DO t=1,tiles_per_task
       CALL tea_leaf_dpcg_sum_r_kernel(chunk%tiles(t)%field%x_min,       &
@@ -50,6 +53,8 @@ SUBROUTINE tea_leaf_dpcg_solve_E
           chunk%tiles(t)%field%y_min,                                   &
           chunk%tiles(t)%field%y_max,                                   &
           halo_exchange_depth,                                          &
+          chunk%tiles(t)%field%rx,  &
+          chunk%tiles(t)%field%ry,  &
           ztr,                                                          &
           e,                                                          &
           chunk%tiles(t)%field%vector_kx, &
@@ -63,6 +68,33 @@ SUBROUTINE tea_leaf_dpcg_solve_E
 !$OMP END DO NOWAIT
 !$OMP END PARALLEL
   ENDIF
+
+  CALL MPI_Allreduce(MPI_IN_PLACE, chunk%def%t1, size(chunk%def%t1), MPI_DOUBLE_PRECISION, MPI_SUM, mpi_cart_comm, err)
+  CALL MPI_Allreduce(MPI_IN_PLACE, chunk%def%def_e, size(chunk%def%def_e), MPI_DOUBLE_PRECISION, MPI_SUM, mpi_cart_comm, err)
+
+  t=1
+
+  CALL tea_leaf_dpcg_local_solve(   &
+      chunk%def%x_min, &
+      chunk%def%x_max,                                  &
+      chunk%def%y_min,                                  &
+      chunk%def%y_max,                                  &
+      halo_exchange_depth,                                  &
+      chunk%def%t2,                               &
+      chunk%def%t1,                               &
+      chunk%def%def_e,                               &
+      chunk%tiles(t)%field%vector_p,                               &
+      chunk%tiles(t)%field%vector_r,                               &
+      chunk%tiles(t)%field%vector_Mi,                              &
+      chunk%tiles(t)%field%vector_w,                              &
+      chunk%tiles(t)%field%vector_z,                               &
+      chunk%def%def_Kx,                              &
+      chunk%def%def_Ky,                              &
+      chunk%tiles(t)%field%tri_cp,   &
+      chunk%tiles(t)%field%tri_bfp,    &
+      chunk%tiles(t)%field%rx,  &
+      chunk%tiles(t)%field%ry,  &
+      tl_preconditioner_type)
 
 END SUBROUTINE tea_leaf_dpcg_solve_E
 
