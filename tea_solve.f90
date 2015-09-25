@@ -120,7 +120,19 @@ SUBROUTINE tea_leaf()
   ENDIF
 
   IF (tl_use_dpcg) THEN
-    CALL tea_leaf_dpcg_init()
+    CALL tea_leaf_dpcg_init_x0()
+
+    ! need to update p when using CG due to matrix/vector multiplication
+    fields=0
+    fields(FIELD_U) = 1
+
+    IF (profiler_on) halo_time=timer()
+    CALL update_halo(fields,1)
+    IF (profiler_on) init_time=init_time+(timer()-halo_time)
+
+    CALL tea_leaf_calc_residual()
+
+    CALL tea_leaf_dpcg_init_z0()
   ELSEIF (tl_use_cg .OR. tl_use_chebyshev .OR. tl_use_ppcg) THEN
     ! All 3 of these solvers use the CG kernels
     CALL tea_leaf_cg_init(rro)
