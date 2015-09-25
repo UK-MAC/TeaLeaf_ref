@@ -132,7 +132,8 @@ SUBROUTINE tea_leaf()
 
     CALL tea_leaf_calc_residual()
 
-    CALL tea_leaf_dpcg_init_z0()
+    CALL tea_leaf_dpcg_solve_z()
+    CALL tea_leaf_dpcg_init_p()
   ELSEIF (tl_use_cg .OR. tl_use_chebyshev .OR. tl_use_ppcg) THEN
     ! All 3 of these solvers use the CG kernels
     CALL tea_leaf_cg_init(rro)
@@ -280,6 +281,42 @@ SUBROUTINE tea_leaf()
       ENDIF
 
       cheby_calc_steps = cheby_calc_steps + 1
+    ELSEIF (tl_use_dpcg) THEN
+      fields(FIELD_P) = 1
+      cg_calc_steps = cg_calc_steps + 1
+
+      CALL tea_leaf_ppcg_calc_zrnorm(rro)
+
+      ! w = Ap
+      ! pw = p.w
+      CALL tea_leaf_cg_calc_w(pw)
+
+      IF (profiler_on) dot_product_time=timer()
+      ! TODO coalesce
+      CALL tea_allsum(pw)
+      CALL tea_allsum(rro)
+      IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
+
+      alpha = rro/pw
+      cg_alphas(n) = alpha
+
+      CALL tea_leaf_dpcg_store_r()
+
+      ! u = u + a*p
+      ! r = r - a*w
+      CALL tea_leaf_cg_calc_ur(alpha, rrn)
+
+      CALL tea_leaf_dpcg_solve_z()
+      CALL tea_leaf_dpcg_calc_rrn(rrn)
+
+      beta = rrn/rro
+      cg_betas(n) = beta
+
+      ! p = r + b*p
+      CALL tea_leaf_dpcg_calc_p(beta)
+
+      error = rrn
+      rro = rrn
     ELSEIF (tl_use_cg .OR. tl_use_chebyshev .OR. tl_use_ppcg) THEN
       fields(FIELD_P) = 1
       cg_calc_steps = cg_calc_steps + 1

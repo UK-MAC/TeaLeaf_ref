@@ -129,6 +129,7 @@ MODULE definitions_module
      REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: u, u0
      REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: vector_p
      REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: vector_r
+     REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: vector_r_m1
      REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: vector_Mi
      REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: vector_w
      REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: vector_z

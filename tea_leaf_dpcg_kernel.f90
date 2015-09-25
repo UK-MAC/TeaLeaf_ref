@@ -333,6 +333,35 @@ SUBROUTINE tea_leaf_dpcg_add_t2_kernel(x_min,  &
 
 END SUBROUTINE tea_leaf_dpcg_add_t2_kernel
 
+SUBROUTINE tea_leaf_dpcg_init_p_kernel(x_min,             &
+                                       x_max,             &
+                                       y_min,             &
+                                       y_max,             &
+                                       halo_exchange_depth,             &
+                                       p,                 &
+                                       z)
+
+
+  IMPLICIT NONE
+
+  INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
+  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth)&
+                          :: z, p
+
+  INTEGER(KIND=4) :: j,k
+
+!$OMP PARALLEL
+!$OMP DO
+  DO k=y_min,y_max
+    DO j=x_min,x_max
+      p(j, k) = z(j, k)
+    ENDDO
+  ENDDO
+!$OMP END DO
+!$OMP END PARALLEL
+
+END SUBROUTINE tea_leaf_dpcg_init_p_kernel
+
 SUBROUTINE tea_leaf_dpcg_solve_z_kernel(x_min,  &
                            x_max,                  &
                            y_min,                  &
@@ -405,38 +434,93 @@ SUBROUTINE tea_leaf_dpcg_solve_z_kernel(x_min,  &
 
 END SUBROUTINE tea_leaf_dpcg_solve_z_kernel
 
-SUBROUTINE tea_leaf_cg_init_zp_kernel(x_min,             &
-                                       x_max,             &
-                                       y_min,             &
-                                       y_max,             &
-                                       halo_exchange_depth,             &
-                                       p,                 &
-                                       z,                 &
-                                       tile_t2)
-
+SUBROUTINE tea_leaf_dpcg_store_r_kernel(x_min, x_max, y_min, y_max, halo_exchange_depth, &
+    r, r_m1 )
 
   IMPLICIT NONE
-
-  INTEGER :: preconditioner_type
-  INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
-  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth)&
-                          :: z, p
-
   INTEGER(KIND=4) :: j,k
-  REAL(kind=8) :: tile_t2
+  INTEGER(KIND=4) :: x_min, x_max, y_min, y_max, halo_exchange_depth
+  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: r, r_m1
+
+!$OMP PARALLEL
+!$OMP DO
+  DO k=y_min,y_max
+    DO j=x_min,x_max
+      r_m1(j, k) = r(j, k)
+    ENDDO
+  ENDDO
+!$OMP END DO
+!$OMP END PARALLEL
+
+END SUBROUTINE tea_leaf_dpcg_store_r_kernel
+
+SUBROUTINE tea_leaf_dpcg_calc_rrn_kernel(x_min, x_max, y_min, y_max, halo_exchange_depth, &
+    r, r_m1 , z, &
+    rrn )
+
+  IMPLICIT NONE
+  INTEGER(KIND=4) :: j,k
+  INTEGER(KIND=4) :: x_min, x_max, y_min, y_max, halo_exchange_depth
+  REAL(KIND=8) :: rrn
+  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: r, r_m1, z
+
+  rrn = 0.0_8
+
+!$OMP PARALLEL
+!$OMP DO REDUCTION (+:rrn)
+  DO k=y_min,y_max
+    DO j=x_min,x_max
+      rrn = rrn + (r_m1(j, k) - r(j, k))*z(j, k)
+    ENDDO
+  ENDDO
+!$OMP END DO
+!$OMP END PARALLEL
+
+END SUBROUTINE tea_leaf_dpcg_calc_rrn_kernel
+
+SUBROUTINE tea_leaf_dpcg_calc_p_kernel(x_min, x_max, y_min, y_max, halo_exchange_depth, &
+    p, r , &
+    beta )
+
+  IMPLICIT NONE
+  INTEGER(KIND=4) :: j,k
+  INTEGER(KIND=4) :: x_min, x_max, y_min, y_max, halo_exchange_depth
+  REAL(KIND=8) :: beta
+  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: p, r
+
+!$OMP PARALLEL
+!$OMP DO
+  DO k=y_min,y_max
+    DO j=x_min,x_max
+      p(j, k) = r(j, k) + beta*p(j, k)
+    ENDDO
+  ENDDO
+!$OMP END DO
+!$OMP END PARALLEL
+
+END SUBROUTINE tea_leaf_dpcg_calc_p_kernel
+
+SUBROUTINE tea_leaf_dpcg_sub_z_kernel(x_min, x_max, y_min, y_max, halo_exchange_depth, &
+    z , &
+    tile_t2 )
+
+  IMPLICIT NONE
+  INTEGER(KIND=4) :: j,k
+  INTEGER(KIND=4) :: x_min, x_max, y_min, y_max, halo_exchange_depth
+  REAL(KIND=8) :: tile_t2
+  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: z
 
 !$OMP PARALLEL
 !$OMP DO
   DO k=y_min,y_max
     DO j=x_min,x_max
       z(j, k) = z(j, k) - tile_t2
-      p(j, k) = z(j, k)
     ENDDO
   ENDDO
 !$OMP END DO
 !$OMP END PARALLEL
 
-END SUBROUTINE tea_leaf_cg_init_zp_kernel
+END SUBROUTINE tea_leaf_dpcg_sub_z_kernel
 
 END MODULE
 

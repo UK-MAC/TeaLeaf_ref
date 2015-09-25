@@ -114,7 +114,7 @@ SUBROUTINE tea_leaf_dpcg_solve_E
 
 END SUBROUTINE tea_leaf_dpcg_solve_E
 
-SUBROUTINE tea_leaf_dpcg_init_z0()
+SUBROUTINE tea_leaf_dpcg_solve_z()
 
   IMPLICIT NONE
 
@@ -122,7 +122,7 @@ SUBROUTINE tea_leaf_dpcg_init_z0()
   REAL(KIND=8) :: ztr, ztaz
 
   IF (use_fortran_kernels) THEN
-!$OMP PARALLEL PRIVATE(ztaz)
+!$OMP PARALLEL PRIVATE(ztaz, ztr)
 !$OMP DO
     DO t=1,tiles_per_task
       CALL tea_leaf_dpcg_solve_z_kernel(chunk%tiles(t)%field%x_min, &
@@ -142,7 +142,7 @@ SUBROUTINE tea_leaf_dpcg_init_z0()
           ztaz,                     &
           ztr,                      &
           tl_preconditioner_type)
-      
+
       ! write back into the GLOBAL vector
       chunk%def%t1(chunk%tiles(t)%def_tile_coords(1), chunk%tiles(t)%def_tile_coords(2)) = ztaz + ztr
       chunk%def%t2(chunk%tiles(t)%def_tile_coords(1), chunk%tiles(t)%def_tile_coords(2)) = ztr
@@ -157,20 +157,121 @@ SUBROUTINE tea_leaf_dpcg_init_z0()
 !$OMP PARALLEL
 !$OMP DO
     DO t=1,tiles_per_task
-      CALL tea_leaf_cg_init_zp_kernel(chunk%tiles(t)%field%x_min,&
+      CALL tea_leaf_dpcg_sub_z_kernel(chunk%tiles(t)%field%x_min,    &
+          chunk%tiles(t)%field%x_max,           &
+          chunk%tiles(t)%field%y_min,           &
+          chunk%tiles(t)%field%y_max,           &
+          halo_exchange_depth,                  &
+          chunk%tiles(t)%field%vector_z, &
+          chunk%def%t2(chunk%tiles(t)%def_tile_coords(1), chunk%tiles(t)%def_tile_coords(2)))
+    ENDDO
+!$OMP END DO
+!$OMP END PARALLEL
+  ENDIF
+
+END SUBROUTINE tea_leaf_dpcg_solve_z
+
+SUBROUTINE tea_leaf_dpcg_init_p()
+
+  IMPLICIT NONE
+
+  INTEGER :: t
+
+  IF (use_fortran_kernels) THEN
+!$OMP PARALLEL
+!$OMP DO
+    DO t=1,tiles_per_task
+      CALL tea_leaf_dpcg_init_p_kernel(chunk%tiles(t)%field%x_min,&
           chunk%tiles(t)%field%x_max,                                         &
           chunk%tiles(t)%field%y_min,                                         &
           chunk%tiles(t)%field%y_max,                                         &
           halo_exchange_depth,                                         &
           chunk%tiles(t)%field%vector_p,                                      &
-          chunk%tiles(t)%field%vector_z,                                      &
-          chunk%def%t2(chunk%tiles(t)%def_tile_coords(1), chunk%tiles(t)%def_tile_coords(2)))
+          chunk%tiles(t)%field%vector_z)
     ENDDO
 !$OMP END DO NOWAIT
 !$OMP END PARALLEL
   ENDIF
 
-END SUBROUTINE tea_leaf_dpcg_init_z0
+END SUBROUTINE tea_leaf_dpcg_init_p
+
+SUBROUTINE tea_leaf_dpcg_store_r()
+
+  IMPLICIT NONE
+  INTEGER :: t
+
+  IF (use_fortran_kernels) THEN
+!$OMP PARALLEL
+!$OMP DO
+    DO t=1,tiles_per_task
+      CALL tea_leaf_dpcg_store_r_kernel(chunk%tiles(t)%field%x_min,    &
+          chunk%tiles(t)%field%x_max,           &
+          chunk%tiles(t)%field%y_min,           &
+          chunk%tiles(t)%field%y_max,           &
+          halo_exchange_depth,                  &
+          chunk%tiles(t)%field%vector_r, &
+          chunk%tiles(t)%field%vector_r_m1 )
+      ENDDO
+!$OMP END DO
+!$OMP END PARALLEL
+  ENDIF
+
+END SUBROUTINE tea_leaf_dpcg_store_r
+
+SUBROUTINE tea_leaf_dpcg_calc_rrn(rrn)
+
+  IMPLICIT NONE
+  INTEGER :: t
+  REAL(KIND=8) :: rrn, tile_rrn
+
+  rrn = 0.0_8
+
+  IF (use_fortran_kernels) THEN
+!$OMP PARALLEL PRIVATE(tile_rrn)
+!$OMP DO REDUCTION(+:rrn)
+    DO t=1,tiles_per_task
+      CALL tea_leaf_dpcg_calc_rrn_kernel(chunk%tiles(t)%field%x_min,    &
+          chunk%tiles(t)%field%x_max,           &
+          chunk%tiles(t)%field%y_min,           &
+          chunk%tiles(t)%field%y_max,           &
+          halo_exchange_depth,                  &
+          chunk%tiles(t)%field%vector_r, &
+          chunk%tiles(t)%field%vector_r_m1, &
+          chunk%tiles(t)%field%vector_z, &
+          tile_rrn)
+
+      rrn = rrn + tile_rrn
+    ENDDO
+!$OMP END DO
+!$OMP END PARALLEL
+  ENDIF
+
+END SUBROUTINE tea_leaf_dpcg_calc_rrn
+
+SUBROUTINE tea_leaf_dpcg_calc_p(beta)
+
+  IMPLICIT NONE
+  INTEGER :: t
+  REAL(KIND=8) :: beta
+
+  IF (use_fortran_kernels) THEN
+!$OMP PARALLEL
+!$OMP DO
+    DO t=1,tiles_per_task
+      CALL tea_leaf_dpcg_calc_p_kernel(chunk%tiles(t)%field%x_min,    &
+          chunk%tiles(t)%field%x_max,           &
+          chunk%tiles(t)%field%y_min,           &
+          chunk%tiles(t)%field%y_max,           &
+          halo_exchange_depth,                  &
+          chunk%tiles(t)%field%vector_p, &
+          chunk%tiles(t)%field%vector_r, &
+          beta )
+    ENDDO
+!$OMP END DO
+!$OMP END PARALLEL
+  ENDIF
+
+END SUBROUTINE tea_leaf_dpcg_calc_p
 
 END MODULE tea_leaf_dpcg_module
 
