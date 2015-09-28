@@ -4,6 +4,9 @@ MODULE tea_leaf_dpcg_module
   USE tea_leaf_dpcg_kernel_module
   USE definitions_module
 
+  use global_mpi_module
+  USE tea_leaf_common_module
+
   IMPLICIT NONE
 
 CONTAINS
@@ -16,31 +19,21 @@ SUBROUTINE tea_leaf_dpcg_init_x0()
 
   ! get E
   CALL tea_leaf_dpcg_sum_matrix_rows()
-  CALL tea_leaf_dpcg_restrict_Zt()
-  CALL tea_leaf_dpcg_solve_E()
 
-  IF (use_fortran_kernels) THEN
-!$OMP PARALLEL
-!$OMP DO
-    DO t=1,tiles_per_task
-      CALL tea_leaf_dpcg_add_t2_kernel(chunk%tiles(t)%field%x_min,       &
-          chunk%tiles(t)%field%x_max,                                   &
-          chunk%tiles(t)%field%y_min,                                   &
-          chunk%tiles(t)%field%y_max,                                   &
-          halo_exchange_depth,                                          &
-          chunk%def%t2(chunk%tiles(t)%def_tile_coords(1), chunk%tiles(t)%def_tile_coords(2)),   &
-          chunk%tiles(t)%field%u)
-    ENDDO
-!$OMP END DO NOWAIT
-!$OMP END PARALLEL
-  ENDIF
+  ! TODO do initial bit
+  ! may not need to do ?
+
+  ! initial solve
+  CALL tea_leaf_dpcg_setup_and_solve_E()
+
+  CALL tea_leaf_dpcg_init_p()
 
 END SUBROUTINE tea_leaf_dpcg_init_x0
 
 SUBROUTINE tea_leaf_dpcg_sum_matrix_rows()
 
   IMPLICIT NONE
-  INTEGER :: t
+  INTEGER :: t, err
   REAL(KIND=8) :: E_local
 
   IF (use_fortran_kernels) THEN
@@ -71,7 +64,7 @@ END SUBROUTINE tea_leaf_dpcg_sum_matrix_rows
 SUBROUTINE tea_leaf_dpcg_restrict_ZT()
 
   IMPLICIT NONE
-  INTEGER :: t
+  INTEGER :: t, err
   REAL(KIND=8) :: ZTr
 
   IF (use_fortran_kernels) THEN
@@ -83,7 +76,8 @@ SUBROUTINE tea_leaf_dpcg_restrict_ZT()
           chunk%tiles(t)%field%y_min,           &
           chunk%tiles(t)%field%y_max,           &
           halo_exchange_depth,                  &
-          chunk%tiles(t)%field%vector_r )
+          chunk%tiles(t)%field%vector_r,    &
+          ztr)
 
       chunk%def%t1(chunk%tiles(t)%def_tile_coords(1), chunk%tiles(t)%def_tile_coords(2)) = ztr
     ENDDO
@@ -95,15 +89,15 @@ SUBROUTINE tea_leaf_dpcg_restrict_ZT()
 
 END SUBROUTINE tea_leaf_dpcg_restrict_ZT
 
-SUBROUTINE tea_leaf_dpcg_solve_E
-
-  use global_mpi_module
-  USE tea_leaf_common_module
+SUBROUTINE tea_leaf_dpcg_setup_and_solve_E
 
   IMPLICIT NONE
 
   INTEGER :: t, err
 
+  CALL tea_leaf_dpcg_matmul_ZTA()
+
+  ! TODO just using existing memory at the moment, should probably allocate some more
   t=1
 
   CALL tea_leaf_dpcg_local_solve(   &
@@ -128,20 +122,25 @@ SUBROUTINE tea_leaf_dpcg_solve_E
       chunk%tiles(t)%field%ry,  &
       tl_preconditioner_type)
 
-END SUBROUTINE tea_leaf_dpcg_solve_E
+  CALL tea_leaf_dpcg_prolong_Z()
 
-SUBROUTINE tea_leaf_dpcg_solve_z()
+END SUBROUTINE tea_leaf_dpcg_setup_and_solve_E
+
+SUBROUTINE tea_leaf_dpcg_matmul_ZTA()
 
   IMPLICIT NONE
 
-  INTEGER :: t
-  REAL(KIND=8) :: ztr, ztaz
+  INTEGER :: t, err
+  REAL(KIND=8) :: ztaz
+
+  ! always done first
+  CALL tea_leaf_dpcg_restrict_ZT()
 
   IF (use_fortran_kernels) THEN
-!$OMP PARALLEL PRIVATE(ztaz, ztr)
+!$OMP PARALLEL PRIVATE(ztaz)
 !$OMP DO
     DO t=1,tiles_per_task
-      CALL tea_leaf_dpcg_solve_z_kernel(chunk%tiles(t)%field%x_min, &
+      CALL tea_leaf_dpcg_matmul_ZTA_kernel(chunk%tiles(t)%field%x_min, &
           chunk%tiles(t)%field%x_max,                                  &
           chunk%tiles(t)%field%y_min,                                  &
           chunk%tiles(t)%field%y_max,                                  &
@@ -156,24 +155,31 @@ SUBROUTINE tea_leaf_dpcg_solve_z()
           chunk%tiles(t)%field%rx,  &
           chunk%tiles(t)%field%ry,  &
           ztaz,                     &
-          ztr,                      &
           tl_preconditioner_type)
 
       ! write back into the GLOBAL vector
-      chunk%def%t1(chunk%tiles(t)%def_tile_coords(1), chunk%tiles(t)%def_tile_coords(2)) = ztaz + ztr
-      chunk%def%t2(chunk%tiles(t)%def_tile_coords(1), chunk%tiles(t)%def_tile_coords(2)) = ztr
+      chunk%def%t1(chunk%tiles(t)%def_tile_coords(1), chunk%tiles(t)%def_tile_coords(2)) = &
+        ztaz + chunk%def%t2(chunk%tiles(t)%def_tile_coords(1), chunk%tiles(t)%def_tile_coords(2))
     ENDDO
 !$OMP END DO NOWAIT
 !$OMP END PARALLEL
   ENDIF
 
-  CALL tea_leaf_dpcg_solve_E()
+  CALL MPI_Allreduce(MPI_IN_PLACE, chunk%def%t2, size(chunk%def%t1), MPI_DOUBLE_PRECISION, MPI_SUM, mpi_cart_comm, err)
+
+END SUBROUTINE tea_leaf_dpcg_matmul_ZTA
+
+SUBROUTINE tea_leaf_dpcg_prolong_Z()
+
+  IMPLICIT NONE
+
+  INTEGER :: t
 
   IF (use_fortran_kernels) THEN
 !$OMP PARALLEL
 !$OMP DO
     DO t=1,tiles_per_task
-      CALL tea_leaf_dpcg_sub_z_kernel(chunk%tiles(t)%field%x_min,    &
+      CALL tea_leaf_dpcg_prolong_Z_kernel(chunk%tiles(t)%field%x_min,    &
           chunk%tiles(t)%field%x_max,           &
           chunk%tiles(t)%field%y_min,           &
           chunk%tiles(t)%field%y_max,           &
@@ -185,7 +191,7 @@ SUBROUTINE tea_leaf_dpcg_solve_z()
 !$OMP END PARALLEL
   ENDIF
 
-END SUBROUTINE tea_leaf_dpcg_solve_z
+END SUBROUTINE tea_leaf_dpcg_prolong_Z
 
 SUBROUTINE tea_leaf_dpcg_init_p()
 

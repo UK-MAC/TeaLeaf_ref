@@ -125,15 +125,14 @@ SUBROUTINE tea_leaf()
     ! need to update p when using CG due to matrix/vector multiplication
     fields=0
     fields(FIELD_U) = 1
+    fields(FIELD_P) = 1
 
     IF (profiler_on) halo_time=timer()
     CALL update_halo(fields,1)
     IF (profiler_on) init_time=init_time+(timer()-halo_time)
 
-    CALL tea_leaf_calc_residual()
-
-    CALL tea_leaf_dpcg_solve_z()
-    CALL tea_leaf_dpcg_init_p()
+    fields=0
+    fields(FIELD_P) = 1
   ELSEIF (tl_use_cg .OR. tl_use_chebyshev .OR. tl_use_ppcg) THEN
     ! All 3 of these solvers use the CG kernels
     CALL tea_leaf_cg_init(rro)
@@ -285,11 +284,11 @@ SUBROUTINE tea_leaf()
       fields(FIELD_P) = 1
       cg_calc_steps = cg_calc_steps + 1
 
-      CALL tea_leaf_ppcg_calc_zrnorm(rro)
-
       ! w = Ap
       ! pw = p.w
       CALL tea_leaf_cg_calc_w(pw)
+
+      CALL tea_leaf_ppcg_calc_zrnorm(rro)
 
       IF (profiler_on) dot_product_time=timer()
       ! TODO coalesce
@@ -306,7 +305,8 @@ SUBROUTINE tea_leaf()
       ! r = r - a*w
       CALL tea_leaf_cg_calc_ur(alpha, rrn)
 
-      CALL tea_leaf_dpcg_solve_z()
+      CALL tea_leaf_dpcg_setup_and_solve_E()
+
       CALL tea_leaf_dpcg_calc_rrn(rrn)
 
       beta = rrn/rro
