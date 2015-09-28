@@ -79,13 +79,11 @@ SUBROUTINE tea_leaf_dpcg_restrict_ZT()
           chunk%tiles(t)%field%vector_r,    &
           ztr)
 
-      chunk%def%t1(chunk%tiles(t)%def_tile_coords(1), chunk%tiles(t)%def_tile_coords(2)) = ztr
+      chunk%def%t2(chunk%tiles(t)%def_tile_coords(1), chunk%tiles(t)%def_tile_coords(2)) = ztr
     ENDDO
 !$OMP END DO
 !$OMP END PARALLEL
   ENDIF
-
-  CALL MPI_Allreduce(MPI_IN_PLACE, chunk%def%t1, size(chunk%def%t1), MPI_DOUBLE_PRECISION, MPI_SUM, mpi_cart_comm, err)
 
 END SUBROUTINE tea_leaf_dpcg_restrict_ZT
 
@@ -95,7 +93,16 @@ SUBROUTINE tea_leaf_dpcg_setup_and_solve_E
 
   INTEGER :: t, err
 
+  chunk%def%t1 = 0
+  chunk%def%t2 = 0
+
+  CALL tea_leaf_dpcg_restrict_ZT()
   CALL tea_leaf_dpcg_matmul_ZTA()
+
+  CALL MPI_Allreduce(MPI_IN_PLACE, chunk%def%t1, size(chunk%def%t1), MPI_DOUBLE_PRECISION, MPI_SUM, mpi_cart_comm, err)
+  CALL MPI_Allreduce(MPI_IN_PLACE, chunk%def%t2, size(chunk%def%t2), MPI_DOUBLE_PRECISION, MPI_SUM, mpi_cart_comm, err)
+
+  chunk%def%t1 = chunk%def%t1 + chunk%def%t2
 
   CALL tea_leaf_dpcg_local_solve(   &
       chunk%def%x_min, &
@@ -123,9 +130,6 @@ SUBROUTINE tea_leaf_dpcg_matmul_ZTA()
   INTEGER :: t, err
   REAL(KIND=8) :: ztaz
 
-  ! always done first
-  CALL tea_leaf_dpcg_restrict_ZT()
-
   IF (use_fortran_kernels) THEN
 !$OMP PARALLEL PRIVATE(ztaz)
 !$OMP DO
@@ -148,14 +152,11 @@ SUBROUTINE tea_leaf_dpcg_matmul_ZTA()
           tl_preconditioner_type)
 
       ! write back into the GLOBAL vector
-      chunk%def%t1(chunk%tiles(t)%def_tile_coords(1), chunk%tiles(t)%def_tile_coords(2)) = &
-        ztaz + chunk%def%t2(chunk%tiles(t)%def_tile_coords(1), chunk%tiles(t)%def_tile_coords(2))
+      chunk%def%t1(chunk%tiles(t)%def_tile_coords(1), chunk%tiles(t)%def_tile_coords(2)) = ztaz
     ENDDO
 !$OMP END DO NOWAIT
 !$OMP END PARALLEL
   ENDIF
-
-  CALL MPI_Allreduce(MPI_IN_PLACE, chunk%def%t2, size(chunk%def%t1), MPI_DOUBLE_PRECISION, MPI_SUM, mpi_cart_comm, err)
 
 END SUBROUTINE tea_leaf_dpcg_matmul_ZTA
 

@@ -93,8 +93,6 @@ SUBROUTINE start
 
   CALL tea_allocate_buffers()
 
-  CALL tea_create_block_datatype()
-
   CALL initialise_chunk()
 
   IF (parallel%boss)THEN
