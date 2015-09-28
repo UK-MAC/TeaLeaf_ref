@@ -111,8 +111,6 @@ SUBROUTINE tea_leaf_dpcg_setup_and_solve_E
       chunk%def%def_Mi,                               &
       chunk%def%def_w,                               &
       chunk%def%def_z,                               &
-      chunk%def%def_Kx,                              &
-      chunk%def%def_Ky,                              &
       tl_preconditioner_type)
 
   CALL tea_leaf_dpcg_prolong_Z()

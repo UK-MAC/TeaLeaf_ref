@@ -119,8 +119,6 @@ SUBROUTINE tea_leaf_dpcg_local_solve(x_min,  &
                            Mi,                     &
                            w,                     &
                            z,                      &
-                           Kx,                     &
-                           Ky,                     &
                            preconditioner_type)
 
   IMPLICIT NONE
@@ -128,10 +126,10 @@ SUBROUTINE tea_leaf_dpcg_local_solve(x_min,  &
   INTEGER :: preconditioner_type
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
   REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) &
-                          :: r, Kx, Ky, z, Mi, p, w, u, u0, def_e
+                          :: r, z, Mi, p, w, u, u0, def_e
   REAL(KIND=8), DIMENSION(x_min:x_max,y_min:y_max) :: cp, bfp
 
-  INTEGER(KIND=4) :: j,k, lcount
+  INTEGER(KIND=4) :: j,k
 
   REAL(kind=8) :: rro, smvp
   REAL(KIND=8) ::  alpha, beta, pw, rrn
@@ -144,9 +142,9 @@ SUBROUTINE tea_leaf_dpcg_local_solve(x_min,  &
 !$OMP PARALLEL private(alpha, beta)
 
 !$OMP DO
-  DO k=y_min-1,y_max+1
-    DO j=x_min-1,x_max+1
-      u(j, k) = 0.0_8
+  DO k=y_min,y_max
+    DO j=x_min,x_max
+      u(j, k) = u0(j, k)
       p(j, k) = 0.0_8
       z(j, k) = 0.0_8
     ENDDO
@@ -221,15 +219,6 @@ DO WHILE (rrn .gt. 1e-10)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  IF (preconditioner_type .NE. TL_PREC_NONE) THEN
-!$OMP DO
-    DO k=y_min,y_max
-       DO j=x_min,x_max
-         p(j, k) = z(j, k) + beta*p(j, k)
-       ENDDO
-    ENDDO
-!$OMP END DO NOWAIT
-  ELSE
 !$OMP DO
     DO k=y_min,y_max
       DO j=x_min,x_max
@@ -237,7 +226,6 @@ DO WHILE (rrn .gt. 1e-10)
       ENDDO
     ENDDO
 !$OMP END DO NOWAIT
-  ENDIF
 
 !$OMP SINGLE
   rro = rrn
