@@ -14,21 +14,9 @@ SUBROUTINE tea_leaf_dpcg_init_x0()
 
   INTEGER :: t
 
-  IF (use_fortran_kernels) THEN
-!$OMP PARALLEL
-!$OMP DO
-    DO t=1,tiles_per_task
-      CALL tea_leaf_dpcg_zero_t2_kernel(chunk%def%x_min,    &
-          chunk%def%x_max,                                  &
-          chunk%def%y_min,                                  &
-          chunk%def%y_max,                                  &
-          halo_exchange_depth,                              &
-          chunk%def%t2)
-    ENDDO
-!$OMP END DO NOWAIT
-!$OMP END PARALLEL
-  ENDIF
-
+  ! get E
+  CALL tea_leaf_dpcg_sum_matrix_rows()
+  CALL tea_leaf_dpcg_restrict_Zt()
   CALL tea_leaf_dpcg_solve_E()
 
   IF (use_fortran_kernels) THEN
@@ -49,6 +37,64 @@ SUBROUTINE tea_leaf_dpcg_init_x0()
 
 END SUBROUTINE tea_leaf_dpcg_init_x0
 
+SUBROUTINE tea_leaf_dpcg_sum_matrix_rows()
+
+  IMPLICIT NONE
+  INTEGER :: t
+  REAL(KIND=8) :: E_local
+
+  IF (use_fortran_kernels) THEN
+!$OMP PARALLEL PRIVATE(E_local)
+!$OMP DO
+    DO t=1,tiles_per_task
+      CALL tea_leaf_dpcg_sum_matrix_rows_kernel(chunk%tiles(t)%field%x_min,    &
+          chunk%tiles(t)%field%x_max,           &
+          chunk%tiles(t)%field%y_min,           &
+          chunk%tiles(t)%field%y_max,           &
+          halo_exchange_depth,                  &
+          chunk%tiles(t)%field%vector_kx, &
+          chunk%tiles(t)%field%vector_ky, &
+          chunk%tiles(t)%field%rx,  &
+          chunk%tiles(t)%field%ry,  &
+          E_local)
+
+      chunk%def%def_e(chunk%tiles(t)%def_tile_coords(1), chunk%tiles(t)%def_tile_coords(2)) = E_local
+    ENDDO
+!$OMP END DO
+!$OMP END PARALLEL
+  ENDIF
+
+  CALL MPI_Allreduce(MPI_IN_PLACE, chunk%def%def_e, size(chunk%def%def_e), MPI_DOUBLE_PRECISION, MPI_SUM, mpi_cart_comm, err)
+
+END SUBROUTINE tea_leaf_dpcg_sum_matrix_rows
+
+SUBROUTINE tea_leaf_dpcg_restrict_ZT()
+
+  IMPLICIT NONE
+  INTEGER :: t
+  REAL(KIND=8) :: ZTr
+
+  IF (use_fortran_kernels) THEN
+!$OMP PARALLEL PRIVATE(ZTr)
+!$OMP DO
+    DO t=1,tiles_per_task
+      CALL tea_leaf_dpcg_restrict_ZT_kernel(chunk%tiles(t)%field%x_min,    &
+          chunk%tiles(t)%field%x_max,           &
+          chunk%tiles(t)%field%y_min,           &
+          chunk%tiles(t)%field%y_max,           &
+          halo_exchange_depth,                  &
+          chunk%tiles(t)%field%vector_r )
+
+      chunk%def%t1(chunk%tiles(t)%def_tile_coords(1), chunk%tiles(t)%def_tile_coords(2)) = ztr
+    ENDDO
+!$OMP END DO
+!$OMP END PARALLEL
+  ENDIF
+
+  CALL MPI_Allreduce(MPI_IN_PLACE, chunk%def%t1, size(chunk%def%t1), MPI_DOUBLE_PRECISION, MPI_SUM, mpi_cart_comm, err)
+
+END SUBROUTINE tea_leaf_dpcg_restrict_ZT
+
 SUBROUTINE tea_leaf_dpcg_solve_E
 
   use global_mpi_module
@@ -57,36 +103,6 @@ SUBROUTINE tea_leaf_dpcg_solve_E
   IMPLICIT NONE
 
   INTEGER :: t, err
-
-  REAL(KIND=8) :: ztr, e
-
-  IF (use_fortran_kernels) THEN
-!$OMP PARALLEL PRIVATE(ztr, e)
-!$OMP DO
-    DO t=1,tiles_per_task
-      CALL tea_leaf_dpcg_sum_r_kernel(chunk%tiles(t)%field%x_min,       &
-          chunk%tiles(t)%field%x_max,                                   &
-          chunk%tiles(t)%field%y_min,                                   &
-          chunk%tiles(t)%field%y_max,                                   &
-          halo_exchange_depth,                                          &
-          chunk%tiles(t)%field%rx,  &
-          chunk%tiles(t)%field%ry,  &
-          ztr,                                                          &
-          e,                                                          &
-          chunk%tiles(t)%field%vector_kx, &
-          chunk%tiles(t)%field%vector_ky, &
-          chunk%tiles(t)%field%vector_r)
-      
-      ! write back into the GLOBAL vector
-      chunk%def%t1(chunk%tiles(t)%def_tile_coords(1), chunk%tiles(t)%def_tile_coords(2)) = ztr
-      chunk%def%def_e(chunk%tiles(t)%def_tile_coords(1), chunk%tiles(t)%def_tile_coords(2)) = e
-    ENDDO
-!$OMP END DO NOWAIT
-!$OMP END PARALLEL
-  ENDIF
-
-  CALL MPI_Allreduce(MPI_IN_PLACE, chunk%def%t1, size(chunk%def%t1), MPI_DOUBLE_PRECISION, MPI_SUM, mpi_cart_comm, err)
-  CALL MPI_Allreduce(MPI_IN_PLACE, chunk%def%def_e, size(chunk%def%def_e), MPI_DOUBLE_PRECISION, MPI_SUM, mpi_cart_comm, err)
 
   t=1
 
