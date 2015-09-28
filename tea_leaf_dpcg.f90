@@ -97,9 +97,6 @@ SUBROUTINE tea_leaf_dpcg_setup_and_solve_E
 
   CALL tea_leaf_dpcg_matmul_ZTA()
 
-  ! TODO just using existing memory at the moment, should probably allocate some more
-  t=1
-
   CALL tea_leaf_dpcg_local_solve(   &
       chunk%def%x_min, &
       chunk%def%x_max,                                  &
@@ -109,17 +106,13 @@ SUBROUTINE tea_leaf_dpcg_setup_and_solve_E
       chunk%def%t2,                               &
       chunk%def%t1,                               &
       chunk%def%def_e,                               &
-      chunk%tiles(t)%field%vector_p,                               &
-      chunk%tiles(t)%field%vector_r,                               &
-      chunk%tiles(t)%field%vector_Mi,                              &
-      chunk%tiles(t)%field%vector_w,                              &
-      chunk%tiles(t)%field%vector_z,                               &
+      chunk%def%def_p,                               &
+      chunk%def%def_r,                               &
+      chunk%def%def_Mi,                               &
+      chunk%def%def_w,                               &
+      chunk%def%def_z,                               &
       chunk%def%def_Kx,                              &
       chunk%def%def_Ky,                              &
-      chunk%tiles(t)%field%tri_cp,   &
-      chunk%tiles(t)%field%tri_bfp,    &
-      chunk%tiles(t)%field%rx,  &
-      chunk%tiles(t)%field%ry,  &
       tl_preconditioner_type)
 
   CALL tea_leaf_dpcg_prolong_Z()

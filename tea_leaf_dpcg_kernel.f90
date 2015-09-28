@@ -121,10 +121,6 @@ SUBROUTINE tea_leaf_dpcg_local_solve(x_min,  &
                            z,                      &
                            Kx,                     &
                            Ky,                     &
-                           cp,                     &
-                           bfp,                    &
-                           rx,                     &
-                           ry,                     &
                            preconditioner_type)
 
   IMPLICIT NONE
@@ -138,7 +134,6 @@ SUBROUTINE tea_leaf_dpcg_local_solve(x_min,  &
   INTEGER(KIND=4) :: j,k, lcount
 
   REAL(kind=8) :: rro, smvp
-  REAL(KIND=8) ::  rx, ry
   REAL(KIND=8) ::  alpha, beta, pw, rrn
 
   rro = 0.0_8
@@ -172,38 +167,13 @@ SUBROUTINE tea_leaf_dpcg_local_solve(x_min,  &
     ENDDO
 !$OMP END DO
 
-  IF (preconditioner_type .NE. TL_PREC_NONE) THEN
-
-    IF (preconditioner_type .EQ. TL_PREC_JAC_BLOCK) THEN
-      CALL tea_block_solve(x_min, x_max, y_min, y_max, halo_exchange_depth,             &
-                             r, z, cp, bfp, Kx, Ky, rx, ry)
-    ELSE IF (preconditioner_type .EQ. TL_PREC_JAC_DIAG) THEN
-      CALL tea_diag_solve(x_min, x_max, y_min, y_max, halo_exchange_depth,             &
-                             r, z, Mi, Kx, Ky, rx, ry)
-    ENDIF
-
-!$OMP DO
-    DO k=y_min,y_max
-      DO j=x_min,x_max
-        p(j, k) = z(j, k)
-      ENDDO
-    ENDDO
-!$OMP END DO
-  ELSE
-!$OMP DO
+!$OMP DO REDUCTION(+:rro)
     DO k=y_min,y_max
       DO j=x_min,x_max
         p(j, k) = r(j, k)
+        rro = rro + r(j, k)*p(j, k);
       ENDDO
     ENDDO
-!$OMP END DO
-  ENDIF
-!$OMP DO REDUCTION(+:rro)
-  DO k=y_min,y_max
-    DO j=x_min,x_max
-      rro = rro + r(j, k)*p(j, k);
-    ENDDO
-  ENDDO
 !$OMP END DO
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -231,53 +201,19 @@ DO WHILE (rrn .gt. 1e-10)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-!$OMP DO
-    DO k=y_min,y_max
-      DO j=x_min,x_max
-        u(j, k) = u(j, k) + alpha*p(j, k)
-      ENDDO
-    ENDDO
-!$OMP END DO
-
 !$OMP SINGLE
   rrn = 0.0_8
 !$OMP END SINGLE
 
-  IF (preconditioner_type .NE. TL_PREC_NONE) THEN
-
-!$OMP DO
-    DO k=y_min, y_max
-      DO j=x_min,x_max
-        r(j, k) = r(j, k) - alpha*w(j, k)
-      ENDDO
-    ENDDO
-!$OMP END DO
-
-    IF (preconditioner_type .EQ. TL_PREC_JAC_BLOCK) THEN
-      CALL tea_block_solve(x_min, x_max, y_min, y_max, halo_exchange_depth,             &
-                             r, z, cp, bfp, Kx, Ky, rx, ry)
-    ELSE IF (preconditioner_type .EQ. TL_PREC_JAC_DIAG) THEN
-      CALL tea_diag_solve(x_min, x_max, y_min, y_max, halo_exchange_depth,             &
-                             r, z, Mi, Kx, Ky, rx, ry)
-    ENDIF
-
 !$OMP DO REDUCTION(+:rrn)
     DO k=y_min,y_max
       DO j=x_min,x_max
-        rrn = rrn + r(j, k)*z(j, k)
-      ENDDO
-    ENDDO
-!$OMP END DO
-  ELSE
-!$OMP DO REDUCTION(+:rrn)
-    DO k=y_min,y_max
-      DO j=x_min,x_max
+        u(j, k) = u(j, k) + alpha*p(j, k)
         r(j, k) = r(j, k) - alpha*w(j, k)
         rrn = rrn + r(j, k)*r(j, k)
       ENDDO
     ENDDO
 !$OMP END DO
-  ENDIF
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
