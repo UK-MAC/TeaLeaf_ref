@@ -27,33 +27,6 @@ MODULE tea_leaf_dpcg_kernel_module
 
 CONTAINS
 
-SUBROUTINE tea_leaf_dpcg_copy_t1_kernel(x_min,  &
-                           x_max,                  &
-                           y_min,                  &
-                           y_max,                  &
-                           halo_exchange_depth,                  &
-                           t1, &
-                           t2)
-
-  IMPLICIT NONE
-
-  INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
-  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: t1, t2
-
-  INTEGER(KIND=4) :: j,k
-
-!$OMP PARALLEL
-!$OMP DO
-  DO k=y_min,y_max
-    DO j=x_min,x_max
-      t2(j, k) = t1(j, k)
-    ENDDO
-  ENDDO
-!$OMP END DO
-!$OMP END PARALLEL
-
-END SUBROUTINE tea_leaf_dpcg_copy_t1_kernel
-
 SUBROUTINE tea_leaf_dpcg_restrict_ZT_kernel(x_min, x_max, y_min, y_max, halo_exchange_depth, &
     r , &
     ZTr )
@@ -118,12 +91,10 @@ SUBROUTINE tea_leaf_dpcg_local_solve(x_min,  &
                            r,                      &
                            Mi,                     &
                            w,                     &
-                           z,                      &
-                           preconditioner_type)
+                           z)
 
   IMPLICIT NONE
 
-  INTEGER :: preconditioner_type
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
   REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) &
                           :: r, z, Mi, p, w, u, u0, def_e
@@ -236,35 +207,6 @@ ENDDO
 !$OMP END PARALLEL
 
 END SUBROUTINE tea_leaf_dpcg_local_solve
-
-SUBROUTINE tea_leaf_dpcg_add_t2_kernel(x_min,  &
-                           x_max,                  &
-                           y_min,                  &
-                           y_max,                  &
-                           halo_exchange_depth,                  &
-                           tile_t2, &
-                           u)
-
-  IMPLICIT NONE
-
-  INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
-  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: u
-
-  INTEGER(KIND=4) :: j,k
-
-  REAL(kind=8) :: tile_t2
-
-!$OMP PARALLEL
-!$OMP DO
-  DO k=y_min,y_max
-    DO j=x_min,x_max
-      u(j, k) = u(j, k) + tile_t2
-    ENDDO
-  ENDDO
-!$OMP END DO
-!$OMP END PARALLEL
-
-END SUBROUTINE tea_leaf_dpcg_add_t2_kernel
 
 SUBROUTINE tea_leaf_dpcg_init_p_kernel(x_min,             &
                                        x_max,             &
