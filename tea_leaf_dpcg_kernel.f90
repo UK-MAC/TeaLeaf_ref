@@ -391,5 +391,37 @@ SUBROUTINE tea_leaf_dpcg_prolong_Z_kernel(x_min, x_max, y_min, y_max, halo_excha
 
 END SUBROUTINE tea_leaf_dpcg_prolong_Z_kernel
 
+SUBROUTINE tea_leaf_dpcg_calc_zrnorm_kernel(x_min, &
+                          x_max,             &
+                          y_min,             &
+                          y_max,             &
+                          halo_exchange_depth,             &
+                          z, r,               &
+                          preconditioner_type,    &
+                          norm)
+
+  IMPLICIT NONE
+
+  INTEGER :: preconditioner_type
+  INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
+  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth)&
+                          :: r, z
+  REAL(KIND=8) :: norm
+  integer :: j, k
+
+  norm = 0.0_8
+
+!$OMP PARALLEL
+!$OMP DO REDUCTION(+:norm)
+    DO k=y_min,y_max
+        DO j=x_min,x_max
+            norm = norm + z(j, k)*r(j, k)
+        ENDDO
+    ENDDO
+!$OMP END DO
+!$OMP END PARALLEL
+
+end SUBROUTINE tea_leaf_dpcg_calc_zrnorm_kernel
+
 END MODULE
 

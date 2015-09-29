@@ -288,7 +288,7 @@ SUBROUTINE tea_leaf()
       ! pw = p.w
       CALL tea_leaf_cg_calc_w(pw)
 
-      CALL tea_leaf_ppcg_calc_zrnorm(rro)
+      CALL tea_leaf_dpcg_calc_zrnorm(rro)
 
       IF (profiler_on) dot_product_time=timer()
       ! TODO coalesce

@@ -91,7 +91,7 @@ SUBROUTINE tea_leaf_dpcg_setup_and_solve_E
 
   IMPLICIT NONE
 
-  INTEGER :: t, err
+  INTEGER :: err
 
   chunk%def%t1 = 0
   chunk%def%t2 = 0
@@ -287,6 +287,38 @@ SUBROUTINE tea_leaf_dpcg_calc_p(beta)
   ENDIF
 
 END SUBROUTINE tea_leaf_dpcg_calc_p
+
+SUBROUTINE tea_leaf_dpcg_calc_zrnorm(rro)
+
+  IMPLICIT NONE
+
+  INTEGER :: t
+  REAL(KIND=8) :: rro, tile_rro
+
+  rro = 0.0_8
+
+  IF (use_fortran_kernels) THEN
+!$OMP PARALLEL PRIVATE(tile_rro)
+!$OMP DO REDUCTION(+:rro)
+    DO t=1,tiles_per_task
+      tile_rro = 0.0_8
+
+      CALL tea_leaf_dpcg_calc_zrnorm_kernel(chunk%tiles(t)%field%x_min, &
+            chunk%tiles(t)%field%x_max,                           &
+            chunk%tiles(t)%field%y_min,                           &
+            chunk%tiles(t)%field%y_max,                           &
+            halo_exchange_depth,                           &
+            chunk%tiles(t)%field%vector_z,                        &
+            chunk%tiles(t)%field%vector_r,                        &
+            tl_preconditioner_type, tile_rro)
+
+      rro = rro + tile_rro
+    ENDDO
+!$OMP END DO NOWAIT
+!$OMP END PARALLEL
+  ENDIF
+
+END SUBROUTINE tea_leaf_dpcg_calc_zrnorm
 
 END MODULE tea_leaf_dpcg_module
 
