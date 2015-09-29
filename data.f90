@@ -94,9 +94,6 @@ MODULE data_module
    ! this rank's coordinates
    INTEGER, dimension(2)     ::mpi_coords
 
-   ! MPI datatype corresponding to a tile_dims size block of square memory, with stride equal to the total width of the deflation vector
-   INTEGER                   ::mpi_block_type
-
    ! depth of halo for matrix powers
    INTEGER :: halo_exchange_depth
 
