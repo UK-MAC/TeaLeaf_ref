@@ -96,8 +96,8 @@ SUBROUTINE tea_leaf_dpcg_setup_and_solve_E
   chunk%def%t1 = 0
   chunk%def%t2 = 0
 
-  CALL tea_leaf_dpcg_restrict_ZT()
   CALL tea_leaf_dpcg_matmul_ZTA()
+  CALL tea_leaf_dpcg_restrict_ZT()
 
   CALL MPI_Allreduce(MPI_IN_PLACE, chunk%def%t1, size(chunk%def%t1), MPI_DOUBLE_PRECISION, MPI_SUM, mpi_cart_comm, err)
   CALL MPI_Allreduce(MPI_IN_PLACE, chunk%def%t2, size(chunk%def%t2), MPI_DOUBLE_PRECISION, MPI_SUM, mpi_cart_comm, err)

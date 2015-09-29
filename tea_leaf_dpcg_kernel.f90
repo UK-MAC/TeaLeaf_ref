@@ -70,8 +70,8 @@ SUBROUTINE tea_leaf_dpcg_sum_matrix_rows_kernel(x_min, x_max, y_min, y_max, halo
       E_local = E_local + (1.0_8                &
             + (ry*Ky(j, k+1) + ry*Ky(j, k))     &
             + (rx*Kx(j+1, k) + rx*Kx(j, k)))    &
-            + (ry*Ky(j, k+1) + ry*Ky(j, k))     &
-            + (rx*Kx(j+1, k) + rx*Kx(j, k))
+            - (ry*Ky(j, k+1) + ry*Ky(j, k))     &
+            - (rx*Kx(j+1, k) + rx*Kx(j, k))
     ENDDO
   ENDDO
 !$OMP END DO
@@ -98,9 +98,9 @@ SUBROUTINE tea_leaf_dpcg_local_solve(x_min,  &
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
   REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) &
                           :: r, z, Mi, p, w, u, u0, def_e
-  REAL(KIND=8), DIMENSION(x_min:x_max,y_min:y_max) :: cp, bfp
 
   INTEGER(KIND=4) :: j,k
+  INTEGER(KIND=4) :: it_count
 
   REAL(kind=8) :: rro, smvp
   REAL(KIND=8) ::  alpha, beta, pw, rrn
@@ -109,6 +109,8 @@ SUBROUTINE tea_leaf_dpcg_local_solve(x_min,  &
   pw = 0.0_8
 
   rrn = 1e10
+
+  it_count = 0
 
 !$OMP PARALLEL private(alpha, beta)
 
@@ -122,7 +124,7 @@ SUBROUTINE tea_leaf_dpcg_local_solve(x_min,  &
   ENDDO
 !$OMP END DO
 
-!$OMP DO
+!$OMP DO REDUCTION(+:rro)
     DO k=y_min, y_max
       DO j=x_min, x_max
         smvp = (1.0_8                                         &
@@ -132,14 +134,8 @@ SUBROUTINE tea_leaf_dpcg_local_solve(x_min,  &
             + (def_e(j+1, k)*u(j+1, k) + def_e(j, k)*u(j-1, k))
 
         r(j, k) = u0(j, k) - smvp
-      ENDDO
-    ENDDO
-!$OMP END DO
-
-!$OMP DO REDUCTION(+:rro)
-    DO k=y_min,y_max
-      DO j=x_min,x_max
         p(j, k) = r(j, k)
+
         rro = rro + r(j, k)*p(j, k);
       ENDDO
     ENDDO
@@ -147,7 +143,7 @@ SUBROUTINE tea_leaf_dpcg_local_solve(x_min,  &
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-DO WHILE (rrn .gt. 1e-10)
+DO WHILE ((rrn .gt. 1e-6) .and. (it_count < 20))
 
 !$OMP DO REDUCTION(+:pw)
     DO k=y_min,y_max
@@ -200,6 +196,7 @@ DO WHILE (rrn .gt. 1e-10)
 
 !$OMP SINGLE
   rro = rrn
+  it_count = it_count + 1
 !$OMP END SINGLE
 
 ENDDO
@@ -342,7 +339,7 @@ SUBROUTINE tea_leaf_dpcg_calc_rrn_kernel(x_min, x_max, y_min, y_max, halo_exchan
 !$OMP DO REDUCTION (+:rrn)
   DO k=y_min,y_max
     DO j=x_min,x_max
-      rrn = rrn + (r_m1(j, k) - r(j, k))*z(j, k)
+      rrn = rrn + (r(j, k) - r_m1(j, k))*z(j, k)
     ENDDO
   ENDDO
 !$OMP END DO
