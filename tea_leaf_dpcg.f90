@@ -243,6 +243,8 @@ SUBROUTINE tea_leaf_dpcg_calc_rrn(rrn)
 !$OMP PARALLEL PRIVATE(tile_rrn)
 !$OMP DO REDUCTION(+:rrn)
     DO t=1,tiles_per_task
+      tile_rrn = 0.0_8
+
       CALL tea_leaf_dpcg_calc_rrn_kernel(chunk%tiles(t)%field%x_min,    &
           chunk%tiles(t)%field%x_max,           &
           chunk%tiles(t)%field%y_min,           &
