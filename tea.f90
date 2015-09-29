@@ -233,7 +233,7 @@ SUBROUTINE tea_decompose_tiles(x_cells, y_cells)
         chunk%tiles(t)%tile_neighbours(CHUNK_BOTTOM) = (k-1)*tile_dims(2) + (j+0) + 1
       ENDIF
 
-      IF (k .LT. tile_dims(1)-1) THEN
+      IF (k .LT. tile_dims(2)-1) THEN
         chunk%tiles(t)%tile_neighbours(CHUNK_TOP) = (k+1)*tile_dims(2) + (j+0) + 1
       ENDIF
 
