@@ -4,21 +4,23 @@ state 2 density=0.1 energy=25.0 geometry=rectangle xmin=0.0 xmax=1.0 ymin=1.0 ym
 state 3 density=0.1 energy=0.1 geometry=rectangle xmin=1.0 xmax=6.0 ymin=1.0 ymax=2.0
 state 4 density=0.1 energy=0.1 geometry=rectangle xmin=5.0 xmax=6.0 ymin=1.0 ymax=8.0
 state 5 density=0.1 energy=0.1 geometry=rectangle xmin=5.0 xmax=10.0 ymin=7.0 ymax=8.0
-x_cells=1500
-y_cells=1500
+x_cells=500
+y_cells=500
 xmin=0.0
 ymin=0.0
 xmax=10.0
 ymax=10.0
 initial_timestep=0.004
-end_step=3
+end_step=20
+test_problem 6
+
 tl_max_iters=10000
- test_problem 6
 tl_use_cg
-!tl_preconditioner_type=jac_block
 tl_check_result
 tl_eps=1.0e-15
 profiler_on
-tiles_per_task=2
+
+tiles_per_task=16
 halo_depth=4
+
 *endtea
