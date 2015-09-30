@@ -36,6 +36,8 @@ SUBROUTINE tea_leaf_dpcg_sum_matrix_rows()
   INTEGER :: t, err
   REAL(KIND=8) :: E_local
 
+  chunk%def%def_e = 0
+
   IF (use_fortran_kernels) THEN
 !$OMP PARALLEL PRIVATE(E_local)
 !$OMP DO

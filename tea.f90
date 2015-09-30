@@ -101,11 +101,11 @@ SUBROUTINE tea_decompose(x_cells,y_cells)
   INTEGER  :: err
 
   ! Get destinations/sources
-  CALL mpi_cart_shift(mpi_cart_comm, 0, 1,      &
+  CALL mpi_cart_shift(mpi_cart_comm, 1, 1,      &
     chunk%chunk_neighbours(CHUNK_BOTTOM),   &
     chunk%chunk_neighbours(CHUNK_TOP),      &
     err)
-  CALL mpi_cart_shift(mpi_cart_comm, 1, 1,      &
+  CALL mpi_cart_shift(mpi_cart_comm, 0, 1,      &
     chunk%chunk_neighbours(CHUNK_LEFT),     &
     chunk%chunk_neighbours(CHUNK_RIGHT),    &
     err)
@@ -174,8 +174,8 @@ SUBROUTINE tea_decompose_tiles(x_cells, y_cells)
   ! get good split for tiles
   CALL MPI_DIMS_CREATE(tiles_per_task, 2, tile_dims, err)
 
-  tiles_x = tile_dims(1)
-  tiles_y = tile_dims(2)
+  tiles_x = tile_dims(2)
+  tiles_y = tile_dims(1)
 
   delta_x=x_cells/tiles_x
   delta_y=y_cells/tiles_y
