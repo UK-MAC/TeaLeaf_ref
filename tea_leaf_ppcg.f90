@@ -55,28 +55,32 @@ SUBROUTINE tea_leaf_ppcg_inner(ch_alphas, ch_betas, inner_step, bounds_extra)
 !$OMP PARALLEL PRIVATE(x_min_bound, x_max_bound, y_min_bound, y_max_bound)
 !$OMP DO
     DO t=1,tiles_per_task
-      IF (chunk%chunk_neighbours(CHUNK_LEFT).EQ.EXTERNAL_FACE) THEN
-        x_min_bound = chunk%tiles(t)%field%x_min
-      ELSE
+      IF (chunk%tiles(t)%tile_neighbours(CHUNK_LEFT).NE.EXTERNAL_FACE .OR. &
+          chunk%chunk_neighbours(CHUNK_LEFT).NE.EXTERNAL_FACE) THEN
         x_min_bound = chunk%tiles(t)%field%x_min - bounds_extra
+      ELSE
+        x_min_bound = chunk%tiles(t)%field%x_min
       ENDIF
 
-      IF (chunk%chunk_neighbours(CHUNK_RIGHT).EQ.EXTERNAL_FACE) THEN
-        x_max_bound = chunk%tiles(t)%field%x_max
-      ELSE
+      IF (chunk%tiles(t)%tile_neighbours(CHUNK_RIGHT).NE.EXTERNAL_FACE .OR. &
+          chunk%chunk_neighbours(CHUNK_RIGHT).NE.EXTERNAL_FACE) THEN
         x_max_bound = chunk%tiles(t)%field%x_max + bounds_extra
+      ELSE
+        x_max_bound = chunk%tiles(t)%field%x_max
       ENDIF
 
-      IF (chunk%chunk_neighbours(CHUNK_BOTTOM).EQ.EXTERNAL_FACE) THEN
-        y_min_bound = chunk%tiles(t)%field%y_min
-      ELSE
+      IF (chunk%tiles(t)%tile_neighbours(CHUNK_BOTTOM).NE.EXTERNAL_FACE .OR. &
+          chunk%chunk_neighbours(CHUNK_BOTTOM).NE.EXTERNAL_FACE) THEN
         y_min_bound = chunk%tiles(t)%field%y_min - bounds_extra
+      ELSE
+        y_min_bound = chunk%tiles(t)%field%y_min
       ENDIF
 
-      IF (chunk%chunk_neighbours(CHUNK_TOP).EQ.EXTERNAL_FACE) THEN
-        y_max_bound = chunk%tiles(t)%field%y_max
-      ELSE
+      IF (chunk%tiles(t)%tile_neighbours(CHUNK_TOP).NE.EXTERNAL_FACE .OR. &
+          chunk%chunk_neighbours(CHUNK_TOP).NE.EXTERNAL_FACE) THEN
         y_max_bound = chunk%tiles(t)%field%y_max + bounds_extra
+      ELSE
+        y_max_bound = chunk%tiles(t)%field%y_max
       ENDIF
 
       CALL tea_leaf_kernel_ppcg_inner(chunk%tiles(t)%field%x_min,&
