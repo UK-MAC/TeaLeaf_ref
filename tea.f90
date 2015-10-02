@@ -164,7 +164,6 @@ SUBROUTINE tea_decompose_tiles(x_cells, y_cells)
 
   ! create a fake communicator to easily decompose the tiles as before
   INTEGER :: err, j, k, t
-  INTEGER, DIMENSION(2)     :: tile_coords
 
   chunk%tile_dims = 0
 
@@ -186,36 +185,33 @@ SUBROUTINE tea_decompose_tiles(x_cells, y_cells)
     DO j=0,chunk%tile_dims(1)-1
       t = k*chunk%tile_dims(1) + j + 1
 
-      tile_coords(1) = j
-      tile_coords(2) = k
-
       chunk%tiles(t)%tile_coords(1) = j+1
       chunk%tiles(t)%tile_coords(2) = k+1
 
       chunk%tiles(t)%def_tile_coords(1) = mpi_coords(1)*chunk%tile_dims(1) + (j + 1)
       chunk%tiles(t)%def_tile_coords(2) = mpi_coords(2)*chunk%tile_dims(2) + (k + 1)
 
-      chunk%tiles(t)%left = chunk%left + tile_coords(1)*delta_x
-      if (tile_coords(1) .le. mod_x) then
-        chunk%tiles(t)%left = chunk%tiles(t)%left + tile_coords(1)
+      chunk%tiles(t)%left = chunk%left + chunk%tiles(t)%tile_coords(1)*delta_x
+      if (chunk%tiles(t)%tile_coords(1) .le. mod_x) then
+        chunk%tiles(t)%left = chunk%tiles(t)%left + chunk%tiles(t)%tile_coords(1)
       else
         chunk%tiles(t)%left = chunk%tiles(t)%left + mod_x
       endif
 
       chunk%tiles(t)%right = chunk%tiles(t)%left+delta_x - 1
-      if (tile_coords(1) .lt. mod_x) then
+      if (chunk%tiles(t)%tile_coords(1) .lt. mod_x) then
         chunk%tiles(t)%right = chunk%tiles(t)%right + 1
       endif
 
-      chunk%tiles(t)%bottom = chunk%bottom + tile_coords(2)*delta_y
-      if (tile_coords(2) .le. mod_y) then
-        chunk%tiles(t)%bottom = chunk%tiles(t)%bottom + tile_coords(2)
+      chunk%tiles(t)%bottom = chunk%bottom + chunk%tiles(t)%tile_coords(2)*delta_y
+      if (chunk%tiles(t)%tile_coords(2) .le. mod_y) then
+        chunk%tiles(t)%bottom = chunk%tiles(t)%bottom + chunk%tiles(t)%tile_coords(2)
       else
         chunk%tiles(t)%bottom = chunk%tiles(t)%bottom + mod_y
       endif
 
       chunk%tiles(t)%top = chunk%tiles(t)%bottom+delta_y - 1
-      if (tile_coords(2) .lt. mod_y) then
+      if (chunk%tiles(t)%tile_coords(2) .lt. mod_y) then
         chunk%tiles(t)%top = chunk%tiles(t)%top + 1
       endif
 
