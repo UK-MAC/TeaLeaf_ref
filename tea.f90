@@ -162,7 +162,6 @@ SUBROUTINE tea_decompose_tiles(x_cells, y_cells)
   INTEGER :: delta_x,delta_y
   INTEGER  :: tiles_x,tiles_y,mod_x,mod_y
 
-  ! create a fake communicator to easily decompose the tiles as before
   INTEGER :: err, j, k, t
 
   chunk%tile_dims = 0
@@ -181,12 +180,13 @@ SUBROUTINE tea_decompose_tiles(x_cells, y_cells)
   mod_x=MOD(x_cells,tiles_x)
   mod_y=MOD(y_cells,tiles_y)
 
-  DO k=0,chunk%tile_dims(2)-1
-    DO j=0,chunk%tile_dims(1)-1
-      t = k*chunk%tile_dims(1) + j + 1
+  DO j=0,chunk%tile_dims(1)-1
+    DO k=0,chunk%tile_dims(2)-1
+      t = j*chunk%tile_dims(2) + k + 1
 
-      chunk%tiles(t)%tile_coords(1) = j+1
-      chunk%tiles(t)%tile_coords(2) = k+1
+      ! start off with 0-indexed for figuring out where in the grid it is
+      chunk%tiles(t)%tile_coords(1) = j
+      chunk%tiles(t)%tile_coords(2) = k
 
       chunk%tiles(t)%def_tile_coords(1) = mpi_coords(1)*chunk%tile_dims(1) + (j + 1)
       chunk%tiles(t)%def_tile_coords(2) = mpi_coords(2)*chunk%tile_dims(2) + (k + 1)
@@ -215,24 +215,26 @@ SUBROUTINE tea_decompose_tiles(x_cells, y_cells)
         chunk%tiles(t)%top = chunk%tiles(t)%top + 1
       endif
 
+      ! add one to make it into 1 indexed
+      chunk%tiles(t)%tile_coords = chunk%tiles(t)%tile_coords + 1
+
       chunk%tiles(t)%tile_neighbours = EXTERNAL_FACE
 
       IF (j .GT. 0) THEN
-        chunk%tiles(t)%tile_neighbours(CHUNK_LEFT) = (k+0)*chunk%tile_dims(1) + (j-1) + 1
+        chunk%tiles(t)%tile_neighbours(CHUNK_LEFT) = (j-1)*chunk%tile_dims(2) + (k+0) + 1
       ENDIF
 
       IF (j .LT. chunk%tile_dims(1)-1) THEN
-        chunk%tiles(t)%tile_neighbours(CHUNK_RIGHT) = (k+0)*chunk%tile_dims(1) + (j+1) + 1
+        chunk%tiles(t)%tile_neighbours(CHUNK_RIGHT) = (j+1)*chunk%tile_dims(2) + (k+0) + 1
       ENDIF
 
       IF (k .GT. 0) THEN
-        chunk%tiles(t)%tile_neighbours(CHUNK_BOTTOM) = (k-1)*chunk%tile_dims(1) + (j+0) + 1
+        chunk%tiles(t)%tile_neighbours(CHUNK_BOTTOM) = (j+0)*chunk%tile_dims(2) + (k-1) + 1
       ENDIF
 
       IF (k .LT. chunk%tile_dims(2)-1) THEN
-        chunk%tiles(t)%tile_neighbours(CHUNK_TOP) = (k+1)*chunk%tile_dims(1) + (j+0) + 1
+        chunk%tiles(t)%tile_neighbours(CHUNK_TOP) = (j+0)*chunk%tile_dims(2) + (k+1) + 1
       ENDIF
-
     ENDDO
   ENDDO
 
