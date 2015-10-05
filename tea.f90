@@ -188,9 +188,6 @@ SUBROUTINE tea_decompose_tiles(x_cells, y_cells)
       chunk%tiles(t)%tile_coords(1) = j
       chunk%tiles(t)%tile_coords(2) = k
 
-      chunk%tiles(t)%def_tile_coords(1) = mpi_coords(1)*chunk%tile_dims(1) + (j + 1)
-      chunk%tiles(t)%def_tile_coords(2) = mpi_coords(2)*chunk%tile_dims(2) + (k + 1)
-
       chunk%tiles(t)%left = chunk%left + chunk%tiles(t)%tile_coords(1)*delta_x
       if (chunk%tiles(t)%tile_coords(1) .le. mod_x) then
         chunk%tiles(t)%left = chunk%tiles(t)%left + chunk%tiles(t)%tile_coords(1)
@@ -217,6 +214,12 @@ SUBROUTINE tea_decompose_tiles(x_cells, y_cells)
 
       ! add one to make it into 1 indexed
       chunk%tiles(t)%tile_coords = chunk%tiles(t)%tile_coords + 1
+
+      ! absolute position of tile compared to all other tiles in grid
+      chunk%tiles(t)%def_tile_coords(1) = mpi_coords(1)*chunk%tile_dims(1) + (j + 1)
+      chunk%tiles(t)%def_tile_coords(2) = mpi_coords(2)*chunk%tile_dims(2) + (k + 1)
+
+      chunk%tiles(t)%def_tile_idx = (chunk%tiles(t)%def_tile_coords(1) - 1)*mpi_dims(2)*chunk%tile_dims(2) + chunk%tiles(t)%def_tile_coords(2)
 
       chunk%tiles(t)%tile_neighbours = EXTERNAL_FACE
 

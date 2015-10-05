@@ -208,18 +208,6 @@ SUBROUTINE pack_all(x_min, x_max, y_min, y_max, halo_exchange_depth, &
                      tile_offset + offsets(FIELD_ENERGY1),   &
                      edge_minus, edge_plus)
   ENDIF
-  IF (fields(FIELD_P).EQ.1) THEN
-      CALL pack_func(x_min,                    &
-                     x_max,                    &
-                     y_min,                    &
-                     y_max,                    &
-                     halo_exchange_depth,                    &
-                     p,                  &
-                     mpi_buffer,                &
-                     depth, xincs(CELL_DATA), yincs(CELL_DATA),   &
-                     tile_offset + offsets(FIELD_P),   &
-                     edge_minus, edge_plus)
-  ENDIF
   IF (fields(FIELD_U).EQ.1) THEN
       CALL pack_func(x_min,                    &
                      x_max,                    &
@@ -230,6 +218,18 @@ SUBROUTINE pack_all(x_min, x_max, y_min, y_max, halo_exchange_depth, &
                      mpi_buffer,                &
                      depth, xincs(CELL_DATA), yincs(CELL_DATA),   &
                      tile_offset + offsets(FIELD_U),   &
+                     edge_minus, edge_plus)
+  ENDIF
+  IF (fields(FIELD_P).EQ.1) THEN
+      CALL pack_func(x_min,                    &
+                     x_max,                    &
+                     y_min,                    &
+                     y_max,                    &
+                     halo_exchange_depth,                    &
+                     p,                  &
+                     mpi_buffer,                &
+                     depth, xincs(CELL_DATA), yincs(CELL_DATA),   &
+                     tile_offset + offsets(FIELD_P),   &
                      edge_minus, edge_plus)
   ENDIF
   IF (fields(FIELD_SD).EQ.1) THEN

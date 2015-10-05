@@ -172,8 +172,11 @@ MODULE definitions_module
 
      INTEGER         :: tile_neighbours(4)
      INTEGER         :: tile_coords(2)
+
      ! coordinate in the total deflation vector array for this tile
      INTEGER         :: def_tile_coords(2)
+     ! absolute tile index
+     INTEGER         :: def_tile_idx
    END TYPE tile_type
 
    TYPE deflate_type
