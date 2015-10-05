@@ -15,7 +15,7 @@ SUBROUTINE tea_leaf_init_common()
 
   INTEGER :: t
 
-  INTEGER :: zero_boundary(4)
+  LOGICAL :: zero_boundary(4)
 
   IF (use_fortran_kernels) THEN
 !$OMP PARALLEL PRIVATE(zero_boundary)
@@ -24,19 +24,18 @@ SUBROUTINE tea_leaf_init_common()
       chunk%tiles(t)%field%rx = dt/(chunk%tiles(t)%field%celldx(chunk%tiles(t)%field%x_min)**2)
       chunk%tiles(t)%field%ry = dt/(chunk%tiles(t)%field%celldy(chunk%tiles(t)%field%y_min)**2)
 
-      ! CG never needs matrix defined outside of boundaries, PPCG does
-      IF (tl_use_cg) THEN
-        zero_boundary = chunk%tiles(t)%tile_neighbours
-      ELSE
-        zero_boundary = chunk%chunk_neighbours
-      ENDIF
+      WHERE (chunk%tiles(t)%tile_neighbours .EQ. EXTERNAL_FACE .AND. &
+             chunk%chunk_neighbours .EQ. EXTERNAL_FACE)
+        zero_boundary = .TRUE.
+      ELSE WHERE
+        zero_boundary = .FALSE.
+      END WHERE
 
       CALL tea_leaf_common_init_kernel(chunk%tiles(t)%field%x_min, &
           chunk%tiles(t)%field%x_max,                                  &
           chunk%tiles(t)%field%y_min,                                  &
           chunk%tiles(t)%field%y_max,                                  &
           halo_exchange_depth,                                  &
-          chunk%chunk_neighbours,                             &
           zero_boundary,                               &
           reflective_boundary,                                    &
           chunk%tiles(t)%field%density,                                &
