@@ -278,7 +278,7 @@ SUBROUTINE tea_pack_message_left(x_min,x_max,y_min,y_max,halo_exchange_depth,fie
 !$OMP DO
   DO k=y_min-edge_minus,y_max+y_inc+edge_plus
     DO j=1,depth
-      index=buffer_offset + j+(k+depth-1)*depth
+      index=buffer_offset + j + (k + depth - 1)*depth
       left_snd_buffer(index)=field(x_min+x_inc-1+j,k)
     ENDDO
   ENDDO
@@ -382,7 +382,7 @@ SUBROUTINE tea_pack_message_top(x_min,x_max,y_min,y_max,halo_exchange_depth,fiel
 !$OMP DO
   DO k=1,depth
     DO j=x_min-edge_minus,x_max+x_inc+edge_plus
-      index= buffer_offset + j+depth+(k-1)*(x_max+x_inc+(2*depth))
+      index= buffer_offset + j + edge_minus + (k - 1)*(x_max + x_inc + (edge_plus+edge_minus))
       top_snd_buffer(index)=field(j,y_max+1-k)
     ENDDO
   ENDDO
@@ -408,7 +408,7 @@ SUBROUTINE tea_unpack_message_top(x_min,x_max,y_min,y_max,halo_exchange_depth,fi
 !$OMP DO
   DO k=1,depth
     DO j=x_min-edge_minus,x_max+x_inc+edge_plus
-      index= buffer_offset + j + depth+(k-1)*(x_max+x_inc+(2*depth))
+      index= buffer_offset + j + edge_minus + (k - 1)*(x_max + x_inc + (edge_plus+edge_minus))
       field(j,y_max+y_inc+k)=top_rcv_buffer(index)
     ENDDO
   ENDDO
@@ -434,7 +434,7 @@ SUBROUTINE tea_pack_message_bottom(x_min,x_max,y_min,y_max,halo_exchange_depth,f
 !$OMP DO
   DO k=1,depth
     DO j=x_min-edge_minus,x_max+x_inc+edge_plus
-      index= buffer_offset + j+depth+(k-1)*(x_max+x_inc+(2*depth))
+      index= buffer_offset + j + edge_minus + (k - 1)*(x_max + x_inc + (edge_plus+edge_minus))
       bottom_snd_buffer(index)=field(j,y_min+y_inc-1+k)
     ENDDO
   ENDDO
@@ -460,7 +460,7 @@ SUBROUTINE tea_unpack_message_bottom(x_min,x_max,y_min,y_max,halo_exchange_depth
 !$OMP DO
   DO k=1,depth
     DO j=x_min-edge_minus,x_max+x_inc+edge_plus
-      index= buffer_offset + j+depth+(k-1)*(x_max+x_inc+(2*depth))
+      index= buffer_offset + j + edge_minus + (k - 1)*(x_max + x_inc + (edge_plus+edge_minus))
       field(j,y_min-k)=bottom_rcv_buffer(index)
     ENDDO
   ENDDO

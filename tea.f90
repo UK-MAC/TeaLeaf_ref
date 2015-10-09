@@ -309,8 +309,8 @@ SUBROUTINE tea_exchange(fields,depth)
 
     IF (ALL(chunk%chunk_neighbours .eq. EXTERNAL_FACE)) return
 
-    exchange_size_lr = depth*(chunk%y_cells+2*depth)
-    exchange_size_ud = depth*(chunk%x_cells+2*depth)
+    exchange_size_lr = depth*(chunk%y_cells + 2*depth)
+    exchange_size_ud = depth*(chunk%x_cells + 2*depth)
 
     request_lr = 0
     message_count_lr = 0
