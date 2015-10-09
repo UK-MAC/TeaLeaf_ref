@@ -125,25 +125,29 @@ SUBROUTINE tea_leaf_dpcg_local_solve(x_min,  &
 !$OMP END DO
 
 !$OMP DO REDUCTION(+:rro)
-    DO k=y_min, y_max
-      DO j=x_min, x_max
-        smvp = (1.0_8                                         &
-            + (def_e(j, k+1) + def_e(j, k))                      &
-            + (def_e(j+1, k) + def_e(j, k)))*u(j, k)             &
-            + (def_e(j, k+1)*u(j, k+1) + def_e(j, k)*u(j, k-1))  &
-            + (def_e(j+1, k)*u(j+1, k) + def_e(j, k)*u(j-1, k))
+  DO k=y_min, y_max
+    DO j=x_min, x_max
+      smvp = (1.0_8                                         &
+          + (def_e(j, k+1) + def_e(j, k))                      &
+          + (def_e(j+1, k) + def_e(j, k)))*u(j, k)             &
+          + (def_e(j, k+1)*u(j, k+1) + def_e(j, k)*u(j, k-1))  &
+          + (def_e(j+1, k)*u(j+1, k) + def_e(j, k)*u(j-1, k))
 
-        r(j, k) = u0(j, k) - smvp
-        p(j, k) = r(j, k)
+      r(j, k) = u0(j, k) - smvp
+      p(j, k) = r(j, k)
 
-        rro = rro + r(j, k)*p(j, k);
-      ENDDO
+      rro = rro + r(j, k)*p(j, k);
     ENDDO
+  ENDDO
 !$OMP END DO
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-DO WHILE ((rrn .gt. 1e-6) .and. (it_count < 20))
+  DO WHILE ((abs(sqrt(rrn)) .gt. 1e-10*rro) .and. (it_count < 20))
+
+!$OMP SINGLE
+    pw = 0.0_8
+!$OMP END SINGLE
 
 !$OMP DO REDUCTION(+:pw)
     DO k=y_min,y_max
@@ -162,12 +166,12 @@ DO WHILE ((rrn .gt. 1e-6) .and. (it_count < 20))
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  alpha = rro/pw
+    alpha = rro/pw
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !$OMP SINGLE
-  rrn = 0.0_8
+    rrn = 0.0_8
 !$OMP END SINGLE
 
 !$OMP DO REDUCTION(+:rrn)
@@ -182,7 +186,7 @@ DO WHILE ((rrn .gt. 1e-6) .and. (it_count < 20))
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  beta = rrn/rro
+    beta = rrn/rro
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -195,11 +199,11 @@ DO WHILE ((rrn .gt. 1e-6) .and. (it_count < 20))
 !$OMP END DO NOWAIT
 
 !$OMP SINGLE
-  rro = rrn
-  it_count = it_count + 1
+    rro = rrn
+    it_count = it_count + 1
 !$OMP END SINGLE
 
-ENDDO
+  ENDDO
 
 !$OMP END PARALLEL
 
