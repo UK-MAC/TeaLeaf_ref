@@ -59,6 +59,10 @@ SUBROUTINE call_packing_functions(fields, depth, face, packing, mpi_buffer, offs
       CYCLE
     ENDIF
 
+    IF (tile_offset .NE. 0) THEN
+      tile_offset = tile_offset + depth*depth
+    ENDIF
+
     CALL pack_all(chunk%tiles(t)%field%x_min,                    &
                   chunk%tiles(t)%field%x_max,                    &
                   chunk%tiles(t)%field%y_min,                    &
