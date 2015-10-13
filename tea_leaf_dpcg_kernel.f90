@@ -102,10 +102,11 @@ SUBROUTINE tea_leaf_dpcg_local_solve(x_min,  &
   INTEGER(KIND=4) :: j,k
   INTEGER(KIND=4) :: it_count
 
-  REAL(kind=8) :: rro, smvp
+  REAL(kind=8) :: rro, smvp, initial_residual
   REAL(KIND=8) ::  alpha, beta, pw, rrn
 
   rro = 0.0_8
+  initial_residual = 0.0_8
   pw = 0.0_8
 
   rrn = 1e10
@@ -124,7 +125,7 @@ SUBROUTINE tea_leaf_dpcg_local_solve(x_min,  &
   ENDDO
 !$OMP END DO
 
-!$OMP DO REDUCTION(+:rro)
+!$OMP DO REDUCTION(+:initial_residual)
   DO k=y_min, y_max
     DO j=x_min, x_max
       smvp = (1.0_8                                         &
@@ -136,10 +137,14 @@ SUBROUTINE tea_leaf_dpcg_local_solve(x_min,  &
       r(j, k) = u0(j, k) - smvp
       p(j, k) = r(j, k)
 
-      rro = rro + r(j, k)*p(j, k);
+      initial_residual = initial_residual + r(j, k)*p(j, k);
     ENDDO
   ENDDO
 !$OMP END DO
+
+!$OMP SINGLE
+    rro = initial_residual
+!$OMP END SINGLE
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
