@@ -77,7 +77,9 @@ SUBROUTINE read_input()
   tiles_per_task = 1
 
 !$OMP PARALLEL
+!$OMP MASTER
 !$ tiles_per_task = omp_get_num_threads()
+!$OMP END MASTER
 !$OMP ENDPARALLEL
 
   tl_ch_cg_presteps = 25

@@ -112,7 +112,7 @@ SUBROUTINE tea_leaf_dpcg_local_solve(x_min,  &
 
   it_count = 0
 
-!$OMP PARALLEL private(alpha, beta)
+!$OMP PARALLEL private(alpha, beta, smvp)
 
 !$OMP DO
   DO k=y_min,y_max
@@ -170,9 +170,11 @@ SUBROUTINE tea_leaf_dpcg_local_solve(x_min,  &
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-!$OMP SINGLE
+!$OMP BARRIER
+!$OMP MASTER
     rrn = 0.0_8
-!$OMP END SINGLE
+!$OMP END MASTER
+!$OMP BARRIER
 
 !$OMP DO REDUCTION(+:rrn)
     DO k=y_min,y_max
@@ -198,10 +200,12 @@ SUBROUTINE tea_leaf_dpcg_local_solve(x_min,  &
     ENDDO
 !$OMP END DO NOWAIT
 
-!$OMP SINGLE
+!$OMP BARRIER
+!$OMP MASTER
     rro = rrn
     it_count = it_count + 1
-!$OMP END SINGLE
+!$OMP END MASTER
+!$OMP BARRIER
 
   ENDDO
 
