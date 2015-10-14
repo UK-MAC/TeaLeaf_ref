@@ -137,18 +137,21 @@ SUBROUTINE tea_leaf_dpcg_local_solve(x_min,  &
       r(j, k) = u0(j, k) - smvp
       p(j, k) = r(j, k)
 
-      initial_residual = initial_residual + r(j, k)*p(j, k);
+      initial_residual = initial_residual + r(j, k)*p(j, k)
     ENDDO
   ENDDO
 !$OMP END DO
 
-!$OMP SINGLE
+!$OMP BARRIER
+!$OMP MASTER
     rro = initial_residual
-!$OMP END SINGLE
+    initial_residual = sqrt(abs(initial_residual))
+!$OMP END MASTER
+!$OMP BARRIER
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  DO WHILE ((abs(sqrt(rrn)) .gt. 1e-10*rro) .and. (it_count < 20))
+  DO WHILE (((sqrt(abs(rrn)) .gt. 1e-15*abs(initial_residual))) .and. (it_count < 100))
 
 !$OMP SINGLE
     pw = 0.0_8
@@ -203,7 +206,7 @@ SUBROUTINE tea_leaf_dpcg_local_solve(x_min,  &
         p(j, k) = r(j, k) + beta*p(j, k)
       ENDDO
     ENDDO
-!$OMP END DO NOWAIT
+!$OMP END DO
 
 !$OMP BARRIER
 !$OMP MASTER
@@ -279,7 +282,7 @@ SUBROUTINE tea_leaf_dpcg_matmul_ZTA_kernel(x_min,  &
 
   ztaz = 0.0_8
 
-!$OMP PARALLEL REDUCTION(+:ztaz)
+!$OMP PARALLEL
   IF (preconditioner_type .NE. TL_PREC_NONE) THEN
 
     IF (preconditioner_type .EQ. TL_PREC_JAC_BLOCK) THEN
@@ -298,10 +301,10 @@ SUBROUTINE tea_leaf_dpcg_matmul_ZTA_kernel(x_min,  &
         z(j, k) = r(j, k)
       ENDDO
     ENDDO
-!$OMP END DO NOWAIT
+!$OMP END DO
   ENDIF
 
-!$OMP DO
+!$OMP DO REDUCTION(+:ztaz)
   DO k=y_min,y_max
     DO j=x_min,x_max
       ztaz = ztaz + z(j, k)*((1.0_8                            &

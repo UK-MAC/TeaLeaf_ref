@@ -63,32 +63,6 @@ SUBROUTINE tea_leaf_dpcg_sum_matrix_rows()
 
 END SUBROUTINE tea_leaf_dpcg_sum_matrix_rows
 
-SUBROUTINE tea_leaf_dpcg_restrict_ZT()
-
-  IMPLICIT NONE
-  INTEGER :: t, err
-  REAL(KIND=8) :: ZTr
-
-  IF (use_fortran_kernels) THEN
-!$OMP PARALLEL PRIVATE(ZTr)
-!$OMP DO
-    DO t=1,tiles_per_task
-      CALL tea_leaf_dpcg_restrict_ZT_kernel(chunk%tiles(t)%field%x_min,    &
-          chunk%tiles(t)%field%x_max,           &
-          chunk%tiles(t)%field%y_min,           &
-          chunk%tiles(t)%field%y_max,           &
-          halo_exchange_depth,                  &
-          chunk%tiles(t)%field%vector_r,    &
-          ztr)
-
-      chunk%def%t2(chunk%tiles(t)%def_tile_coords(1), chunk%tiles(t)%def_tile_coords(2)) = ztr
-    ENDDO
-!$OMP END DO
-!$OMP END PARALLEL
-  ENDIF
-
-END SUBROUTINE tea_leaf_dpcg_restrict_ZT
-
 SUBROUTINE tea_leaf_dpcg_setup_and_solve_E
 
   IMPLICIT NONE
@@ -161,6 +135,32 @@ SUBROUTINE tea_leaf_dpcg_matmul_ZTA()
   ENDIF
 
 END SUBROUTINE tea_leaf_dpcg_matmul_ZTA
+
+SUBROUTINE tea_leaf_dpcg_restrict_ZT()
+
+  IMPLICIT NONE
+  INTEGER :: t, err
+  REAL(KIND=8) :: ZTr
+
+  IF (use_fortran_kernels) THEN
+!$OMP PARALLEL PRIVATE(ZTr)
+!$OMP DO
+    DO t=1,tiles_per_task
+      CALL tea_leaf_dpcg_restrict_ZT_kernel(chunk%tiles(t)%field%x_min,    &
+          chunk%tiles(t)%field%x_max,           &
+          chunk%tiles(t)%field%y_min,           &
+          chunk%tiles(t)%field%y_max,           &
+          halo_exchange_depth,                  &
+          chunk%tiles(t)%field%vector_r,    &
+          ztr)
+
+      chunk%def%t2(chunk%tiles(t)%def_tile_coords(1), chunk%tiles(t)%def_tile_coords(2)) = ztr
+    ENDDO
+!$OMP END DO
+!$OMP END PARALLEL
+  ENDIF
+
+END SUBROUTINE tea_leaf_dpcg_restrict_ZT
 
 SUBROUTINE tea_leaf_dpcg_prolong_Z()
 
