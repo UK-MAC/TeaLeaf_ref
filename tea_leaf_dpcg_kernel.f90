@@ -91,19 +91,32 @@ SUBROUTINE tea_leaf_dpcg_local_solve(x_min,  &
                            r,                      &
                            Mi,                     &
                            w,                     &
-                           z)
+                           z,       &
+                           sd,       &
+                           inner_iters,         &
+                           it_count,    &
+                           theta,       &
+                           use_ppcg,    &
+                           inner_cg_alphas, inner_cg_betas,     &
+                           inner_ch_alphas, inner_ch_betas)
 
   IMPLICIT NONE
 
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
   REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) &
-                          :: r, z, Mi, p, w, u, u0, def_e
+                          :: r, z, Mi, p, w, u, u0, def_e, sd
 
   INTEGER(KIND=4) :: j,k
   INTEGER(KIND=4) :: it_count
 
-  REAL(kind=8) :: rro, smvp, initial_residual
+  REAL(KIND=8) :: rro, smvp, initial_residual
   REAL(KIND=8) ::  alpha, beta, pw, rrn
+
+  INTEGER :: inner_iters, inner_step
+  LOGICAL :: use_ppcg
+  REAL(KIND=8), DIMENSION(inner_iters) :: inner_cg_alphas, inner_cg_betas
+  REAL(KIND=8), DIMENSION(inner_iters) :: inner_ch_alphas, inner_ch_betas
+  REAL(KIND=8) :: theta
 
   rro = 0.0_8
   initial_residual = 0.0_8
@@ -113,7 +126,7 @@ SUBROUTINE tea_leaf_dpcg_local_solve(x_min,  &
 
   it_count = 0
 
-!$OMP PARALLEL private(alpha, beta, smvp)
+!$OMP PARALLEL private(alpha, beta, smvp, inner_step)
 
 !$OMP DO
   DO k=y_min,y_max
@@ -151,11 +164,13 @@ SUBROUTINE tea_leaf_dpcg_local_solve(x_min,  &
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  DO WHILE (((sqrt(abs(rrn)) .gt. 1e-15*abs(initial_residual))) .and. (it_count < 100))
+  DO WHILE ((sqrt(abs(rrn)) .gt. 1e-15*initial_residual) .and. (it_count < inner_iters))
 
-!$OMP SINGLE
+!$OMP BARRIER
+!$OMP MASTER
     pw = 0.0_8
-!$OMP END SINGLE
+!$OMP END MASTER
+!$OMP BARRIER
 
 !$OMP DO REDUCTION(+:pw)
     DO k=y_min,y_max
@@ -184,11 +199,51 @@ SUBROUTINE tea_leaf_dpcg_local_solve(x_min,  &
 !$OMP END MASTER
 !$OMP BARRIER
 
-!$OMP DO REDUCTION(+:rrn)
+!$OMP DO
     DO k=y_min,y_max
       DO j=x_min,x_max
         u(j, k) = u(j, k) + alpha*p(j, k)
         r(j, k) = r(j, k) - alpha*w(j, k)
+      ENDDO
+    ENDDO
+!$OMP END DO
+
+    IF (use_ppcg) THEN
+      DO inner_step=1,10
+!$OMP DO
+        DO k=y_min,y_max
+          DO j=x_min,x_max
+            sd(j, k) = r(j, k)/theta
+          ENDDO
+        ENDDO
+!$OMP END DO
+!$OMP DO
+        DO k=y_min,y_max
+          DO j=x_min,x_max
+            smvp = (1.0_8                                         &
+                + (def_e(j, k+1) + def_e(j, k))                      &
+                + (def_e(j+1, k) + def_e(j, k)))*sd(j, k)             &
+                + (def_e(j, k+1)*sd(j, k+1) + def_e(j, k)*sd(j, k-1))  &
+                + (def_e(j+1, k)*sd(j+1, k) + def_e(j, k)*sd(j-1, k))
+  
+            r(j, k) = r(j, k) - smvp
+            u(j, k) = u(j, k) + sd(j, k)
+          ENDDO
+        ENDDO
+!$OMP END DO
+!$OMP DO
+        DO k=y_min,y_max
+          DO j=x_min,x_max
+            sd(j, k) = inner_ch_alphas(inner_step)*sd(j, k) + inner_ch_betas(inner_step)*r(j, k)
+          ENDDO
+        ENDDO
+!$OMP END DO
+      ENDDO
+    ENDIF
+
+!$OMP DO REDUCTION(+:rrn)
+    DO k=y_min,y_max
+      DO j=x_min,x_max
         rrn = rrn + r(j, k)*r(j, k)
       ENDDO
     ENDDO
@@ -212,6 +267,8 @@ SUBROUTINE tea_leaf_dpcg_local_solve(x_min,  &
 !$OMP MASTER
     rro = rrn
     it_count = it_count + 1
+    inner_cg_alphas(it_count) = alpha
+    inner_cg_betas(it_count) = beta
 !$OMP END MASTER
 !$OMP BARRIER
 

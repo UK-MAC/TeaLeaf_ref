@@ -183,7 +183,7 @@ MODULE definitions_module
      ! Arrays the size of mpi_dims*tile_dims
      REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: t1, t2
      REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: def_E
-     REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: def_p, def_r, def_w
+     REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: def_p, def_r, def_w, def_sd
      REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: def_Mi, def_z
      INTEGER            :: x_cells              &
                           ,y_cells
