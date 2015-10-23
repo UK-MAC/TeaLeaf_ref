@@ -10,11 +10,11 @@ MODULE tea_leaf_dpcg_module
 
   IMPLICIT NONE
 
-  INTEGER, PARAMETER :: inner_iters=200
+  INTEGER, PARAMETER :: coarse_solve_max_iters=200
 
   LOGICAL :: inner_use_ppcg
-  REAL(KIND=8), DIMENSION(inner_iters) :: inner_cg_alphas, inner_cg_betas
-  REAL(KIND=8), DIMENSION(inner_iters) :: inner_ch_alphas, inner_ch_betas
+  REAL(KIND=8), DIMENSION(coarse_solve_max_iters) :: inner_cg_alphas, inner_cg_betas
+  REAL(KIND=8), DIMENSION(coarse_solve_max_iters) :: inner_ch_alphas, inner_ch_betas
   REAL(KIND=8) :: eigmin, eigmax, theta
 
 CONTAINS
@@ -24,44 +24,54 @@ SUBROUTINE tea_leaf_dpcg_init_x0()
   IMPLICIT NONE
 
   INTEGER :: t, err
+  INTEGER :: it_count, info
 
   inner_use_ppcg = .FALSE.
 
   ! get E
   CALL tea_leaf_dpcg_sum_matrix_rows()
 
-!  ! may not need to do ?
-!  CALL tea_leaf_calc_residual()
-!  CALL tea_leaf_dpcg_restrict_ZT()
-!  CALL MPI_Allreduce(MPI_IN_PLACE, chunk%def%t2, size(chunk%def%t1), MPI_DOUBLE_PRECISION, MPI_SUM, mpi_cart_comm, err)
-!  chunk%def%t1 = chunk%def%t2
-!
-!  CALL tea_leaf_dpcg_local_solve(   &
-!      chunk%def%x_min, &
-!      chunk%def%x_max,                                  &
-!      chunk%def%y_min,                                  &
-!      chunk%def%y_max,                                  &
-!      halo_exchange_depth,                                  &
-!      chunk%def%t2,                               &
-!      chunk%def%t1,                               &
-!      chunk%def%def_e,                               &
-!      chunk%def%def_p,                               &
-!      chunk%def%def_r,                               &
-!      chunk%def%def_Mi,                               &
-!      chunk%def%def_w,                               &
-!      chunk%def%def_z)
-!
-!  CALL tea_leaf_dpcg_prolong_Z()
-!
-!!$OMP PARALLEL
-!!$OMP DO
-!    DO t=1,tiles_per_task
-!      chunk%tiles(t)%field%u = chunk%tiles(t)%field%u + chunk%tiles(t)%field%vector_z
-!    ENDDO
-!!$OMP END DO
-!!$OMP END PARALLEL
-!
-!  CALL tea_leaf_calc_residual()
+  ! may not need to do ?
+  CALL tea_leaf_dpcg_restrict_ZT()
+  chunk%def%t1 = chunk%def%t2
+
+  CALL tea_leaf_dpcg_local_solve(   &
+      chunk%def%x_min, &
+      chunk%def%x_max,                                  &
+      chunk%def%y_min,                                  &
+      chunk%def%y_max,                                  &
+      halo_exchange_depth,                                  &
+      chunk%def%t2,                               &
+      chunk%def%t1,                               &
+      chunk%def%def_e,                               &
+      chunk%def%def_p,                               &
+      chunk%def%def_r,                               &
+      chunk%def%def_Mi,                               &
+      chunk%def%def_w,                               &
+      chunk%def%def_z, &
+      chunk%def%def_sd, &
+      eps, &
+      coarse_solve_max_iters,                          &
+      it_count,         &
+      0.0_8,            &
+      inner_use_ppcg,       &
+      inner_cg_alphas, inner_cg_betas,      &
+      inner_ch_alphas, inner_ch_betas       &
+      )
+
+  inner_use_ppcg = .TRUE.
+  CALL tea_calc_eigenvalues(inner_cg_alphas, inner_cg_betas, eigmin, eigmax, &
+      max_iters, it_count, info)
+
+  IF (info .NE. 0) CALL report_error('tea_leaf_dpcg_setup_and_solve_E', 'Error in calculating eigenvalues')
+
+  CALL tea_calc_ch_coefs(inner_ch_alphas, inner_ch_betas, eigmin, eigmax, &
+      theta, it_count)
+
+  CALL tea_leaf_dpcg_prolong_Z()
+  CALL tea_leaf_dpcg_add_z()
+
+  CALL tea_leaf_calc_residual()
 
   ! initial solve
   CALL tea_leaf_dpcg_setup_and_solve_E()
@@ -108,16 +118,13 @@ SUBROUTINE tea_leaf_dpcg_setup_and_solve_E
   IMPLICIT NONE
 
   INTEGER :: err
-  INTEGER :: it_count, info
+  INTEGER :: it_count
 
-  chunk%def%t1 = 0
-  chunk%def%t2 = 0
+  INTEGER :: ios, file_id, get_unit, t
+  character*20 :: filename
 
   CALL tea_leaf_dpcg_matmul_ZTA()
   CALL tea_leaf_dpcg_restrict_ZT()
-
-  CALL MPI_Allreduce(MPI_IN_PLACE, chunk%def%t1, size(chunk%def%t1), MPI_DOUBLE_PRECISION, MPI_SUM, mpi_cart_comm, err)
-  CALL MPI_Allreduce(MPI_IN_PLACE, chunk%def%t2, size(chunk%def%t2), MPI_DOUBLE_PRECISION, MPI_SUM, mpi_cart_comm, err)
 
   chunk%def%t1 = chunk%def%t1 + chunk%def%t2
 
@@ -136,7 +143,8 @@ SUBROUTINE tea_leaf_dpcg_setup_and_solve_E
       chunk%def%def_w,                               &
       chunk%def%def_z, &
       chunk%def%def_sd, &
-      inner_iters,                          &
+      eps, &
+      coarse_solve_max_iters,                          &
       it_count,         &
       theta,            &
       inner_use_ppcg,       &
@@ -146,14 +154,6 @@ SUBROUTINE tea_leaf_dpcg_setup_and_solve_E
 
   CALL tea_leaf_dpcg_prolong_Z()
 
-  IF (inner_use_ppcg .EQ. .FALSE.) THEN
-    inner_use_ppcg = .TRUE.
-    CALL tea_calc_eigenvalues(inner_cg_alphas, inner_cg_betas, eigmin, eigmax, &
-        max_iters, it_count, info)
-    IF (info .NE. 0) CALL report_error('tea_leaf_dpcg_setup_and_solve_E', 'Error in calculating eigenvalues')
-    CALL tea_calc_ch_coefs(inner_ch_alphas, inner_ch_betas, eigmin, eigmax, &
-        theta, inner_iters)
-  ENDIF
 
 END SUBROUTINE tea_leaf_dpcg_setup_and_solve_E
 
@@ -163,6 +163,8 @@ SUBROUTINE tea_leaf_dpcg_matmul_ZTA()
 
   INTEGER :: t, err
   REAL(KIND=8) :: ztaz
+
+  chunk%def%t1 = 0
 
   IF (use_fortran_kernels) THEN
 !$OMP PARALLEL PRIVATE(ztaz)
@@ -192,6 +194,8 @@ SUBROUTINE tea_leaf_dpcg_matmul_ZTA()
 !$OMP END PARALLEL
   ENDIF
 
+  CALL MPI_Allreduce(MPI_IN_PLACE, chunk%def%t1, size(chunk%def%t1), MPI_DOUBLE_PRECISION, MPI_SUM, mpi_cart_comm, err)
+
 END SUBROUTINE tea_leaf_dpcg_matmul_ZTA
 
 SUBROUTINE tea_leaf_dpcg_restrict_ZT()
@@ -199,6 +203,8 @@ SUBROUTINE tea_leaf_dpcg_restrict_ZT()
   IMPLICIT NONE
   INTEGER :: t, err
   REAL(KIND=8) :: ZTr
+
+  chunk%def%t2 = 0
 
   IF (use_fortran_kernels) THEN
 !$OMP PARALLEL PRIVATE(ZTr)
@@ -217,6 +223,8 @@ SUBROUTINE tea_leaf_dpcg_restrict_ZT()
 !$OMP END DO
 !$OMP END PARALLEL
   ENDIF
+
+  CALL MPI_Allreduce(MPI_IN_PLACE, chunk%def%t2, size(chunk%def%t2), MPI_DOUBLE_PRECISION, MPI_SUM, mpi_cart_comm, err)
 
 END SUBROUTINE tea_leaf_dpcg_restrict_ZT
 
@@ -379,6 +387,29 @@ SUBROUTINE tea_leaf_dpcg_calc_zrnorm(rro)
   ENDIF
 
 END SUBROUTINE tea_leaf_dpcg_calc_zrnorm
+
+SUBROUTINE tea_leaf_dpcg_add_z()
+
+  IMPLICIT NONE
+  INTEGER :: t
+
+  IF (use_fortran_kernels) THEN
+!$OMP PARALLEL
+!$OMP DO
+    DO t=1,tiles_per_task
+      CALL tea_leaf_dpcg_add_z_kernel(chunk%tiles(t)%field%x_min,    &
+          chunk%tiles(t)%field%x_max,           &
+          chunk%tiles(t)%field%y_min,           &
+          chunk%tiles(t)%field%y_max,           &
+          halo_exchange_depth,                  &
+          chunk%tiles(t)%field%u, &
+          chunk%tiles(t)%field%vector_z )
+    ENDDO
+!$OMP END DO
+!$OMP END PARALLEL
+  ENDIF
+
+END SUBROUTINE tea_leaf_dpcg_add_z
 
 END MODULE tea_leaf_dpcg_module
 

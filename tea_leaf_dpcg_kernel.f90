@@ -93,6 +93,7 @@ SUBROUTINE tea_leaf_dpcg_local_solve(x_min,  &
                            w,                     &
                            z,       &
                            sd,       &
+                           eps, &
                            inner_iters,         &
                            it_count,    &
                            theta,       &
@@ -109,7 +110,7 @@ SUBROUTINE tea_leaf_dpcg_local_solve(x_min,  &
   INTEGER(KIND=4) :: j,k
   INTEGER(KIND=4) :: it_count
 
-  REAL(KIND=8) :: rro, smvp, initial_residual
+  REAL(KIND=8) :: rro, smvp, initial_residual, eps
   REAL(KIND=8) ::  alpha, beta, pw, rrn
 
   INTEGER :: inner_iters, inner_step
@@ -164,7 +165,7 @@ SUBROUTINE tea_leaf_dpcg_local_solve(x_min,  &
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  DO WHILE ((sqrt(abs(rrn)) .gt. 1e-15*initial_residual) .and. (it_count < inner_iters))
+  DO WHILE ((sqrt(abs(rrn)) .gt. eps*initial_residual) .and. (it_count < inner_iters))
 
 !$OMP BARRIER
 !$OMP MASTER
@@ -494,7 +495,27 @@ SUBROUTINE tea_leaf_dpcg_calc_zrnorm_kernel(x_min, &
 !$OMP END DO
 !$OMP END PARALLEL
 
-end SUBROUTINE tea_leaf_dpcg_calc_zrnorm_kernel
+END SUBROUTINE tea_leaf_dpcg_calc_zrnorm_kernel
+
+SUBROUTINE tea_leaf_dpcg_add_z_kernel(x_min, x_max, y_min, y_max, halo_exchange_depth, &
+    u, z )
+
+  IMPLICIT NONE
+  INTEGER(KIND=4) :: j,k
+  INTEGER(KIND=4) :: x_min, x_max, y_min, y_max, halo_exchange_depth
+  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: u, z
+
+!$OMP PARALLEL
+!$OMP DO
+  DO k=y_min,y_max
+    DO j=x_min,x_max
+      u(j, k) = u(j, k) + z(j, k)
+    ENDDO
+  ENDDO
+!$OMP END DO
+!$OMP END PARALLEL
+
+END SUBROUTINE tea_leaf_dpcg_add_z_kernel
 
 END MODULE
 
