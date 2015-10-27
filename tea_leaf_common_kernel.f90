@@ -91,12 +91,12 @@ SUBROUTINE tea_leaf_common_init_kernel(x_min,  &
   ENDIF
 
 !$OMP DO
-   DO k=y_min-halo_exchange_depth + 1,y_max+halo_exchange_depth
-     DO j=x_min-halo_exchange_depth + 1,x_max+halo_exchange_depth
-          Kx(j,k)=(w(j-1,k  ) + w(j,k))/(2.0_8*w(j-1,k  )*w(j,k))
-          Ky(j,k)=(w(j  ,k-1) + w(j,k))/(2.0_8*w(j  ,k-1)*w(j,k))
-     ENDDO
-   ENDDO
+  DO k=y_min-halo_exchange_depth + 1,y_max+halo_exchange_depth
+    DO j=x_min-halo_exchange_depth + 1,x_max+halo_exchange_depth
+      Kx(j,k)=(w(j-1,k  ) + w(j,k))/(2.0_8*w(j-1,k  )*w(j,k))
+      Ky(j,k)=(w(j  ,k-1) + w(j,k))/(2.0_8*w(j  ,k-1)*w(j,k))
+    ENDDO
+  ENDDO
 !$OMP END DO
 
 ! Whether to apply reflective boundary conditions to all external faces

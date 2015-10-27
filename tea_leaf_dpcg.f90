@@ -34,8 +34,6 @@ SUBROUTINE tea_leaf_dpcg_init_x0()
 
   CALL tea_leaf_dpcg_restrict_ZT()
 
-  chunk%def%t1 = chunk%def%t2
-
   ! just use CG on the first one
   inner_use_ppcg = .FALSE.
 
@@ -86,6 +84,7 @@ SUBROUTINE tea_leaf_dpcg_init_x0()
   CALL tea_leaf_calc_residual()
 
   CALL tea_leaf_dpcg_setup_and_solve_E()
+  CALL tea_leaf_dpcg_add_z()
 
   CALL tea_leaf_dpcg_init_p()
 
