@@ -26,14 +26,23 @@ SUBROUTINE tea_leaf_dpcg_init_x0()
   INTEGER :: t, err
   INTEGER :: it_count, info
 
-  inner_use_ppcg = .FALSE.
+  ! done before
+  !CALL tea_leaf_calc_residual()
 
-  ! get E
+  ! get E and sum of matrix rows in the row_sums array
   CALL tea_leaf_dpcg_sum_matrix_rows()
 
-  ! may not need to do ?
   CALL tea_leaf_dpcg_restrict_ZT()
+
   chunk%def%t1 = chunk%def%t2
+
+  ! just use CG on the first one
+  inner_use_ppcg = .FALSE.
+
+  ! FIXME if initial residual is very small, not enough steps to provide an
+  ! accurate guess for the eigenvalues (if diagonal scaling on the coarse
+  ! grid correction is disablee). Need to run CG for at least ~30 steps to
+  ! get a good guess
 
   CALL tea_leaf_dpcg_local_solve(   &
       chunk%def%x_min, &
@@ -59,7 +68,12 @@ SUBROUTINE tea_leaf_dpcg_init_x0()
       inner_ch_alphas, inner_ch_betas       &
       )
 
+  ! add back onto the fine grid
+  CALL tea_leaf_dpcg_add_z()
+
+  ! for all subsequent steps, use ppcg
   inner_use_ppcg = .TRUE.
+
   CALL tea_calc_eigenvalues(inner_cg_alphas, inner_cg_betas, eigmin, eigmax, &
       max_iters, it_count, info)
 
@@ -68,12 +82,9 @@ SUBROUTINE tea_leaf_dpcg_init_x0()
   CALL tea_calc_ch_coefs(inner_ch_alphas, inner_ch_betas, eigmin, eigmax, &
       theta, it_count)
 
-  CALL tea_leaf_dpcg_prolong_Z()
-  CALL tea_leaf_dpcg_add_z()
-
+  ! calc residual again, and do initial solve
   CALL tea_leaf_calc_residual()
 
-  ! initial solve
   CALL tea_leaf_dpcg_setup_and_solve_E()
 
   CALL tea_leaf_dpcg_init_p()
@@ -99,6 +110,7 @@ SUBROUTINE tea_leaf_dpcg_sum_matrix_rows()
           halo_exchange_depth,                  &
           chunk%tiles(t)%field%vector_kx, &
           chunk%tiles(t)%field%vector_ky, &
+          chunk%tiles(t)%field%row_sums, &
           chunk%tiles(t)%field%rx,  &
           chunk%tiles(t)%field%ry,  &
           E_local)
@@ -125,8 +137,6 @@ SUBROUTINE tea_leaf_dpcg_setup_and_solve_E
 
   CALL tea_leaf_dpcg_matmul_ZTA()
   CALL tea_leaf_dpcg_restrict_ZT()
-
-  chunk%def%t1 = chunk%def%t1 + chunk%def%t2
 
   CALL tea_leaf_dpcg_local_solve(   &
       chunk%def%x_min, &
@@ -180,6 +190,7 @@ SUBROUTINE tea_leaf_dpcg_matmul_ZTA()
           chunk%tiles(t)%field%vector_z,                               &
           chunk%tiles(t)%field%vector_Kx,                              &
           chunk%tiles(t)%field%vector_Ky,                              &
+          chunk%tiles(t)%field%row_sums,                              &
           chunk%tiles(t)%field%tri_cp,   &
           chunk%tiles(t)%field%tri_bfp,    &
           chunk%tiles(t)%field%rx,  &
@@ -348,7 +359,14 @@ SUBROUTINE tea_leaf_dpcg_calc_p(beta)
           halo_exchange_depth,                  &
           chunk%tiles(t)%field%vector_p, &
           chunk%tiles(t)%field%vector_r, &
-          beta )
+          chunk%tiles(t)%field%vector_z, &
+          chunk%tiles(t)%field%vector_Kx,                              &
+          chunk%tiles(t)%field%vector_Ky,                              &
+          chunk%tiles(t)%field%tri_cp,   &
+          chunk%tiles(t)%field%tri_bfp,    &
+          chunk%tiles(t)%field%rx,  &
+          chunk%tiles(t)%field%ry,  &
+          beta, tl_preconditioner_type )
     ENDDO
 !$OMP END DO
 !$OMP END PARALLEL
@@ -403,7 +421,7 @@ SUBROUTINE tea_leaf_dpcg_add_z()
           chunk%tiles(t)%field%y_max,           &
           halo_exchange_depth,                  &
           chunk%tiles(t)%field%u, &
-          chunk%tiles(t)%field%vector_z )
+          chunk%def%t2(chunk%tiles(t)%def_tile_coords(1), chunk%tiles(t)%def_tile_coords(2)))
     ENDDO
 !$OMP END DO
 !$OMP END PARALLEL

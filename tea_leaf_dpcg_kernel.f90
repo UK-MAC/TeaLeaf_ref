@@ -52,14 +52,14 @@ SUBROUTINE tea_leaf_dpcg_restrict_ZT_kernel(x_min, x_max, y_min, y_max, halo_exc
 END SUBROUTINE tea_leaf_dpcg_restrict_ZT_kernel
 
 SUBROUTINE tea_leaf_dpcg_sum_matrix_rows_kernel(x_min, x_max, y_min, y_max, halo_exchange_depth, &
-    kx, ky , &
+    kx, ky , row_sums, &
     rx, ry, E_local )
 
   IMPLICIT NONE
   INTEGER(KIND=4) :: j,k
   INTEGER(KIND=4) :: x_min, x_max, y_min, y_max, halo_exchange_depth
   REAL(KIND=8) :: rx, ry, E_local
-  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: kx, ky
+  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: kx, ky, row_sums
 
   E_local = 0.0_8
 
@@ -67,11 +67,12 @@ SUBROUTINE tea_leaf_dpcg_sum_matrix_rows_kernel(x_min, x_max, y_min, y_max, halo
 !$OMP DO REDUCTION (+:E_local)
   DO k=y_min,y_max
     DO j=x_min,x_max
-      E_local = E_local + (1.0_8                &
+      row_sums(j, k) = (1.0_8                   &
             + (ry*Ky(j, k+1) + ry*Ky(j, k))     &
             + (rx*Kx(j+1, k) + rx*Kx(j, k)))    &
             - (ry*Ky(j, k+1) + ry*Ky(j, k))     &
             - (rx*Kx(j+1, k) + rx*Kx(j, k))
+      E_local = E_local + row_sums(j, k)
     ENDDO
   ENDDO
 !$OMP END DO
@@ -132,7 +133,9 @@ SUBROUTINE tea_leaf_dpcg_local_solve(x_min,  &
 !$OMP DO
   DO k=y_min,y_max
     DO j=x_min,x_max
-      u(j, k) = u0(j, k)
+      ! t1 = t1 + t2
+      u0(j, k) = u0(j, k) + u(j, k)
+
       p(j, k) = 0.0_8
       z(j, k) = 0.0_8
     ENDDO
@@ -226,7 +229,7 @@ SUBROUTINE tea_leaf_dpcg_local_solve(x_min,  &
                 + (def_e(j+1, k) + def_e(j, k)))*sd(j, k)             &
                 + (def_e(j, k+1)*sd(j, k+1) + def_e(j, k)*sd(j, k-1))  &
                 + (def_e(j+1, k)*sd(j+1, k) + def_e(j, k)*sd(j-1, k))
-  
+
             r(j, k) = r(j, k) - smvp
             u(j, k) = u(j, k) + sd(j, k)
           ENDDO
@@ -318,6 +321,7 @@ SUBROUTINE tea_leaf_dpcg_matmul_ZTA_kernel(x_min,  &
                            z,                      &
                            Kx,                     &
                            Ky,                     &
+                           row_sums,                &
                            cp,                     &
                            bfp,                    &
                            rx,                     &
@@ -330,12 +334,12 @@ SUBROUTINE tea_leaf_dpcg_matmul_ZTA_kernel(x_min,  &
   INTEGER :: preconditioner_type
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
   REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth)&
-                          :: r, Kx, Ky, z, Mi
+                          :: r, Kx, Ky, z, Mi, row_sums
   REAL(KIND=8), DIMENSION(x_min:x_max,y_min:y_max) :: cp, bfp
 
   INTEGER(KIND=4) :: j,k
 
-  REAL(KIND=8) ::  rx, ry
+  REAL(KIND=8) :: rx, ry
   REAL(kind=8) :: ztaz
 
   ztaz = 0.0_8
@@ -365,11 +369,7 @@ SUBROUTINE tea_leaf_dpcg_matmul_ZTA_kernel(x_min,  &
 !$OMP DO REDUCTION(+:ztaz)
   DO k=y_min,y_max
     DO j=x_min,x_max
-      ztaz = ztaz + z(j, k)*((1.0_8                            &
-            + (ry*Ky(j, k+1) + ry*Ky(j, k))     &
-            + (rx*Kx(j+1, k) + rx*Kx(j, k)))    &
-            - (ry*Ky(j, k+1) + ry*Ky(j, k))     &
-            - (rx*Kx(j+1, k) + rx*Kx(j, k)))
+      ztaz = ztaz + z(j, k)*row_sums(j, k)
     ENDDO
   ENDDO
 !$OMP END DO
@@ -422,23 +422,45 @@ SUBROUTINE tea_leaf_dpcg_calc_rrn_kernel(x_min, x_max, y_min, y_max, halo_exchan
 END SUBROUTINE tea_leaf_dpcg_calc_rrn_kernel
 
 SUBROUTINE tea_leaf_dpcg_calc_p_kernel(x_min, x_max, y_min, y_max, halo_exchange_depth, &
-    p, r , &
-    beta )
+    p, r, z, Kx, Ky, cp, bfp, &
+    rx, ry, beta, preconditioner_type )
 
   IMPLICIT NONE
   INTEGER(KIND=4) :: j,k
   INTEGER(KIND=4) :: x_min, x_max, y_min, y_max, halo_exchange_depth
-  REAL(KIND=8) :: beta
-  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: p, r
+  INTEGER :: preconditioner_type
+  REAL(KIND=8) :: rx, ry, beta
+  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: p, r, Kx, Ky, Mi, z
+  REAL(KIND=8), DIMENSION(x_min:x_max,y_min:y_max) :: cp, bfp
 
 !$OMP PARALLEL
+  IF (preconditioner_type .NE. TL_PREC_NONE) THEN
+
+    IF (preconditioner_type .EQ. TL_PREC_JAC_BLOCK) THEN
+      CALL tea_block_solve(x_min, x_max, y_min, y_max, halo_exchange_depth,             &
+                             r, z, cp, bfp, Kx, Ky, rx, ry)
+    ELSE IF (preconditioner_type .EQ. TL_PREC_JAC_DIAG) THEN
+      CALL tea_diag_solve(x_min, x_max, y_min, y_max, halo_exchange_depth,             &
+                             r, z, Mi, Kx, Ky, rx, ry)
+    ENDIF
+
 !$OMP DO
-  DO k=y_min,y_max
-    DO j=x_min,x_max
-      p(j, k) = r(j, k) + beta*p(j, k)
+    DO k=y_min,y_max
+      DO j=x_min,x_max
+        p(j, k) = z(j, k) + beta*p(j, k)
+      ENDDO
     ENDDO
-  ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
+
+  ELSE
+!$OMP DO
+    DO k=y_min,y_max
+      DO j=x_min,x_max
+        p(j, k) = r(j, k) + beta*p(j, k)
+      ENDDO
+    ENDDO
+!$OMP END DO NOWAIT
+  ENDIF
 !$OMP END PARALLEL
 
 END SUBROUTINE tea_leaf_dpcg_calc_p_kernel
@@ -498,18 +520,20 @@ SUBROUTINE tea_leaf_dpcg_calc_zrnorm_kernel(x_min, &
 END SUBROUTINE tea_leaf_dpcg_calc_zrnorm_kernel
 
 SUBROUTINE tea_leaf_dpcg_add_z_kernel(x_min, x_max, y_min, y_max, halo_exchange_depth, &
-    u, z )
+    u, &
+    tile_t2 )
 
   IMPLICIT NONE
   INTEGER(KIND=4) :: j,k
   INTEGER(KIND=4) :: x_min, x_max, y_min, y_max, halo_exchange_depth
-  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: u, z
+  REAL(KIND=8) :: tile_t2
+  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: u
 
 !$OMP PARALLEL
 !$OMP DO
   DO k=y_min,y_max
     DO j=x_min,x_max
-      u(j, k) = u(j, k) + z(j, k)
+      u(j, k) = u(j, k) + tile_t2
     ENDDO
   ENDDO
 !$OMP END DO

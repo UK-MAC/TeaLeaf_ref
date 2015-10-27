@@ -288,6 +288,10 @@ SUBROUTINE tea_leaf()
       ! pw = p.w
       CALL tea_leaf_cg_calc_w(pw)
 
+      ! keep old value of r for rrn calculation
+      CALL tea_leaf_dpcg_store_r()
+
+      ! r.z
       CALL tea_leaf_dpcg_calc_zrnorm(rro)
 
       IF (profiler_on) dot_product_time=timer()
@@ -299,11 +303,11 @@ SUBROUTINE tea_leaf()
       alpha = rro/pw
       cg_alphas(n) = alpha
 
-      CALL tea_leaf_dpcg_store_r()
-
       ! u = u + a*p
       ! r = r - a*w
       CALL tea_leaf_cg_calc_ur(alpha, rrn)
+
+      ! not calculating rrn here
 
       CALL tea_leaf_dpcg_setup_and_solve_E()
 

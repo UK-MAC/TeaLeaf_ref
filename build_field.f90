@@ -68,6 +68,8 @@ SUBROUTINE build_field()
          chunk%tiles(t)%field%y_min-halo_exchange_depth:chunk%tiles(t)%field%y_max+halo_exchange_depth))
     ALLOCATE(chunk%tiles(t)%field%vector_sd(chunk%tiles(t)%field%x_min-halo_exchange_depth:chunk%tiles(t)%field%x_max+halo_exchange_depth, &
          chunk%tiles(t)%field%y_min-halo_exchange_depth:chunk%tiles(t)%field%y_max+halo_exchange_depth))
+    ALLOCATE(chunk%tiles(t)%field%row_sums(chunk%tiles(t)%field%x_min-halo_exchange_depth:chunk%tiles(t)%field%x_max+halo_exchange_depth, &
+         chunk%tiles(t)%field%y_min-halo_exchange_depth:chunk%tiles(t)%field%y_max+halo_exchange_depth))
 
     ALLOCATE(chunk%tiles(t)%field%tri_cp(chunk%tiles(t)%field%x_min:chunk%tiles(t)%field%x_max, &
          chunk%tiles(t)%field%y_min:chunk%tiles(t)%field%y_max))
@@ -115,6 +117,7 @@ SUBROUTINE build_field()
       chunk%tiles(t)%field%vector_Ky(j,k)=0.0
       chunk%tiles(t)%field%vector_p(j,k)=0.0
       chunk%tiles(t)%field%vector_sd(j,k)=0.0
+      chunk%tiles(t)%field%row_sums(j,k)=0.0
     ENDDO
   ENDDO
 !$OMP ENDDO
