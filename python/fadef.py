@@ -8,7 +8,7 @@ import numpy as np
 
 from grids import Grid
 
-from ctypes import *
+from ctypes import cdll, c_int, byref
 
 import time
 
@@ -50,6 +50,7 @@ class Solver(object):
         self.grid = Grid(self.params, dims)
 
     def animate(self):
+        import matplotlib.pyplot as plt
         import matplotlib.animation as animation
         from matplotlib.colors import LogNorm
 
@@ -84,7 +85,7 @@ class Solver(object):
             error = np.sqrt(abs(rro))
 
             if not i % 10:
-                print "{0: 4d} - rro = {1:e} (|b-Ax| = {2:e})".format(i, error, self.get_grid_error())
+                print "{0: 4d} - error: {1:e} - error/initial: {2:e} (|b-Ax|: {3:e})".format(i, error, error/1, self.get_grid_error())
 
             im.set_array(getarr())
 
