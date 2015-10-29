@@ -80,15 +80,15 @@ SUBROUTINE generate_chunk_kernel(x_min,x_max,y_min,y_max,halo_exchange_depth, &
 !$OMP PARALLEL PRIVATE(x_cent,y_cent, state,radius,jt,kt)
 
 !$OMP DO
-  DO k=y_min,y_max
-    DO j=x_min,x_max
+  DO k=y_min-halo_exchange_depth,y_max+halo_exchange_depth
+    DO j=x_min-halo_exchange_depth,x_max+halo_exchange_depth
       energy0(j,k)=state_energy(1)
     ENDDO
   ENDDO
 !$OMP END DO
 !$OMP DO
-  DO k=y_min,y_max
-    DO j=x_min,x_max
+  DO k=y_min-halo_exchange_depth,y_max+halo_exchange_depth
+    DO j=x_min-halo_exchange_depth,x_max+halo_exchange_depth
       density(j,k)=state_density(1)
     ENDDO
   ENDDO
@@ -100,8 +100,8 @@ SUBROUTINE generate_chunk_kernel(x_min,x_max,y_min,y_max,halo_exchange_depth, &
     y_cent=state_ymin(state)
 
 !$OMP DO
-    DO k=y_min,y_max
-      DO j=x_min,x_max
+    DO k=y_min-halo_exchange_depth,y_max+halo_exchange_depth
+      DO j=x_min-halo_exchange_depth,x_max+halo_exchange_depth
         IF(state_geometry(state).EQ.g_rect ) THEN
           IF(vertexx(j+1).GE.state_xmin(state).AND.vertexx(j).LT.state_xmax(state)) THEN
             IF(vertexy(k+1).GE.state_ymin(state).AND.vertexy(k).LT.state_ymax(state)) THEN
@@ -128,8 +128,8 @@ SUBROUTINE generate_chunk_kernel(x_min,x_max,y_min,y_max,halo_exchange_depth, &
   ENDDO
 
 !$OMP DO
-  DO k=y_min, y_max
-    DO j=x_min, x_max
+  DO k=y_min-halo_exchange_depth, y_max+halo_exchange_depth
+    DO j=x_min-halo_exchange_depth, x_max+halo_exchange_depth
       u0(j,k) = energy0(j,k)*density(j,k)
     ENDDO
   ENDDO

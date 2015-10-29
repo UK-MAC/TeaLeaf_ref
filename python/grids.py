@@ -18,8 +18,11 @@ class Grid(HasInner):
         self.density = np.zeros_like(self.Kx)
         self.energy = np.zeros_like(self.Kx)
 
-        self.rx = self.params.dtinit/((self.params.xmax/self.params.x_cells)**2)
-        self.ry = self.params.dtinit/((self.params.ymax/self.params.y_cells)**2)
+        dx = ((self.params.xmax - self.params.xmin)/self.params.x_cells)
+        dy = ((self.params.ymax - self.params.ymin)/self.params.y_cells)
+
+        self.rx = self.params.dtinit/(dx**2)
+        self.ry = self.params.dtinit/(dy**2)
 
         self.dims = dims
 

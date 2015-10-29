@@ -73,11 +73,11 @@ class HasInner(object):
     # just to provide some convenience
     inner = np.s_[1:-1, 1:-1]
 
-    yr_idx = np.s_[2:  , 1:-1]
-    yl_idx = np.s_[ :-2, 1:-1]
+    xr_idx = np.s_[2:  , 1:-1]
+    xl_idx = np.s_[ :-2, 1:-1]
 
-    xr_idx = np.s_[1:-1, 2:  ]
-    xl_idx = np.s_[1:-1,  :-2]
+    yr_idx = np.s_[1:-1, 2:  ]
+    yl_idx = np.s_[1:-1,  :-2]
 
 def calc_eigs(cg_alphas, cg_betas):
     cg_alphas = np.array(cg_alphas)
