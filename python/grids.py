@@ -266,12 +266,12 @@ class Grid(HasInner):
         Ky_r = self.Ky[self.yr_idx]
         Ky_c = self.Ky[self.inner]
 
-        #return ne.evaluate("""
-        return (1.0 + (Kx_r + Kx_c)
-                + (Ky_r + Ky_c))*ins             \
-                - (Kx_r*ux_r + Kx_c*ux_l)        \
-                - (Ky_r*uy_r + Ky_c*uy_l)
-        #""")
+        return ne.evaluate("""(1.0 + (Kx_r + Kx_c) + (Ky_r + Ky_c))*ins - (Kx_r*ux_r + Kx_c*ux_l) - (Ky_r*uy_r + Ky_c*uy_l) """)
+
+        #return (1.0 + (Kx_r + Kx_c)
+        #        + (Ky_r + Ky_c))*ins             \
+        #        - (Kx_r*ux_r + Kx_c*ux_l)        \
+        #        - (Ky_r*uy_r + Ky_c*uy_l)
 
     def iter_sub_array(self, big_array, small_array, function):
         def get_slice_and_call(((x,y),_)):
@@ -321,13 +321,6 @@ class Grid(HasInner):
         z_s = np.zeros_like(x_s)
         sd_s = np.zeros_like(x_s)
 
-        E = np.zeros_like(x_s)
-
-        def make_e(x, y, big_array, small_array, arr_slice):
-            small_array[self.inner][x, y] = np.sum(big_array[arr_slice])
-
-        self.iter_sub_array(self.matrix_row_sums, E, make_e)
-
         def matmul_small(arr, E):
             ux_r = arr[self.xr_idx]
             ux_l = arr[self.xl_idx]
@@ -349,6 +342,8 @@ class Grid(HasInner):
                     - (Kx_r*ux_r + Kx_c*ux_l)        \
                     - (Ky_r*uy_r + Ky_c*uy_l)
             #""")
+
+        E = self.E
 
         matmul_bound = functools.partial(matmul_small, E=E)
 
@@ -434,6 +429,12 @@ class Grid(HasInner):
 
             # 6
             t2 = self.restrict_Zt(r)
+
+            # make E here
+            self.E = np.zeros_like(t2)
+            def make_e(x, y, big_array, small_array, arr_slice):
+                small_array[self.inner][x, y] = np.sum(big_array[arr_slice])
+            self.iter_sub_array(self.matrix_row_sums, self.E, make_e)
 
             # 7
             t1 = t2.copy()

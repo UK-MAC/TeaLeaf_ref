@@ -59,12 +59,12 @@ class Solver(object):
         fig, ax = plt.subplots(1, 1)
 
         im = ax.imshow(getarr(),
-            cmap=plt.get_cmap('seismic'),
+            cmap=plt.get_cmap('spectral'),
             #norm=LogNorm(vmin=0.1, vmax=np.max(getarr())),
             )
 
         for (x,y) in itertools.product(enumerate(np.cumsum(self.grid.tile_dims_x)), enumerate(np.cumsum(self.grid.tile_dims_y))):
-            print x, y
+            #print x, y
             ax.axhline(1)
 
         for x in np.cumsum(self.grid.tile_dims_x):
@@ -104,6 +104,13 @@ class Solver(object):
         return self.grid.exactrro(self.grid.u0, self.grid.u, self.grid.matmul)
 
     def run_normal(self):
+        for i in xrange(self.params.end_step):
+            self.step()
+            self.grid.u0 = self.grid.u.copy()
+
+        plotu(self.grid.u)
+
+    def step(self):
         cg_alphas = []
         cg_betas = []
 
