@@ -283,34 +283,34 @@ class Grid(HasInner):
 
         map(get_slice_and_call, np.ndenumerate(small_array[self.inner]))
 
-    def restrict_Zt(self, arr):
+    def restrict_Zt(self, r):
         t2 = np.zeros((2+self.dims[0], 2+self.dims[1]))
 
         def sum_sub(x, y, big_array, small_array, arr_slice):
             small_array[self.inner][x, y] = np.sum(big_array[self.inner][arr_slice])
             #if not x and not y: print small_array[self.inner][x, y] , arr_slice
 
-        self.iter_sub_array(arr, t2, sum_sub)
+        self.iter_sub_array(r, t2, sum_sub)
 
         return t2
 
-    def prolong_Z(self, small_arr):
+    def prolong_Z(self, t2):
         prolonged = np.zeros_like(self.u[self.inner])
 
         def broadcast(x, y, big_array, small_array, arr_slice):
-            big_array[self.inner][arr_slice][:] = small_array[self.inner][x, y]
+            big_array[arr_slice][:] = small_array[self.inner][x, y]
 
-        self.iter_sub_array(prolonged, small_arr, broadcast)
+        self.iter_sub_array(prolonged, t2, broadcast)
 
         return prolonged
 
-    def matmul_ZtA(self, arr):
+    def matmul_ZtA(self, z):
         t1 = np.zeros((2+self.dims[0], 2+self.dims[1]))
 
         def sum_and_multiply(x, y, big_array, small_array, arr_slice):
-            small_array[self.inner][x, y] = np.sum(big_array[self.inner][arr_slice])
+            small_array[self.inner][x, y] = np.sum(big_array[arr_slice])
 
-        self.iter_sub_array(self.matrix_row_sums*arr[self.inner], t1, sum_and_multiply)
+        self.iter_sub_array(self.matrix_row_sums*z[self.inner], t1, sum_and_multiply)
 
         return t1
 
@@ -336,12 +336,15 @@ class Grid(HasInner):
             Ky_r = E[self.yr_idx]
             Ky_c = E[self.inner]
 
-            #return ne.evaluate("""
-            return (1.0 + (Kx_r + Kx_c)
-                    + (Ky_r + Ky_c))*ins             \
-                    - (Kx_r*ux_r + Kx_c*ux_l)        \
-                    - (Ky_r*uy_r + Ky_c*uy_l)
-            #""")
+            diag = ((Kx_r + Kx_c) + (Ky_r + Ky_c)) + 1.0
+
+            if diag.size > 1000:
+                return ne.evaluate("""diag*ins - (Kx_r*ux_r + Kx_c*ux_l) - (Ky_r*uy_r + Ky_c*uy_l)""")
+
+            else:
+                return diag*ins             \
+                        - (Kx_r*ux_r + Kx_c*ux_l)        \
+                        - (Ky_r*uy_r + Ky_c*uy_l)
 
         E = self.E
 
@@ -393,6 +396,7 @@ class Grid(HasInner):
                     #np.finfo(type(self.r[0,0])),
                     self.params.tl_eps
                     )
+
                 self.calculated_coarse_eigs = True
 
             if np.sqrt(abs(rro)) < self.params.tl_eps*np.sqrt(abs(initial)):
