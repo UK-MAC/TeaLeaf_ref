@@ -14,9 +14,12 @@ import time
 
 from tea_params import Params
 
-from common import calc_eigs, calc_ch_coefs
+from common import calc_eigs, calc_ch_coefs, plotu
 
-np.set_printoptions(linewidth=1000, precision=4)
+np.set_printoptions(
+    linewidth=1000,
+    precision=4,
+)
 
 class Timer:
     def __enter__(self):
@@ -105,10 +108,22 @@ class Solver(object):
 
     def run_normal(self):
         for i in xrange(self.params.end_step):
+            print "step", i+1
             self.step()
             self.grid.u0 = self.grid.u.copy()
 
-        plotu(self.grid.u)
+        #plotu(self.grid.u)
+        dx = ((self.params.xmax - self.params.xmin)/self.params.x_cells)
+        dy = ((self.params.ymax - self.params.ymin)/self.params.y_cells)
+        volume = np.ones_like(self.grid.u)*dx*dy
+        temp = volume*self.grid.u*self.grid.density
+
+        final_temp = np.sum(temp[self.grid.inner])
+
+        desired = 103.88639125996923
+        percent_diff = (100*final_temp/desired) - 100
+
+        print "Final:{0:.10f} - Desired:{1:.10f} - % diff:{2:.10f}".format(final_temp, desired, percent_diff)
 
     def step(self):
         cg_alphas = []
@@ -159,5 +174,5 @@ if __name__ == '__main__':
     solver = Solver()
     with Timer() as t:
         solver.run_normal()
-    print t.interval
+    print t.interval, "seconds"
 
