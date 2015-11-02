@@ -133,8 +133,8 @@ SUBROUTINE tea_leaf_dpcg_local_solve(x_min,  &
 !$OMP DO
     DO k=y_min,y_max
       DO j=x_min,x_max
-        ! t1 = t1 + t2
-        u0(j, k) = u0(j, k) + u(j, k)
+        ! t1 = t1 - t2
+        u0(j, k) = u0(j, k) - u(j, k)
       ENDDO
     ENDDO
 !$OMP END DO
@@ -162,8 +162,8 @@ SUBROUTINE tea_leaf_dpcg_local_solve(x_min,  &
   DO k=y_min, y_max
     DO j=x_min, x_max
       smvp = (1.0_8                                         &
-          + (def_e(j, k+1) + def_e(j, k))                      &
-          + (def_e(j+1, k) + def_e(j, k)))*u(j, k)             &
+          + (def_e(j, k+1) + def_e(j, k-1))                      &
+          + (def_e(j+1, k) + def_e(j-1, k)))*u(j, k)             &
           - (def_e(j, k+1)*u(j, k+1) + def_e(j, k)*u(j, k-1))  &
           - (def_e(j+1, k)*u(j+1, k) + def_e(j, k)*u(j-1, k))
 
@@ -196,8 +196,8 @@ SUBROUTINE tea_leaf_dpcg_local_solve(x_min,  &
     DO k=y_min,y_max
       DO j=x_min,x_max
         smvp = (1.0_8                                         &
-            + (def_e(j, k+1) + def_e(j, k))                      &
-            + (def_e(j+1, k) + def_e(j, k)))*p(j, k)             &
+            + (def_e(j, k+1) + def_e(j, k-1))                      &
+            + (def_e(j+1, k) + def_e(j-1, k)))*p(j, k)             &
             - (def_e(j, k+1)*p(j, k+1) + def_e(j, k)*p(j, k-1))  &
             - (def_e(j+1, k)*p(j+1, k) + def_e(j, k)*p(j-1, k))
 
@@ -241,8 +241,8 @@ SUBROUTINE tea_leaf_dpcg_local_solve(x_min,  &
         DO k=y_min,y_max
           DO j=x_min,x_max
             smvp = (1.0_8                                         &
-                + (def_e(j, k+1) + def_e(j, k))                      &
-                + (def_e(j+1, k) + def_e(j, k)))*sd(j, k)             &
+                + (def_e(j, k+1) + def_e(j, k-1))                      &
+                + (def_e(j+1, k) + def_e(j-1, k)))*sd(j, k)             &
                 - (def_e(j, k+1)*sd(j, k+1) + def_e(j, k)*sd(j, k-1))  &
                 - (def_e(j+1, k)*sd(j+1, k) + def_e(j, k)*sd(j-1, k))
 
