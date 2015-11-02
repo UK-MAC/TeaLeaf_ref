@@ -58,7 +58,8 @@ class Solver(object):
         from matplotlib.colors import LogNorm
 
         def getarr():
-            return self.grid.u
+            return np.log(self.grid.u)
+
         fig, ax = plt.subplots(1, 1)
 
         im = ax.imshow(getarr(),

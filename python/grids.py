@@ -322,21 +322,23 @@ class Grid(HasInner):
         sd_s = np.zeros_like(x_s)
 
         def matmul_small(arr, E):
+            ins = arr[self.inner]
             ux_r = arr[self.xr_idx]
             ux_l = arr[self.xl_idx]
-
-            ins = arr[self.inner]
-
             uy_r = arr[self.yr_idx]
             uy_l = arr[self.yl_idx]
 
             Kx_r = E[self.xr_idx]
-            Kx_c = E[self.inner]
-
+            Kx_c = E[self.xl_idx]
             Ky_r = E[self.yr_idx]
-            Ky_c = E[self.inner]
-
+            Ky_c = E[self.yl_idx]
             diag = ((Kx_r + Kx_c) + (Ky_r + Ky_c)) + 1.0
+
+            #Kx_r = E[self.xr_idx]/4
+            #Kx_c = E[self.xl_idx]/4
+            #Ky_r = E[self.yr_idx]/4
+            #Ky_c = E[self.yl_idx]/4
+            #diag = E[self.inner]
 
             if diag.size > 1000:
                 return ne.evaluate("""diag*ins - (Kx_r*ux_r + Kx_c*ux_l) - (Ky_r*uy_r + Ky_c*uy_l)""")
@@ -415,7 +417,7 @@ class Grid(HasInner):
         t2 = self.restrict_Zt(r)
 
         # 16
-        t1 += t2
+        t1 -= t2
 
         # 17
         t2 = self.solve_E(t2, t1)
@@ -484,7 +486,7 @@ class Grid(HasInner):
 
         # 15
         # TODO find out why it doesn't converge without this
-        z[self.inner] = self.M.solve(r)
+        #z[self.inner] = self.M.solve(r)
         p[self.inner] = z[self.inner] + beta*p[self.inner]
 
         return rrn, alpha, beta
