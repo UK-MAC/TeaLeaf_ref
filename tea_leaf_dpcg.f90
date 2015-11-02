@@ -75,7 +75,7 @@ SUBROUTINE tea_leaf_dpcg_init_x0()
   CALL tea_calc_eigenvalues(inner_cg_alphas, inner_cg_betas, eigmin, eigmax, &
       max_iters, it_count, info)
 
-  IF (info .NE. 0) CALL report_error('tea_leaf_dpcg_setup_and_solve_E', 'Error in calculating eigenvalues')
+  IF (info .NE. 0) CALL report_error('tea_leaf_dpcg_init_x0', 'Error in calculating eigenvalues')
 
   CALL tea_calc_ch_coefs(inner_ch_alphas, inner_ch_betas, eigmin, eigmax, &
       theta, it_count)
