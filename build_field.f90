@@ -186,7 +186,13 @@ SUBROUTINE build_field()
   ALLOCATE(chunk%def%t2(                                                            &
     chunk%def%x_min - halo_exchange_depth:chunk%def%x_max + halo_exchange_depth,    &
     chunk%def%y_min - halo_exchange_depth:chunk%def%y_max + halo_exchange_depth))
-  ALLOCATE(chunk%def%def_e(                                                            &
+  ALLOCATE(chunk%def%def_kx(                                                            &
+    chunk%def%x_min - halo_exchange_depth:chunk%def%x_max + halo_exchange_depth,    &
+    chunk%def%y_min - halo_exchange_depth:chunk%def%y_max + halo_exchange_depth))
+  ALLOCATE(chunk%def%def_ky(                                                            &
+    chunk%def%x_min - halo_exchange_depth:chunk%def%x_max + halo_exchange_depth,    &
+    chunk%def%y_min - halo_exchange_depth:chunk%def%y_max + halo_exchange_depth))
+  ALLOCATE(chunk%def%def_di(                                                            &
     chunk%def%x_min - halo_exchange_depth:chunk%def%x_max + halo_exchange_depth,    &
     chunk%def%y_min - halo_exchange_depth:chunk%def%y_max + halo_exchange_depth))
   ALLOCATE(chunk%def%def_p(                                                            &
@@ -214,7 +220,9 @@ SUBROUTINE build_field()
     DO j=chunk%def%x_min - halo_exchange_depth,chunk%def%x_max + halo_exchange_depth
       chunk%def%t1(j, k) = 0.0
       chunk%def%t2(j, k) = 0.0
-      chunk%def%def_e(j, k) = 0.0
+      chunk%def%def_kx(j, k) = 0.0
+      chunk%def%def_ky(j, k) = 0.0
+      chunk%def%def_di(j, k) = 0.0
 
       chunk%def%def_p(j, k) = 0.0
       chunk%def%def_r(j, k) = 0.0

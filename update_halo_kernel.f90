@@ -38,7 +38,8 @@ MODULE update_halo_kernel_module
                             ,FIELD_P          = 5         &
                             ,FIELD_SD         = 6         &
                             ,FIELD_R          = 7         &
-                            ,NUM_FIELDS       = 7
+                            ,FIELD_Z          = 8         &
+                            ,NUM_FIELDS       = 8
 
 CONTAINS
 
@@ -52,6 +53,7 @@ CONTAINS
                         p,                                                          &
                         sd,                                                         &
                         r,                                                          &
+                        z,                                                          &
                         fields,                                                     &
                         depth                                                       )
   IMPLICIT NONE
@@ -59,7 +61,7 @@ CONTAINS
   INTEGER :: x_min,x_max,y_min,y_max,halo_exchange_depth
   INTEGER, DIMENSION(4) :: chunk_neighbours, tile_neighbours
   REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) &
-                          :: density,energy0,energy1, u, sd, p, r
+                          :: density,energy0,energy1, u, sd, p, r, z
 
   INTEGER :: fields(NUM_FIELDS),depth
 
@@ -99,6 +101,11 @@ CONTAINS
   IF (fields(FIELD_r).EQ.1) THEN
     CALL update_halo_cell(x_min, x_max, y_min, y_max, halo_exchange_depth,  &
       chunk_neighbours, tile_neighbours, r, depth)
+  ENDIF
+
+  IF (fields(FIELD_z).EQ.1) THEN
+    CALL update_halo_cell(x_min, x_max, y_min, y_max, halo_exchange_depth,  &
+      chunk_neighbours, tile_neighbours, z, depth)
   ENDIF
 
 !$OMP END PARALLEL

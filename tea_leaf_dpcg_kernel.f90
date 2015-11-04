@@ -17,7 +17,7 @@
 
 !>  @brief Fortran heat conduction kernel
 !>  @author Michael Boulton, Wayne Gaudin
-!>  @details Implicitly calculates the change in temperature using CG method
+!>  @details Implicitly calculates the change in temperature using deflated CG method
 
 MODULE tea_leaf_dpcg_kernel_module
 
@@ -27,34 +27,32 @@ MODULE tea_leaf_dpcg_kernel_module
 
 CONTAINS
 
-SUBROUTINE tea_leaf_dpcg_sum_matrix_rows_kernel(x_min, x_max, y_min, y_max, halo_exchange_depth, &
-    kx, ky , row_sums, &
-    rx, ry, E_local )
+SUBROUTINE tea_leaf_dpcg_coarsen_matrix_kernel(x_min, x_max, y_min, y_max, halo_exchange_depth, &
+    kx, ky, &
+    kx_local, ky_local, &
+    rx, ry)
 
   IMPLICIT NONE
   INTEGER(KIND=4) :: j,k
   INTEGER(KIND=4) :: x_min, x_max, y_min, y_max, halo_exchange_depth
-  REAL(KIND=8) :: rx, ry, E_local
-  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: kx, ky, row_sums
+  REAL(KIND=8) :: rx, ry, kx_local, ky_local
+  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: kx, ky
 
-  E_local = 0.0_8
+  kx_local = 0.0_8
+  ky_local = 0.0_8
 
-!$OMP PARALLEL
-!$OMP DO REDUCTION (+:E_local)
+!$OMP PARALLEL REDUCTION(+:kx_local, ky_local)
+!$OMP DO
   DO k=y_min,y_max
     DO j=x_min,x_max
-      row_sums(j, k) = (1.0_8                   &
-            + (ry*Ky(j, k+1) + ry*Ky(j, k))     &
-            + (rx*Kx(j+1, k) + rx*Kx(j, k)))    &
-            - (ry*Ky(j, k+1) + ry*Ky(j, k))     &
-            - (rx*Kx(j+1, k) + rx*Kx(j, k))
-      E_local = E_local + row_sums(j, k)
+      kx_local = kx_local + rx*Kx(j, k)
+      ky_local = ky_local + ry*Ky(j, k)
     ENDDO
   ENDDO
 !$OMP END DO
 !$OMP END PARALLEL
 
-END SUBROUTINE tea_leaf_dpcg_sum_matrix_rows_kernel
+END SUBROUTINE tea_leaf_dpcg_coarsen_matrix_kernel
 
 SUBROUTINE tea_leaf_dpcg_add_z_kernel(x_min, x_max, y_min, y_max, halo_exchange_depth, &
     u, &
@@ -102,22 +100,20 @@ SUBROUTINE tea_leaf_dpcg_restrict_ZT_kernel(x_min, x_max, y_min, y_max, halo_exc
 
 END SUBROUTINE tea_leaf_dpcg_restrict_ZT_kernel
 
-SUBROUTINE tea_leaf_dpcg_matmul_ZTA_kernel(x_min,  &
+SUBROUTINE tea_leaf_dpcg_solve_z_kernel(x_min,  &
                            x_max,                  &
                            y_min,                  &
                            y_max,                  &
                            halo_exchange_depth,                  &
                            r,                      &
-                           Mi,                     &
                            z,                      &
                            Kx,                     &
                            Ky,                     &
-                           row_sums,                &
+                           Mi,                     &
                            cp,                     &
                            bfp,                    &
                            rx,                     &
                            ry,                     &
-                           ztaz,                    &
                            preconditioner_type)
 
   IMPLICIT NONE
@@ -125,15 +121,12 @@ SUBROUTINE tea_leaf_dpcg_matmul_ZTA_kernel(x_min,  &
   INTEGER :: preconditioner_type
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
   REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth)&
-                          :: r, Kx, Ky, z, Mi, row_sums
+                          :: r, Kx, Ky, z, Mi
   REAL(KIND=8), DIMENSION(x_min:x_max,y_min:y_max) :: cp, bfp
 
   INTEGER(KIND=4) :: j,k
 
   REAL(KIND=8) :: rx, ry
-  REAL(kind=8) :: ztaz
-
-  ztaz = 0.0_8
 
 !$OMP PARALLEL
   IF (preconditioner_type .NE. TL_PREC_NONE) THEN
@@ -156,11 +149,47 @@ SUBROUTINE tea_leaf_dpcg_matmul_ZTA_kernel(x_min,  &
     ENDDO
 !$OMP END DO
   ENDIF
+!$OMP END PARALLEL
 
+END SUBROUTINE tea_leaf_dpcg_solve_z_kernel
+
+SUBROUTINE tea_leaf_dpcg_matmul_ZTA_kernel(x_min,  &
+                           x_max,                  &
+                           y_min,                  &
+                           y_max,                  &
+                           halo_exchange_depth,                  &
+                           z,                      &
+                           Kx,                     &
+                           Ky,                     &
+                           rx,                     &
+                           ry,                     &
+                           ztaz,                    &
+                           preconditioner_type)
+
+  IMPLICIT NONE
+
+  INTEGER :: preconditioner_type
+  INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
+  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth)&
+                          :: r, Kx, Ky, z, Mi
+  REAL(KIND=8), DIMENSION(x_min:x_max,y_min:y_max) :: cp, bfp
+
+  INTEGER(KIND=4) :: j,k
+
+  REAL(KIND=8) :: rx, ry
+  REAL(kind=8) :: ztaz
+
+  ztaz = 0.0_8
+
+!$OMP PARALLEL
 !$OMP DO REDUCTION(+:ztaz)
   DO k=y_min,y_max
     DO j=x_min,x_max
-      ztaz = ztaz + z(j, k)*row_sums(j, k)
+      ztaz = ztaz + (1.0_8                                  &
+          + ry*(Ky(j, k+1) + Ky(j, k))                      &
+          + rx*(Kx(j+1, k) + Kx(j, k)))*z(j, k)             &
+          - ry*(Ky(j, k+1)*z(j, k+1) + Ky(j, k)*z(j, k-1))  &
+          - rx*(Kx(j+1, k)*z(j+1, k) + Kx(j, k)*z(j-1, k))
     ENDDO
   ENDDO
 !$OMP END DO
@@ -175,7 +204,9 @@ SUBROUTINE tea_leaf_dpcg_local_solve(x_min,  &
                            halo_exchange_depth,                  &
                            u,                      &
                            u0,                      &
-                           def_e,                      &
+                           def_kx,                      &
+                           def_ky,                      &
+                           def_di,                      &
                            p,                      &
                            r,                      &
                            Mi,                     &
@@ -194,7 +225,7 @@ SUBROUTINE tea_leaf_dpcg_local_solve(x_min,  &
 
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
   REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) &
-                          :: r, z, Mi, p, w, u, u0, def_e, sd
+                          :: r, z, Mi, p, w, u, u0, def_kx, def_ky, def_di, sd
 
   INTEGER(KIND=4) :: j,k
   INTEGER(KIND=4) :: it_count
@@ -240,8 +271,8 @@ SUBROUTINE tea_leaf_dpcg_local_solve(x_min,  &
 !$OMP DO
   DO k=y_min,y_max
     DO j=x_min,x_max
-      p(j, k) = 0.0_8
-      z(j, k) = 0.0_8
+      ! zero for approximate solve
+      u(j, k) = 0.0_8
     ENDDO
   ENDDO
 !$OMP END DO
@@ -249,14 +280,15 @@ SUBROUTINE tea_leaf_dpcg_local_solve(x_min,  &
 !$OMP DO REDUCTION(+:initial_residual)
   DO k=y_min, y_max
     DO j=x_min, x_max
-      smvp = (1.0_8                                         &
-          + (def_e(j, k+1) + def_e(j, k-1))                      &
-          + (def_e(j+1, k) + def_e(j-1, k)))*u(j, k)             &
-          - (def_e(j, k+1)*u(j, k+1) + def_e(j, k)*u(j, k-1))  &
-          - (def_e(j+1, k)*u(j+1, k) + def_e(j, k)*u(j-1, k))
+      smvp = def_di(j, k)*u(j, k)             &
+        - (def_ky(j, k+1)*u(j, k+1) + def_ky(j, k)*u(j, k-1))  &
+        - (def_kx(j+1, k)*u(j+1, k) + def_kx(j, k)*u(j-1, k))
+
+      Mi(j, k) = 1.0_8/def_di(j, k)
 
       r(j, k) = u0(j, k) - smvp
-      p(j, k) = r(j, k)
+      z(j, k) = r(j, k)*Mi(j, k)
+      p(j, k) = z(j, k)
 
       initial_residual = initial_residual + r(j, k)*p(j, k)
     ENDDO
@@ -283,11 +315,9 @@ SUBROUTINE tea_leaf_dpcg_local_solve(x_min,  &
 !$OMP DO REDUCTION(+:pw)
     DO k=y_min,y_max
       DO j=x_min,x_max
-        smvp = (1.0_8                                         &
-            + (def_e(j, k+1) + def_e(j, k-1))                      &
-            + (def_e(j+1, k) + def_e(j-1, k)))*p(j, k)             &
-            - (def_e(j, k+1)*p(j, k+1) + def_e(j, k)*p(j, k-1))  &
-            - (def_e(j+1, k)*p(j+1, k) + def_e(j, k)*p(j-1, k))
+        smvp = def_di(j, k)*p(j, k)             &
+          - (def_ky(j, k+1)*p(j, k+1) + def_ky(j, k)*p(j, k-1))  &
+          - (def_kx(j+1, k)*p(j+1, k) + def_kx(j, k)*p(j-1, k))
 
         w(j, k) = smvp
         pw = pw + smvp*p(j, k)
@@ -312,47 +342,48 @@ SUBROUTINE tea_leaf_dpcg_local_solve(x_min,  &
       DO j=x_min,x_max
         u(j, k) = u(j, k) + alpha*p(j, k)
         r(j, k) = r(j, k) - alpha*w(j, k)
+        z(j, k) = r(j, k)*Mi(j, k)
       ENDDO
     ENDDO
 !$OMP END DO
 
-    IF (use_ppcg) THEN
-      DO inner_step=1,10
-!$OMP DO
-        DO k=y_min,y_max
-          DO j=x_min,x_max
-            sd(j, k) = r(j, k)/theta
-          ENDDO
-        ENDDO
-!$OMP END DO
-!$OMP DO
-        DO k=y_min,y_max
-          DO j=x_min,x_max
-            smvp = (1.0_8                                         &
-                + (def_e(j, k+1) + def_e(j, k-1))                      &
-                + (def_e(j+1, k) + def_e(j-1, k)))*sd(j, k)             &
-                - (def_e(j, k+1)*sd(j, k+1) + def_e(j, k)*sd(j, k-1))  &
-                - (def_e(j+1, k)*sd(j+1, k) + def_e(j, k)*sd(j-1, k))
-
-            r(j, k) = r(j, k) - smvp
-            u(j, k) = u(j, k) + sd(j, k)
-          ENDDO
-        ENDDO
-!$OMP END DO
-!$OMP DO
-        DO k=y_min,y_max
-          DO j=x_min,x_max
-            sd(j, k) = inner_ch_alphas(inner_step)*sd(j, k) + inner_ch_betas(inner_step)*r(j, k)
-          ENDDO
-        ENDDO
-!$OMP END DO
-      ENDDO
-    ENDIF
+!    IF (use_ppcg) THEN
+!      DO inner_step=1,10
+!!$OMP DO
+!        DO k=y_min,y_max
+!          DO j=x_min,x_max
+!            sd(j, k) = z(j, k)/theta
+!          ENDDO
+!        ENDDO
+!!$OMP END DO
+!!$OMP DO
+!        DO k=y_min,y_max
+!          DO j=x_min,x_max
+!            smvp = def_di(j, k)*sd(j, k)             &
+!              - (def_ky(j, k+1)*sd(j, k+1) + def_ky(j, k)*sd(j, k-1))  &
+!              - (def_kx(j+1, k)*sd(j+1, k) + def_kx(j, k)*sd(j-1, k))
+!
+!            r(j, k) = r(j, k) - smvp
+!            z(j, k) = r(j, k)*Mi(j, k)
+!
+!            u(j, k) = u(j, k) + sd(j, k)
+!          ENDDO
+!        ENDDO
+!!$OMP END DO
+!!$OMP DO
+!        DO k=y_min,y_max
+!          DO j=x_min,x_max
+!            sd(j, k) = inner_ch_alphas(inner_step)*sd(j, k) + inner_ch_betas(inner_step)*z(j, k)
+!          ENDDO
+!        ENDDO
+!!$OMP END DO
+!      ENDDO
+!    ENDIF
 
 !$OMP DO REDUCTION(+:rrn)
     DO k=y_min,y_max
       DO j=x_min,x_max
-        rrn = rrn + r(j, k)*r(j, k)
+        rrn = rrn + r(j, k)*z(j, k)
       ENDDO
     ENDDO
 !$OMP END DO
@@ -366,7 +397,7 @@ SUBROUTINE tea_leaf_dpcg_local_solve(x_min,  &
 !$OMP DO
     DO k=y_min,y_max
       DO j=x_min,x_max
-        p(j, k) = r(j, k) + beta*p(j, k)
+        p(j, k) = z(j, k) + beta*p(j, k)
       ENDDO
     ENDDO
 !$OMP END DO

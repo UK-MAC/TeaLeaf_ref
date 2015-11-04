@@ -183,9 +183,11 @@ MODULE definitions_module
    TYPE deflate_type
      ! Arrays the size of mpi_dims*tile_dims
      REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: t1, t2
-     REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: def_E
-     REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: def_p, def_r, def_w, def_sd
-     REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: def_Mi, def_z
+     ! Don't really want to store the diagonal, but otherwise it's impossible to know what the tile size was in the local solve
+     REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: def_Di
+     REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: def_Kx, def_Ky
+     REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: def_p, def_r, def_w, def_sd, def_z
+     REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: def_Mi
      INTEGER            :: x_cells              &
                           ,y_cells
      INTEGER         :: x_min  &

@@ -189,8 +189,7 @@ SUBROUTINE tea_leaf_ppcg_calc_zrnorm_kernel(x_min, &
   ENDIF
 !$OMP END PARALLEL
 
-end SUBROUTINE tea_leaf_ppcg_calc_zrnorm_kernel
+END SUBROUTINE tea_leaf_ppcg_calc_zrnorm_kernel
 
 END MODULE
-
 

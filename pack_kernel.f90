@@ -35,7 +35,8 @@ MODULE pack_kernel_module
                             ,FIELD_P          = 5         &
                             ,FIELD_SD         = 6         &
                             ,FIELD_R          = 7         &
-                            ,NUM_FIELDS       = 7
+                            ,FIELD_z          = 8         &
+                            ,NUM_FIELDS       = 8
 
    INTEGER,         PARAMETER :: CELL_DATA     = 1,        &
                                  VERTEX_DATA   = 2,        &
@@ -116,7 +117,7 @@ SUBROUTINE pack_all(x_min, x_max, y_min, y_max, halo_exchange_depth, &
   INTEGER, DIMENSION(4) :: tile_neighbours
 
   REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth)&
-                        :: density,energy0,energy1, u, sd, p, r
+                        :: density,energy0,energy1, u, sd, p, r, z
 
   PROCEDURE(pack_or_unpack), POINTER :: pack_func => NULL()
 
@@ -254,6 +255,18 @@ SUBROUTINE pack_all(x_min, x_max, y_min, y_max, halo_exchange_depth, &
                      mpi_buffer,                &
                      depth, xincs(CELL_DATA), yincs(CELL_DATA),   &
                      tile_offset + offsets(FIELD_R),   &
+                     edge_minus, edge_plus)
+  ENDIF
+  IF (fields(FIELD_z).EQ.1) THEN
+      CALL pack_func(x_min,                    &
+                     x_max,                    &
+                     y_min,                    &
+                     y_max,                    &
+                     halo_exchange_depth,                    &
+                     z,                  &
+                     mpi_buffer,                &
+                     depth, xincs(CELL_DATA), yincs(CELL_DATA),   &
+                     tile_offset + offsets(FIELD_z),   &
                      edge_minus, edge_plus)
   ENDIF
 !$OMP END PARALLEL
