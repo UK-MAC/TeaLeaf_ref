@@ -10,18 +10,16 @@ class NoPrec(HasInner):
         return r[self.inner]
 
 class JacDiag(NoPrec):
-    def __init__(self, Kx, Ky):
-        Kx_c = Kx[self.inner]
-        Kx_r = Kx[self.xr_idx]
-
-        Ky_c = Ky[self.inner]
-        Ky_r = Ky[self.yr_idx]
+    def __init__(self, Di):
 
         #self.Mi = ne.evaluate("""
-        self.Mi = 1.0/(1.0 + Kx_r + Kx_c + Ky_r + Ky_c)
+        self.Mi = 1.0/Di[self.inner]
         #""")
 
     def solve(self, r):
+        #Mi=self.Mi
+        #ri = r[self.inner]
+        #return ne.evaluate("Mi*r")
         z = self.Mi*r[self.inner]
         return z
 

@@ -106,13 +106,13 @@ def calc_eigs(cg_alphas, cg_betas):
 
 def calc_ch_coefs(eigmin, eigmax, bb, err, eps):
     cn = eigmax/eigmin
-    print "Condition number:", cn
+    #print "Condition number:", cn
 
     #eps = 1e-10
     it_alpha = eps*bb/(4*err)
     gamm = (np.sqrt(cn) - 1)/(np.sqrt(cn + 1))
     est_itc = int(np.log(it_alpha)/(2*np.log(gamm)))
-    print "Estimated itc:", est_itc
+    #print "Estimated itc:", est_itc
 
     theta = (eigmax + eigmin)/2
     delta = (eigmax - eigmin)/2

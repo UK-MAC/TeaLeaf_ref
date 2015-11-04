@@ -15,39 +15,17 @@ class Grid(HasInner):
 
         self.Ky = np.zeros((self.params.x_cells+2, self.params.y_cells+2))
         self.Kx = self.Ky.copy()
+        self.Di = self.Ky.copy()
         self.density = np.zeros_like(self.Kx)
         self.energy = np.zeros_like(self.Kx)
-
-        dx = ((self.params.xmax - self.params.xmin)/self.params.x_cells)
-        dy = ((self.params.ymax - self.params.ymin)/self.params.y_cells)
-
-        self.rx = self.params.dtinit/(dx**2)
-        self.ry = self.params.dtinit/(dy**2)
-
-        self.dims = dims
-
-        self.x_tiles = self.dims[0]
-        self.y_tiles = self.dims[1]
 
         dens_in = self.density[self.inner]
         ener_in = self.energy[self.inner]
 
-        # used kind of like meshgrid()
-        self.tile_dims_x = np.zeros(self.dims[0])
-        self.tile_dims_y = np.zeros(self.dims[1])
-
-        sub_arrays = np.array_split(dens_in, self.dims[0], 0)
-        for i,s in enumerate(sub_arrays):
-            self.tile_dims_x[i] = s.shape[0]
-
-        sub_arrays = np.array_split(dens_in, self.dims[1], 1)
-        for i,s in enumerate(sub_arrays):
-            self.tile_dims_y[i] = s.shape[1]
-
-        self.x_cumsum = np.cumsum(self.tile_dims_x).astype(np.int32)
-        self.x_cumsum_minus = (self.x_cumsum - self.tile_dims_x).astype(np.int32)
-        self.y_cumsum = np.cumsum(self.tile_dims_y).astype(np.int32)
-        self.y_cumsum_minus = (self.y_cumsum - self.tile_dims_y).astype(np.int32)
+        dx = ((self.params.xmax - self.params.xmin)/self.params.x_cells)
+        dy = ((self.params.ymax - self.params.ymin)/self.params.y_cells)
+        self.rx = self.params.dtinit/(dx**2)
+        self.ry = self.params.dtinit/(dy**2)
 
         for state in self.params.states:
             state_info = self.params.states[state]
@@ -73,20 +51,50 @@ class Grid(HasInner):
 
         self.makeA(self.density)
 
+        if self.params.tl_use_dpcg:
+            self.dims = dims
+
+            self.x_tiles = self.dims[0]
+            self.y_tiles = self.dims[1]
+
+            self.Ky_small = np.zeros((self.dims[0]+2, self.dims[1]+2))
+            self.Kx_small = self.Ky_small.copy()
+            self.Di_small = self.Ky_small.copy()
+
+            # used kind of like meshgrid()
+            self.tile_dims_x = np.zeros(self.dims[0])
+            self.tile_dims_y = np.zeros(self.dims[1])
+
+            sub_arrays = np.array_split(dens_in, self.dims[0], 0)
+            for i,s in enumerate(sub_arrays):
+                self.tile_dims_x[i] = s.shape[0]
+
+            sub_arrays = np.array_split(dens_in, self.dims[1], 1)
+            for i,s in enumerate(sub_arrays):
+                self.tile_dims_y[i] = s.shape[1]
+
+            self.x_cumsum = np.cumsum(self.tile_dims_x).astype(np.int32)
+            self.x_cumsum_minus = (self.x_cumsum - self.tile_dims_x).astype(np.int32)
+            self.y_cumsum = np.cumsum(self.tile_dims_y).astype(np.int32)
+            self.y_cumsum_minus = (self.y_cumsum - self.tile_dims_y).astype(np.int32)
+
+            self.makeA_small()
+
+            self.calculated_coarse_eigs = False
+
         if self.params.tl_preconditioner_type == "none":
             self.M = NoPrec(self.Kx, self.Ky)
         elif self.params.tl_preconditioner_type == "jac_diag":
-            self.M = JacDiag(self.Kx, self.Ky)
+            self.M = JacDiag(self.Di)
         elif self.params.tl_preconditioner_type == "jac_block":
             self.M = JacBlock(self.Kx, self.Ky)
 
         self.z, self.p, self.r, self.w = self.init_arrays(self.u)
 
-        self.calculated_coarse_eigs = False
-
     def makeA(self, d):
         self.Kx[:] = 0
         self.Ky[:] = 0
+        self.Di[:] = 0
 
         self.Kx[self.xr_idx] = (d[self.inner] + d[self.xr_idx])/(2.0*d[self.inner]*d[self.xr_idx])
         self.Ky[self.yr_idx] = (d[self.inner] + d[self.yr_idx])/(2.0*d[self.inner]*d[self.yr_idx])
@@ -96,6 +104,38 @@ class Grid(HasInner):
 
         self.Kx *= self.rx
         self.Ky *= self.ry
+
+        Kx_r = self.Kx[self.xr_idx]
+        Kx_c = self.Kx[self.inner]
+
+        Ky_r = self.Ky[self.yr_idx]
+        Ky_c = self.Ky[self.inner]
+
+        down  = -Ky_c
+        up    = -Ky_r
+        left  = -Kx_c
+        right = -Kx_r
+
+        self.Di[self.inner] = 1.0 - down - up - left - right
+
+    def makeA_small(self):
+        self.Kx_small[:] = 0
+        self.Ky_small[:] = 0
+        self.Di_small[:] = 0
+
+        # TODO make numpy
+        for i in xrange(self.dims[0]):
+            for j in xrange(self.dims[1]):
+                Kx_c=np.sum(self.Kx[self.x_cumsum_minus[i]+1,self.y_cumsum_minus[j]+1:self.y_cumsum[j]+1])
+                Kx_r=np.sum(self.Kx[self.x_cumsum      [i]+1,self.y_cumsum_minus[j]+1:self.y_cumsum[j]+1])
+                Ky_c=np.sum(self.Ky[self.x_cumsum_minus[i]+1:self.x_cumsum[i]+1,self.y_cumsum_minus[j]+1])
+                Ky_r=np.sum(self.Ky[self.x_cumsum_minus[i]+1:self.x_cumsum[i]+1,self.y_cumsum      [j]+1])
+                self.Kx_small[i+1,j+1]=Kx_c
+                self.Kx_small[i+2,j+1]=Kx_r
+                self.Ky_small[i+1,j+1]=Ky_c
+                self.Ky_small[i+1,j+2]=Ky_r
+                self.Di_small[i+1,j+1]=(self.x_cumsum[i]-self.x_cumsum_minus[i])*(self.y_cumsum[j]-self.y_cumsum_minus[j]) # sum the diagonals
+                self.Di_small[i+1,j+1]+=Kx_c+Kx_r+Ky_c+Ky_r
 
     def dotvec(self, a, b):
         an = a[self.inner].ravel()
@@ -208,22 +248,6 @@ class Grid(HasInner):
 
         return rrn, alpha, beta
 
-    def sum_matrix_row(self):
-        Kx_r = self.Kx[self.xr_idx]
-        Kx_c = self.Kx[self.inner]
-
-        Ky_r = self.Ky[self.yr_idx]
-        Ky_c = self.Ky[self.inner]
-
-        down = -Ky_c
-        up = -Ky_r
-        left = -Kx_c
-        right = -Kx_r
-
-        sums = ne.evaluate("(1.0 - down - up - left - right) + down + up + left + right")
-
-        return sums
-
     def smooth(self, arr):
         ux_r = arr[self.xr_idx]
         ux_l = arr[self.xl_idx]
@@ -239,6 +263,8 @@ class Grid(HasInner):
         Ky_r = self.Ky[self.yr_idx]
         Ky_c = self.Ky[self.inner]
 
+        diag = self.Di[self.inner]
+
         ins = arr[self.inner]
 
         un = ins.copy()
@@ -247,9 +273,11 @@ class Grid(HasInner):
 
         damp = 2.0/3.0
 
-        arr[self.inner] = ne.evaluate("""damp*(u0  + ((Kx_r*ux_r + Kx_c*ux_l) + (Ky_r*uy_r + Ky_c*uy_l)))\
-                /(1.0 + (Kx_c+Kx_r) + (Ky_c+Ky_r))\
-                + (1 - damp)*ux_c""")
+        #arr[self.inner] = ne.evaluate("""damp*(u0  + ((Kx_r*ux_r + Kx_c*ux_l) + (Ky_r*uy_r + Ky_c*uy_l)))\
+        #        /diag + (1 - damp)*ux_c""")
+
+        arr[self.inner] = damp*(u0  + ((Kx_r*ux_r + Kx_c*ux_l) + (Ky_r*uy_r + Ky_c*uy_l)))\
+                /diag + (1 - damp)*ux_c
 
     def matmul(self, arr):
         ux_r = arr[self.xr_idx]
@@ -266,20 +294,35 @@ class Grid(HasInner):
         Ky_r = self.Ky[self.yr_idx]
         Ky_c = self.Ky[self.inner]
 
-        return ne.evaluate("""(1.0 + (Kx_r + Kx_c) + (Ky_r + Ky_c))*ins - (Kx_r*ux_r + Kx_c*ux_l) - (Ky_r*uy_r + Ky_c*uy_l) """)
+        diag = self.Di[self.inner]
 
-        #return (1.0 + (Kx_r + Kx_c)
-        #        + (Ky_r + Ky_c))*ins             \
-        #        - (Kx_r*ux_r + Kx_c*ux_l)        \
-        #        - (Ky_r*uy_r + Ky_c*uy_l)
+        return ne.evaluate("""diag*ins - (Kx_r*ux_r + Kx_c*ux_l) - (Ky_r*uy_r + Ky_c*uy_l)""")
+        #return diag*ins - (Kx_r*ux_r + Kx_c*ux_l) - (Ky_r*uy_r + Ky_c*uy_l)
+
+    def matmul_small(self, arr):
+        ux_r = arr[self.xr_idx]
+        ux_l = arr[self.xl_idx]
+
+        ins = arr[self.inner]
+
+        uy_r = arr[self.yr_idx]
+        uy_l = arr[self.yl_idx]
+
+        Kx_r = self.Kx_small[self.xr_idx]
+        Kx_c = self.Kx_small[self.inner]
+
+        Ky_r = self.Ky_small[self.yr_idx]
+        Ky_c = self.Ky_small[self.inner]
+
+        diag = self.Di_small[self.inner]
+
+        return ne.evaluate("""diag*ins - (Kx_r*ux_r + Kx_c*ux_l) - (Ky_r*uy_r + Ky_c*uy_l)""")
+        #return diag*ins - (Kx_r*ux_r + Kx_c*ux_l) - (Ky_r*uy_r + Ky_c*uy_l)
 
     def iter_sub_array(self, big_array, small_array, function):
         def get_slice_and_call(((x,y),_)):
             arr_slice = np.s_[self.x_cumsum_minus[x]:self.x_cumsum[x], self.y_cumsum_minus[y]:self.y_cumsum[y]]
             function(x, y, big_array, small_array, arr_slice)
-
-        #for (x,y),_ in np.ndenumerate(small_array[self.inner]):
-        #    get_slice_and_call((x,y),_)
 
         map(get_slice_and_call, np.ndenumerate(small_array[self.inner]))
 
@@ -308,9 +351,9 @@ class Grid(HasInner):
         t1 = np.zeros((2+self.dims[0], 2+self.dims[1]))
 
         def sum_and_multiply(x, y, big_array, small_array, arr_slice):
-            small_array[self.inner][x, y] = np.sum(big_array[arr_slice])
+            small_array[self.inner][x, y] += np.sum(big_array[arr_slice])
 
-        self.iter_sub_array(self.matrix_row_sums*z[self.inner], t1, sum_and_multiply)
+        self.iter_sub_array(self.matmul(z), t1, sum_and_multiply)
 
         return t1
 
@@ -321,39 +364,13 @@ class Grid(HasInner):
         z_s = np.zeros_like(x_s)
         sd_s = np.zeros_like(x_s)
 
-        def matmul_small(arr, E):
-            ins = arr[self.inner]
-            ux_r = arr[self.xr_idx]
-            ux_l = arr[self.xl_idx]
-            uy_r = arr[self.yr_idx]
-            uy_l = arr[self.yl_idx]
-
-            Kx_r = E[self.xr_idx]
-            Kx_c = E[self.xl_idx]
-            Ky_r = E[self.yr_idx]
-            Ky_c = E[self.yl_idx]
-            diag = ((Kx_r + Kx_c) + (Ky_r + Ky_c)) + 1.0
-
-            #Kx_r = E[self.xr_idx]/4
-            #Kx_c = E[self.xl_idx]/4
-            #Ky_r = E[self.yr_idx]/4
-            #Ky_c = E[self.yl_idx]/4
-            #diag = E[self.inner]
-
-            if diag.size > 1000:
-                return ne.evaluate("""diag*ins - (Kx_r*ux_r + Kx_c*ux_l) - (Ky_r*uy_r + Ky_c*uy_l)""")
-
-            else:
-                return diag*ins             \
-                        - (Kx_r*ux_r + Kx_c*ux_l)        \
-                        - (Ky_r*uy_r + Ky_c*uy_l)
-
-        E = self.E
-
-        matmul_bound = functools.partial(matmul_small, E=E)
+        matmul_bound = functools.partial(self.matmul_small)
 
         #M_s = NoPrec(E, E)
-        M_s = JacDiag(E, E)
+        M_s = JacDiag(self.Di_small)
+
+        # use zero initial guess which allows for inexact coarse solves
+        x_s[:] = 0
 
         self.calc_residual(w_s, r_s, b_s, x_s, matmul_func=matmul_bound)
 
@@ -372,37 +389,47 @@ class Grid(HasInner):
         inner_its = 4
 
         for i in xrange(100):
-            if self.calculated_coarse_eigs:
-                rro = self.ppcg(x_s, p_s, r_s, sd_s, w_s, z_s,
-                    self.inner_theta, self.inner_ch_alphas, self.inner_ch_betas,
-                    inner_its, rro, matmul_bound, M=M_s)
-            else:
-                eigmin = 0.01
-                eigmax = 2
-
-                # use above bounds if diagonal jacobi is used
-                if 0:
-                    for i in xrange(35):
-                        rro, alpha, beta = self.cg(x_s, p_s, r_s, w_s, z_s, rro, matmul_bound, M=M_s)
-                        if rro == 0:
-                            break
-
-                        cg_alphas.append(alpha)
-                        cg_betas.append(beta)
-
-                    eigmin, eigmax = calc_eigs(cg_alphas, cg_betas)
-
-                self.inner_theta, self.inner_ch_alphas, self.inner_ch_betas = calc_ch_coefs(eigmin, eigmax, 
-                    self.dotvec(self.u0, self.u0),
-                    self.dotvec(self.r, self.r),
-                    #np.finfo(type(self.r[0,0])),
-                    self.params.tl_eps
-                    )
-
-                self.calculated_coarse_eigs = True
-
+            rro, alpha, beta = self.cg(x_s, p_s, r_s, w_s, z_s, rro, matmul_bound, M=M_s)
             if np.sqrt(abs(rro)) < self.params.tl_eps*np.sqrt(abs(initial)):
+            #if np.sqrt(abs(rro)) < 0.9*np.sqrt(abs(initial)):
                 break
+
+        #for i in xrange(100):
+        #    if self.calculated_coarse_eigs:
+        #        rro = self.ppcg(x_s, p_s, r_s, sd_s, w_s, z_s,
+        #            self.inner_theta, self.inner_ch_alphas, self.inner_ch_betas,
+        #            inner_its, rro, matmul_bound, M=M_s)
+        #    else:
+        #        eigmin = 0.1
+        #        eigmax = 2
+
+        #        # use above bounds if diagonal jacobi is used
+        #        if 1:
+        #            for i in xrange(35):
+        #                rro, alpha, beta = self.cg(x_s, p_s, r_s, w_s, z_s, rro, matmul_bound, M=M_s)
+        #                if rro == 0:
+        #                    break
+
+        #                cg_alphas.append(alpha)
+        #                cg_betas.append(beta)
+
+        #            eigmin, eigmax = calc_eigs(cg_alphas, cg_betas)
+
+        #        self.inner_theta, self.inner_ch_alphas, self.inner_ch_betas = calc_ch_coefs(eigmin, eigmax,
+        #            self.dotvec(self.u0, self.u0),
+        #            self.dotvec(self.r, self.r),
+        #            self.params.tl_eps
+        #            )
+
+        #        #self.calculated_coarse_eigs = True
+
+        #    if np.sqrt(abs(rro)) < self.params.tl_eps*np.sqrt(abs(initial)):
+        #    #if np.sqrt(abs(rro)) < 0.9*np.sqrt(abs(initial)):
+        #        break
+
+        #print i
+        #self.calc_residual(w_s, r_s, b_s, x_s, matmul_func=matmul_bound)
+        #print initial, i, rro, self.exactrro(b_s, x_s, matmul_bound)
 
         return x_s
 
@@ -430,20 +457,12 @@ class Grid(HasInner):
         self.calc_residual(w, r, self.u0, u, matmul_func=self.matmul)
 
         if self.params.tl_use_dpcg:
-            # -1
-            self.matrix_row_sums = self.sum_matrix_row()
-
             # 6
-            t2 = self.restrict_Zt(r)
-
-            # make E here
-            self.E = np.zeros_like(t2)
-            def make_e(x, y, big_array, small_array, arr_slice):
-                small_array[self.inner][x, y] = np.sum(big_array[arr_slice])
-            self.iter_sub_array(self.matrix_row_sums, self.E, make_e)
+            t1 = self.restrict_Zt(r)
 
             # 7
-            t1 = t2.copy()
+            t2 = t1.copy()
+
             t2 = self.solve_E(t2, t1)
 
             # 8/9
@@ -485,8 +504,6 @@ class Grid(HasInner):
         beta = rrn/rro
 
         # 15
-        # TODO find out why it doesn't converge without this
-        #z[self.inner] = self.M.solve(r)
         p[self.inner] = z[self.inner] + beta*p[self.inner]
 
         return rrn, alpha, beta
