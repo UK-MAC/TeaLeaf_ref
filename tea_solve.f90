@@ -72,7 +72,6 @@ SUBROUTINE tea_leaf()
   init_time = 0.0_8
   halo_time = 0.0_8
   solve_time = 0.0_8
-  reset_time = 0.0_8
 
   IF (coefficient .NE. RECIP_CONDUCTIVITY .AND. coefficient .NE. conductivity) THEN
     CALL report_error('tea_leaf', 'unknown coefficient option')
@@ -161,7 +160,7 @@ SUBROUTINE tea_leaf()
 
   IF (profiler_on) profiler%tea_init = profiler%tea_init + (timer() - init_time)
 
-  !IF (profiler_on) solve_time = timer()
+  IF (profiler_on) solve_time = timer()
 
   DO n=1,max_iters
 
@@ -307,19 +306,12 @@ SUBROUTINE tea_leaf()
       ! u = u + a*p
       ! r = r - a*w
       CALL tea_leaf_cg_calc_ur(alpha, rrn)
-      IF (profiler_on) dot_product_time=timer()
-      CALL tea_allsum(rrn)
-      IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
 
       ! not calculating rrn here
 
       CALL tea_leaf_dpcg_setup_and_solve_E()
 
       CALL tea_leaf_dpcg_calc_rrn(rrn)
-
-      IF (profiler_on) dot_product_time=timer()
-      CALL tea_allsum(rrn)
-      IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
 
       beta = rrn/rro
       cg_betas(n) = beta
@@ -413,8 +405,7 @@ SUBROUTINE tea_leaf()
     exact_error = SQRT(exact_error)
   ENDIF
 
-  !IF (profiler_on) profiler%tea_solve = profiler%tea_solve + (timer() - solve_time)
-  IF (profiler_on) profiler%tea_solve = profiler%tea_solve + solve_time
+  IF (profiler_on) profiler%tea_solve = profiler%tea_solve + (timer() - solve_time)
 
   IF (parallel%boss) THEN
 !$  IF (OMP_GET_THREAD_NUM().EQ.0) THEN
@@ -440,7 +431,7 @@ SUBROUTINE tea_leaf()
   ENDIF
 
   ! RESET
-  !IF (profiler_on) reset_time=timer()
+  IF (profiler_on) reset_time=timer()
 
   CALL tea_leaf_finalise()
 
@@ -451,7 +442,7 @@ SUBROUTINE tea_leaf()
   CALL update_halo(fields,1)
   IF (profiler_on) reset_time = reset_time + (timer()-halo_time)
 
-  IF (profiler_on) profiler%tea_reset = profiler%tea_reset + reset_time
+  IF (profiler_on) profiler%tea_reset = profiler%tea_reset + (timer() - reset_time)
 
   IF (profiler_on .AND. parallel%boss) THEN
     total_solve_time = (timer() - total_solve_time)
