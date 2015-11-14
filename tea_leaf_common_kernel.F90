@@ -281,8 +281,8 @@ SUBROUTINE tea_diag_init(x_min,             &
   REAL(KIND=8) :: rx, ry
 
 !$OMP DO
-    DO k=y_min-halo_exchange_depth,y_max+halo_exchange_depth
-      DO j=x_min-halo_exchange_depth,x_max+halo_exchange_depth
+    DO k=y_min,y_max
+      DO j=x_min,x_max
         Mi(j, k) = 1.0_8/(1.0_8                 &
                 + ry*(Ky(j, k+1) + Ky(j, k))    &
                 + rx*(Kx(j+1, k) + Kx(j, k)))
@@ -311,8 +311,8 @@ SUBROUTINE tea_diag_solve(x_min,             &
   REAL(KIND=8) :: rx, ry
 
 !$OMP DO
-    DO k=y_min-halo_exchange_depth,y_max+halo_exchange_depth
-      DO j=x_min-halo_exchange_depth,x_max+halo_exchange_depth
+    DO k=y_min,y_max
+      DO j=x_min,x_max
         z(j, k) = Mi(j, k)*r(j, k)
       ENDDO
     ENDDO

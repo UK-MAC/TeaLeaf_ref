@@ -89,7 +89,8 @@ SUBROUTINE pack_all(x_min, x_max, y_min, y_max, halo_exchange_depth, &
     u,                                                          &
     p,                                                          &
     sd,                                                         &
-    r,                                                         &
+    r,                                                          &
+    z,                                                          &
     fields, depth, face, packing, mpi_buffer, offsets, tile_offset)
 
   IMPLICIT NONE
@@ -116,7 +117,8 @@ SUBROUTINE pack_all(x_min, x_max, y_min, y_max, halo_exchange_depth, &
   INTEGER      :: depth,x_min,x_max,y_min,y_max, halo_exchange_depth, edge_minus, edge_plus
   INTEGER, DIMENSION(4) :: tile_neighbours
 
-  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth)&
+  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,&
+                          y_min-halo_exchange_depth:y_max+halo_exchange_depth)&
                         :: density,energy0,energy1, u, sd, p, r, z
 
   PROCEDURE(pack_or_unpack), POINTER :: pack_func => NULL()

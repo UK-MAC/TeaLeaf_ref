@@ -71,6 +71,8 @@ OMP_PGI       = -mp=nonuma
 OMP_PATHSCALE = -mp
 OMP_XL        = -qsmp=omp -qthreaded
 
+OMP_GNU       = -fopenmp -g -pg #get profiling data
+
 FLAGS_INTEL     = -O3 -no-prec-div -fpp -align array64byte
 FLAGS_SUN       = -fast -xipo=2 -Xlistv4
 FLAGS_GNU       = -O3 -funroll-loops -cpp -ffree-line-length-none
@@ -214,6 +216,8 @@ include makefile.deps
 %_module.mod: %.f90 %.o
 	@true
 %_kernel.o: %_kernel.f90 Makefile makefile.deps
+	$(MPI_COMPILER) $(KERNEL_FLAGS) -c $< -o $@
+%_kernel.o: %_kernel.F90 Makefile makefile.deps
 	$(MPI_COMPILER) $(KERNEL_FLAGS) -c $< -o $@
 %.o: %.f90 Makefile makefile.deps
 	$(MPI_COMPILER) $(FLAGS) -c $< -o $@

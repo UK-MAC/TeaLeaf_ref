@@ -75,6 +75,7 @@ SUBROUTINE call_packing_functions(fields, depth, face, packing, mpi_buffer, offs
                   chunk%tiles(t)%field%vector_p,       &
                   chunk%tiles(t)%field%vector_sd,      &
                   chunk%tiles(t)%field%vector_r,      &
+                  chunk%tiles(t)%field%vector_z,      &
                   fields, &
                   depth, &
                   face, &

@@ -72,10 +72,11 @@ SUBROUTINE tea_leaf_dpcg_init_x0()
   CALL tea_leaf_dpcg_add_z()
 
   ! for all subsequent steps, use ppcg
-  !inner_use_ppcg = .TRUE.
+  inner_use_ppcg = .TRUE.
 
   !CALL tea_calc_eigenvalues(inner_cg_alphas, inner_cg_betas, eigmin, eigmax, &
   !    max_iters, it_count, info)
+  info = 0
 
   ! With jacobi preconditioner on
   eigmin = 0.01_8
@@ -138,7 +139,6 @@ SUBROUTINE tea_leaf_dpcg_coarsen_matrix()
 
   CALL MPI_Allreduce(MPI_IN_PLACE, chunk%def%def_kx, size(chunk%def%def_kx), MPI_DOUBLE_PRECISION, MPI_SUM, mpi_cart_comm, err)
   CALL MPI_Allreduce(MPI_IN_PLACE, chunk%def%def_ky, size(chunk%def%def_ky), MPI_DOUBLE_PRECISION, MPI_SUM, mpi_cart_comm, err)
-  CALL MPI_Allreduce(MPI_IN_PLACE, chunk%def%def_di, size(chunk%def%def_di), MPI_DOUBLE_PRECISION, MPI_SUM, mpi_cart_comm, err)
 
   IF (use_fortran_kernels) THEN
 !$OMP PARALLEL
@@ -154,6 +154,8 @@ SUBROUTINE tea_leaf_dpcg_coarsen_matrix()
 !$OMP END DO
 !$OMP END PARALLEL
   ENDIF
+
+  CALL MPI_Allreduce(MPI_IN_PLACE, chunk%def%def_di, size(chunk%def%def_di), MPI_DOUBLE_PRECISION, MPI_SUM, mpi_cart_comm, err)
 
 END SUBROUTINE tea_leaf_dpcg_coarsen_matrix
 
@@ -204,7 +206,7 @@ SUBROUTINE tea_leaf_dpcg_matmul_ZTA()
   INTEGER :: t, err
   REAL(KIND=8) :: ztaz
 
-  INTEGER :: fields(NUM_FIELDS)
+  INTEGER :: fields(NUM_FIELDS)=0
   fields(field_z) = 1
 
   IF (use_fortran_kernels) THEN
@@ -231,7 +233,7 @@ SUBROUTINE tea_leaf_dpcg_matmul_ZTA()
 !$OMP END PARALLEL
   ENDIF
 
-  chunk%def%t1 = 0
+  chunk%def%t1 = 0.0_8
 
   call update_halo(fields, 1)
 
@@ -271,7 +273,7 @@ SUBROUTINE tea_leaf_dpcg_restrict_ZT()
   INTEGER :: t, err
   REAL(KIND=8) :: ZTr
 
-  chunk%def%t2 = 0
+  chunk%def%t2 = 0.0_8
 
   IF (use_fortran_kernels) THEN
 !$OMP PARALLEL PRIVATE(ZTr)

@@ -219,7 +219,8 @@ SUBROUTINE tea_decompose_tiles(x_cells, y_cells)
       chunk%tiles(t)%def_tile_coords(1) = mpi_coords(1)*chunk%tile_dims(1) + (j + 1)
       chunk%tiles(t)%def_tile_coords(2) = mpi_coords(2)*chunk%tile_dims(2) + (k + 1)
 
-      chunk%tiles(t)%def_tile_idx = (chunk%tiles(t)%def_tile_coords(1) - 1)*mpi_dims(2)*chunk%tile_dims(2) + chunk%tiles(t)%def_tile_coords(2)
+      chunk%tiles(t)%def_tile_idx = (chunk%tiles(t)%def_tile_coords(1) - 1)*mpi_dims(2)*chunk%tile_dims(2) + &
+                                     chunk%tiles(t)%def_tile_coords(2)
 
       chunk%tiles(t)%tile_neighbours = EXTERNAL_FACE
 

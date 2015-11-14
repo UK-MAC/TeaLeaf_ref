@@ -36,7 +36,8 @@ SUBROUTINE tea_leaf_dpcg_coarsen_matrix_kernel(x_min, x_max, y_min, y_max, halo_
   INTEGER(KIND=4) :: j,k
   INTEGER(KIND=4) :: x_min, x_max, y_min, y_max, halo_exchange_depth
   REAL(KIND=8) :: rx, ry, kx_local, ky_local
-  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: kx, ky
+  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,&
+                          y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: kx, ky
 
   kx_local = 0.0_8
   ky_local = 0.0_8
@@ -62,7 +63,8 @@ SUBROUTINE tea_leaf_dpcg_add_z_kernel(x_min, x_max, y_min, y_max, halo_exchange_
   INTEGER(KIND=4) :: j,k
   INTEGER(KIND=4) :: x_min, x_max, y_min, y_max, halo_exchange_depth
   REAL(KIND=8) :: tile_t2
-  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: u
+  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,&
+                          y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: u
 
 !$OMP PARALLEL
 !$OMP DO
@@ -84,7 +86,8 @@ SUBROUTINE tea_leaf_dpcg_restrict_ZT_kernel(x_min, x_max, y_min, y_max, halo_exc
   INTEGER(KIND=4) :: j,k
   INTEGER(KIND=4) :: x_min, x_max, y_min, y_max, halo_exchange_depth
   REAL(KIND=8) :: ZTr
-  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: r
+  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,&
+                          y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: r
 
   ZTr = 0.0_8
 
@@ -120,7 +123,8 @@ SUBROUTINE tea_leaf_dpcg_solve_z_kernel(x_min,  &
 
   INTEGER :: preconditioner_type
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
-  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth)&
+  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,&
+                          y_min-halo_exchange_depth:y_max+halo_exchange_depth)&
                           :: r, Kx, Ky, z, Mi
   REAL(KIND=8), DIMENSION(x_min:x_max,y_min:y_max) :: cp, bfp
 
@@ -170,7 +174,8 @@ SUBROUTINE tea_leaf_dpcg_matmul_ZTA_kernel(x_min,  &
 
   INTEGER :: preconditioner_type
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
-  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth)&
+  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,&
+                          y_min-halo_exchange_depth:y_max+halo_exchange_depth)&
                           :: r, Kx, Ky, z, Mi
   REAL(KIND=8), DIMENSION(x_min:x_max,y_min:y_max) :: cp, bfp
 
@@ -196,6 +201,55 @@ SUBROUTINE tea_leaf_dpcg_matmul_ZTA_kernel(x_min,  &
 !$OMP END PARALLEL
 
 END SUBROUTINE tea_leaf_dpcg_matmul_ZTA_kernel
+
+SUBROUTINE tea_leaf_dpcg_matmul_ZTA_kernel1(x_min,  &
+                           x_max,                  &
+                           y_min,                  &
+                           y_max,                  &
+                           halo_exchange_depth,                  &
+                           z,                      &
+                           Kx,                     &
+                           Ky,                     &
+                           rx,                     &
+                           ry,                     &
+                           ztaz,                    &
+                           preconditioner_type)
+
+  IMPLICIT NONE
+
+  INTEGER :: preconditioner_type
+  INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
+  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,&
+                          y_min-halo_exchange_depth:y_max+halo_exchange_depth)&
+                          :: r, Kx, Ky, z, Mi
+  REAL(KIND=8), DIMENSION(x_min:x_max,y_min:y_max) :: cp, bfp
+
+  INTEGER(KIND=4) :: j,k
+
+  REAL(KIND=8) :: rx, ry
+  REAL(kind=8) :: ztaz
+  REAL(kind=8), DIMENSION(x_min:x_max) :: ztazj ! store the values on the row to enable vectorization of the loop
+
+  ztaz = 0.0_8
+
+!$OMP PARALLEL PRIVATE(ztazj)
+!$OMP DO REDUCTION(+:ztaz)
+  DO k=y_min,y_max
+    DO j=x_min,x_max
+      ztazj(j) = (1.0_8                                     &
+          + ry*(Ky(j, k+1) + Ky(j, k))                      &
+          + rx*(Kx(j+1, k) + Kx(j, k)))*z(j, k)             &
+          - ry*(Ky(j, k+1)*z(j, k+1) + Ky(j, k)*z(j, k-1))  &
+          - rx*(Kx(j+1, k)*z(j+1, k) + Kx(j, k)*z(j-1, k))
+    ENDDO
+    DO j=x_min,x_max
+      ztaz = ztaz + ztazj(j)
+    ENDDO
+  ENDDO
+!$OMP END DO
+!$OMP END PARALLEL
+
+END SUBROUTINE tea_leaf_dpcg_matmul_ZTA_kernel1
 
 SUBROUTINE tea_leaf_dpcg_local_solve(x_min,  &
                            x_max,                  &
@@ -224,7 +278,8 @@ SUBROUTINE tea_leaf_dpcg_local_solve(x_min,  &
   IMPLICIT NONE
 
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
-  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) &
+  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,&
+                          y_min-halo_exchange_depth:y_max+halo_exchange_depth) &
                           :: r, z, Mi, p, w, u, u0, def_kx, def_ky, def_di, sd
 
   INTEGER(KIND=4) :: j,k
@@ -417,19 +472,20 @@ SUBROUTINE tea_leaf_dpcg_local_solve(x_min,  &
 
 END SUBROUTINE tea_leaf_dpcg_local_solve
 
-SUBROUTINE tea_leaf_dpcg_init_p_kernel(x_min,             &
-                                       x_max,             &
-                                       y_min,             &
-                                       y_max,             &
-                                       halo_exchange_depth,             &
-                                       p,                 &
+SUBROUTINE tea_leaf_dpcg_init_p_kernel(x_min,               &
+                                       x_max,               &
+                                       y_min,               &
+                                       y_max,               &
+                                       halo_exchange_depth, &
+                                       p,                   &
                                        z)
 
 
   IMPLICIT NONE
 
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
-  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth)&
+  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,&
+                          y_min-halo_exchange_depth:y_max+halo_exchange_depth)&
                           :: z, p
 
   INTEGER(KIND=4) :: j,k
@@ -452,7 +508,8 @@ SUBROUTINE tea_leaf_dpcg_store_r_kernel(x_min, x_max, y_min, y_max, halo_exchang
   IMPLICIT NONE
   INTEGER(KIND=4) :: j,k
   INTEGER(KIND=4) :: x_min, x_max, y_min, y_max, halo_exchange_depth
-  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: r, r_m1
+  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,&
+                          y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: r, r_m1
 
 !$OMP PARALLEL
 !$OMP DO
@@ -474,7 +531,8 @@ SUBROUTINE tea_leaf_dpcg_calc_rrn_kernel(x_min, x_max, y_min, y_max, halo_exchan
   INTEGER(KIND=4) :: j,k
   INTEGER(KIND=4) :: x_min, x_max, y_min, y_max, halo_exchange_depth
   REAL(KIND=8) :: rrn
-  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: r, r_m1, z
+  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,&
+                          y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: r, r_m1, z
 
   rrn = 0.0_8
 
@@ -499,7 +557,8 @@ SUBROUTINE tea_leaf_dpcg_calc_p_kernel(x_min, x_max, y_min, y_max, halo_exchange
   INTEGER(KIND=4) :: x_min, x_max, y_min, y_max, halo_exchange_depth
   INTEGER :: preconditioner_type
   REAL(KIND=8) :: rx, ry, beta
-  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: p, r, Kx, Ky, Mi, z
+  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,&
+                          y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: p, r, Kx, Ky, Mi, z
   REAL(KIND=8), DIMENSION(x_min:x_max,y_min:y_max) :: cp, bfp
 
 !$OMP PARALLEL
@@ -522,7 +581,8 @@ SUBROUTINE tea_leaf_dpcg_prolong_Z_kernel(x_min, x_max, y_min, y_max, halo_excha
   INTEGER(KIND=4) :: j,k
   INTEGER(KIND=4) :: x_min, x_max, y_min, y_max, halo_exchange_depth
   REAL(KIND=8) :: tile_t2
-  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: z
+  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,&
+                          y_min-halo_exchange_depth:y_max+halo_exchange_depth) :: z
 
 !$OMP PARALLEL
 !$OMP DO
@@ -549,7 +609,8 @@ SUBROUTINE tea_leaf_dpcg_calc_zrnorm_kernel(x_min, &
 
   INTEGER :: preconditioner_type
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
-  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth)&
+  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,&
+                          y_min-halo_exchange_depth:y_max+halo_exchange_depth)&
                           :: r, z
   REAL(KIND=8) :: norm
   integer :: j, k

@@ -40,40 +40,57 @@ SUBROUTINE build_field()
 
     ! TODO only allocate extra halo on external tiles
 
-    ALLOCATE(chunk%tiles(t)%field%density  (chunk%tiles(t)%field%x_min-halo_exchange_depth:chunk%tiles(t)%field%x_max+halo_exchange_depth, &
+    ALLOCATE(chunk%tiles(t)%field%density &
+        (chunk%tiles(t)%field%x_min-halo_exchange_depth:chunk%tiles(t)%field%x_max+halo_exchange_depth, &
          chunk%tiles(t)%field%y_min-halo_exchange_depth:chunk%tiles(t)%field%y_max+halo_exchange_depth))
-    ALLOCATE(chunk%tiles(t)%field%energy0  (chunk%tiles(t)%field%x_min-halo_exchange_depth:chunk%tiles(t)%field%x_max+halo_exchange_depth, &
+    ALLOCATE(chunk%tiles(t)%field%energy0 &
+        (chunk%tiles(t)%field%x_min-halo_exchange_depth:chunk%tiles(t)%field%x_max+halo_exchange_depth, &
          chunk%tiles(t)%field%y_min-halo_exchange_depth:chunk%tiles(t)%field%y_max+halo_exchange_depth))
-    ALLOCATE(chunk%tiles(t)%field%energy1  (chunk%tiles(t)%field%x_min-halo_exchange_depth:chunk%tiles(t)%field%x_max+halo_exchange_depth, &
+    ALLOCATE(chunk%tiles(t)%field%energy1 &
+        (chunk%tiles(t)%field%x_min-halo_exchange_depth:chunk%tiles(t)%field%x_max+halo_exchange_depth, &
          chunk%tiles(t)%field%y_min-halo_exchange_depth:chunk%tiles(t)%field%y_max+halo_exchange_depth))
-    ALLOCATE(chunk%tiles(t)%field%u        (chunk%tiles(t)%field%x_min-halo_exchange_depth:chunk%tiles(t)%field%x_max+halo_exchange_depth, &
+    ALLOCATE(chunk%tiles(t)%field%u       &
+        (chunk%tiles(t)%field%x_min-halo_exchange_depth:chunk%tiles(t)%field%x_max+halo_exchange_depth, &
          chunk%tiles(t)%field%y_min-halo_exchange_depth:chunk%tiles(t)%field%y_max+halo_exchange_depth))
-    ALLOCATE(chunk%tiles(t)%field%u0       (chunk%tiles(t)%field%x_min-halo_exchange_depth:chunk%tiles(t)%field%x_max+halo_exchange_depth, &
+    ALLOCATE(chunk%tiles(t)%field%u0      &
+        (chunk%tiles(t)%field%x_min-halo_exchange_depth:chunk%tiles(t)%field%x_max+halo_exchange_depth, &
          chunk%tiles(t)%field%y_min-halo_exchange_depth:chunk%tiles(t)%field%y_max+halo_exchange_depth))
-    ALLOCATE(chunk%tiles(t)%field%vector_r (chunk%tiles(t)%field%x_min-halo_exchange_depth:chunk%tiles(t)%field%x_max+halo_exchange_depth, &
+    ALLOCATE(chunk%tiles(t)%field%vector_r &
+        (chunk%tiles(t)%field%x_min-halo_exchange_depth:chunk%tiles(t)%field%x_max+halo_exchange_depth, &
          chunk%tiles(t)%field%y_min-halo_exchange_depth:chunk%tiles(t)%field%y_max+halo_exchange_depth))
-    ALLOCATE(chunk%tiles(t)%field%vector_r_m1 (chunk%tiles(t)%field%x_min-halo_exchange_depth:chunk%tiles(t)%field%x_max+halo_exchange_depth, &
+    ALLOCATE(chunk%tiles(t)%field%vector_r_m1 &
+        (chunk%tiles(t)%field%x_min-halo_exchange_depth:chunk%tiles(t)%field%x_max+halo_exchange_depth, &
          chunk%tiles(t)%field%y_min-halo_exchange_depth:chunk%tiles(t)%field%y_max+halo_exchange_depth))
-    ALLOCATE(chunk%tiles(t)%field%vector_Mi(chunk%tiles(t)%field%x_min-halo_exchange_depth:chunk%tiles(t)%field%x_max+halo_exchange_depth, &
+    ALLOCATE(chunk%tiles(t)%field%vector_Mi &
+        (chunk%tiles(t)%field%x_min-halo_exchange_depth:chunk%tiles(t)%field%x_max+halo_exchange_depth, &
          chunk%tiles(t)%field%y_min-halo_exchange_depth:chunk%tiles(t)%field%y_max+halo_exchange_depth))
-    ALLOCATE(chunk%tiles(t)%field%vector_w (chunk%tiles(t)%field%x_min-halo_exchange_depth:chunk%tiles(t)%field%x_max+halo_exchange_depth, &
+    ALLOCATE(chunk%tiles(t)%field%vector_w &
+        (chunk%tiles(t)%field%x_min-halo_exchange_depth:chunk%tiles(t)%field%x_max+halo_exchange_depth, &
          chunk%tiles(t)%field%y_min-halo_exchange_depth:chunk%tiles(t)%field%y_max+halo_exchange_depth))
-    ALLOCATE(chunk%tiles(t)%field%vector_z (chunk%tiles(t)%field%x_min-halo_exchange_depth:chunk%tiles(t)%field%x_max+halo_exchange_depth, &
+    ALLOCATE(chunk%tiles(t)%field%vector_z &
+        (chunk%tiles(t)%field%x_min-halo_exchange_depth:chunk%tiles(t)%field%x_max+halo_exchange_depth, &
          chunk%tiles(t)%field%y_min-halo_exchange_depth:chunk%tiles(t)%field%y_max+halo_exchange_depth))
-    ALLOCATE(chunk%tiles(t)%field%vector_Kx(chunk%tiles(t)%field%x_min-halo_exchange_depth:chunk%tiles(t)%field%x_max+halo_exchange_depth, &
+    ALLOCATE(chunk%tiles(t)%field%vector_Kx &
+        (chunk%tiles(t)%field%x_min-halo_exchange_depth:chunk%tiles(t)%field%x_max+halo_exchange_depth, &
          chunk%tiles(t)%field%y_min-halo_exchange_depth:chunk%tiles(t)%field%y_max+halo_exchange_depth))
-    ALLOCATE(chunk%tiles(t)%field%vector_Ky(chunk%tiles(t)%field%x_min-halo_exchange_depth:chunk%tiles(t)%field%x_max+halo_exchange_depth, &
+    ALLOCATE(chunk%tiles(t)%field%vector_Ky &
+        (chunk%tiles(t)%field%x_min-halo_exchange_depth:chunk%tiles(t)%field%x_max+halo_exchange_depth, &
          chunk%tiles(t)%field%y_min-halo_exchange_depth:chunk%tiles(t)%field%y_max+halo_exchange_depth))
-    ALLOCATE(chunk%tiles(t)%field%vector_p (chunk%tiles(t)%field%x_min-halo_exchange_depth:chunk%tiles(t)%field%x_max+halo_exchange_depth, &
+    ALLOCATE(chunk%tiles(t)%field%vector_p &
+        (chunk%tiles(t)%field%x_min-halo_exchange_depth:chunk%tiles(t)%field%x_max+halo_exchange_depth, &
          chunk%tiles(t)%field%y_min-halo_exchange_depth:chunk%tiles(t)%field%y_max+halo_exchange_depth))
-    ALLOCATE(chunk%tiles(t)%field%vector_sd(chunk%tiles(t)%field%x_min-halo_exchange_depth:chunk%tiles(t)%field%x_max+halo_exchange_depth, &
+    ALLOCATE(chunk%tiles(t)%field%vector_sd &
+        (chunk%tiles(t)%field%x_min-halo_exchange_depth:chunk%tiles(t)%field%x_max+halo_exchange_depth, &
          chunk%tiles(t)%field%y_min-halo_exchange_depth:chunk%tiles(t)%field%y_max+halo_exchange_depth))
-    ALLOCATE(chunk%tiles(t)%field%row_sums(chunk%tiles(t)%field%x_min-halo_exchange_depth:chunk%tiles(t)%field%x_max+halo_exchange_depth, &
+    ALLOCATE(chunk%tiles(t)%field%row_sums &
+        (chunk%tiles(t)%field%x_min-halo_exchange_depth:chunk%tiles(t)%field%x_max+halo_exchange_depth, &
          chunk%tiles(t)%field%y_min-halo_exchange_depth:chunk%tiles(t)%field%y_max+halo_exchange_depth))
 
-    ALLOCATE(chunk%tiles(t)%field%tri_cp(chunk%tiles(t)%field%x_min:chunk%tiles(t)%field%x_max, &
+    ALLOCATE(chunk%tiles(t)%field%tri_cp &
+        (chunk%tiles(t)%field%x_min:chunk%tiles(t)%field%x_max, &
          chunk%tiles(t)%field%y_min:chunk%tiles(t)%field%y_max))
-    ALLOCATE(chunk%tiles(t)%field%tri_bfp(chunk%tiles(t)%field%x_min:chunk%tiles(t)%field%x_max, &
+    ALLOCATE(chunk%tiles(t)%field%tri_bfp &
+        (chunk%tiles(t)%field%x_min:chunk%tiles(t)%field%x_max, &
          chunk%tiles(t)%field%y_min:chunk%tiles(t)%field%y_max))
 
     ALLOCATE(chunk%tiles(t)%field%cellx   (chunk%tiles(t)%field%x_min-2:chunk%tiles(t)%field%x_max+2))
