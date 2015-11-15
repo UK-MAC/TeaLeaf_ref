@@ -24,7 +24,6 @@ SUBROUTINE tea_leaf_dpcg_init_x0(solve_time)
 
   REAL(KIND=8) :: solve_time
 
-  INTEGER :: t, err
   INTEGER :: it_count, info
 
   ! done before
@@ -115,7 +114,7 @@ SUBROUTINE tea_leaf_dpcg_coarsen_matrix()
   chunk%def%def_di = 0.0_8
 
   IF (use_fortran_kernels) THEN
-!$OMP PARALLEL PRIVATE(Kx_local, Ky_local, tile_size)
+!$OMP PARALLEL PRIVATE(Kx_local, Ky_local)
 !$OMP DO
     DO t=1,tiles_per_task
       kx_local = 0.0_8
@@ -135,10 +134,6 @@ SUBROUTINE tea_leaf_dpcg_coarsen_matrix()
 
       chunk%def%def_kx(chunk%tiles(t)%def_tile_coords(1), chunk%tiles(t)%def_tile_coords(2)) = kx_local
       chunk%def%def_ky(chunk%tiles(t)%def_tile_coords(1), chunk%tiles(t)%def_tile_coords(2)) = ky_local
-
-      tile_size = chunk%tiles(t)%x_cells*chunk%tiles(t)%y_cells
-
-      chunk%def%def_di(chunk%tiles(t)%def_tile_coords(1), chunk%tiles(t)%def_tile_coords(2)) = tile_size
     ENDDO
 !$OMP END DO
 !$OMP END PARALLEL
@@ -148,11 +143,13 @@ SUBROUTINE tea_leaf_dpcg_coarsen_matrix()
   CALL MPI_Allreduce(MPI_IN_PLACE, chunk%def%def_ky, size(chunk%def%def_ky), MPI_DOUBLE_PRECISION, MPI_SUM, mpi_cart_comm, err)
 
   IF (use_fortran_kernels) THEN
-!$OMP PARALLEL
+!$OMP PARALLEL PRIVATE(tile_size)
 !$OMP DO
     DO t=1,tiles_per_task
+      tile_size = chunk%tiles(t)%x_cells*chunk%tiles(t)%y_cells
+
       chunk%def%def_di(chunk%tiles(t)%def_tile_coords(1), chunk%tiles(t)%def_tile_coords(2)) = &
-          chunk%def%def_di(chunk%tiles(t)%def_tile_coords(1), chunk%tiles(t)%def_tile_coords(2)) + &
+          tile_size + &
           chunk%def%def_kx(chunk%tiles(t)%def_tile_coords(1), chunk%tiles(t)%def_tile_coords(2)) + &
           chunk%def%def_ky(chunk%tiles(t)%def_tile_coords(1), chunk%tiles(t)%def_tile_coords(2)) + &
           chunk%def%def_kx(chunk%tiles(t)%def_tile_coords(1) + 1, chunk%tiles(t)%def_tile_coords(2)) + &
@@ -172,7 +169,6 @@ SUBROUTINE tea_leaf_dpcg_setup_and_solve_E(solve_time)
 
   REAL(KIND=8) :: solve_time
 
-  INTEGER :: err
   INTEGER :: it_count
 
   CALL tea_leaf_dpcg_matmul_ZTA(solve_time)
@@ -266,8 +262,7 @@ SUBROUTINE tea_leaf_dpcg_matmul_ZTA(solve_time)
           chunk%tiles(t)%field%vector_Ky,                              &
           chunk%tiles(t)%field%rx,  &
           chunk%tiles(t)%field%ry,  &
-          ztaz,                     &
-          tl_preconditioner_type)
+          ztaz)
 
       ! write back into the GLOBAL vector
       chunk%def%t1(chunk%tiles(t)%def_tile_coords(1), chunk%tiles(t)%def_tile_coords(2)) = ztaz
@@ -431,15 +426,8 @@ SUBROUTINE tea_leaf_dpcg_calc_p(beta)
           chunk%tiles(t)%field%y_max,           &
           halo_exchange_depth,                  &
           chunk%tiles(t)%field%vector_p, &
-          chunk%tiles(t)%field%vector_r, &
           chunk%tiles(t)%field%vector_z, &
-          chunk%tiles(t)%field%vector_Kx,                              &
-          chunk%tiles(t)%field%vector_Ky,                              &
-          chunk%tiles(t)%field%tri_cp,   &
-          chunk%tiles(t)%field%tri_bfp,    &
-          chunk%tiles(t)%field%rx,  &
-          chunk%tiles(t)%field%ry,  &
-          beta, tl_preconditioner_type )
+          beta)
     ENDDO
 !$OMP END DO
 !$OMP END PARALLEL
@@ -469,7 +457,7 @@ SUBROUTINE tea_leaf_dpcg_calc_zrnorm(rro)
             halo_exchange_depth,                           &
             chunk%tiles(t)%field%vector_z,                        &
             chunk%tiles(t)%field%vector_r,                        &
-            tl_preconditioner_type, tile_rro)
+            tile_rro)
 
       rro = rro + tile_rro
     ENDDO
@@ -501,6 +489,227 @@ SUBROUTINE tea_leaf_dpcg_add_z()
   ENDIF
 
 END SUBROUTINE tea_leaf_dpcg_add_z
+
+SUBROUTINE tea_leaf_dpcg_local_solve(x_min,  &
+                           x_max,                  &
+                           y_min,                  &
+                           y_max,                  &
+                           halo_exchange_depth,                  &
+                           u,                      &
+                           u0,                      &
+                           def_kx,                      &
+                           def_ky,                      &
+                           def_di,                      &
+                           p,                      &
+                           r,                      &
+                           Mi,                     &
+                           w,                     &
+                           z,       &
+                           sd,       &
+                           eps, &
+                           inner_iters,         &
+                           it_count,    &
+                           theta,       &
+                           use_ppcg,    &
+                           inner_cg_alphas, inner_cg_betas,     &
+                           inner_ch_alphas, inner_ch_betas)
+
+  IMPLICIT NONE
+
+  INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
+  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,&
+                          y_min-halo_exchange_depth:y_max+halo_exchange_depth) &
+                          :: u, u0, def_kx, def_ky, def_di, p, r, Mi, w, z, sd
+
+  INTEGER(KIND=4) :: j,k
+  INTEGER(KIND=4) :: it_count
+
+  REAL(KIND=8) :: rro, smvp, initial_residual, eps
+  REAL(KIND=8) ::  alpha, beta, pw, rrn
+
+  INTEGER :: inner_iters, inner_step
+  LOGICAL :: use_ppcg
+  REAL(KIND=8), DIMENSION(inner_iters) :: inner_cg_alphas, inner_cg_betas
+  REAL(KIND=8), DIMENSION(inner_iters) :: inner_ch_alphas, inner_ch_betas
+  REAL(KIND=8) :: theta
+
+  rro = 0.0_8
+  initial_residual = 0.0_8
+  pw = 0.0_8
+
+  rrn = 1e10
+
+  it_count = 0
+
+!$OMP PARALLEL private(alpha, beta, smvp, inner_step)
+  IF (use_ppcg) THEN
+!$OMP DO
+    DO k=y_min,y_max
+      DO j=x_min,x_max
+        ! t1 = t1 - t2
+        u0(j, k) = u0(j, k) - u(j, k)
+      ENDDO
+    ENDDO
+!$OMP END DO
+  ELSE
+!$OMP DO
+    DO k=y_min,y_max
+      DO j=x_min,x_max
+        ! first step - t1 = t2
+        u0(j, k) = u(j, k)
+      ENDDO
+    ENDDO
+!$OMP END DO
+  ENDIF
+
+!$OMP DO
+  DO k=y_min,y_max
+    DO j=x_min,x_max
+      ! zero for approximate solve
+      !u(j, k) = 0.0_8
+    ENDDO
+  ENDDO
+!$OMP END DO
+
+!$OMP DO REDUCTION(+:initial_residual)
+  DO k=y_min, y_max
+    DO j=x_min, x_max
+      smvp = def_di(j, k)*u(j, k)             &
+        - (def_ky(j, k+1)*u(j, k+1) + def_ky(j, k)*u(j, k-1))  &
+        - (def_kx(j+1, k)*u(j+1, k) + def_kx(j, k)*u(j-1, k))
+
+      Mi(j, k) = 1.0_8/def_di(j, k)
+
+      r(j, k) = u0(j, k) - smvp
+      z(j, k) = r(j, k)*Mi(j, k)
+      p(j, k) = z(j, k)
+
+      initial_residual = initial_residual + r(j, k)*p(j, k)
+    ENDDO
+  ENDDO
+!$OMP END DO
+
+!$OMP BARRIER
+!$OMP MASTER
+    rro = initial_residual
+    initial_residual = sqrt(abs(initial_residual))
+!$OMP END MASTER
+!$OMP BARRIER
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  DO WHILE ((sqrt(abs(rrn)) .gt. eps*initial_residual) .and. (it_count < inner_iters))
+
+!$OMP BARRIER
+!$OMP MASTER
+    pw = 0.0_8
+!$OMP END MASTER
+!$OMP BARRIER
+
+!$OMP DO REDUCTION(+:pw)
+    DO k=y_min,y_max
+      DO j=x_min,x_max
+        smvp = def_di(j, k)*p(j, k)             &
+          - (def_ky(j, k+1)*p(j, k+1) + def_ky(j, k)*p(j, k-1))  &
+          - (def_kx(j+1, k)*p(j+1, k) + def_kx(j, k)*p(j-1, k))
+
+        w(j, k) = smvp
+        pw = pw + smvp*p(j, k)
+      ENDDO
+    ENDDO
+!$OMP END DO
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    alpha = rro/pw
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+!$OMP BARRIER
+!$OMP MASTER
+    rrn = 0.0_8
+!$OMP END MASTER
+!$OMP BARRIER
+
+!$OMP DO
+    DO k=y_min,y_max
+      DO j=x_min,x_max
+        u(j, k) = u(j, k) + alpha*p(j, k)
+        r(j, k) = r(j, k) - alpha*w(j, k)
+        z(j, k) = r(j, k)*Mi(j, k)
+      ENDDO
+    ENDDO
+!$OMP END DO
+
+    IF (use_ppcg) THEN
+      DO inner_step=1,10
+!$OMP DO
+        DO k=y_min,y_max
+          DO j=x_min,x_max
+            sd(j, k) = z(j, k)/theta
+          ENDDO
+        ENDDO
+!$OMP END DO
+!$OMP DO
+        DO k=y_min,y_max
+          DO j=x_min,x_max
+            smvp = def_di(j, k)*sd(j, k)             &
+              - (def_ky(j, k+1)*sd(j, k+1) + def_ky(j, k)*sd(j, k-1))  &
+              - (def_kx(j+1, k)*sd(j+1, k) + def_kx(j, k)*sd(j-1, k))
+
+            r(j, k) = r(j, k) - smvp
+            z(j, k) = r(j, k)*Mi(j, k)
+
+            u(j, k) = u(j, k) + sd(j, k)
+          ENDDO
+        ENDDO
+!$OMP END DO
+!$OMP DO
+        DO k=y_min,y_max
+          DO j=x_min,x_max
+            sd(j, k) = inner_ch_alphas(inner_step)*sd(j, k) + inner_ch_betas(inner_step)*z(j, k)
+          ENDDO
+        ENDDO
+!$OMP END DO
+      ENDDO
+    ENDIF
+
+!$OMP DO REDUCTION(+:rrn)
+    DO k=y_min,y_max
+      DO j=x_min,x_max
+        rrn = rrn + r(j, k)*z(j, k)
+      ENDDO
+    ENDDO
+!$OMP END DO
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    beta = rrn/rro
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+!$OMP DO
+    DO k=y_min,y_max
+      DO j=x_min,x_max
+        p(j, k) = z(j, k) + beta*p(j, k)
+      ENDDO
+    ENDDO
+!$OMP END DO
+
+!$OMP BARRIER
+!$OMP MASTER
+    rro = rrn
+    it_count = it_count + 1
+    inner_cg_alphas(it_count) = alpha
+    inner_cg_betas(it_count) = beta
+!$OMP END MASTER
+!$OMP BARRIER
+
+  ENDDO
+
+!$OMP END PARALLEL
+
+END SUBROUTINE tea_leaf_dpcg_local_solve
 
 END MODULE tea_leaf_dpcg_module
 
