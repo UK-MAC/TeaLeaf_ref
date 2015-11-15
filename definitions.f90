@@ -94,6 +94,10 @@ MODULE definitions_module
 
    LOGICAL      :: profiler_on ! Internal code profiler to make comparisons across systems easier
 
+   ! coarse solve convergence options
+   INTEGER      :: coarse_solve_max_iters
+   REAL(KIND=8) :: coarse_solve_eps
+
    TYPE profiler_type
      REAL(KIND=8)       :: timestep        &
                           ,visit           &
