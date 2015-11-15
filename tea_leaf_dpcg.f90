@@ -109,7 +109,7 @@ SUBROUTINE tea_leaf_dpcg_coarsen_matrix()
   chunk%def%def_di = 0.0_8
 
   IF (use_fortran_kernels) THEN
-!$OMP PARALLEL PRIVATE(Kx_local, Ky_local, tile_size)
+!$OMP PARALLEL PRIVATE(Kx_local, Ky_local)
 !$OMP DO
     DO t=1,tiles_per_task
       kx_local = 0.0_8
@@ -129,10 +129,6 @@ SUBROUTINE tea_leaf_dpcg_coarsen_matrix()
 
       chunk%def%def_kx(chunk%tiles(t)%def_tile_coords(1), chunk%tiles(t)%def_tile_coords(2)) = kx_local
       chunk%def%def_ky(chunk%tiles(t)%def_tile_coords(1), chunk%tiles(t)%def_tile_coords(2)) = ky_local
-
-      tile_size = chunk%tiles(t)%x_cells*chunk%tiles(t)%y_cells
-
-      chunk%def%def_di(chunk%tiles(t)%def_tile_coords(1), chunk%tiles(t)%def_tile_coords(2)) = tile_size
     ENDDO
 !$OMP END DO
 !$OMP END PARALLEL
@@ -142,11 +138,13 @@ SUBROUTINE tea_leaf_dpcg_coarsen_matrix()
   CALL MPI_Allreduce(MPI_IN_PLACE, chunk%def%def_ky, size(chunk%def%def_ky), MPI_DOUBLE_PRECISION, MPI_SUM, mpi_cart_comm, err)
 
   IF (use_fortran_kernels) THEN
-!$OMP PARALLEL
+!$OMP PARALLEL PRIVATE(tile_size)
 !$OMP DO
     DO t=1,tiles_per_task
+      tile_size = chunk%tiles(t)%x_cells*chunk%tiles(t)%y_cells
+
       chunk%def%def_di(chunk%tiles(t)%def_tile_coords(1), chunk%tiles(t)%def_tile_coords(2)) = &
-          chunk%def%def_di(chunk%tiles(t)%def_tile_coords(1), chunk%tiles(t)%def_tile_coords(2)) + &
+          tile_size + &
           chunk%def%def_kx(chunk%tiles(t)%def_tile_coords(1), chunk%tiles(t)%def_tile_coords(2)) + &
           chunk%def%def_ky(chunk%tiles(t)%def_tile_coords(1), chunk%tiles(t)%def_tile_coords(2)) + &
           chunk%def%def_kx(chunk%tiles(t)%def_tile_coords(1) + 1, chunk%tiles(t)%def_tile_coords(2)) + &
@@ -516,7 +514,7 @@ SUBROUTINE tea_leaf_dpcg_local_solve(x_min,  &
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
   REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,&
                           y_min-halo_exchange_depth:y_max+halo_exchange_depth) &
-                          :: r, z, Mi, p, w, u, u0, def_kx, def_ky, def_di, sd
+                          :: u, u0, def_kx, def_ky, def_di, p, r, Mi, w, z, sd
 
   INTEGER(KIND=4) :: j,k
   INTEGER(KIND=4) :: it_count
