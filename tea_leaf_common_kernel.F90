@@ -299,16 +299,14 @@ SUBROUTINE tea_diag_solve(x_min,             &
                          halo_exchange_depth,             &
                          r,                 &
                          z,                 &
-                         Mi,                &
-                         Kx, Ky, rx, ry)
+                         Mi)
 
   IMPLICIT NONE
 
   INTEGER(KIND=4):: j, k
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
   REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) &
-                          :: Kx, Ky, r, z, Mi
-  REAL(KIND=8) :: rx, ry
+                          :: r, z, Mi
 
 !$OMP DO
     DO k=y_min,y_max
@@ -381,6 +379,9 @@ SUBROUTINE tea_block_solve(x_min,             &
   REAL(KIND=8), DIMENSION(x_min:x_max,y_min:y_max) :: cp, bfp
   REAL(KIND=8) :: rx, ry
   REAL(KIND=8), dimension(0:jac_block_size-1) :: dp_l, z_l
+
+  dp_l = 0.0_8
+  z_l = 0.0_8
 
   k_extra = y_max - MOD(y_max, kstep)
 

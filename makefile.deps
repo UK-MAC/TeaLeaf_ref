@@ -1,10 +1,7 @@
 
 set_field_kernel.o : 
 
-tea_leaf_common_kernel.o : 
-
-tea_leaf_ppcg_kernel.o :  \
-	tea_leaf_common_kernel.o
+tea_leaf_ppcg_kernel.o : 
 
 tea_leaf_jacobi_kernel.o : 
 
@@ -23,7 +20,6 @@ build_field.o :  \
 	tea.o
 
 tea_leaf_common.o :  \
-	tea_leaf_common_kernel.o \
 	report.o \
 	definitions.o
 
@@ -74,11 +70,14 @@ initialise_chunk.o :  \
 	tea.o \
 	definitions.o
 
-tea_leaf_dpcg_kernel.o :  \
-	tea_leaf_common_kernel.o
+tea_leaf_dpcg_kernel.o : 
 
 tea_leaf_dpcg.o :  \
+	tea_leaf_cheby.o \
 	tea_leaf_dpcg_kernel.o \
+	tea_leaf_common.o \
+	update_halo.o \
+	global_mpi.o \
 	definitions.o
 
 calc_dt.o :  \
@@ -87,8 +86,7 @@ calc_dt.o :  \
 definitions.o :  \
 	data.o
 
-tea_leaf_cg_kernel.o :  \
-	tea_leaf_common_kernel.o
+tea_leaf_cg_kernel.o : 
 
 start.o :  \
 	set_field.o \
@@ -144,8 +142,7 @@ initialise.o :  \
 	parse.o \
 	tea.o
 
-tea_leaf_cheby_kernel.o :  \
-	tea_leaf_common_kernel.o
+tea_leaf_cheby_kernel.o : 
 
 diffuse.o :  \
 	timestep.o \

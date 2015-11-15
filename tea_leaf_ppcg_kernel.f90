@@ -45,7 +45,7 @@ SUBROUTINE tea_leaf_kernel_ppcg_init_sd(x_min,             &
                              r, z, cp, bfp, Kx, Ky, rx, ry)
     ELSE IF (preconditioner_type .EQ. TL_PREC_JAC_DIAG) THEN
       CALL tea_diag_solve(x_min, x_max, y_min, y_max, halo_exchange_depth,             &
-                             r, z, Mi, Kx, Ky, rx, ry)
+                             r, z, Mi)
     ENDIF
 
 !$OMP DO
@@ -126,7 +126,7 @@ SUBROUTINE tea_leaf_kernel_ppcg_inner(x_min,             &
                                r, z, cp, bfp, Kx, Ky, rx, ry)
       ELSE IF (preconditioner_type .EQ. TL_PREC_JAC_DIAG) THEN
         CALL tea_diag_solve(x_min, x_max, y_min, y_max, halo_exchange_depth,             &
-                               r, z, Mi, Kx, Ky, rx, ry)
+                               r, z, Mi)
       ENDIF
   
 !$OMP DO
