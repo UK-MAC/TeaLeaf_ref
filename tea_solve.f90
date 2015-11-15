@@ -120,7 +120,7 @@ SUBROUTINE tea_leaf()
   ENDIF
 
   IF (tl_use_dpcg) THEN
-    CALL tea_leaf_dpcg_init_x0()
+    CALL tea_leaf_dpcg_init_x0(solve_time)
 
     ! need to update p when using CG due to matrix/vector multiplication
     fields=0
@@ -309,7 +309,7 @@ SUBROUTINE tea_leaf()
 
       ! not calculating rrn here
 
-      CALL tea_leaf_dpcg_setup_and_solve_E()
+      CALL tea_leaf_dpcg_setup_and_solve_E(solve_time)
 
       CALL tea_leaf_dpcg_calc_rrn(rrn)
       IF (profiler_on) dot_product_time=timer()

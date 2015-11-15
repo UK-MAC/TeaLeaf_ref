@@ -20,9 +20,11 @@ MODULE tea_leaf_dpcg_module
 
 CONTAINS
 
-SUBROUTINE tea_leaf_dpcg_init_x0()
+SUBROUTINE tea_leaf_dpcg_init_x0(solve_time)
 
   IMPLICIT NONE
+
+  REAL(KIND=8) :: solve_time
 
   INTEGER :: t, err
   INTEGER :: it_count, info
@@ -90,7 +92,7 @@ SUBROUTINE tea_leaf_dpcg_init_x0()
   ! calc residual again, and do initial solve
   CALL tea_leaf_calc_residual()
 
-  CALL tea_leaf_dpcg_setup_and_solve_E()
+  CALL tea_leaf_dpcg_setup_and_solve_E(solve_time)
 
   CALL tea_leaf_dpcg_init_p()
 
@@ -159,14 +161,16 @@ SUBROUTINE tea_leaf_dpcg_coarsen_matrix()
 
 END SUBROUTINE tea_leaf_dpcg_coarsen_matrix
 
-SUBROUTINE tea_leaf_dpcg_setup_and_solve_E
+SUBROUTINE tea_leaf_dpcg_setup_and_solve_E(solve_time)
 
   IMPLICIT NONE
+
+  REAL(KIND=8) :: solve_time
 
   INTEGER :: err
   INTEGER :: it_count
 
-  CALL tea_leaf_dpcg_matmul_ZTA()
+  CALL tea_leaf_dpcg_matmul_ZTA(solve_time)
   CALL tea_leaf_dpcg_restrict_ZT()
 
   CALL tea_leaf_dpcg_local_solve(   &
@@ -199,12 +203,14 @@ SUBROUTINE tea_leaf_dpcg_setup_and_solve_E
 
 END SUBROUTINE tea_leaf_dpcg_setup_and_solve_E
 
-SUBROUTINE tea_leaf_dpcg_matmul_ZTA()
+SUBROUTINE tea_leaf_dpcg_matmul_ZTA(solve_time)
 
   IMPLICIT NONE
 
+  REAL(KIND=8) :: solve_time
+
   INTEGER :: t, err
-  REAL(KIND=8) :: ztaz
+  REAL(KIND=8) :: ztaz,halo_time,timer
 
   INTEGER :: fields(NUM_FIELDS)=0
   fields(field_z) = 1
@@ -235,7 +241,9 @@ SUBROUTINE tea_leaf_dpcg_matmul_ZTA()
 
   chunk%def%t1 = 0.0_8
 
-  call update_halo(fields, 1)
+  IF (profiler_on) halo_time = timer()
+  CALL update_halo(fields,1)
+  IF (profiler_on) solve_time = solve_time + (timer()-halo_time)
 
   IF (use_fortran_kernels) THEN
 !$OMP PARALLEL PRIVATE(ztaz)
