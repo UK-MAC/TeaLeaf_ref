@@ -578,7 +578,7 @@ SUBROUTINE tea_leaf_dpcg_local_solve(x_min,  &
   DO k=y_min,y_max
     DO j=x_min,x_max
       ! zero for approximate solve
-      !u(j, k) = 0.0_8
+      u(j, k) = 0.0_8
     ENDDO
   ENDDO
 !$OMP END DO
