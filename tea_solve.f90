@@ -281,7 +281,6 @@ SUBROUTINE tea_leaf()
 
       cheby_calc_steps = cheby_calc_steps + 1
     ELSEIF (tl_use_dpcg) THEN
-      fields(FIELD_P) = 1
       cg_calc_steps = cg_calc_steps + 1
 
       ! w = Ap

@@ -25,12 +25,8 @@ SUBROUTINE tea_leaf_dpcg_init_x0(solve_time)
   REAL(KIND=8) :: solve_time
 
   INTEGER :: it_count, info
-  INTEGER :: fields(NUM_FIELDS)=0
+  INTEGER :: fields(NUM_FIELDS)
   REAL(KIND=8) :: halo_time,timer
-  fields(field_u) = 1
-
-  ! done before
-  !CALL tea_leaf_calc_residual()
 
   IF (.NOT. ALLOCATED(inner_cg_alphas)) THEN
     ALLOCATE(inner_cg_alphas(coarse_solve_max_iters))
@@ -95,6 +91,9 @@ SUBROUTINE tea_leaf_dpcg_init_x0(solve_time)
 
   CALL tea_calc_ch_coefs(inner_ch_alphas, inner_ch_betas, eigmin, eigmax, &
       theta, it_count)
+
+  fields = 0
+  fields(FIELD_U) = 1
 
   ! update the halo for u prior to recalculating the residual
   IF (profiler_on) halo_time = timer()
@@ -221,8 +220,7 @@ SUBROUTINE tea_leaf_dpcg_matmul_ZTA(solve_time)
   INTEGER :: t, err
   REAL(KIND=8) :: ztaz,halo_time,timer
 
-  INTEGER :: fields(NUM_FIELDS)=0
-  fields(field_z) = 1
+  INTEGER :: fields(NUM_FIELDS)
 
   IF (use_fortran_kernels) THEN
 !$OMP PARALLEL PRIVATE(ztaz)
@@ -250,9 +248,15 @@ SUBROUTINE tea_leaf_dpcg_matmul_ZTA(solve_time)
 
   chunk%def%t1 = 0.0_8
 
+  fields = 0
+  fields(FIELD_Z) = 1
+
   IF (profiler_on) halo_time = timer()
   CALL update_halo(fields,1)
   IF (profiler_on) solve_time = solve_time + (timer()-halo_time)
+
+  fields = 0
+  fields(FIELD_P) = 1
 
   IF (use_fortran_kernels) THEN
 !$OMP PARALLEL PRIVATE(ztaz)
