@@ -131,8 +131,7 @@ MPI_COMPILER=mpif90
 C_MPI_COMPILER=mpicc
 
 ifndef TL_OMP_LEVEL
-# default - openmp in kernels
-KERNEL_FLAGS+=$(OMP_$(COMPILER)) $(OMP4)
+# default - openmp in tiles only. This is typically best for the dual-level solver
 FLAGS+=$(OMP_$(COMPILER)) $(OMP4)
 else ifeq '$(TL_OMP_LEVEL)' 'KERNEL'
 # the same if this is specified
