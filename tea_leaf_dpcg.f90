@@ -42,11 +42,6 @@ SUBROUTINE tea_leaf_dpcg_init_x0(solve_time)
   ! just use CG on the first one
   inner_use_ppcg = .FALSE.
 
-  ! FIXME if initial residual is very small, not enough steps to provide an
-  ! accurate guess for the eigenvalues (if diagonal scaling on the coarse
-  ! grid correction is disablee). Need to run CG for at least ~30 steps to
-  ! get a good guess
-
   CALL tea_leaf_dpcg_local_solve(   &
       chunk%def%x_min, &
       chunk%def%x_max,                                  &
