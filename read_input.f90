@@ -100,6 +100,9 @@ SUBROUTINE read_input()
 
   halo_exchange_depth=1
 
+  coarse_solve_max_iters=200
+  coarse_solve_eps=1.0e-15
+
   IF(parallel%boss)WRITE(g_out,*) 'Reading input file'
   IF(parallel%boss)WRITE(g_out,*)
 
@@ -262,6 +265,12 @@ SUBROUTINE read_input()
       CASE('tl_coefficient_inverse_density')
         coefficient = RECIP_CONDUCTIVITY
         IF(parallel%boss)WRITE(g_out,"(1x,a40)")'Diffusion coefficient reciprocal density'
+      CASE('coarse_solve_max_iters')
+        coarse_solve_max_iters = parse_getival(parse_getword(.TRUE.))
+        IF(parallel%boss)WRITE(g_out,"(1x,a25,i12)")'coarse_solve_max_iters',coarse_solve_max_iters
+      CASE('coarse_solve_eps')
+        coarse_solve_eps = parse_getrval(parse_getword(.TRUE.))
+        IF(parallel%boss)WRITE(g_out,"(1x,a25,e12.4)")'coarse_solve_eps',coarse_solve_eps
       CASE('test_problem')
         test_problem=parse_getival(parse_getword(.TRUE.))
         IF(parallel%boss)WRITE(g_out,"(1x,a25,i12)")'test_problem',test_problem

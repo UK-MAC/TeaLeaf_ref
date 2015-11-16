@@ -11,11 +11,9 @@ MODULE tea_leaf_dpcg_module
 
   IMPLICIT NONE
 
-  INTEGER, PARAMETER :: coarse_solve_max_iters=200
-
   LOGICAL :: inner_use_ppcg
-  REAL(KIND=8), DIMENSION(coarse_solve_max_iters) :: inner_cg_alphas, inner_cg_betas
-  REAL(KIND=8), DIMENSION(coarse_solve_max_iters) :: inner_ch_alphas, inner_ch_betas
+  REAL(KIND=8), DIMENSION(:), ALLOCATABLE :: inner_cg_alphas, inner_cg_betas
+  REAL(KIND=8), DIMENSION(:), ALLOCATABLE :: inner_ch_alphas, inner_ch_betas
   REAL(KIND=8) :: eigmin, eigmax, theta
 
 CONTAINS
@@ -27,9 +25,19 @@ SUBROUTINE tea_leaf_dpcg_init_x0(solve_time)
   REAL(KIND=8) :: solve_time
 
   INTEGER :: it_count, info
+  INTEGER :: fields(NUM_FIELDS)=0
+  REAL(KIND=8) :: halo_time,timer
+  fields(field_u) = 1
 
   ! done before
   !CALL tea_leaf_calc_residual()
+
+  IF (.NOT. ALLOCATED(inner_cg_alphas)) THEN
+    ALLOCATE(inner_cg_alphas(coarse_solve_max_iters))
+    ALLOCATE(inner_cg_betas (coarse_solve_max_iters))
+    ALLOCATE(inner_ch_alphas(coarse_solve_max_iters))
+    ALLOCATE(inner_ch_betas (coarse_solve_max_iters))
+  ENDIF
 
   CALL tea_leaf_dpcg_coarsen_matrix()
 
@@ -60,7 +68,7 @@ SUBROUTINE tea_leaf_dpcg_init_x0(solve_time)
       chunk%def%def_w,                               &
       chunk%def%def_z, &
       chunk%def%def_sd, &
-      eps, &
+      coarse_solve_eps, &
       coarse_solve_max_iters,                          &
       it_count,         &
       0.0_8,            &
@@ -87,6 +95,11 @@ SUBROUTINE tea_leaf_dpcg_init_x0(solve_time)
 
   CALL tea_calc_ch_coefs(inner_ch_alphas, inner_ch_betas, eigmin, eigmax, &
       theta, it_count)
+
+  ! update the halo for u prior to recalculating the residual
+  IF (profiler_on) halo_time = timer()
+  CALL update_halo(fields,1)
+  IF (profiler_on) solve_time = solve_time + (timer()-halo_time)
 
   ! calc residual again, and do initial solve
   CALL tea_leaf_calc_residual()
@@ -186,7 +199,7 @@ SUBROUTINE tea_leaf_dpcg_setup_and_solve_E(solve_time)
       chunk%def%def_w,                               &
       chunk%def%def_z, &
       chunk%def%def_sd, &
-      eps, &
+      coarse_solve_eps, &
       coarse_solve_max_iters,                          &
       it_count,         &
       theta,            &
