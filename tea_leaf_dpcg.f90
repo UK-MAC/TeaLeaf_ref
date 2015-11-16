@@ -647,14 +647,15 @@ SUBROUTINE tea_leaf_dpcg_local_solve(x_min,  &
 !$OMP END DO
 
     IF (use_ppcg) THEN
-      DO inner_step=1,10
 !$OMP DO
-        DO k=y_min,y_max
-          DO j=x_min,x_max
-            sd(j, k) = z(j, k)/theta
-          ENDDO
+      DO k=y_min,y_max
+        DO j=x_min,x_max
+          sd(j, k) = z(j, k)/theta
         ENDDO
+      ENDDO
 !$OMP END DO
+
+      DO inner_step=1,10
 !$OMP DO
         DO k=y_min,y_max
           DO j=x_min,x_max
