@@ -601,22 +601,21 @@ SUBROUTINE tea_leaf_dpcg_local_solve(x_min,  &
   ENDDO
 !$OMP END DO
 
-!$OMP BARRIER
-!$OMP MASTER
+!$OMP SINGLE
     rro = initial_residual
     initial_residual = sqrt(abs(initial_residual))
-!$OMP END MASTER
-!$OMP BARRIER
+!$OMP END SINGLE
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   DO WHILE ((sqrt(abs(rrn)) .gt. eps*initial_residual) .and. (it_count < inner_iters))
 
 !$OMP BARRIER
-!$OMP MASTER
+
+!$OMP SINGLE
     pw = 0.0_8
-!$OMP END MASTER
-!$OMP BARRIER
+    rrn = 0.0_8
+!$OMP END SINGLE
 
 !$OMP DO REDUCTION(+:pw)
     DO k=y_min,y_max
@@ -636,12 +635,6 @@ SUBROUTINE tea_leaf_dpcg_local_solve(x_min,  &
     alpha = rro/pw
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-!$OMP BARRIER
-!$OMP MASTER
-    rrn = 0.0_8
-!$OMP END MASTER
-!$OMP BARRIER
 
 !$OMP DO
     DO k=y_min,y_max
@@ -708,14 +701,12 @@ SUBROUTINE tea_leaf_dpcg_local_solve(x_min,  &
     ENDDO
 !$OMP END DO
 
-!$OMP BARRIER
-!$OMP MASTER
+!$OMP SINGLE
     rro = rrn
     it_count = it_count + 1
     inner_cg_alphas(it_count) = alpha
     inner_cg_betas(it_count) = beta
-!$OMP END MASTER
-!$OMP BARRIER
+!$OMP END SINGLE
 
   ENDDO
 
