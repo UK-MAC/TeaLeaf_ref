@@ -81,8 +81,13 @@ SUBROUTINE start
   ENDIF
 
   ! Each chunk has an array the size of the _total_ deflation vector size
-  chunk%def%x_cells = mpi_dims(1)*chunk%tile_dims(1)
-  chunk%def%y_cells = mpi_dims(2)*chunk%tile_dims(2)
+  chunk%def%x_cells = mpi_dims(1)*chunk%tile_dims(1)*chunk%sub_tile_dims(1)
+  chunk%def%y_cells = mpi_dims(2)*chunk%tile_dims(2)*chunk%sub_tile_dims(2)
+
+  IF (parallel%boss)THEN
+    WRITE(g_out,*)"Sub-tile size ",chunk%tiles(1)%x_cells/chunk%sub_tile_dims(1)," by ", &
+                                   chunk%tiles(1)%y_cells/chunk%sub_tile_dims(2)," cells"
+  ENDIF
 
   chunk%def%x_min = 1
   chunk%def%y_min = 1

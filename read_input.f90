@@ -75,6 +75,7 @@ SUBROUTINE read_input()
   profiler%dot_product=0.0
 
   tiles_per_task = 1
+  sub_tiles_per_tile = 1
 
 !$OMP PARALLEL
 !$OMP MASTER
@@ -178,6 +179,9 @@ SUBROUTINE read_input()
       CASE('tiles_per_task')
         tiles_per_task=parse_getival(parse_getword(.TRUE.))
         IF(parallel%boss)WRITE(g_out,"(1x,a25,i12)")'tiles_per_task',tiles_per_task
+      CASE('sub_tiles_per_tile')
+        sub_tiles_per_tile=parse_getival(parse_getword(.TRUE.))
+        IF(parallel%boss)WRITE(g_out,"(1x,a25,i12)")'sub_tiles_per_tile',sub_tiles_per_tile
       CASE('total_tiles')
         total_tiles=parse_getival(parse_getword(.TRUE.))
         IF(parallel%boss)WRITE(g_out,"(1x,a25,i12)")'total_tiles',total_tiles

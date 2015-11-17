@@ -232,6 +232,9 @@ MODULE definitions_module
      ! how tiles are arranged
      INTEGER,DIMENSION(2) :: tile_dims
 
+     ! how sub-tiles are arranged
+     INTEGER,DIMENSION(2) :: sub_tile_dims
+
   END TYPE chunk_type
 
   TYPE(chunk_type)                     :: chunk

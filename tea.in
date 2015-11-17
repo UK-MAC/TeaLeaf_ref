@@ -20,9 +20,11 @@ tl_check_result
 tl_eps=1.0e-15
 profiler_on
 
-total_tiles=62500
+total_tiles=100
+sub_tiles_per_tile=625
 tl_preconditioner_type=jac_diag
 halo_depth=1
 verbose_on
+coarse_solve_eps=0.1
 
 *endtea

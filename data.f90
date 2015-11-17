@@ -87,6 +87,7 @@ MODULE data_module
    INTEGER,        PARAMETER ::g_len_max=500
 
    INTEGER                   ::tiles_per_task
+   INTEGER                   ::sub_tiles_per_tile
 
    ! cartesian communicator
    INTEGER                   ::mpi_cart_comm

@@ -163,6 +163,7 @@ SUBROUTINE tea_decompose_tiles(x_cells, y_cells)
   INTEGER  :: tiles_x,tiles_y,mod_x,mod_y
 
   INTEGER :: err, j, k, t
+  INTEGER,PARAMETER :: sub_tile_nx=2, sub_tile_ny=2
 
   chunk%tile_dims = 0
 
@@ -171,6 +172,9 @@ SUBROUTINE tea_decompose_tiles(x_cells, y_cells)
 
   ! get good split for tiles
   CALL MPI_DIMS_CREATE(tiles_per_task, 2, chunk%tile_dims, err)
+
+  ! get good split for sub-tiles
+  CALL MPI_DIMS_CREATE(sub_tiles_per_tile, 2, chunk%sub_tile_dims, err) 
 
   tiles_x = chunk%tile_dims(1)
   tiles_y = chunk%tile_dims(2)
@@ -216,11 +220,11 @@ SUBROUTINE tea_decompose_tiles(x_cells, y_cells)
       chunk%tiles(t)%tile_coords = chunk%tiles(t)%tile_coords + 1
 
       ! absolute position of tile compared to all other tiles in grid
-      chunk%tiles(t)%def_tile_coords(1) = mpi_coords(1)*chunk%tile_dims(1) + (j + 1)
-      chunk%tiles(t)%def_tile_coords(2) = mpi_coords(2)*chunk%tile_dims(2) + (k + 1)
+      chunk%tiles(t)%def_tile_coords(1) = (mpi_coords(1)*chunk%tile_dims(1) + j)*chunk%sub_tile_dims(1) + 1
+      chunk%tiles(t)%def_tile_coords(2) = (mpi_coords(2)*chunk%tile_dims(2) + k)*chunk%sub_tile_dims(2) + 1
 
-      chunk%tiles(t)%def_tile_idx = (chunk%tiles(t)%def_tile_coords(1) - 1)*mpi_dims(2)*chunk%tile_dims(2) + &
-                                     chunk%tiles(t)%def_tile_coords(2)
+      chunk%tiles(t)%def_tile_idx = (chunk%tiles(t)%def_tile_coords(2) - 1)*mpi_dims(1)*chunk%tile_dims(1) + &
+                                     chunk%tiles(t)%def_tile_coords(1)
 
       chunk%tiles(t)%tile_neighbours = EXTERNAL_FACE
 
