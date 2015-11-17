@@ -49,7 +49,7 @@ SUBROUTINE tea_leaf_dpcg_coarsen_matrix_kernel(x_min, x_max, y_min, y_max, halo_
   DO kk=1,ny
     k_start=y_min+(kk-1)*dy
     k_end  =min(k_start+dy-1,y_max)
-!$OMP PARALLEL REDUCTION(+:kx_local, ky_local) PRIVATE(k,kk,k_start,k_end,j,jj,j_start,j_end)
+!$OMP PARALLEL REDUCTION(+:kx_local, ky_local) PRIVATE(j,jj,j_start,j_end)
 !$OMP DO
     DO k=k_start,k_end
       DO jj=1,nx
@@ -85,7 +85,7 @@ SUBROUTINE tea_leaf_dpcg_prolong_Z_kernel(x_min, x_max, y_min, y_max, halo_excha
   DO kk=1,ny
     k_start=y_min+(kk-1)*dy
     k_end  =min(k_start+dy-1,y_max)
-!$OMP PARALLEL PRIVATE(k,kk,k_start,k_end,j,jj,j_start,j_end)
+!$OMP PARALLEL PRIVATE(j,jj,j_start,j_end)
 !$OMP DO
     DO k=k_start,k_end
       DO jj=1,nx
@@ -120,7 +120,7 @@ SUBROUTINE tea_leaf_dpcg_add_z_kernel(x_min, x_max, y_min, y_max, halo_exchange_
   DO kk=1,ny
     k_start=y_min+(kk-1)*dy
     k_end  =min(k_start+dy-1,y_max)
-!$OMP PARALLEL PRIVATE(k,kk,k_start,k_end,j,jj,j_start,j_end)
+!$OMP PARALLEL PRIVATE(j,jj,j_start,j_end)
 !$OMP DO
     DO k=k_start,k_end
       DO jj=1,nx
@@ -158,7 +158,7 @@ SUBROUTINE tea_leaf_dpcg_restrict_ZT_kernel(x_min, x_max, y_min, y_max, halo_exc
     k_start=y_min+(kk-1)*dy
     k_end  =min(k_start+dy-1,y_max)
 !$OMP PARALLEL
-!$OMP DO REDUCTION (+:ZTr) PRIVATE(k,kk,k_start,k_end,j,jj,j_start,j_end)
+!$OMP DO REDUCTION (+:ZTr) PRIVATE(j,jj,j_start,j_end)
     DO k=k_start,k_end
       DO jj=1,nx
         j_start=x_min+(jj-1)*dx
@@ -207,7 +207,7 @@ SUBROUTINE tea_leaf_dpcg_matmul_ZTA_kernel(x_min,  &
     k_start=y_min+(kk-1)*dy
     k_end  =min(k_start+dy-1,y_max)
 !$OMP PARALLEL
-!$OMP DO REDUCTION (+:ztaz) PRIVATE(k,kk,k_start,k_end,j,jj,j_start,j_end)
+!$OMP DO REDUCTION (+:ztaz) PRIVATE(j,jj,j_start,j_end)
     DO k=k_start,k_end
       DO jj=1,nx
         j_start=x_min+(jj-1)*dx
