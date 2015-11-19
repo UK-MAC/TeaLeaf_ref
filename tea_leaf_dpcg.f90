@@ -390,7 +390,7 @@ SUBROUTINE tea_leaf_dpcg_restrict_ZT(inner_use_ppcg)
     ENDIF
   ENDIF
 
-  CALL MPI_Allreduce(chunk%def%t2, chunk%def%t2, size(chunk%def%t2), MPI_DOUBLE_PRECISION, MPI_SUM, mpi_cart_comm, err)
+  CALL MPI_Allreduce(chunk%def%t1, chunk%def%t2, size(chunk%def%t2), MPI_DOUBLE_PRECISION, MPI_SUM, mpi_cart_comm, err)
 
 END SUBROUTINE tea_leaf_dpcg_restrict_ZT
 
