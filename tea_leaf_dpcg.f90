@@ -44,7 +44,8 @@ SUBROUTINE tea_leaf_dpcg_init_x0(solve_time)
   ! just use CG on the first one
   inner_use_ppcg = .FALSE.
 
-  CALL tea_leaf_dpcg_restrict_ZT(inner_use_ppcg)
+  chunk%def%t1 = 0.0_8
+  CALL tea_leaf_dpcg_restrict_ZT(.TRUE.)
 
   CALL tea_leaf_dpcg_local_solve(   &
       chunk%def%x_min, &
@@ -73,7 +74,7 @@ SUBROUTINE tea_leaf_dpcg_init_x0(solve_time)
       )
 
   ! add back onto the fine grid
-  CALL tea_leaf_dpcg_add_z()
+  CALL tea_leaf_dpcg_subtract_z()
 
   ! for all subsequent steps, use ppcg
   inner_use_ppcg = .TRUE.
@@ -117,7 +118,7 @@ SUBROUTINE tea_leaf_dpcg_setup_and_solve_E(solve_time)
   INTEGER :: it_count
 
   CALL tea_leaf_dpcg_matmul_ZTA(solve_time)
-  CALL tea_leaf_dpcg_restrict_ZT(inner_use_ppcg)
+  CALL tea_leaf_dpcg_restrict_ZT(.TRUE.)
 
   CALL tea_leaf_dpcg_local_solve(   &
       chunk%def%x_min, &
@@ -274,8 +275,6 @@ SUBROUTINE tea_leaf_dpcg_matmul_ZTA(solve_time)
 !$OMP END PARALLEL
   ENDIF
 
-  chunk%def%t1 = 0.0_8
-
   fields = 0
   fields(FIELD_Z) = 1
 
@@ -286,6 +285,7 @@ SUBROUTINE tea_leaf_dpcg_matmul_ZTA(solve_time)
   fields = 0
   fields(FIELD_P) = 1
 
+  chunk%def%t1 = 0.0_8
   IF (use_fortran_kernels) THEN
 !$OMP PARALLEL PRIVATE(ztaz,sub_tile_dx,sub_tile_dy)
 !$OMP DO
@@ -321,19 +321,17 @@ SUBROUTINE tea_leaf_dpcg_matmul_ZTA(solve_time)
 
 END SUBROUTINE tea_leaf_dpcg_matmul_ZTA
 
-SUBROUTINE tea_leaf_dpcg_restrict_ZT(inner_use_ppcg)
+SUBROUTINE tea_leaf_dpcg_restrict_ZT(not_init)
 
   IMPLICIT NONE
-  LOGICAL :: inner_use_ppcg
+  LOGICAL :: not_init
   INTEGER :: t, err
 
   INTEGER :: sub_tile_dx, sub_tile_dy
   REAL(KIND=8),dimension(chunk%sub_tile_dims(1), chunk%sub_tile_dims(2)) :: ZTr
 
-  chunk%def%t2 = 0.0_8
-
   IF (use_fortran_kernels) THEN
-    IF (inner_use_ppcg) THEN
+    IF (not_init) THEN
 !$OMP PARALLEL PRIVATE(ZTr,sub_tile_dx,sub_tile_dy)
 !$OMP DO
       DO t=1,tiles_per_task
@@ -383,7 +381,7 @@ SUBROUTINE tea_leaf_dpcg_restrict_ZT(inner_use_ppcg)
                                               ztr)
 
         chunk%def%t1(chunk%tiles(t)%def_tile_coords(1):chunk%tiles(t)%def_tile_coords(1)+chunk%sub_tile_dims(1)-1, &
-                     chunk%tiles(t)%def_tile_coords(2):chunk%tiles(t)%def_tile_coords(2)+chunk%sub_tile_dims(2)-1) = ztr
+                     chunk%tiles(t)%def_tile_coords(2):chunk%tiles(t)%def_tile_coords(2)+chunk%sub_tile_dims(2)-1) = - ztr
       ENDDO
 !$OMP END DO
 !$OMP END PARALLEL
@@ -431,7 +429,7 @@ SUBROUTINE tea_leaf_dpcg_prolong_Z()
 
 END SUBROUTINE tea_leaf_dpcg_prolong_Z
 
-SUBROUTINE tea_leaf_dpcg_add_z()
+SUBROUTINE tea_leaf_dpcg_subtract_z()
 
   IMPLICIT NONE
   INTEGER :: t
@@ -449,23 +447,23 @@ SUBROUTINE tea_leaf_dpcg_add_z()
 
       t2_local=chunk%def%t2(chunk%tiles(t)%def_tile_coords(1):chunk%tiles(t)%def_tile_coords(1)+chunk%sub_tile_dims(1)-1, &
                             chunk%tiles(t)%def_tile_coords(2):chunk%tiles(t)%def_tile_coords(2)+chunk%sub_tile_dims(2)-1)
-      CALL tea_leaf_dpcg_add_z_kernel(chunk%tiles(t)%field%x_min, &
-                                      chunk%tiles(t)%field%x_max, &
-                                      chunk%tiles(t)%field%y_min, &
-                                      chunk%tiles(t)%field%y_max, &
-                                      halo_exchange_depth,        &
-                                      chunk%sub_tile_dims(1),     &
-                                      sub_tile_dx,                &
-                                      chunk%sub_tile_dims(2),     &
-                                      sub_tile_dy,                &
-                                      chunk%tiles(t)%field%u,     &
-                                      t2_local)
+      CALL tea_leaf_dpcg_subtract_z_kernel(chunk%tiles(t)%field%x_min, &
+                                           chunk%tiles(t)%field%x_max, &
+                                           chunk%tiles(t)%field%y_min, &
+                                           chunk%tiles(t)%field%y_max, &
+                                           halo_exchange_depth,        &
+                                           chunk%sub_tile_dims(1),     &
+                                           sub_tile_dx,                &
+                                           chunk%sub_tile_dims(2),     &
+                                           sub_tile_dy,                &
+                                           chunk%tiles(t)%field%u,     &
+                                           t2_local)
     ENDDO
 !$OMP END DO
 !$OMP END PARALLEL
   ENDIF
 
-END SUBROUTINE tea_leaf_dpcg_add_z
+END SUBROUTINE tea_leaf_dpcg_subtract_z
 
 SUBROUTINE tea_leaf_dpcg_init_p()
 
@@ -660,7 +658,7 @@ SUBROUTINE tea_leaf_dpcg_local_solve(x_min,               &
 !$OMP DO
   DO k=y_min,y_max
     DO j=x_min,x_max
-      ! first step - t1 = t2
+      ! zero for approximate solve
       u0(j, k) = u(j, k)
     ENDDO
   ENDDO

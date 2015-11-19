@@ -102,7 +102,7 @@ SUBROUTINE tea_leaf_dpcg_prolong_Z_kernel(x_min, x_max, y_min, y_max, halo_excha
 
 END SUBROUTINE tea_leaf_dpcg_prolong_Z_kernel
 
-SUBROUTINE tea_leaf_dpcg_add_z_kernel(x_min, x_max, y_min, y_max, halo_exchange_depth, &
+SUBROUTINE tea_leaf_dpcg_subtract_z_kernel(x_min, x_max, y_min, y_max, halo_exchange_depth, &
     nx, dx, ny, dy, &
     u, &
     tile_t2 )
@@ -127,7 +127,7 @@ SUBROUTINE tea_leaf_dpcg_add_z_kernel(x_min, x_max, y_min, y_max, halo_exchange_
         j_start=x_min+(jj-1)*dx
         j_end  =min(j_start+dx-1,x_max)
         DO j=j_start,j_end
-          u(j, k) = u(j, k) + tile_t2(jj,kk)
+          u(j, k) = u(j, k) - tile_t2(jj,kk)
         ENDDO
       ENDDO
     ENDDO
@@ -135,7 +135,7 @@ SUBROUTINE tea_leaf_dpcg_add_z_kernel(x_min, x_max, y_min, y_max, halo_exchange_
 !$OMP END PARALLEL
   ENDDO
 
-END SUBROUTINE tea_leaf_dpcg_add_z_kernel
+END SUBROUTINE tea_leaf_dpcg_subtract_z_kernel
 
 SUBROUTINE tea_leaf_dpcg_restrict_ZT_kernel(x_min, x_max, y_min, y_max, halo_exchange_depth, &
     nx, dx, ny, dy, &
