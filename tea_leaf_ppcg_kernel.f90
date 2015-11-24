@@ -14,6 +14,7 @@ SUBROUTINE tea_leaf_kernel_ppcg_init_sd(x_min,             &
                                         r,                 &
                                         kx,                 &
                                         ky,                 &
+                                        Di,                 &
                                         sd,                &
                                         z,                &
                                         cp,                &
@@ -28,7 +29,7 @@ SUBROUTINE tea_leaf_kernel_ppcg_init_sd(x_min,             &
   INTEGER :: preconditioner_type
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
   REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth)&
-                          :: r, sd, kx, ky , z, Mi
+                          :: r, sd, kx, ky , z, Mi, Di
   REAL(KIND=8), DIMENSION(x_min:x_max,y_min:y_max) :: cp, bfp
   REAL(KIND=8) :: theta, theta_r, rx, ry
 
@@ -42,7 +43,7 @@ SUBROUTINE tea_leaf_kernel_ppcg_init_sd(x_min,             &
 
     IF (preconditioner_type .EQ. TL_PREC_JAC_BLOCK) THEN
       CALL tea_block_solve(x_min, x_max, y_min, y_max, halo_exchange_depth,             &
-                             r, z, cp, bfp, Kx, Ky, rx, ry)
+                             r, z, cp, bfp, Kx, Ky, Di, rx, ry)
     ELSE IF (preconditioner_type .EQ. TL_PREC_JAC_DIAG) THEN
       CALL tea_diag_solve(x_min, x_max, y_min, y_max, halo_exchange_depth,             &
                              r, z, Mi)
@@ -85,6 +86,7 @@ SUBROUTINE tea_leaf_kernel_ppcg_inner(x_min,             &
                                       r,                 &
                                       Kx,                &
                                       Ky,                &
+                                      Di,                &
                                       sd,                &
                                       z,                &
                                       cp,                &
@@ -96,7 +98,7 @@ SUBROUTINE tea_leaf_kernel_ppcg_inner(x_min,             &
   INTEGER :: preconditioner_type
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
   REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth)&
-                          :: u, r, Kx, Ky, sd , z, Mi
+                          :: u, r, Kx, Ky, sd , z, Mi, Di
   REAL(KIND=8), DIMENSION(x_min:x_max,y_min:y_max) :: cp, bfp
   INTEGER(KIND=4) :: j,k
   REAL(KIND=8), DIMENSION(:) :: alpha, beta
@@ -108,9 +110,7 @@ SUBROUTINE tea_leaf_kernel_ppcg_inner(x_min,             &
 !$OMP DO
     DO k=y_min_bound,y_max_bound
         DO j=x_min_bound,x_max_bound
-            smvp = (1.0_8                                           &
-                + ry*(Ky(j, k+1) + Ky(j, k))                        &
-                + rx*(Kx(j+1, k) + Kx(j, k)))*sd(j, k)              &
+            smvp = Di(j,k)*sd(j, k)                                 &
                 - ry*(Ky(j, k+1)*sd(j, k+1) + Ky(j, k)*sd(j, k-1))  &
                 - rx*(Kx(j+1, k)*sd(j+1, k) + Kx(j, k)*sd(j-1, k))
 
@@ -123,7 +123,7 @@ SUBROUTINE tea_leaf_kernel_ppcg_inner(x_min,             &
     IF (preconditioner_type .NE. TL_PREC_NONE) THEN
       IF (preconditioner_type .EQ. TL_PREC_JAC_BLOCK) THEN
         CALL tea_block_solve(x_min, x_max, y_min, y_max, halo_exchange_depth,             &
-                               r, z, cp, bfp, Kx, Ky, rx, ry)
+                               r, z, cp, bfp, Kx, Ky, Di, rx, ry)
       ELSE IF (preconditioner_type .EQ. TL_PREC_JAC_DIAG) THEN
         CALL tea_diag_solve(x_min, x_max, y_min, y_max, halo_exchange_depth,             &
                                r, z, Mi)

@@ -19,12 +19,14 @@
 !>  @author David Beckingsale, Wayne Gaudin
 !>  @details Invoked the users specified chunk generator.
 
-SUBROUTINE generate_chunk()
+SUBROUTINE generate_chunk(level)
 
   USE tea_module
   USE generate_chunk_kernel_module
 
   IMPLICIT NONE
+
+  INTEGER         :: level
 
   INTEGER         :: t
 
@@ -48,17 +50,17 @@ SUBROUTINE generate_chunk()
 !$OMP PARALLEL
 !$OMP DO
     DO t=1,tiles_per_task
-      CALL generate_chunk_kernel(chunk%tiles(t)%field%x_min,             &
-                                 chunk%tiles(t)%field%x_max,             &
-                                 chunk%tiles(t)%field%y_min,             &
-                                 chunk%tiles(t)%field%y_max,halo_exchange_depth,             &
-                                 chunk%tiles(t)%field%vertexx,           &
-                                 chunk%tiles(t)%field%vertexy,           &
-                                 chunk%tiles(t)%field%cellx,             &
-                                 chunk%tiles(t)%field%celly,             &
-                                 chunk%tiles(t)%field%density,           &
-                                 chunk%tiles(t)%field%energy0,           &
-                                 chunk%tiles(t)%field%u,                 &
+      CALL generate_chunk_kernel(chunk(level)%tiles(t)%field%x_min,             &
+                                 chunk(level)%tiles(t)%field%x_max,             &
+                                 chunk(level)%tiles(t)%field%y_min,             &
+                                 chunk(level)%tiles(t)%field%y_max,halo_exchange_depth,             &
+                                 chunk(level)%tiles(t)%field%vertexx,           &
+                                 chunk(level)%tiles(t)%field%vertexy,           &
+                                 chunk(level)%tiles(t)%field%cellx,             &
+                                 chunk(level)%tiles(t)%field%celly,             &
+                                 chunk(level)%tiles(t)%field%density,           &
+                                 chunk(level)%tiles(t)%field%energy0,           &
+                                 chunk(level)%tiles(t)%field%u,                 &
                                  number_of_states,                      &
                                  state_density,                         &
                                  state_energy,                          &

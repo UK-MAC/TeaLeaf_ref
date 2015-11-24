@@ -183,6 +183,7 @@ SUBROUTINE tea_leaf_dpcg_matmul_ZTA_kernel(x_min,  &
                            z,                      &
                            Kx,                     &
                            Ky,                     &
+                           Di,                     &
                            rx,                     &
                            ry,                     &
                            ztaz)
@@ -194,7 +195,7 @@ SUBROUTINE tea_leaf_dpcg_matmul_ZTA_kernel(x_min,  &
   INTEGER(KIND=4) :: nx, dx, ny, dy
   REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,&
                           y_min-halo_exchange_depth:y_max+halo_exchange_depth)&
-                          :: Kx, Ky, z
+                          :: Kx, Ky, Di, z
   REAL(KIND=8) :: rx, ry
   REAL(KIND=8), DIMENSION(nx, ny) :: ztaz
 
@@ -213,9 +214,7 @@ SUBROUTINE tea_leaf_dpcg_matmul_ZTA_kernel(x_min,  &
         j_start=x_min+(jj-1)*dx
         j_end  =min(j_start+dx-1,x_max)
         DO j=j_start,j_end
-          ztaz(jj,kk) = ztaz(jj,kk) + (1.0_8                &
-          + ry*(Ky(j, k+1) + Ky(j, k))                      &
-          + rx*(Kx(j+1, k) + Kx(j, k)))*z(j, k)             &
+          ztaz(jj,kk) = ztaz(jj,kk) + Di(j,k)*z(j, k)       &
           - ry*(Ky(j, k+1)*z(j, k+1) + Ky(j, k)*z(j, k-1))  &
           - rx*(Kx(j+1, k)*z(j+1, k) + Kx(j, k)*z(j-1, k))
         ENDDO
@@ -235,6 +234,7 @@ SUBROUTINE tea_leaf_dpcg_matmul_ZTA_kernel1(x_min,  &
                            z,                      &
                            Kx,                     &
                            Ky,                     &
+                           Di,                     &
                            rx,                     &
                            ry,                     &
                            ztaz)
@@ -244,7 +244,7 @@ SUBROUTINE tea_leaf_dpcg_matmul_ZTA_kernel1(x_min,  &
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
   REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,&
                           y_min-halo_exchange_depth:y_max+halo_exchange_depth)&
-                          :: Kx, Ky, z
+                          :: Kx, Ky, Di, z
 
   INTEGER(KIND=4) :: j,k
 
@@ -258,9 +258,7 @@ SUBROUTINE tea_leaf_dpcg_matmul_ZTA_kernel1(x_min,  &
 !$OMP DO REDUCTION(+:ztaz)
   DO k=y_min,y_max
     DO j=x_min,x_max
-      ztazj(j) = (1.0_8                                     &
-          + ry*(Ky(j, k+1) + Ky(j, k))                      &
-          + rx*(Kx(j+1, k) + Kx(j, k)))*z(j, k)             &
+      ztazj(j) = Di(j,k)*z(j, k)                            &
           - ry*(Ky(j, k+1)*z(j, k+1) + Ky(j, k)*z(j, k-1))  &
           - rx*(Kx(j+1, k)*z(j+1, k) + Kx(j, k)*z(j-1, k))
     ENDDO
@@ -282,6 +280,7 @@ SUBROUTINE tea_leaf_dpcg_solve_z_kernel(x_min,  &
                            z,                      &
                            Kx,                     &
                            Ky,                     &
+                           Di,                     &
                            Mi,                     &
                            cp,                     &
                            bfp,                    &
@@ -295,7 +294,7 @@ SUBROUTINE tea_leaf_dpcg_solve_z_kernel(x_min,  &
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
   REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,&
                           y_min-halo_exchange_depth:y_max+halo_exchange_depth)&
-                          :: r, Kx, Ky, z, Mi
+                          :: r, Kx, Ky, z, Mi, Di
   REAL(KIND=8), DIMENSION(x_min:x_max,y_min:y_max) :: cp, bfp
 
   INTEGER(KIND=4) :: j,k
@@ -307,7 +306,7 @@ SUBROUTINE tea_leaf_dpcg_solve_z_kernel(x_min,  &
 
     IF (preconditioner_type .EQ. TL_PREC_JAC_BLOCK) THEN
       CALL tea_block_solve(x_min, x_max, y_min, y_max, halo_exchange_depth,             &
-                             r, z, cp, bfp, Kx, Ky, rx, ry)
+                             r, z, cp, bfp, Kx, Ky, Di, rx, ry)
     ELSE IF (preconditioner_type .EQ. TL_PREC_JAC_DIAG) THEN
       CALL tea_diag_solve(x_min, x_max, y_min, y_max, halo_exchange_depth,             &
                              r, z, Mi)

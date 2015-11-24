@@ -40,13 +40,14 @@ SUBROUTINE read_input()
 
   state_max=0
 
-  grid%xmin=  0.0
-  grid%ymin=  0.0
-  grid%xmax=100.0
-  grid%ymax=100.0
+  allocate(grid(2))
+  grid(1:2)%xmin=  0.0
+  grid(1:2)%ymin=  0.0
+  grid(1:2)%xmax=100.0
+  grid(1:2)%ymax=100.0
 
-  grid%x_cells=10
-  grid%y_cells=10
+  grid(1)%x_cells=10
+  grid(1)%y_cells=10
 
   end_time=10.0
   end_step=g_ibig
@@ -153,23 +154,23 @@ SUBROUTINE read_input()
         end_step=parse_getival(parse_getword(.TRUE.))
         IF(parallel%boss)WRITE(g_out,"(1x,a25,i12)")'end_step',end_step
       CASE('xmin')
-        grid%xmin=parse_getrval(parse_getword(.TRUE.))
-        IF(parallel%boss)WRITE(g_out,"(1x,a25,e12.4)")'xmin',grid%xmin
+        grid(1)%xmin=parse_getrval(parse_getword(.TRUE.))
+        IF(parallel%boss)WRITE(g_out,"(1x,a25,e12.4)")'xmin',grid(1)%xmin
       CASE('xmax')
-        grid%xmax=parse_getrval(parse_getword(.TRUE.))
-        IF(parallel%boss)WRITE(g_out,"(1x,a25,e12.4)")'xmax',grid%xmax
+        grid(1)%xmax=parse_getrval(parse_getword(.TRUE.))
+        IF(parallel%boss)WRITE(g_out,"(1x,a25,e12.4)")'xmax',grid(1)%xmax
       CASE('ymin')
-        grid%ymin=parse_getrval(parse_getword(.TRUE.))
-        IF(parallel%boss)WRITE(g_out,"(1x,a25,e12.4)")'ymin',grid%ymin
+        grid(1)%ymin=parse_getrval(parse_getword(.TRUE.))
+        IF(parallel%boss)WRITE(g_out,"(1x,a25,e12.4)")'ymin',grid(1)%ymin
       CASE('ymax')
-        grid%ymax=parse_getrval(parse_getword(.TRUE.))
-        IF(parallel%boss)WRITE(g_out,"(1x,a25,e12.4)")'ymax',grid%ymax
+        grid(1)%ymax=parse_getrval(parse_getword(.TRUE.))
+        IF(parallel%boss)WRITE(g_out,"(1x,a25,e12.4)")'ymax',grid(1)%ymax
       CASE('x_cells')
-        grid%x_cells=parse_getival(parse_getword(.TRUE.))
-        IF(parallel%boss)WRITE(g_out,"(1x,a25,i12)")'x_cells',grid%x_cells
+        grid(1)%x_cells=parse_getival(parse_getword(.TRUE.))
+        IF(parallel%boss)WRITE(g_out,"(1x,a25,i12)")'x_cells',grid(1)%x_cells
       CASE('y_cells')
-        grid%y_cells=parse_getival(parse_getword(.TRUE.))
-        IF(parallel%boss)WRITE(g_out,"(1x,a25,i12)")'y_cells',grid%y_cells
+        grid(1)%y_cells=parse_getival(parse_getword(.TRUE.))
+        IF(parallel%boss)WRITE(g_out,"(1x,a25,i12)")'y_cells',grid(1)%y_cells
       CASE('visit_frequency')
         visit_frequency=parse_getival(parse_getword(.TRUE.))
         IF(parallel%boss)WRITE(g_out,"(1x,a25,i12)")'visit_frequency',visit_frequency
@@ -336,7 +337,7 @@ SUBROUTINE read_input()
 
   ! Simple guess - better than a default of 10
   if (tl_ppcg_inner_steps .eq. -1) then
-    tl_ppcg_inner_steps = 4*INT(SQRT(SQRT(REAL(grid%x_cells*grid%y_cells))))
+    tl_ppcg_inner_steps = 4*INT(SQRT(SQRT(REAL(grid(1)%x_cells*grid(1)%y_cells))))
     IF(parallel%boss)WRITE(g_out,"(1x,a25,i12)")'tl_ppcg_inner_steps',tl_ppcg_inner_steps
   endif
 
@@ -363,8 +364,8 @@ SUBROUTINE read_input()
   ! of a cell width so it lies well with in the intended cell.
   ! Because a cell is either full or empty of a specified state, this small
   ! modification to the state extents does not change the answers.
-  dx=(grid%xmax-grid%xmin)/REAL(grid%x_cells)
-  dy=(grid%ymax-grid%ymin)/REAL(grid%y_cells)
+  dx=(grid(1)%xmax-grid(1)%xmin)/REAL(grid(1)%x_cells)
+  dy=(grid(1)%ymax-grid(1)%ymin)/REAL(grid(1)%y_cells)
   DO n=2,number_of_states
     states(n)%xmin=states(n)%xmin+(dx/100.0_8)
     states(n)%ymin=states(n)%ymin+(dy/100.0_8)

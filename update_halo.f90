@@ -29,52 +29,54 @@ MODULE update_halo_module
 
 CONTAINS
 
-SUBROUTINE update_halo(fields,depth)
+SUBROUTINE update_halo(level,fields,depth)
 
   IMPLICIT NONE
 
-  INTEGER :: fields(NUM_FIELDS),depth
+  INTEGER :: level,fields(NUM_FIELDS),depth
   REAL(KIND=8) :: timer,halo_time
 
   IF (profiler_on) halo_time=timer()
-  CALL tea_exchange(fields,depth)
+  CALL tea_exchange(level, fields, depth)
   IF (profiler_on) profiler%halo_exchange = profiler%halo_exchange + (timer() - halo_time)
 
-  CALL update_boundary(fields, depth)
+  CALL update_boundary(level, fields, depth)
 
-  CALL update_tile_boundary(fields, depth)
+  CALL update_tile_boundary(level, fields, depth)
 
 END SUBROUTINE update_halo
 
-SUBROUTINE update_boundary(fields,depth)
+SUBROUTINE update_boundary(level, fields,depth)
 
   IMPLICIT NONE
 
-  INTEGER :: t,fields(NUM_FIELDS),depth
+  INTEGER :: t,level,fields(NUM_FIELDS),depth
   REAL(KIND=8) :: timer,halo_time
 
   IF (profiler_on) halo_time=timer()
 
-  IF (reflective_boundary .EQV. .TRUE. .AND. ANY(chunk%chunk_neighbours .EQ. EXTERNAL_FACE)) THEN
+  IF (reflective_boundary .EQV. .TRUE. .AND. ANY(chunk(level)%chunk_neighbours .EQ. EXTERNAL_FACE)) THEN
     IF (use_fortran_kernels)THEN
 !$OMP PARALLEL
 !$OMP DO
       DO t=1,tiles_per_task
-        CALL update_halo_kernel(chunk%tiles(t)%field%x_min,          &
-                                chunk%tiles(t)%field%x_max,          &
-                                chunk%tiles(t)%field%y_min,          &
-                                chunk%tiles(t)%field%y_max,          &
+        CALL update_halo_kernel(chunk(level)%tiles(t)%field%x_min,          &
+                                chunk(level)%tiles(t)%field%x_max,          &
+                                chunk(level)%tiles(t)%field%y_min,          &
+                                chunk(level)%tiles(t)%field%y_max,          &
                                 halo_exchange_depth,          &
-                                chunk%chunk_neighbours,     &
-                                chunk%tiles(t)%tile_neighbours,     &
-                                chunk%tiles(t)%field%density,        &
-                                chunk%tiles(t)%field%energy0,        &
-                                chunk%tiles(t)%field%energy1,        &
-                                chunk%tiles(t)%field%u,              &
-                                chunk%tiles(t)%field%vector_p,       &
-                                chunk%tiles(t)%field%vector_sd,      &
-                                chunk%tiles(t)%field%vector_r,      &
-                                chunk%tiles(t)%field%vector_z,      &
+                                chunk(level)%chunk_neighbours,     &
+                                chunk(level)%tiles(t)%tile_neighbours,     &
+                                chunk(level)%tiles(t)%field%density,        &
+                                chunk(level)%tiles(t)%field%energy0,        &
+                                chunk(level)%tiles(t)%field%energy1,        &
+                                chunk(level)%tiles(t)%field%u,              &
+                                chunk(level)%tiles(t)%field%vector_p,       &
+                                chunk(level)%tiles(t)%field%vector_sd,      &
+                                chunk(level)%tiles(t)%field%vector_r,      &
+                                chunk(level)%tiles(t)%field%vector_z,      &
+                                chunk(level)%tiles(t)%field%vector_kx,     &
+                                chunk(level)%tiles(t)%field%vector_ky,     &
                                 fields,                         &
                                 depth                           )
       ENDDO
@@ -87,11 +89,11 @@ SUBROUTINE update_boundary(fields,depth)
 
 END SUBROUTINE update_boundary
 
-SUBROUTINE update_tile_boundary(fields, depth)
+SUBROUTINE update_tile_boundary(level, fields, depth)
 
   IMPLICIT NONE
 
-  INTEGER :: t,fields(NUM_FIELDS),depth, right_idx, up_idx
+  INTEGER :: level,t,fields(NUM_FIELDS),depth, right_idx, up_idx
   REAL(KIND=8) :: timer,halo_time
 
   IF (profiler_on) halo_time=timer()
@@ -101,34 +103,38 @@ SUBROUTINE update_tile_boundary(fields, depth)
 !$OMP PARALLEL PRIVATE(right_idx, up_idx)
 !$OMP DO
       DO t=1,tiles_per_task
-        right_idx = chunk%tiles(t)%tile_neighbours(CHUNK_RIGHT)
+        right_idx = chunk(level)%tiles(t)%tile_neighbours(CHUNK_RIGHT)
 
         IF (right_idx .NE. EXTERNAL_FACE) THEN
           CALL update_internal_halo_left_right_kernel(                &
-                                  chunk%tiles(t)%field%x_min,          &
-                                  chunk%tiles(t)%field%x_max,          &
-                                  chunk%tiles(t)%field%y_min,          &
-                                  chunk%tiles(t)%field%y_max,          &
-                                  chunk%tiles(t)%field%density,        &
-                                  chunk%tiles(t)%field%energy0,        &
-                                  chunk%tiles(t)%field%energy1,        &
-                                  chunk%tiles(t)%field%u,              &
-                                  chunk%tiles(t)%field%vector_p,       &
-                                  chunk%tiles(t)%field%vector_sd,      &
-                                  chunk%tiles(t)%field%vector_r,       &
-                                  chunk%tiles(t)%field%vector_z,       &
-                                  chunk%tiles(right_idx)%field%x_min,          &
-                                  chunk%tiles(right_idx)%field%x_max,          &
-                                  chunk%tiles(right_idx)%field%y_min,          &
-                                  chunk%tiles(right_idx)%field%y_max,          &
-                                  chunk%tiles(right_idx)%field%density,        &
-                                  chunk%tiles(right_idx)%field%energy0,        &
-                                  chunk%tiles(right_idx)%field%energy1,        &
-                                  chunk%tiles(right_idx)%field%u,              &
-                                  chunk%tiles(right_idx)%field%vector_p,       &
-                                  chunk%tiles(right_idx)%field%vector_sd,      &
-                                  chunk%tiles(right_idx)%field%vector_r,       &
-                                  chunk%tiles(right_idx)%field%vector_z,       &
+                                  chunk(level)%tiles(t)%field%x_min,          &
+                                  chunk(level)%tiles(t)%field%x_max,          &
+                                  chunk(level)%tiles(t)%field%y_min,          &
+                                  chunk(level)%tiles(t)%field%y_max,          &
+                                  chunk(level)%tiles(t)%field%density,        &
+                                  chunk(level)%tiles(t)%field%energy0,        &
+                                  chunk(level)%tiles(t)%field%energy1,        &
+                                  chunk(level)%tiles(t)%field%u,              &
+                                  chunk(level)%tiles(t)%field%vector_p,       &
+                                  chunk(level)%tiles(t)%field%vector_sd,      &
+                                  chunk(level)%tiles(t)%field%vector_r,       &
+                                  chunk(level)%tiles(t)%field%vector_z,       &
+                                  chunk(level)%tiles(t)%field%vector_kx,      &
+                                  chunk(level)%tiles(t)%field%vector_ky,      &
+                                  chunk(level)%tiles(right_idx)%field%x_min,          &
+                                  chunk(level)%tiles(right_idx)%field%x_max,          &
+                                  chunk(level)%tiles(right_idx)%field%y_min,          &
+                                  chunk(level)%tiles(right_idx)%field%y_max,          &
+                                  chunk(level)%tiles(right_idx)%field%density,        &
+                                  chunk(level)%tiles(right_idx)%field%energy0,        &
+                                  chunk(level)%tiles(right_idx)%field%energy1,        &
+                                  chunk(level)%tiles(right_idx)%field%u,              &
+                                  chunk(level)%tiles(right_idx)%field%vector_p,       &
+                                  chunk(level)%tiles(right_idx)%field%vector_sd,      &
+                                  chunk(level)%tiles(right_idx)%field%vector_r,       &
+                                  chunk(level)%tiles(right_idx)%field%vector_z,       &
+                                  chunk(level)%tiles(right_idx)%field%vector_kx,      &
+                                  chunk(level)%tiles(right_idx)%field%vector_ky,      &
                                   halo_exchange_depth,          &
                                   fields,                         &
                                   depth                           )
@@ -142,34 +148,38 @@ SUBROUTINE update_tile_boundary(fields, depth)
 
 !$OMP DO
       DO t=1,tiles_per_task
-        up_idx = chunk%tiles(t)%tile_neighbours(CHUNK_TOP)
+        up_idx = chunk(level)%tiles(t)%tile_neighbours(CHUNK_TOP)
 
         IF (up_idx .NE. EXTERNAL_FACE) THEN
           CALL update_internal_halo_bottom_top_kernel(                &
-                                  chunk%tiles(t)%field%x_min,          &
-                                  chunk%tiles(t)%field%x_max,          &
-                                  chunk%tiles(t)%field%y_min,          &
-                                  chunk%tiles(t)%field%y_max,          &
-                                  chunk%tiles(t)%field%density,        &
-                                  chunk%tiles(t)%field%energy0,        &
-                                  chunk%tiles(t)%field%energy1,        &
-                                  chunk%tiles(t)%field%u,              &
-                                  chunk%tiles(t)%field%vector_p,       &
-                                  chunk%tiles(t)%field%vector_sd,      &
-                                  chunk%tiles(t)%field%vector_r,       &
-                                  chunk%tiles(t)%field%vector_z,       &
-                                  chunk%tiles(up_idx)%field%x_min,          &
-                                  chunk%tiles(up_idx)%field%x_max,          &
-                                  chunk%tiles(up_idx)%field%y_min,          &
-                                  chunk%tiles(up_idx)%field%y_max,          &
-                                  chunk%tiles(up_idx)%field%density,        &
-                                  chunk%tiles(up_idx)%field%energy0,        &
-                                  chunk%tiles(up_idx)%field%energy1,        &
-                                  chunk%tiles(up_idx)%field%u,              &
-                                  chunk%tiles(up_idx)%field%vector_p,       &
-                                  chunk%tiles(up_idx)%field%vector_sd,      &
-                                  chunk%tiles(up_idx)%field%vector_r,       &
-                                  chunk%tiles(up_idx)%field%vector_z,       &
+                                  chunk(level)%tiles(t)%field%x_min,          &
+                                  chunk(level)%tiles(t)%field%x_max,          &
+                                  chunk(level)%tiles(t)%field%y_min,          &
+                                  chunk(level)%tiles(t)%field%y_max,          &
+                                  chunk(level)%tiles(t)%field%density,        &
+                                  chunk(level)%tiles(t)%field%energy0,        &
+                                  chunk(level)%tiles(t)%field%energy1,        &
+                                  chunk(level)%tiles(t)%field%u,              &
+                                  chunk(level)%tiles(t)%field%vector_p,       &
+                                  chunk(level)%tiles(t)%field%vector_sd,      &
+                                  chunk(level)%tiles(t)%field%vector_r,       &
+                                  chunk(level)%tiles(t)%field%vector_z,       &
+                                  chunk(level)%tiles(t)%field%vector_kx,      &
+                                  chunk(level)%tiles(t)%field%vector_ky,      &
+                                  chunk(level)%tiles(up_idx)%field%x_min,          &
+                                  chunk(level)%tiles(up_idx)%field%x_max,          &
+                                  chunk(level)%tiles(up_idx)%field%y_min,          &
+                                  chunk(level)%tiles(up_idx)%field%y_max,          &
+                                  chunk(level)%tiles(up_idx)%field%density,        &
+                                  chunk(level)%tiles(up_idx)%field%energy0,        &
+                                  chunk(level)%tiles(up_idx)%field%energy1,        &
+                                  chunk(level)%tiles(up_idx)%field%u,              &
+                                  chunk(level)%tiles(up_idx)%field%vector_p,       &
+                                  chunk(level)%tiles(up_idx)%field%vector_sd,      &
+                                  chunk(level)%tiles(up_idx)%field%vector_r,       &
+                                  chunk(level)%tiles(up_idx)%field%vector_z,       &
+                                  chunk(level)%tiles(up_idx)%field%vector_kx,      &
+                                  chunk(level)%tiles(up_idx)%field%vector_ky,      &
                                   halo_exchange_depth,          &
                                   fields,                         &
                                   depth                           )

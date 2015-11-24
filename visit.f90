@@ -28,7 +28,7 @@ SUBROUTINE visit
   IMPLICIT NONE
 
   INTEGER :: j,k,err,get_unit,u,dummy
-  INTEGER :: nxc,nyc,nxv,nyv,nblocks,c
+  INTEGER :: nxc,nyc,nxv,nyv,nblocks,c,level
 
   CHARACTER(len=80)           :: name
   CHARACTER(len=10)           :: chunk_name,step_name
@@ -74,9 +74,10 @@ SUBROUTINE visit
 ENDIF
 
 IF(profiler_on) kernel_time=timer()
+level = 1
 DO c = 1, tiles_per_task
-  nxc=chunk%tiles(c)%field%x_max-chunk%tiles(c)%field%x_min+1
-  nyc=chunk%tiles(c)%field%y_max-chunk%tiles(c)%field%y_min+1
+  nxc=chunk(level)%tiles(c)%field%x_max-chunk(level)%tiles(c)%field%x_min+1
+  nyc=chunk(level)%tiles(c)%field%y_max-chunk(level)%tiles(c)%field%y_min+1
   nxv=nxc+1
   nyv=nyc+1
   WRITE(chunk_name, '(i6)') parallel%task+100001
@@ -92,28 +93,31 @@ DO c = 1, tiles_per_task
   WRITE(u,'(a)')'DATASET RECTILINEAR_GRID'
   WRITE(u,'(a,2i12,a)')'DIMENSIONS',nxv,nyv,' 1'
   WRITE(u,'(a,i5,a)')'X_COORDINATES ',nxv,' double'
-  DO j=chunk%tiles(c)%field%x_min,chunk%tiles(c)%field%x_max+1
-    WRITE(u,'(e12.4)')chunk%tiles(c)%field%vertexx(j)
+  DO j=chunk(level)%tiles(c)%field%x_min,chunk(level)%tiles(c)%field%x_max+1
+    WRITE(u,'(e12.4)')chunk(level)%tiles(c)%field%vertexx(j)
   ENDDO
   WRITE(u,'(a,i5,a)')'Y_COORDINATES ',nyv,' double'
-  DO k=chunk%tiles(c)%field%y_min,chunk%tiles(c)%field%y_max+1
-    WRITE(u,'(e12.4)')chunk%tiles(c)%field%vertexy(k)
+  DO k=chunk(level)%tiles(c)%field%y_min,chunk(level)%tiles(c)%field%y_max+1
+    WRITE(u,'(e12.4)')chunk(level)%tiles(c)%field%vertexy(k)
   ENDDO
   WRITE(u,'(a)')'Z_COORDINATES 1 double'
   WRITE(u,'(a)')'0'
   WRITE(u,'(a,i20)')'CELL_DATA ',nxc*nyc
   WRITE(u,'(a)')'FIELD FieldData 3'
   WRITE(u,'(a,i20,a)')'density 1 ',nxc*nyc,' double'
-  DO k=chunk%tiles(c)%field%y_min,chunk%tiles(c)%field%y_max
-    WRITE(u,'(e12.4)')(chunk%tiles(c)%field%density(j,k),j=chunk%tiles(c)%field%x_min,chunk%tiles(c)%field%x_max)
+  DO k=chunk(level)%tiles(c)%field%y_min,chunk(level)%tiles(c)%field%y_max
+    WRITE(u,'(e12.4)')(chunk(level)%tiles(c)%field%density(j,k), &
+      j=chunk(level)%tiles(c)%field%x_min,chunk(level)%tiles(c)%field%x_max)
   ENDDO
   WRITE(u,'(a,i20,a)')'energy 1 ',nxc*nyc,' double'
-    DO k=chunk%tiles(c)%field%y_min,chunk%tiles(c)%field%y_max
-      WRITE(u,'(e12.4)')(chunk%tiles(c)%field%energy0(j,k),j=chunk%tiles(c)%field%x_min,chunk%tiles(c)%field%x_max)
+    DO k=chunk(level)%tiles(c)%field%y_min,chunk(level)%tiles(c)%field%y_max
+      WRITE(u,'(e12.4)')(chunk(level)%tiles(c)%field%energy0(j,k), &
+        j=chunk(level)%tiles(c)%field%x_min,chunk(level)%tiles(c)%field%x_max)
     ENDDO
     WRITE(u,'(a,i20,a)')'temperature 1 ',nxc*nyc,' double'
-    DO k=chunk%tiles(c)%field%y_min,chunk%tiles(c)%field%y_max
-      WRITE(u,'(e12.4)')(chunk%tiles(c)%field%u(j,k),j=chunk%tiles(c)%field%x_min,chunk%tiles(c)%field%x_max)
+    DO k=chunk(level)%tiles(c)%field%y_min,chunk(level)%tiles(c)%field%y_max
+      WRITE(u,'(e12.4)')(chunk(level)%tiles(c)%field%u(j,k), &
+        j=chunk(level)%tiles(c)%field%x_min,chunk(level)%tiles(c)%field%x_max)
     ENDDO
     CLOSE(u)
   ENDDO
