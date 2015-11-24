@@ -38,7 +38,6 @@ SUBROUTINE tea_leaf_common_init_kernel(x_min,  &
                            w,                      &
                            Kx,                     &
                            Ky,                     &
-                           Di,                     &
                            cp,                     &
                            bfp,                    &
                            Mi,                     &
@@ -54,7 +53,7 @@ SUBROUTINE tea_leaf_common_init_kernel(x_min,  &
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
   LOGICAL, DIMENSION(4) :: zero_boundary
   REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) &
-                          :: density, energy, u, r, w, Kx, Ky, Di, Mi, u0
+                          :: density, energy, u, r, w, Kx, Ky, Mi, u0
   REAL(KIND=8), DIMENSION(x_min:x_max,y_min:y_max) :: cp, bfp
 
   INTEGER(KIND=4) :: coef
@@ -140,29 +139,20 @@ SUBROUTINE tea_leaf_common_init_kernel(x_min,  &
     ENDIF
   ENDIF
 
-!Setup storage for the diagonal entries - on coarser grids they are more complex
-!$OMP DO
-  DO k=y_min,y_max
-    DO j=x_min,x_max
-      Di(j,k)=(1.0_8                                              &
-                + ry*(Ky(j, k+1) + Ky(j, k))                      &
-                + rx*(Kx(j+1, k) + Kx(j, k)))
-    ENDDO
-  ENDDO
-!$OMP END DO
-  
   IF (preconditioner_type .EQ. TL_PREC_JAC_BLOCK) THEN
     CALL tea_block_init(x_min, x_max, y_min, y_max, halo_exchange_depth,             &
-                           cp, bfp, Kx, Ky, Di, rx, ry)
+                           cp, bfp, Kx, Ky, rx, ry)
   ELSE IF (preconditioner_type .EQ. TL_PREC_JAC_DIAG) THEN
     CALL tea_diag_init(x_min, x_max, y_min, y_max, halo_exchange_depth,             &
-                           Mi, Kx, Ky, Di, rx, ry)
+                           Mi, Kx, Ky, rx, ry)
   ENDIF
 
 !$OMP DO
     DO k=y_min,y_max
         DO j=x_min,x_max
-            w(j, k) = Di(j,k)*u(j, k)                             &
+            w(j, k) = (1.0_8                                      &
+                + ry*(Ky(j, k+1) + Ky(j, k))                      &
+                + rx*(Kx(j+1, k) + Kx(j, k)))*u(j, k)             &
                 - ry*(Ky(j, k+1)*u(j, k+1) + Ky(j, k)*u(j, k-1))  &
                 - rx*(Kx(j+1, k)*u(j+1, k) + Kx(j, k)*u(j-1, k))
 
@@ -215,14 +205,13 @@ SUBROUTINE tea_leaf_calc_residual_kernel(x_min,       &
                                   r,           &
                                   Kx,          &
                                   Ky,          &
-                                  Di,          &
                                   rx, ry       )
 
   IMPLICIT NONE
 
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
   REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) &
-                          :: Kx, u, r, Ky, u0, Di
+                          :: Kx, u, r, Ky, u0
 
   REAL(KIND=8) :: smvp, rx, ry
 
@@ -232,11 +221,12 @@ SUBROUTINE tea_leaf_calc_residual_kernel(x_min,       &
 !$OMP DO
     DO k=y_min, y_max
       DO j=x_min, x_max
-        smvp = Di(j,k)*u(j, k)                                &
+        smvp = (1.0_8                                         &
+            + ry*(Ky(j, k+1) + Ky(j, k))                      &
+            + rx*(Kx(j+1, k) + Kx(j, k)))*u(j, k)             &
             - ry*(Ky(j, k+1)*u(j, k+1) + Ky(j, k)*u(j, k-1))  &
             - rx*(Kx(j+1, k)*u(j+1, k) + Kx(j, k)*u(j-1, k))
         r(j, k) = u0(j, k) - smvp
-        !write(6,*) j,k,Di(j,k),-ry*Ky(j, k+1),-ry*Ky(j, k),-rx*Kx(j+1, k),-rx*Kx(j, k),u0(j, k),smvp
       ENDDO
     ENDDO
 !$OMP END DO
@@ -280,23 +270,22 @@ SUBROUTINE tea_diag_init(x_min,             &
                          y_max,             &
                          halo_exchange_depth,             &
                          Mi,                &
-                         Kx, Ky, Di, rx, ry)
+                         Kx, Ky, rx, ry)
 
   IMPLICIT NONE
 
   INTEGER(KIND=4):: j, k
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
   REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) &
-                          :: Kx, Ky, Di, Mi
+                          :: Kx, Ky, Mi
   REAL(KIND=8) :: rx, ry
-
-  REAL(KIND=8), PARAMETER :: omega=1.0_8
 
 !$OMP DO
     DO k=y_min,y_max
       DO j=x_min,x_max
-!        Mi(j, k) = 1.0_8/(1.0_8                 &
-        Mi(j, k) = omega/Di(j, k)
+        Mi(j, k) = 1.0_8/(1.0_8                 &
+                + ry*(Ky(j, k+1) + Ky(j, k))    &
+                + rx*(Kx(j+1, k) + Kx(j, k)))
       ENDDO
     ENDDO
 !$OMP END DO
@@ -336,14 +325,14 @@ SUBROUTINE tea_block_init(x_min,             &
                            halo_exchange_depth,             &
                            cp,                     &
                            bfp,                     &
-                           Kx, Ky, Di, rx, ry)
+                           Kx, Ky, rx, ry)
 
   IMPLICIT NONE
 
   INTEGER(KIND=4):: j, ko, k, bottom, top
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
   REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth)&
-                          :: Kx, Ky, Di
+                          :: Kx, Ky
   REAL(KIND=8), DIMENSION(x_min:x_max,y_min:y_max) :: cp, bfp
   REAL(KIND=8) :: rx, ry
 
@@ -358,12 +347,10 @@ SUBROUTINE tea_block_init(x_min,             &
 #endif
       DO j=x_min, x_max
         k = bottom
-        !cp(j,k) = (-Ky(j, k+1)*ry)/(1.0_8 + ry*(Ky(j, k+1) + Ky(j, k)) + rx*(Kx(j+1, k) + Kx(j, k)))
-        cp(j,k) = (-Ky(j, k+1)*ry)/Di(j, k)
+        cp(j,k) = (-Ky(j, k+1)*ry)/(1.0_8 + ry*(Ky(j, k+1) + Ky(j, k)) + rx*(Kx(j+1, k) + Kx(j, k)))
 
         DO k=bottom+1,top
-            !bfp(j, k) = 1.0_8/((1.0_8 + ry*(Ky(j, k+1) + Ky(j, k)) + rx*(Kx(j+1, k) + Kx(j, k))) - (-Ky(j, k)*ry)*cp(j, k-1))
-            bfp(j, k) = 1.0_8/(Di(j,k) - (-Ky(j, k)*ry)*cp(j, k-1))
+            bfp(j, k) = 1.0_8/((1.0_8 + ry*(Ky(j, k+1) + Ky(j, k)) + rx*(Kx(j+1, k) + Kx(j, k))) - (-Ky(j, k)*ry)*cp(j, k-1))
             cp(j, k) = (-Ky(j, k+1)*ry)*bfp(j, k)
         ENDDO
       ENDDO
@@ -381,14 +368,14 @@ SUBROUTINE tea_block_solve(x_min,             &
                            z,                 &
                            cp,                     &
                            bfp,                     &
-                           Kx, Ky, Di, rx, ry)
+                           Kx, Ky, rx, ry)
 
   IMPLICIT NONE
 
   INTEGER(KIND=4):: j, ko, k, bottom, top, ki, upper_k, k_extra
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
   REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth)&
-                          :: Kx, Ky, Di, r, z
+                          :: Kx, Ky, r, z
   REAL(KIND=8), DIMENSION(x_min:x_max,y_min:y_max) :: cp, bfp
   REAL(KIND=8) :: rx, ry
   REAL(KIND=8), dimension(0:jac_block_size-1) :: dp_l, z_l
@@ -411,8 +398,7 @@ SUBROUTINE tea_block_solve(x_min,             &
 #endif
         DO j=x_min,x_max
           k = bottom
-          !dp_l(k-bottom) = r(j, k)/(1.0_8 + ry*(Ky(j, k+1) + Ky(j, k)) + rx*(Kx(j+1, k) + Kx(j, k)))
-          dp_l(k-bottom) = r(j, k)/Di(j, k)
+          dp_l(k-bottom) = r(j, k)/(1.0_8 + ry*(Ky(j, k+1) + Ky(j, k)) + rx*(Kx(j+1, k) + Kx(j, k)))
 
           DO k=bottom+1,top
             dp_l(k-bottom) = (r(j, k) - (-Ky(j, k)*ry)*dp_l(k-bottom-1))*bfp(j, k)
@@ -443,8 +429,7 @@ SUBROUTINE tea_block_solve(x_min,             &
 #endif
       DO j=x_min,x_max
         k = bottom
-        !dp_l(k-bottom) = r(j, k)/(1.0_8 + ry*(Ky(j, k+1) + Ky(j, k)) + rx*(Kx(j+1, k) + Kx(j, k)))
-        dp_l(k-bottom) = r(j, k)/Di(j, k)
+        dp_l(k-bottom) = r(j, k)/(1.0_8 + ry*(Ky(j, k+1) + Ky(j, k)) + rx*(Kx(j+1, k) + Kx(j, k)))
 
         DO k=bottom+1,top
           dp_l(k-bottom) = (r(j, k) - (-Ky(j, k)*ry)*dp_l(k-bottom-1))*bfp(j, k)

@@ -9,11 +9,9 @@ MODULE tea_leaf_ppcg_module
 
 CONTAINS
 
-SUBROUTINE tea_leaf_ppcg_init_sd(level, theta)
+SUBROUTINE tea_leaf_ppcg_init_sd(theta)
 
   IMPLICIT NONE
-
-  INTEGER :: level
 
   INTEGER :: t
   REAL(KIND=8) :: theta
@@ -22,22 +20,21 @@ SUBROUTINE tea_leaf_ppcg_init_sd(level, theta)
 !$OMP PARALLEL
 !$OMP DO
     DO t=1,tiles_per_task
-      CALL tea_leaf_kernel_ppcg_init_sd(chunk(level)%tiles(t)%field%x_min,&
-          chunk(level)%tiles(t)%field%x_max,                              &
-          chunk(level)%tiles(t)%field%y_min,                              &
-          chunk(level)%tiles(t)%field%y_max,                              &
+      CALL tea_leaf_kernel_ppcg_init_sd(chunk%tiles(t)%field%x_min,&
+          chunk%tiles(t)%field%x_max,                              &
+          chunk%tiles(t)%field%y_min,                              &
+          chunk%tiles(t)%field%y_max,                              &
           halo_exchange_depth,                              &
-          chunk(level)%tiles(t)%field%vector_r,                           &
-          chunk(level)%tiles(t)%field%vector_Kx,                        &
-          chunk(level)%tiles(t)%field%vector_Ky,                        &
-          chunk(level)%tiles(t)%field%vector_Di,                        &
-          chunk(level)%tiles(t)%field%vector_sd,                          &
-          chunk(level)%tiles(t)%field%vector_z,                          &
-          chunk(level)%tiles(t)%field%tri_cp,                          &
-          chunk(level)%tiles(t)%field%tri_bfp,                          &
-          chunk(level)%tiles(t)%field%vector_Mi,                          &
-          chunk(level)%tiles(t)%field%rx,  &
-          chunk(level)%tiles(t)%field%ry,                          &
+          chunk%tiles(t)%field%vector_r,                           &
+          chunk%tiles(t)%field%vector_Kx,                        &
+          chunk%tiles(t)%field%vector_Ky,                        &
+          chunk%tiles(t)%field%vector_sd,                          &
+          chunk%tiles(t)%field%vector_z,                          &
+          chunk%tiles(t)%field%tri_cp,                          &
+          chunk%tiles(t)%field%tri_bfp,                          &
+          chunk%tiles(t)%field%vector_Mi,                          &
+          chunk%tiles(t)%field%rx,  &
+          chunk%tiles(t)%field%ry,                          &
           theta, tl_preconditioner_type)
     ENDDO
 !$OMP END DO NOWAIT
@@ -46,11 +43,9 @@ SUBROUTINE tea_leaf_ppcg_init_sd(level, theta)
 
 END SUBROUTINE tea_leaf_ppcg_init_sd
 
-SUBROUTINE tea_leaf_ppcg_inner(level, ch_alphas, ch_betas, inner_step, bounds_extra)
+SUBROUTINE tea_leaf_ppcg_inner(ch_alphas, ch_betas, inner_step, bounds_extra)
 
   IMPLICIT NONE
-
-  INTEGER :: level
 
   INTEGER :: t, inner_step, bounds_extra
   INTEGER :: x_min_bound, x_max_bound, y_min_bound, y_max_bound
@@ -60,57 +55,56 @@ SUBROUTINE tea_leaf_ppcg_inner(level, ch_alphas, ch_betas, inner_step, bounds_ex
 !$OMP PARALLEL PRIVATE(x_min_bound, x_max_bound, y_min_bound, y_max_bound)
 !$OMP DO
     DO t=1,tiles_per_task
-      IF (chunk(level)%tiles(t)%tile_neighbours(CHUNK_LEFT).NE.EXTERNAL_FACE .OR. &
-          chunk(level)%chunk_neighbours(CHUNK_LEFT).NE.EXTERNAL_FACE) THEN
-        x_min_bound = chunk(level)%tiles(t)%field%x_min - bounds_extra
+      IF (chunk%tiles(t)%tile_neighbours(CHUNK_LEFT).NE.EXTERNAL_FACE .OR. &
+          chunk%chunk_neighbours(CHUNK_LEFT).NE.EXTERNAL_FACE) THEN
+        x_min_bound = chunk%tiles(t)%field%x_min - bounds_extra
       ELSE
-        x_min_bound = chunk(level)%tiles(t)%field%x_min
+        x_min_bound = chunk%tiles(t)%field%x_min
       ENDIF
 
-      IF (chunk(level)%tiles(t)%tile_neighbours(CHUNK_RIGHT).NE.EXTERNAL_FACE .OR. &
-          chunk(level)%chunk_neighbours(CHUNK_RIGHT).NE.EXTERNAL_FACE) THEN
-        x_max_bound = chunk(level)%tiles(t)%field%x_max + bounds_extra
+      IF (chunk%tiles(t)%tile_neighbours(CHUNK_RIGHT).NE.EXTERNAL_FACE .OR. &
+          chunk%chunk_neighbours(CHUNK_RIGHT).NE.EXTERNAL_FACE) THEN
+        x_max_bound = chunk%tiles(t)%field%x_max + bounds_extra
       ELSE
-        x_max_bound = chunk(level)%tiles(t)%field%x_max
+        x_max_bound = chunk%tiles(t)%field%x_max
       ENDIF
 
-      IF (chunk(level)%tiles(t)%tile_neighbours(CHUNK_BOTTOM).NE.EXTERNAL_FACE .OR. &
-          chunk(level)%chunk_neighbours(CHUNK_BOTTOM).NE.EXTERNAL_FACE) THEN
-        y_min_bound = chunk(level)%tiles(t)%field%y_min - bounds_extra
+      IF (chunk%tiles(t)%tile_neighbours(CHUNK_BOTTOM).NE.EXTERNAL_FACE .OR. &
+          chunk%chunk_neighbours(CHUNK_BOTTOM).NE.EXTERNAL_FACE) THEN
+        y_min_bound = chunk%tiles(t)%field%y_min - bounds_extra
       ELSE
-        y_min_bound = chunk(level)%tiles(t)%field%y_min
+        y_min_bound = chunk%tiles(t)%field%y_min
       ENDIF
 
-      IF (chunk(level)%tiles(t)%tile_neighbours(CHUNK_TOP).NE.EXTERNAL_FACE .OR. &
-          chunk(level)%chunk_neighbours(CHUNK_TOP).NE.EXTERNAL_FACE) THEN
-        y_max_bound = chunk(level)%tiles(t)%field%y_max + bounds_extra
+      IF (chunk%tiles(t)%tile_neighbours(CHUNK_TOP).NE.EXTERNAL_FACE .OR. &
+          chunk%chunk_neighbours(CHUNK_TOP).NE.EXTERNAL_FACE) THEN
+        y_max_bound = chunk%tiles(t)%field%y_max + bounds_extra
       ELSE
-        y_max_bound = chunk(level)%tiles(t)%field%y_max
+        y_max_bound = chunk%tiles(t)%field%y_max
       ENDIF
 
-      CALL tea_leaf_kernel_ppcg_inner(chunk(level)%tiles(t)%field%x_min,&
-          chunk(level)%tiles(t)%field%x_max,                            &
-          chunk(level)%tiles(t)%field%y_min,                            &
-          chunk(level)%tiles(t)%field%y_max,                            &
+      CALL tea_leaf_kernel_ppcg_inner(chunk%tiles(t)%field%x_min,&
+          chunk%tiles(t)%field%x_max,                            &
+          chunk%tiles(t)%field%y_min,                            &
+          chunk%tiles(t)%field%y_max,                            &
           halo_exchange_depth,                            &
           x_min_bound,                                    &
           x_max_bound,                                    &
           y_min_bound,                                    &
           y_max_bound,                                    &
           ch_alphas, ch_betas,                              &
-          chunk(level)%tiles(t)%field%rx,  &
-          chunk(level)%tiles(t)%field%ry,                                           &
+          chunk%tiles(t)%field%rx,  &
+          chunk%tiles(t)%field%ry,                                           &
           inner_step,                                     &
-          chunk(level)%tiles(t)%field%u,                                &
-          chunk(level)%tiles(t)%field%vector_r,                         &
-          chunk(level)%tiles(t)%field%vector_Kx,                        &
-          chunk(level)%tiles(t)%field%vector_Ky,                        &
-          chunk(level)%tiles(t)%field%vector_Di,                        &
-          chunk(level)%tiles(t)%field%vector_sd,                        &
-          chunk(level)%tiles(t)%field%vector_z,                          &
-          chunk(level)%tiles(t)%field%tri_cp,                          &
-          chunk(level)%tiles(t)%field%tri_bfp,                          &
-          chunk(level)%tiles(t)%field%vector_Mi,                          &
+          chunk%tiles(t)%field%u,                                &
+          chunk%tiles(t)%field%vector_r,                         &
+          chunk%tiles(t)%field%vector_Kx,                        &
+          chunk%tiles(t)%field%vector_Ky,                        &
+          chunk%tiles(t)%field%vector_sd,                        &
+          chunk%tiles(t)%field%vector_z,                          &
+          chunk%tiles(t)%field%tri_cp,                          &
+          chunk%tiles(t)%field%tri_bfp,                          &
+          chunk%tiles(t)%field%vector_Mi,                          &
           tl_preconditioner_type)
     ENDDO
 !$OMP END DO NOWAIT
@@ -119,11 +113,9 @@ SUBROUTINE tea_leaf_ppcg_inner(level, ch_alphas, ch_betas, inner_step, bounds_ex
 
 END SUBROUTINE tea_leaf_ppcg_inner
 
-SUBROUTINE tea_leaf_ppcg_calc_zrnorm(level, rrn)
+SUBROUTINE tea_leaf_ppcg_calc_zrnorm(rrn)
 
   IMPLICIT NONE
-
-  INTEGER :: level
 
   INTEGER :: t
   REAL(KIND=8) :: rrn, tile_rrn
@@ -136,13 +128,13 @@ SUBROUTINE tea_leaf_ppcg_calc_zrnorm(level, rrn)
     DO t=1,tiles_per_task
       tile_rrn = 0.0_8
 
-      CALL tea_leaf_ppcg_calc_zrnorm_kernel(chunk(level)%tiles(t)%field%x_min, &
-            chunk(level)%tiles(t)%field%x_max,                           &
-            chunk(level)%tiles(t)%field%y_min,                           &
-            chunk(level)%tiles(t)%field%y_max,                           &
+      CALL tea_leaf_ppcg_calc_zrnorm_kernel(chunk%tiles(t)%field%x_min, &
+            chunk%tiles(t)%field%x_max,                           &
+            chunk%tiles(t)%field%y_min,                           &
+            chunk%tiles(t)%field%y_max,                           &
             halo_exchange_depth,                           &
-            chunk(level)%tiles(t)%field%vector_z,                        &
-            chunk(level)%tiles(t)%field%vector_r,                        &
+            chunk%tiles(t)%field%vector_z,                        &
+            chunk%tiles(t)%field%vector_r,                        &
             tl_preconditioner_type, tile_rrn)
 
       rrn = rrn + tile_rrn

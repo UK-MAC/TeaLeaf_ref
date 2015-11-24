@@ -19,7 +19,7 @@
 !>  @author David Beckingsale, Wayne Gaudin
 !>  @details Invokes the user specified chunk initialisation kernel.
 
-SUBROUTINE initialise_chunk(level)
+SUBROUTINE initialise_chunk()
 
   USE definitions_module
   USE tea_module
@@ -27,39 +27,37 @@ SUBROUTINE initialise_chunk(level)
 
   IMPLICIT NONE
 
-  INTEGER      :: level
-
-  INTEGER      :: t
+  INTEGER :: t
 
   REAL(KIND=8) :: xmin,ymin,dx,dy
 
-  dx=(grid(level)%xmax - grid(level)%xmin)/REAL(grid(level)%x_cells)
-  dy=(grid(level)%ymax - grid(level)%ymin)/REAL(grid(level)%y_cells)
+  dx=(grid%xmax - grid%xmin)/REAL(grid%x_cells)
+  dy=(grid%ymax - grid%ymin)/REAL(grid%y_cells)
 
   IF(use_fortran_kernels) THEN
 !$OMP PARALLEL PRIVATE(xmin, ymin)
 !$OMP DO
     DO t=1,tiles_per_task
-      xmin=grid(level)%xmin + dx*REAL(chunk(level)%tiles(t)%left-1)
+      xmin=grid%xmin + dx*REAL(chunk%tiles(t)%left-1)
 
-      ymin=grid(level)%ymin + dy*REAL(chunk(level)%tiles(t)%bottom-1)
+      ymin=grid%ymin + dy*REAL(chunk%tiles(t)%bottom-1)
 
-      CALL initialise_chunk_kernel(chunk(level)%tiles(t)%field%x_min,    &
-                                   chunk(level)%tiles(t)%field%x_max,    &
-                                   chunk(level)%tiles(t)%field%y_min,    &
-                                   chunk(level)%tiles(t)%field%y_max,    &
+      CALL initialise_chunk_kernel(chunk%tiles(t)%field%x_min,    &
+                                   chunk%tiles(t)%field%x_max,    &
+                                   chunk%tiles(t)%field%y_min,    &
+                                   chunk%tiles(t)%field%y_max,    &
                                    xmin,ymin,dx,dy,              &
-                                   chunk(level)%tiles(t)%field%vertexx,  &
-                                   chunk(level)%tiles(t)%field%vertexdx, &
-                                   chunk(level)%tiles(t)%field%vertexy,  &
-                                   chunk(level)%tiles(t)%field%vertexdy, &
-                                   chunk(level)%tiles(t)%field%cellx,    &
-                                   chunk(level)%tiles(t)%field%celldx,   &
-                                   chunk(level)%tiles(t)%field%celly,    &
-                                   chunk(level)%tiles(t)%field%celldy,   &
-                                   chunk(level)%tiles(t)%field%volume,   &
-                                   chunk(level)%tiles(t)%field%xarea,    &
-                                   chunk(level)%tiles(t)%field%yarea     )
+                                   chunk%tiles(t)%field%vertexx,  &
+                                   chunk%tiles(t)%field%vertexdx, &
+                                   chunk%tiles(t)%field%vertexy,  &
+                                   chunk%tiles(t)%field%vertexdy, &
+                                   chunk%tiles(t)%field%cellx,    &
+                                   chunk%tiles(t)%field%celldx,   &
+                                   chunk%tiles(t)%field%celly,    &
+                                   chunk%tiles(t)%field%celldy,   &
+                                   chunk%tiles(t)%field%volume,   &
+                                   chunk%tiles(t)%field%xarea,    &
+                                   chunk%tiles(t)%field%yarea     )
     ENDDO
 !$OMP END DO NOWAIT
 !$OMP END PARALLEL

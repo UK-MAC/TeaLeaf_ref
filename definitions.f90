@@ -137,7 +137,6 @@ MODULE definitions_module
      REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: vector_Mi
      REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: vector_w
      REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: vector_z
-     REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: vector_Di
      REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: vector_Kx
      REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: vector_Ky
      REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: vector_sd
@@ -238,8 +237,8 @@ MODULE definitions_module
 
   END TYPE chunk_type
 
-  TYPE(chunk_type), DIMENSION(:), ALLOCATABLE :: chunk
+  TYPE(chunk_type)                     :: chunk
 
-  TYPE(grid_type), DIMENSION(:), ALLOCATABLE  :: grid
+  TYPE(grid_type)                      :: grid
 
 END MODULE definitions_module

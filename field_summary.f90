@@ -37,7 +37,7 @@ SUBROUTINE field_summary()
 
 !$ INTEGER :: OMP_GET_THREAD_NUM
 
-  INTEGER      :: t, level
+  INTEGER      :: t
 
   REAL(KIND=8) :: kernel_time,timer
 
@@ -64,16 +64,15 @@ SUBROUTINE field_summary()
       tile_ie=0.0
       tile_temp=0.0
 
-      level=1
-      CALL field_summary_kernel(chunk(level)%tiles(t)%field%x_min,                   &
-                                chunk(level)%tiles(t)%field%x_max,                   &
-                                chunk(level)%tiles(t)%field%y_min,                   &
-                                chunk(level)%tiles(t)%field%y_max,                   &
+      CALL field_summary_kernel(chunk%tiles(t)%field%x_min,                   &
+                                chunk%tiles(t)%field%x_max,                   &
+                                chunk%tiles(t)%field%y_min,                   &
+                                chunk%tiles(t)%field%y_max,                   &
                                 halo_exchange_depth,                          &
-                                chunk(level)%tiles(t)%field%volume,                  &
-                                chunk(level)%tiles(t)%field%density,                 &
-                                chunk(level)%tiles(t)%field%energy1,                 &
-                                chunk(level)%tiles(t)%field%u,                       &
+                                chunk%tiles(t)%field%volume,                  &
+                                chunk%tiles(t)%field%density,                 &
+                                chunk%tiles(t)%field%energy1,                 &
+                                chunk%tiles(t)%field%u,                       &
                                 tile_vol,tile_mass,tile_ie,tile_temp)
 
       vol = vol + tile_vol

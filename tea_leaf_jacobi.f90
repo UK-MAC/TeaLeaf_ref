@@ -8,11 +8,11 @@ MODULE tea_leaf_jacobi_module
 
 CONTAINS
 
-SUBROUTINE tea_leaf_jacobi_solve(level, error)
+SUBROUTINE tea_leaf_jacobi_solve(error)
 
   IMPLICIT NONE
 
-  INTEGER :: level, t
+  INTEGER :: t
   REAL(KIND=8) :: error, tile_error
 
   error = 0.0_8
@@ -23,19 +23,19 @@ SUBROUTINE tea_leaf_jacobi_solve(level, error)
     DO t=1,tiles_per_task
       tile_error = 0.0_8
 
-      CALL tea_leaf_jacobi_solve_kernel(chunk(level)%tiles(t)%field%x_min,&
-          chunk(level)%tiles(t)%field%x_max,                       &
-          chunk(level)%tiles(t)%field%y_min,                       &
-          chunk(level)%tiles(t)%field%y_max,                       &
+      CALL tea_leaf_jacobi_solve_kernel(chunk%tiles(t)%field%x_min,&
+          chunk%tiles(t)%field%x_max,                       &
+          chunk%tiles(t)%field%y_min,                       &
+          chunk%tiles(t)%field%y_max,                       &
           halo_exchange_depth,                       &
-          chunk(level)%tiles(t)%field%rx,                                          &
-          chunk(level)%tiles(t)%field%ry,                                          &
-          chunk(level)%tiles(t)%field%vector_Kx,                   &
-          chunk(level)%tiles(t)%field%vector_Ky,                   &
+          chunk%tiles(t)%field%rx,                                          &
+          chunk%tiles(t)%field%ry,                                          &
+          chunk%tiles(t)%field%vector_Kx,                   &
+          chunk%tiles(t)%field%vector_Ky,                   &
           tile_error,                                       &
-          chunk(level)%tiles(t)%field%u0,                          &
-          chunk(level)%tiles(t)%field%u,                           &
-          chunk(level)%tiles(t)%field%vector_r)
+          chunk%tiles(t)%field%u0,                          &
+          chunk%tiles(t)%field%u,                           &
+          chunk%tiles(t)%field%vector_r)
 
       error = error + tile_error
     ENDDO

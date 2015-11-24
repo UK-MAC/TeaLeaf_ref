@@ -30,7 +30,7 @@ SUBROUTINE start
 
   IMPLICIT NONE
 
-  INTEGER :: level,t
+  INTEGER :: t
 
   INTEGER :: fields(NUM_FIELDS)
 
@@ -52,76 +52,59 @@ SUBROUTINE start
 
   CALL tea_barrier()
 
-  ALLOCATE(chunk(2))
-  DO level=1,2
-  !write(6,*) "level=",level
-  CALL tea_decompose(level, grid(level)%x_cells, grid(level)%y_cells)
+  CALL tea_decompose(grid%x_cells, grid%y_cells)
 
-  ALLOCATE(chunk(level)%tiles(tiles_per_task))
+  ALLOCATE(chunk%tiles(tiles_per_task))
 
-  chunk(level)%x_cells = chunk(level)%right -chunk(level)%left  +1
-  chunk(level)%y_cells = chunk(level)%top   -chunk(level)%bottom+1
+  chunk%x_cells = chunk%right -chunk%left  +1
+  chunk%y_cells = chunk%top   -chunk%bottom+1
 
-  chunk(level)%chunk_x_min = 1
-  chunk(level)%chunk_y_min = 1
-  chunk(level)%chunk_x_max = chunk(level)%x_cells
-  chunk(level)%chunk_y_max = chunk(level)%y_cells
+  chunk%chunk_x_min = 1
+  chunk%chunk_y_min = 1
+  chunk%chunk_x_max = chunk%x_cells
+  chunk%chunk_y_max = chunk%y_cells
 
-  write(6,*) "calling tea_decompose_tiles"
-  CALL tea_decompose_tiles(level, chunk(level)%x_cells, chunk(level)%y_cells)
-  write(6,*) "after   tea_decompose_tiles"
+  CALL tea_decompose_tiles(chunk%x_cells, chunk%y_cells)
 
   DO t=1,tiles_per_task
-    chunk(level)%tiles(t)%x_cells = chunk(level)%tiles(t)%right -chunk(level)%tiles(t)%left  +1
-    chunk(level)%tiles(t)%y_cells = chunk(level)%tiles(t)%top   -chunk(level)%tiles(t)%bottom+1
+    chunk%tiles(t)%x_cells = chunk%tiles(t)%right -chunk%tiles(t)%left  +1
+    chunk%tiles(t)%y_cells = chunk%tiles(t)%top   -chunk%tiles(t)%bottom+1
 
-    chunk(level)%tiles(t)%field%x_min = 1
-    chunk(level)%tiles(t)%field%y_min = 1
-    chunk(level)%tiles(t)%field%x_max = chunk(level)%tiles(t)%x_cells
-    chunk(level)%tiles(t)%field%y_max = chunk(level)%tiles(t)%y_cells
+    chunk%tiles(t)%field%x_min = 1
+    chunk%tiles(t)%field%y_min = 1
+    chunk%tiles(t)%field%x_max = chunk%tiles(t)%x_cells
+    chunk%tiles(t)%field%y_max = chunk%tiles(t)%y_cells
   ENDDO
 
   IF (parallel%boss)THEN
-    WRITE(g_out,*)"Tile size ",chunk(level)%tiles(1)%x_cells," by ",chunk(level)%tiles(1)%y_cells," cells"
+    WRITE(g_out,*)"Tile size ",chunk%tiles(1)%x_cells," by ",chunk%tiles(1)%y_cells," cells"
   ENDIF
 
   ! Each chunk has an array the size of the _total_ deflation vector size
-  IF (level < 2) THEN
-    chunk(level)%def%x_cells = mpi_dims(1)*chunk(level)%tile_dims(1)*chunk(level)%sub_tile_dims(1)
-    chunk(level)%def%y_cells = mpi_dims(2)*chunk(level)%tile_dims(2)*chunk(level)%sub_tile_dims(2)
-  ELSE
-    chunk(level)%def%x_cells = 0
-    chunk(level)%def%y_cells = 0
-  ENDIF
-
-  IF (parallel%boss .AND. level < 2)THEN
-    WRITE(g_out,*)"Sub-tile size ",chunk(level)%tiles(1)%x_cells/chunk(level)%sub_tile_dims(1)," by ", &
-                                   chunk(level)%tiles(1)%y_cells/chunk(level)%sub_tile_dims(2)," cells"
-  ENDIF
-
-  chunk(level)%def%x_min = 1
-  chunk(level)%def%y_min = 1
-  chunk(level)%def%x_max = chunk(level)%def%x_cells
-  chunk(level)%def%y_max = chunk(level)%def%y_cells
-
-  CALL build_field(level)
-
-  CALL tea_allocate_buffers(level)
-
-  CALL initialise_chunk(level)
+  chunk%def%x_cells = mpi_dims(1)*chunk%tile_dims(1)*chunk%sub_tile_dims(1)
+  chunk%def%y_cells = mpi_dims(2)*chunk%tile_dims(2)*chunk%sub_tile_dims(2)
 
   IF (parallel%boss)THEN
-    WRITE(g_out,*) 'Generating chunk on level ',level
+    WRITE(g_out,*)"Sub-tile size ",chunk%tiles(1)%x_cells/chunk%sub_tile_dims(1)," by ", &
+                                   chunk%tiles(1)%y_cells/chunk%sub_tile_dims(2)," cells"
   ENDIF
 
-  IF (level < 2) THEN
-    grid(level+1)%x_cells=grid(level)%x_cells*chunk(level)%sub_tile_dims(1)/chunk(level)%tiles(1)%x_cells
-    grid(level+1)%y_cells=grid(level)%y_cells*chunk(level)%sub_tile_dims(2)/chunk(level)%tiles(1)%y_cells
-  ENDIF
-  ENDDO
+  chunk%def%x_min = 1
+  chunk%def%y_min = 1
+  chunk%def%x_max = chunk%def%x_cells
+  chunk%def%y_max = chunk%def%y_cells
 
-  level=1
-  CALL generate_chunk(level)
+  CALL build_field()
+
+  CALL tea_allocate_buffers()
+
+  CALL initialise_chunk()
+
+  IF (parallel%boss)THEN
+    WRITE(g_out,*) 'Generating chunk'
+  ENDIF
+
+  CALL generate_chunk()
 
   ! Prime all halo data for the first step
   fields=0
@@ -129,7 +112,7 @@ SUBROUTINE start
   fields(FIELD_ENERGY0)=1
   fields(FIELD_ENERGY1)=1
 
-  CALL update_halo(level,fields,halo_exchange_depth)
+  CALL update_halo(fields,halo_exchange_depth)
 
   IF (parallel%boss)THEN
     WRITE(g_out,*)
@@ -137,7 +120,7 @@ SUBROUTINE start
   ENDIF
 
   ! copy time level 0 to time level 1 before the first print
-  CALL set_field(level)
+  CALL set_field()
 
   CALL field_summary()
 

@@ -28,7 +28,7 @@ SUBROUTINE diffuse
 
   IMPLICIT NONE
 
-  INTEGER         :: loc(1),level
+  INTEGER         :: loc(1)
   REAL(KIND=8)    :: timer,timerstart,wall_clock,step_clock
 
   REAL(KIND=8)    :: grind_time,cells,rstep
@@ -71,8 +71,7 @@ SUBROUTINE diffuse
       step_clock=timer()-step_time
       WRITE(g_out,*)"Wall clock ",wall_clock
       WRITE(0    ,*)"Wall clock ",wall_clock
-      level = 1
-      cells = grid(level)%x_cells * grid(level)%y_cells
+      cells = grid%x_cells * grid%y_cells
       rstep = step
       grind_time   = wall_clock/(rstep * cells)
       step_grind   = step_clock/cells

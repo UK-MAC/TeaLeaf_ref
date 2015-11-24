@@ -41,7 +41,6 @@ SUBROUTINE tea_leaf_kernel_cheby_init(x_min,  &
                            z,                 &
                            Kx,                &
                            Ky,                &
-                           Di,                &
                            cp,                     &
                            bfp,                     &
                            rx,                &
@@ -53,7 +52,7 @@ SUBROUTINE tea_leaf_kernel_cheby_init(x_min,  &
   INTEGER :: preconditioner_type
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
   REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth)&
-                          :: u, u0, p , w , r, Mi, z , Kx, Ky, Di
+                          :: u, u0, p , w , r, Mi, z , Kx, Ky
   REAL(KIND=8), DIMENSION(x_min:x_max,y_min:y_max) :: cp, bfp
 
   INTEGER :: j,k
@@ -63,7 +62,9 @@ SUBROUTINE tea_leaf_kernel_cheby_init(x_min,  &
 !$OMP DO
     DO k=y_min,y_max
         DO j=x_min,x_max
-            w(j, k) = Di(j,k)*u(j, k)                             &
+            w(j, k) = (1.0_8                                      &
+                + ry*(Ky(j, k+1) + Ky(j, k))                      &
+                + rx*(Kx(j+1, k) + Kx(j, k)))*u(j, k)             &
                 - ry*(Ky(j, k+1)*u(j, k+1) + Ky(j, k)*u(j, k-1))  &
                 - rx*(Kx(j+1, k)*u(j+1, k) + Kx(j, k)*u(j-1, k))
             r(j, k) = u0(j, k) - w(j, k)
@@ -75,7 +76,7 @@ SUBROUTINE tea_leaf_kernel_cheby_init(x_min,  &
 
     IF (preconditioner_type .EQ. TL_PREC_JAC_BLOCK) THEN
       CALL tea_block_solve(x_min, x_max, y_min, y_max, halo_exchange_depth,             &
-                             r, z, cp, bfp, Kx, Ky, Di, rx, ry)
+                             r, z, cp, bfp, Kx, Ky, rx, ry)
     ELSE IF (preconditioner_type .EQ. TL_PREC_JAC_DIAG) THEN
       CALL tea_diag_solve(x_min, x_max, y_min, y_max, halo_exchange_depth,             &
                              r, z, Mi)
@@ -122,7 +123,6 @@ SUBROUTINE tea_leaf_kernel_cheby_iterate(x_min, &
                            z,                   &
                            Kx,                  &
                            Ky,                  &
-                           Di,                  &
                            cp,   &
                            bfp,    &
                            ch_alphas,           &
@@ -138,7 +138,7 @@ SUBROUTINE tea_leaf_kernel_cheby_iterate(x_min, &
   INTEGER :: preconditioner_type
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
   REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth)&
-                          :: u, u0, p , w , r, Mi, z , Kx, Ky, Di
+                          :: u, u0, p , w , r, Mi, z , Kx, Ky
   REAL(KIND=8), DIMENSION(x_min:x_max,y_min:y_max) :: cp, bfp
 
   INTEGER :: j,k
@@ -166,7 +166,7 @@ SUBROUTINE tea_leaf_kernel_cheby_iterate(x_min, &
 
     IF (preconditioner_type .EQ. TL_PREC_JAC_BLOCK) THEN
       CALL tea_block_solve(x_min, x_max, y_min, y_max, halo_exchange_depth,             &
-                             r, z, cp, bfp, Kx, Ky, Di, rx, ry)
+                             r, z, cp, bfp, Kx, Ky, rx, ry)
     ELSE IF (preconditioner_type .EQ. TL_PREC_JAC_DIAG) THEN
       CALL tea_diag_solve(x_min, x_max, y_min, y_max, halo_exchange_depth,             &
                              r, z, Mi)

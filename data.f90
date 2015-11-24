@@ -49,9 +49,7 @@ MODULE data_module
                                 ,FIELD_SD         = 6         &
                                 ,FIELD_R          = 7         &
                                 ,FIELD_Z          = 8         &
-                                ,FIELD_KX         = 9         &
-                                ,FIELD_KY         = 10        &
-                                ,NUM_FIELDS       = 10
+                                ,NUM_FIELDS       = 8
 
    INTEGER,         PARAMETER :: CELL_DATA     = 1,        &
                                  VERTEX_DATA   = 2,        &

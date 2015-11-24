@@ -9,11 +9,9 @@ MODULE tea_leaf_common_module
 
 CONTAINS
 
-SUBROUTINE tea_leaf_init_common(level)
+SUBROUTINE tea_leaf_init_common()
 
   IMPLICIT NONE
-
-  INTEGER :: level
 
   INTEGER :: t
 
@@ -23,37 +21,36 @@ SUBROUTINE tea_leaf_init_common(level)
 !$OMP PARALLEL PRIVATE(zero_boundary)
 !$OMP DO
     DO t=1,tiles_per_task
-      chunk(level)%tiles(t)%field%rx = dt/(chunk(level)%tiles(t)%field%celldx(chunk(level)%tiles(t)%field%x_min)**2)
-      chunk(level)%tiles(t)%field%ry = dt/(chunk(level)%tiles(t)%field%celldy(chunk(level)%tiles(t)%field%y_min)**2)
+      chunk%tiles(t)%field%rx = dt/(chunk%tiles(t)%field%celldx(chunk%tiles(t)%field%x_min)**2)
+      chunk%tiles(t)%field%ry = dt/(chunk%tiles(t)%field%celldy(chunk%tiles(t)%field%y_min)**2)
 
-      WHERE (chunk(level)%tiles(t)%tile_neighbours .EQ. EXTERNAL_FACE .AND. &
-             chunk(level)%chunk_neighbours .EQ. EXTERNAL_FACE)
+      WHERE (chunk%tiles(t)%tile_neighbours .EQ. EXTERNAL_FACE .AND. &
+             chunk%chunk_neighbours .EQ. EXTERNAL_FACE)
         zero_boundary = .TRUE.
       ELSE WHERE
         zero_boundary = .FALSE.
       END WHERE
 
-      CALL tea_leaf_common_init_kernel(chunk(level)%tiles(t)%field%x_min, &
-          chunk(level)%tiles(t)%field%x_max,                                  &
-          chunk(level)%tiles(t)%field%y_min,                                  &
-          chunk(level)%tiles(t)%field%y_max,                                  &
+      CALL tea_leaf_common_init_kernel(chunk%tiles(t)%field%x_min, &
+          chunk%tiles(t)%field%x_max,                                  &
+          chunk%tiles(t)%field%y_min,                                  &
+          chunk%tiles(t)%field%y_max,                                  &
           halo_exchange_depth,                                  &
           zero_boundary,                               &
           reflective_boundary,                                    &
-          chunk(level)%tiles(t)%field%density,                                &
-          chunk(level)%tiles(t)%field%energy1,                                &
-          chunk(level)%tiles(t)%field%u,                                      &
-          chunk(level)%tiles(t)%field%u0,                                      &
-          chunk(level)%tiles(t)%field%vector_r,                               &
-          chunk(level)%tiles(t)%field%vector_w,                               &
-          chunk(level)%tiles(t)%field%vector_Kx,                              &
-          chunk(level)%tiles(t)%field%vector_Ky,                              &
-          chunk(level)%tiles(t)%field%vector_Di,                              &
-          chunk(level)%tiles(t)%field%tri_cp,   &
-          chunk(level)%tiles(t)%field%tri_bfp,    &
-          chunk(level)%tiles(t)%field%vector_Mi,    &
-          chunk(level)%tiles(t)%field%rx,  &
-          chunk(level)%tiles(t)%field%ry,  &
+          chunk%tiles(t)%field%density,                                &
+          chunk%tiles(t)%field%energy1,                                &
+          chunk%tiles(t)%field%u,                                      &
+          chunk%tiles(t)%field%u0,                                      &
+          chunk%tiles(t)%field%vector_r,                               &
+          chunk%tiles(t)%field%vector_w,                               &
+          chunk%tiles(t)%field%vector_Kx,                              &
+          chunk%tiles(t)%field%vector_Ky,                              &
+          chunk%tiles(t)%field%tri_cp,   &
+          chunk%tiles(t)%field%tri_bfp,    &
+          chunk%tiles(t)%field%vector_Mi,    &
+          chunk%tiles(t)%field%rx,  &
+          chunk%tiles(t)%field%ry,  &
           tl_preconditioner_type, coefficient)
     ENDDO
 !$OMP END DO
@@ -62,11 +59,9 @@ SUBROUTINE tea_leaf_init_common(level)
 
 END SUBROUTINE tea_leaf_init_common
 
-SUBROUTINE tea_leaf_calc_residual(level)
+SUBROUTINE tea_leaf_calc_residual()
 
   IMPLICIT NONE
-
-  INTEGER :: level
 
   INTEGER :: t
 
@@ -74,37 +69,30 @@ SUBROUTINE tea_leaf_calc_residual(level)
 !$OMP PARALLEL
 !$OMP DO
     DO t=1,tiles_per_task
-      CALL tea_leaf_calc_residual_kernel(                           &
-          chunk(level)%tiles(t)%field%x_min,                        &
-          chunk(level)%tiles(t)%field%x_max,                        &
-          chunk(level)%tiles(t)%field%y_min,                        &
-          chunk(level)%tiles(t)%field%y_max,                        &
-          halo_exchange_depth,                                      &
-          chunk(level)%tiles(t)%field%u,                            &
-          chunk(level)%tiles(t)%field%u0,                           &
-          chunk(level)%tiles(t)%field%vector_r,                     &
-          chunk(level)%tiles(t)%field%vector_Kx,                    &
-          chunk(level)%tiles(t)%field%vector_Ky,                    &
-          chunk(level)%tiles(t)%field%vector_Di,                    &
-          chunk(level)%tiles(t)%field%rx,                           &
-          chunk(level)%tiles(t)%field%ry)
+      CALL tea_leaf_calc_residual_kernel(chunk%tiles(t)%field%x_min,&
+          chunk%tiles(t)%field%x_max,                        &
+          chunk%tiles(t)%field%y_min,                        &
+          chunk%tiles(t)%field%y_max,                        &
+          halo_exchange_depth,                        &
+          chunk%tiles(t)%field%u,                            &
+          chunk%tiles(t)%field%u0,                           &
+          chunk%tiles(t)%field%vector_r,                     &
+          chunk%tiles(t)%field%vector_Kx,                    &
+          chunk%tiles(t)%field%vector_Ky,                    &
+          chunk%tiles(t)%field%rx,  &
+          chunk%tiles(t)%field%ry)
     ENDDO
 !$OMP END DO
 !$OMP END PARALLEL
   ENDIF
-  !if (level > 1) then
-  !  DO t=1,tiles_per_task
-  !    write(6,*) t,sum(abs(chunk(level)%tiles(t)%field%vector_r**2))
-  !  ENDDO
-  !endif
 
 END SUBROUTINE
 
-SUBROUTINE tea_leaf_calc_2norm(level, norm_array, norm)
+SUBROUTINE tea_leaf_calc_2norm(norm_array, norm)
 
   IMPLICIT NONE
 
-  INTEGER :: t, level, norm_array
+  INTEGER :: t, norm_array
   REAL(KIND=8) :: norm, tile_norm
 
   norm = 0.0_8
@@ -119,20 +107,20 @@ SUBROUTINE tea_leaf_calc_2norm(level, norm_array, norm)
       ! 1 = r.r
       ! XXX add some parameters in defintions.f90?
       IF (norm_array .EQ. 0) THEN
-        CALL tea_leaf_calc_2norm_kernel(chunk(level)%tiles(t)%field%x_min,        &
-            chunk(level)%tiles(t)%field%x_max,                                    &
-            chunk(level)%tiles(t)%field%y_min,                                    &
-            chunk(level)%tiles(t)%field%y_max,                                    &
+        CALL tea_leaf_calc_2norm_kernel(chunk%tiles(t)%field%x_min,        &
+            chunk%tiles(t)%field%x_max,                                    &
+            chunk%tiles(t)%field%y_min,                                    &
+            chunk%tiles(t)%field%y_max,                                    &
             halo_exchange_depth,                                    &
-            chunk(level)%tiles(t)%field%u0,                                 &
+            chunk%tiles(t)%field%u0,                                 &
             tile_norm)
       ELSE IF (norm_array .EQ. 1) THEN
-        CALL tea_leaf_calc_2norm_kernel(chunk(level)%tiles(t)%field%x_min,        &
-            chunk(level)%tiles(t)%field%x_max,                                    &
-            chunk(level)%tiles(t)%field%y_min,                                    &
-            chunk(level)%tiles(t)%field%y_max,                                    &
+        CALL tea_leaf_calc_2norm_kernel(chunk%tiles(t)%field%x_min,        &
+            chunk%tiles(t)%field%x_max,                                    &
+            chunk%tiles(t)%field%y_min,                                    &
+            chunk%tiles(t)%field%y_max,                                    &
             halo_exchange_depth,                                    &
-            chunk(level)%tiles(t)%field%vector_r,                                 &
+            chunk%tiles(t)%field%vector_r,                                 &
             tile_norm)
       ELSE
         CALL report_error("tea_leaf_common.f90", "Invalid value for norm_array")
@@ -146,11 +134,9 @@ SUBROUTINE tea_leaf_calc_2norm(level, norm_array, norm)
 
 END SUBROUTINE
 
-SUBROUTINE tea_leaf_finalise(level)
+SUBROUTINE tea_leaf_finalise()
 
   IMPLICIT NONE
-
-  INTEGER :: level
 
   INTEGER :: t
 
@@ -158,14 +144,14 @@ SUBROUTINE tea_leaf_finalise(level)
 !$OMP PARALLEL
 !$OMP DO
     DO t=1,tiles_per_task
-      CALL tea_leaf_kernel_finalise(chunk(level)%tiles(t)%field%x_min, &
-          chunk(level)%tiles(t)%field%x_max,                           &
-          chunk(level)%tiles(t)%field%y_min,                           &
-          chunk(level)%tiles(t)%field%y_max,                           &
+      CALL tea_leaf_kernel_finalise(chunk%tiles(t)%field%x_min, &
+          chunk%tiles(t)%field%x_max,                           &
+          chunk%tiles(t)%field%y_min,                           &
+          chunk%tiles(t)%field%y_max,                           &
           halo_exchange_depth,                           &
-          chunk(level)%tiles(t)%field%energy1,                         &
-          chunk(level)%tiles(t)%field%density,                         &
-          chunk(level)%tiles(t)%field%u)
+          chunk%tiles(t)%field%energy1,                         &
+          chunk%tiles(t)%field%density,                         &
+          chunk%tiles(t)%field%u)
     ENDDO
 !$OMP END DO
 !$OMP END PARALLEL
