@@ -71,6 +71,8 @@ OMP_PGI       = -mp=nonuma
 OMP_PATHSCALE = -mp
 OMP_XL        = -qsmp=omp -qthreaded
 
+#OMP_GNU       =
+
 FLAGS_INTEL     = -O3 -no-prec-div -fpp -align array64byte
 FLAGS_SUN       = -fast -xipo=2 -Xlistv4
 FLAGS_GNU       = -O3 -funroll-loops -cpp -ffree-line-length-none
@@ -105,6 +107,8 @@ ifdef DEBUG
   CFLAGS_PATHSCALE= -O0 -g
   CFLAGS_XL      = -O0 -g -qfullpath -qcheck -qflttrap=ov:zero:invalid:en -qsource -qinitauto=FF -qmaxmem=-1 -qsrcmsg
 endif
+
+FLAGS_GNU += -g #-pg
 
 ifdef IEEE
   I3E_INTEL     = -fp-model strict -fp-model source -prec-div -prec-sqrt
@@ -143,8 +147,12 @@ else ifeq '$(TL_OMP_LEVEL)' 'BOTH'
 # both
 KERNEL_FLAGS+=$(OMP_$(COMPILER)) $(OMP4)
 FLAGS+=$(OMP_$(COMPILER)) $(OMP4)
+else ifeq '$(TL_OMP_LEVEL)' 'NONE'
+# none
+KERNEL_FLAGS+=-pg
+FLAGS+=-pg
 else
-$(error Unknown value '$(TL_OMP_LEVEL)' set for TL_OMP_LEVEL - expected 'TILE', 'KERNEL', or 'BOTH')
+$(error Unknown value '$(TL_OMP_LEVEL)' set for TL_OMP_LEVEL - expected 'TILE', 'KERNEL', 'BOTH', or 'NONE')
 endif
 
 C_FILES=\
@@ -207,6 +215,7 @@ tea_leaf: Makefile $(KERNEL_FILES) $(FORTRAN_FILES) $(C_FILES)
 	$(LDLIBS) \
 	-o tea_leaf
 	@echo $(MESSAGE)
+        #/usr/lib/debug/usr/lib/openmpi/lib/libmpi_f90.so.1.3.0 \
 
 include makefile.deps
 
@@ -217,6 +226,8 @@ include makefile.deps
 %_kernel.o: %_kernel.F90 Makefile makefile.deps
 	$(MPI_COMPILER) $(KERNEL_FLAGS) -c $< -o $@
 %.o: %.f90 Makefile makefile.deps
+	$(MPI_COMPILER) $(FLAGS) -c $< -o $@
+%.o: %.F90 Makefile makefile.deps
 	$(MPI_COMPILER) $(FLAGS) -c $< -o $@
 %.o: %.c Makefile makefile.deps
 	$(C_MPI_COMPILER) $(CFLAGS) -c $< -o $@
