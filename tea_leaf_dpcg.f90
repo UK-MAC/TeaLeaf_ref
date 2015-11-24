@@ -35,103 +35,112 @@ SUBROUTINE tea_leaf_dpcg_init_x0(solve_time)
     ALLOCATE(inner_ch_betas (coarse_solve_max_iters))
   ENDIF
 
-  !CALL tea_leaf_dpcg_coarsen_matrix()
-  CALL tea_leaf_dpcg_coarsen_matrix_level(level,solve_time)
+  IF (coarse_solve_serial) THEN
+    CALL tea_leaf_dpcg_coarsen_matrix()
+  ELSE
+    CALL tea_leaf_dpcg_coarsen_matrix_level(level,solve_time)
+  ENDIF
 
   ! just use CG on the first one
   inner_use_ppcg = .FALSE.
 
-  !chunk(level)%def%t1 = 0.0_8
-  !CALL tea_leaf_dpcg_restrict_ZT(.TRUE.)
+  IF (coarse_solve_serial) THEN
 
-  !tile_sum2 = sum(chunk(level)%def%t2**2)
-  !IF (parallel%boss) write(6,"(a17,es25.18)") "in -serial solve:",sqrt(tile_sum2)
+    chunk(level)%def%t1 = 0.0_8
+    CALL tea_leaf_dpcg_restrict_ZT(.TRUE.)
+
+    !tile_sum2 = sum(chunk(level)%def%t2**2)
+    !IF (parallel%boss) write(6,"(a17,es25.18)") "in -serial solve:",sqrt(tile_sum2)
+
+    CALL tea_leaf_dpcg_local_solve(   &
+        chunk(level)%def%x_min, &
+        chunk(level)%def%x_max,                                  &
+        chunk(level)%def%y_min,                                  &
+        chunk(level)%def%y_max,                                  &
+        halo_exchange_depth,                                  &
+        chunk(level)%def%t2,                               &
+        chunk(level)%def%t1,                               &
+        chunk(level)%def%def_Kx, &
+        chunk(level)%def%def_Ky, &
+        chunk(level)%def%def_di, &
+        chunk(level)%def%def_p,                               &
+        chunk(level)%def%def_r,                               &
+        chunk(level)%def%def_Mi,                               &
+        chunk(level)%def%def_w,                               &
+        chunk(level)%def%def_z, &
+        chunk(level)%def%def_sd, &
+        coarse_solve_eps, &
+        coarse_solve_max_iters,                          &
+        it_count,         &
+        0.0_8,            &
+        inner_use_ppcg,       &
+        inner_cg_alphas, inner_cg_betas,      &
+        inner_ch_alphas, inner_ch_betas       &
+        )
+
+    !!write(6,"(12es12.5)") chunk(level)%def%t2
+    !tile_sum2 = sum(chunk(level)%def%t2**2)
+    !IF (parallel%boss) write(6,"(a17,es25.18)") "out-serial solve:",sqrt(tile_sum2)
+
+    ! add back onto the fine grid
+    CALL tea_leaf_dpcg_subtract_z()
+
+  ELSE
 
 !$OMP PARALLEL
 !$OMP DO
-  ! store the RHS in u which will then be copied into u0 
-  DO t=1,tiles_per_task
-    chunk(level+1)%tiles(t)%field%u = 0.0_8
-  ENDDO
+    ! store the RHS in u which will then be copied into u0 
+    DO t=1,tiles_per_task
+      chunk(level+1)%tiles(t)%field%u = 0.0_8
+    ENDDO
 !$OMP END DO
 !$OMP END PARALLEL
-  CALL tea_leaf_dpcg_restrict_ZT_level(level,.TRUE.)
+    CALL tea_leaf_dpcg_restrict_ZT_level(level,.TRUE.)
 
-  !tile_sum2 = 0.0_8
-  !DO t=1,tiles_per_task
-  !  !write(6,*) "Tile:",t
-  !  !write(6,"(7es12.5)") chunk(level+1)%tiles(t)%field%u
-  !  tile_sum2 = tile_sum2+sum(chunk(level+1)%tiles(t)%field%u(1:chunk(level)%sub_tile_dims(1), &
-  !                                                            1:chunk(level)%sub_tile_dims(2))**2)
-  !ENDDO
-  !CALL tea_allsum(tile_sum2)
-  !IF (parallel%boss) write(6,"(a17,es25.18)") "in -tiled  solve:",sqrt(tile_sum2)
+    !tile_sum2 = 0.0_8
+    !DO t=1,tiles_per_task
+    !  !write(6,*) "Tile:",t
+    !  !write(6,"(7es12.5)") chunk(level+1)%tiles(t)%field%u
+    !  tile_sum2 = tile_sum2+sum(chunk(level+1)%tiles(t)%field%u(1:chunk(level)%sub_tile_dims(1), &
+    !                                                            1:chunk(level)%sub_tile_dims(2))**2)
+    !ENDDO
+    !CALL tea_allsum(tile_sum2)
+    !IF (parallel%boss) write(6,"(a17,es25.18)") "in -tiled  solve:",sqrt(tile_sum2)
 
-  !CALL tea_leaf_dpcg_local_solve(   &
-  !    chunk(level)%def%x_min, &
-  !    chunk(level)%def%x_max,                                  &
-  !    chunk(level)%def%y_min,                                  &
-  !    chunk(level)%def%y_max,                                  &
-  !    halo_exchange_depth,                                  &
-  !    chunk(level)%def%t2,                               &
-  !    chunk(level)%def%t1,                               &
-  !    chunk(level)%def%def_Kx, &
-  !    chunk(level)%def%def_Ky, &
-  !    chunk(level)%def%def_di, &
-  !    chunk(level)%def%def_p,                               &
-  !    chunk(level)%def%def_r,                               &
-  !    chunk(level)%def%def_Mi,                               &
-  !    chunk(level)%def%def_w,                               &
-  !    chunk(level)%def%def_z, &
-  !    chunk(level)%def%def_sd, &
-  !    coarse_solve_eps, &
-  !    coarse_solve_max_iters,                          &
-  !    it_count,         &
-  !    0.0_8,            &
-  !    inner_use_ppcg,       &
-  !    inner_cg_alphas, inner_cg_betas,      &
-  !    inner_ch_alphas, inner_ch_betas       &
-  !    )
+    CALL tea_leaf_dpcg_local_solve_level(level,                  &
+                                         solve_time,             &
+                                         coarse_solve_eps,       &
+                                         coarse_solve_max_iters, &
+                                         it_count,               &
+                                         inner_use_ppcg,         &
+                                         theta,                  &
+                                         inner_ch_alphas,        &
+                                         inner_ch_betas)
 
-  !!write(6,"(12es12.5)") chunk(level)%def%t2
-  !tile_sum2 = sum(chunk(level)%def%t2**2)
-  !IF (parallel%boss) write(6,"(a17,es25.18)") "out-serial solve:",sqrt(tile_sum2)
+    !tile_sum2 = 0.0_8
+    !DO t=1,tiles_per_task
+    !  !write(6,*) "Tile:",t
+    !  !write(6,"(7es12.5)") chunk(level+1)%tiles(t)%field%u
+    !  tile_sum2 = tile_sum2+sum(chunk(level+1)%tiles(t)%field%u(1:chunk(level)%sub_tile_dims(1), &
+    !                                                            1:chunk(level)%sub_tile_dims(2))**2)
+    !ENDDO
+    !CALL tea_allsum(tile_sum2)
+    !IF (parallel%boss) write(6,"(a17,es25.18)") "out-tiled  solve:",sqrt(tile_sum2)
 
-  CALL tea_leaf_dpcg_local_solve_level(level,                  &
-                                       solve_time,             &
-                                       coarse_solve_eps,       &
-                                       coarse_solve_max_iters, &
-                                       it_count,               &
-                                       inner_use_ppcg,         &
-                                       theta,                  &
-                                       inner_ch_alphas,        &
-                                       inner_ch_betas)
+    !!$OMP PARALLEL
+    !!$OMP DO
+    ! zero the coarse grid solution u so that we don't change the answer 
+    !DO t=1,tiles_per_task
+    !  chunk(level+1)%tiles(t)%field%u = 0.0_8
+    !ENDDO
+    !!$OMP END DO
+    !!$OMP END PARALLEL
+    CALL tea_leaf_dpcg_subtract_z_level(level)
 
-  !tile_sum2 = 0.0_8
-  !DO t=1,tiles_per_task
-  !  !write(6,*) "Tile:",t
-  !  !write(6,"(7es12.5)") chunk(level+1)%tiles(t)%field%u
-  !  tile_sum2 = tile_sum2+sum(chunk(level+1)%tiles(t)%field%u(1:chunk(level)%sub_tile_dims(1), &
-  !                                                            1:chunk(level)%sub_tile_dims(2))**2)
-  !ENDDO
-  !CALL tea_allsum(tile_sum2)
-  !IF (parallel%boss) write(6,"(a17,es25.18)") "out-tiled  solve:",sqrt(tile_sum2)
+  ENDIF
 
-  ! add back onto the fine grid
-  !CALL tea_leaf_dpcg_subtract_z()
-
-!!$OMP PARALLEL
-!!$OMP DO
-  ! zero the coarse grid solution u so that we don't change the answer 
-  !DO t=1,tiles_per_task
-  !  chunk(level+1)%tiles(t)%field%u = 0.0_8
-  !ENDDO
-!!$OMP END DO
-!!$OMP END PARALLEL
-  CALL tea_leaf_dpcg_subtract_z_level(level)
-
-  ! for all subsequent steps, use ppcg
-  !inner_use_ppcg = .TRUE.
+  ! for all subsequent steps, use ppcg if requested
+  inner_use_ppcg = coarse_solve_ppcg
 
   !CALL tea_calc_eigenvalues(inner_cg_alphas, inner_cg_betas, eigmin, eigmax, &
   !    coarse_solve_max_iters, it_count, info)
@@ -157,8 +166,11 @@ SUBROUTINE tea_leaf_dpcg_init_x0(solve_time)
   ! calc residual again, and do initial solve
   CALL tea_leaf_calc_residual(level)
 
-  !CALL tea_leaf_dpcg_setup_and_solve_E(solve_time)
-  CALL tea_leaf_dpcg_setup_and_solve_E_level(level,solve_time)
+  IF (coarse_solve_serial) THEN
+    CALL tea_leaf_dpcg_setup_and_solve_E(solve_time)
+  ELSE
+    CALL tea_leaf_dpcg_setup_and_solve_E_level(level,solve_time)
+  ENDIF
 
   CALL tea_leaf_dpcg_init_p()
 
@@ -177,9 +189,9 @@ SUBROUTINE tea_leaf_dpcg_setup_and_solve_E(solve_time)
   CALL tea_leaf_dpcg_matmul_ZTA(solve_time)
   CALL tea_leaf_dpcg_restrict_ZT(.TRUE.)
 
-  !write(6,"(12es12.5)") chunk(level)%def%t2
-  tile_sum1 = sum(chunk(level)%def%t2**2)
-  IF (parallel%boss) write(6,"(a17,es25.18)") "in -serial solve:",sqrt(tile_sum1)
+  !!write(6,"(12es12.5)") chunk(level)%def%t2
+  !tile_sum1 = sum(chunk(level)%def%t2**2)
+  !IF (parallel%boss) write(6,"(a17,es25.18)") "in -serial solve:",sqrt(tile_sum1)
 
   CALL tea_leaf_dpcg_local_solve(   &
       chunk(level)%def%x_min, &
@@ -207,23 +219,23 @@ SUBROUTINE tea_leaf_dpcg_setup_and_solve_E(solve_time)
       inner_ch_alphas, inner_ch_betas       &
       )
 
-  !write(6,"(12es12.5)") chunk(level)%def%t2
-  tile_sum2 = sum(chunk(level)%def%t2**2)
-  IF (parallel%boss) write(6,"(a17,es25.18)") "out-serial solve:",sqrt(tile_sum2)
+  !!write(6,"(12es12.5)") chunk(level)%def%t2
+  !tile_sum2 = sum(chunk(level)%def%t2**2)
+  !IF (parallel%boss) write(6,"(a17,es25.18)") "out-serial solve:",sqrt(tile_sum2)
 
-  CALL tea_leaf_dpcg_setup_and_solve_E_level(level,solve_time)
+  !CALL tea_leaf_dpcg_setup_and_solve_E_level(level,solve_time)
 
-  tile_sum2 = 0.0_8
-  DO t=1,tiles_per_task
-    !write(6,*) "Tile:",t
-    !write(6,"(7es12.5)") chunk(level+1)%tiles(t)%field%u
-    tile_sum2 = tile_sum2+sum(chunk(level+1)%tiles(t)%field%u(1:chunk(level)%sub_tile_dims(1), &
-                                                              1:chunk(level)%sub_tile_dims(2))**2)
-  ENDDO
-  CALL tea_allsum(tile_sum2)
-  IF (parallel%boss) write(6,"(a17,es25.18)") "out-tiled  solve:",sqrt(tile_sum2)
+  !tile_sum2 = 0.0_8
+  !DO t=1,tiles_per_task
+  !  !write(6,*) "Tile:",t
+  !  !write(6,"(7es12.5)") chunk(level+1)%tiles(t)%field%u
+  !  tile_sum2 = tile_sum2+sum(chunk(level+1)%tiles(t)%field%u(1:chunk(level)%sub_tile_dims(1), &
+  !                                                            1:chunk(level)%sub_tile_dims(2))**2)
+  !ENDDO
+  !CALL tea_allsum(tile_sum2)
+  !IF (parallel%boss) write(6,"(a17,es25.18)") "out-tiled  solve:",sqrt(tile_sum2)
 
-  !CALL tea_leaf_dpcg_prolong_Z()
+  CALL tea_leaf_dpcg_prolong_Z()
 
 END SUBROUTINE tea_leaf_dpcg_setup_and_solve_E
 
@@ -1281,14 +1293,14 @@ SUBROUTINE tea_leaf_dpcg_local_solve(x_min,               &
     ENDDO
   ENDDO
 !$OMP END DO
-  write(6,*) "rnorm:",sqrt(sum(r**2))
+  !write(6,*) "rnorm:",sqrt(sum(r**2))
 
-  write(6,*) "rro:",rro
+  !write(6,*) "rro:",rro
 !$OMP SINGLE
     rro = initial_residual
     initial_residual = sqrt(abs(initial_residual))
 !$OMP END SINGLE
-    write(6,*) "initial_residual:",initial_residual
+    !write(6,*) "initial_residual:",initial_residual
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -1313,12 +1325,12 @@ SUBROUTINE tea_leaf_dpcg_local_solve(x_min,               &
       ENDDO
     ENDDO
 !$OMP END DO
-    write(6,*) "normw,normp:",sqrt(sum(w**2)),sqrt(sum(p**2))
+    !write(6,*) "normw,normp:",sqrt(sum(w**2)),sqrt(sum(p**2))
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     alpha = rro/pw
-    write(6,*) "serial:",rro,pw
+    !write(6,*) "serial:",rro,pw
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -1378,11 +1390,11 @@ SUBROUTINE tea_leaf_dpcg_local_solve(x_min,               &
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     beta = rrn/rro
-    if (parallel%boss) then
-      !if (it_count == 1) write(6,*) use_ppcg
-      write(6,'("serial iteration:",i3," alpha=",es20.13," beta=",es20.13," rrn=",es20.13," norm u:",es20.13," norm z:",es20.13)') &
-        it_count+1,alpha,beta,rrn,sqrt(sum(u**2)),sqrt(sum(z**2))
-    endif
+    !if (parallel%boss) then
+    !  !if (it_count == 1) write(6,*) use_ppcg
+    !  write(6,'("serial iteration:",i3," alpha=",es20.13," beta=",es20.13," rrn=",es20.13," norm u:",es20.13," norm z:",es20.13)') &
+    !    it_count+1,alpha,beta,rrn,sqrt(sum(u**2)),sqrt(sum(z**2))
+    !endif
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -1406,13 +1418,13 @@ SUBROUTINE tea_leaf_dpcg_local_solve(x_min,               &
 
 !$OMP END PARALLEL
 
-  if (parallel%boss) then
-    !if (it_count == 1) write(6,*) use_ppcg
-    write(6,'("serial iteration:",i3," alpha=",es20.13," beta=",es20.13," rrn=",es20.13," norm u:",es20.13," norm z:",es20.13)') &
-      it_count,alpha,beta,rrn,sqrt(sum(u**2)),sqrt(sum(z**2))
-  endif
-  if (use_ppcg) write(6,*) theta,inner_ch_alphas(1:10),inner_ch_betas(1:10)
-  if (it_count == 0) stop
+  !if (parallel%boss) then
+  !  !if (it_count == 1) write(6,*) use_ppcg
+  !  write(6,'("serial iteration:",i3," alpha=",es20.13," beta=",es20.13," rrn=",es20.13," norm u:",es20.13," norm z:",es20.13)') &
+  !    it_count,alpha,beta,rrn,sqrt(sum(u**2)),sqrt(sum(z**2))
+  !endif
+  !if (use_ppcg) write(6,*) theta,inner_ch_alphas(1:10),inner_ch_betas(1:10)
+  !if (it_count == 0) stop
 
 END SUBROUTINE tea_leaf_dpcg_local_solve
 

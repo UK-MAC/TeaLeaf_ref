@@ -310,8 +310,11 @@ SUBROUTINE tea_leaf()
 
       ! not calculating rrn here
 
-      !CALL tea_leaf_dpcg_setup_and_solve_E(solve_time)
-      CALL tea_leaf_dpcg_setup_and_solve_E_level(level,solve_time)
+      IF (coarse_solve_serial) THEN
+        CALL tea_leaf_dpcg_setup_and_solve_E(solve_time)
+      ELSE
+        CALL tea_leaf_dpcg_setup_and_solve_E_level(level,solve_time)
+      ENDIF
 
       CALL tea_leaf_dpcg_calc_rrn(rrn)
       IF (profiler_on) dot_product_time=timer()
