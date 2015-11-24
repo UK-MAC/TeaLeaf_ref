@@ -38,6 +38,7 @@ SUBROUTINE tea_leaf_cg_init_kernel(x_min,  &
                            z,                      &
                            Kx,                     &
                            Ky,                     &
+                           Di,                     &
                            cp,                     &
                            bfp,                    &
                            rx,                     &
@@ -50,7 +51,7 @@ SUBROUTINE tea_leaf_cg_init_kernel(x_min,  &
   INTEGER :: preconditioner_type
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
   REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth)&
-                          :: r, Kx, Ky, z, Mi, p
+                          :: r, Kx, Ky, Di, z, Mi, p
   REAL(KIND=8), DIMENSION(x_min:x_max,y_min:y_max) :: cp, bfp
 
   INTEGER(KIND=4) :: j,k
@@ -74,7 +75,7 @@ SUBROUTINE tea_leaf_cg_init_kernel(x_min,  &
 
     IF (preconditioner_type .EQ. TL_PREC_JAC_BLOCK) THEN
       CALL tea_block_solve(x_min, x_max, y_min, y_max, halo_exchange_depth,             &
-                             r, z, cp, bfp, Kx, Ky, rx, ry)
+                             r, z, cp, bfp, Kx, Ky, Di, rx, ry)
     ELSE IF (preconditioner_type .EQ. TL_PREC_JAC_DIAG) THEN
       CALL tea_diag_solve(x_min, x_max, y_min, y_max, halo_exchange_depth,             &
                              r, z, Mi)
@@ -99,7 +100,7 @@ SUBROUTINE tea_leaf_cg_init_kernel(x_min,  &
 !$OMP DO
   DO k=y_min,y_max
     DO j=x_min,x_max
-      rro = rro + r(j, k)*p(j, k);
+      rro = rro + r(j, k)*p(j, k)
     ENDDO
   ENDDO
 !$OMP END DO NOWAIT
@@ -116,6 +117,7 @@ SUBROUTINE tea_leaf_cg_calc_w_kernel(x_min,             &
                                                    w,                 &
                                                    Kx,                &
                                                    Ky,                &
+                                                   Di,                &
                                                    rx,                &
                                                    ry,                &
                                                    pw                 )
@@ -124,7 +126,7 @@ SUBROUTINE tea_leaf_cg_calc_w_kernel(x_min,             &
 
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
   REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth)&
-                          :: w, Kx, Ky, p
+                          :: w, Kx, Ky, p, Di
 
     REAL(KIND=8) ::  rx, ry
 
@@ -137,9 +139,7 @@ SUBROUTINE tea_leaf_cg_calc_w_kernel(x_min,             &
 !$OMP DO
     DO k=y_min,y_max
         DO j=x_min,x_max
-            w(j, k) = (1.0_8                                      &
-                + ry*(Ky(j, k+1) + Ky(j, k))                      &
-                + rx*(Kx(j+1, k) + Kx(j, k)))*p(j, k)             &
+            w(j, k) = Di(j,k)*p(j, k)                             &
                 - ry*(Ky(j, k+1)*p(j, k+1) + Ky(j, k)*p(j, k-1))  &
                 - rx*(Kx(j+1, k)*p(j+1, k) + Kx(j, k)*p(j-1, k))
 
@@ -166,6 +166,7 @@ SUBROUTINE tea_leaf_cg_calc_ur_kernel(x_min,             &
                                                     bfp,                     &
                                                     Kx, &
                                                     Ky, &
+                                                    Di, &
                                                     rx, &
                                                     ry, &
                                                     alpha,             &
@@ -177,7 +178,7 @@ SUBROUTINE tea_leaf_cg_calc_ur_kernel(x_min,             &
   INTEGER :: preconditioner_type
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
   REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth)&
-                          :: u, r, Mi, w, z, Kx, Ky, p
+                          :: u, r, Mi, w, z, Kx, Ky, p, Di
   REAL(KIND=8), DIMENSION(x_min:x_max,y_min:y_max) :: cp, bfp
   REAL(KIND=8) :: rx, ry
 
@@ -207,7 +208,7 @@ SUBROUTINE tea_leaf_cg_calc_ur_kernel(x_min,             &
 
     IF (preconditioner_type .EQ. TL_PREC_JAC_BLOCK) THEN
       CALL tea_block_solve(x_min, x_max, y_min, y_max, halo_exchange_depth,             &
-                             r, z, cp, bfp, Kx, Ky, rx, ry)
+                             r, z, cp, bfp, Kx, Ky, Di, rx, ry)
     ELSE IF (preconditioner_type .EQ. TL_PREC_JAC_DIAG) THEN
       CALL tea_diag_solve(x_min, x_max, y_min, y_max, halo_exchange_depth,             &
                              r, z, Mi)

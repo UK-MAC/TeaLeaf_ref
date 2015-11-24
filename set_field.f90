@@ -23,12 +23,14 @@ MODULE set_field_module
 
 CONTAINS
 
-SUBROUTINE set_field()
+SUBROUTINE set_field(level)
 
   USE tea_module
   USE set_field_kernel_module
 
   IMPLICIT NONE
+
+  INTEGER :: level
 
   INTEGER :: t
 
@@ -40,13 +42,13 @@ SUBROUTINE set_field()
 !$OMP PARALLEL
 !$OMP DO
     DO t=1,tiles_per_task
-      CALL set_field_kernel(chunk%tiles(t)%field%x_min,     &
-                            chunk%tiles(t)%field%x_max,     &
-                            chunk%tiles(t)%field%y_min,     &
-                            chunk%tiles(t)%field%y_max,     &
+      CALL set_field_kernel(chunk(level)%tiles(t)%field%x_min,     &
+                            chunk(level)%tiles(t)%field%x_max,     &
+                            chunk(level)%tiles(t)%field%y_min,     &
+                            chunk(level)%tiles(t)%field%y_max,     &
                             halo_exchange_depth,     &
-                            chunk%tiles(t)%field%energy0,   &
-                            chunk%tiles(t)%field%energy1)
+                            chunk(level)%tiles(t)%field%energy0,   &
+                            chunk(level)%tiles(t)%field%energy1)
     ENDDO
 !$OMP END DO NOWAIT
 !$OMP END PARALLEL

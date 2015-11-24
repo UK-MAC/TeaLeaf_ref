@@ -87,13 +87,13 @@ SUBROUTINE tea_finalize
 
 END SUBROUTINE tea_finalize
 
-SUBROUTINE tea_decompose(x_cells,y_cells)
+SUBROUTINE tea_decompose(level,x_cells,y_cells)
 
   ! This decomposes the mesh into a number of chunks.
 
   IMPLICIT NONE
 
-  INTEGER :: x_cells,y_cells
+  INTEGER :: level,x_cells,y_cells
   INTEGER :: delta_x,delta_y
 
   INTEGER  :: chunk_x,chunk_y,mod_x,mod_y
@@ -102,16 +102,16 @@ SUBROUTINE tea_decompose(x_cells,y_cells)
 
   ! Get destinations/sources
   CALL mpi_cart_shift(mpi_cart_comm, 1, 1,      &
-    chunk%chunk_neighbours(CHUNK_BOTTOM),   &
-    chunk%chunk_neighbours(CHUNK_TOP),      &
+    chunk(level)%chunk_neighbours(CHUNK_BOTTOM),   &
+    chunk(level)%chunk_neighbours(CHUNK_TOP),      &
     err)
   CALL mpi_cart_shift(mpi_cart_comm, 0, 1,      &
-    chunk%chunk_neighbours(CHUNK_LEFT),     &
-    chunk%chunk_neighbours(CHUNK_RIGHT),    &
+    chunk(level)%chunk_neighbours(CHUNK_LEFT),     &
+    chunk(level)%chunk_neighbours(CHUNK_RIGHT),    &
     err)
 
-  WHERE (chunk%chunk_neighbours .EQ. MPI_PROC_NULL)
-    chunk%chunk_neighbours = EXTERNAL_FACE
+  WHERE (chunk(level)%chunk_neighbours .EQ. MPI_PROC_NULL)
+    chunk(level)%chunk_neighbours = EXTERNAL_FACE
   END WHERE
 
   chunk_x = mpi_dims(1)
@@ -122,26 +122,26 @@ SUBROUTINE tea_decompose(x_cells,y_cells)
   mod_x=MOD(x_cells,chunk_x)
   mod_y=MOD(y_cells,chunk_y)
 
-  chunk%left = mpi_coords(1)*delta_x + 1
+  chunk(level)%left = mpi_coords(1)*delta_x + 1
   if (mpi_coords(1) .le. mod_x) then
-    chunk%left = chunk%left + mpi_coords(1)
+    chunk(level)%left = chunk(level)%left + mpi_coords(1)
   else
-    chunk%left = chunk%left + mod_x
+    chunk(level)%left = chunk(level)%left + mod_x
   endif
-  chunk%right = chunk%left+delta_x - 1
+  chunk(level)%right = chunk(level)%left+delta_x - 1
   if (mpi_coords(1) .lt. mod_x) then
-    chunk%right = chunk%right + 1
+    chunk(level)%right = chunk(level)%right + 1
   endif
 
-  chunk%bottom = mpi_coords(2)*delta_y + 1
+  chunk(level)%bottom = mpi_coords(2)*delta_y + 1
   if (mpi_coords(2) .le. mod_y) then
-    chunk%bottom = chunk%bottom + mpi_coords(2)
+    chunk(level)%bottom = chunk(level)%bottom + mpi_coords(2)
   else
-    chunk%bottom = chunk%bottom + mod_y
+    chunk(level)%bottom = chunk(level)%bottom + mod_y
   endif
-  chunk%top = chunk%bottom+delta_y - 1
+  chunk(level)%top = chunk(level)%bottom+delta_y - 1
   if (mpi_coords(2) .lt. mod_y) then
-    chunk%top = chunk%top + 1
+    chunk(level)%top = chunk(level)%top + 1
   endif
 
   IF (parallel%boss)THEN
@@ -153,11 +153,11 @@ SUBROUTINE tea_decompose(x_cells,y_cells)
 
 END SUBROUTINE tea_decompose
 
-SUBROUTINE tea_decompose_tiles(x_cells, y_cells)
+SUBROUTINE tea_decompose_tiles(level,x_cells, y_cells)
 
   IMPLICIT NONE
 
-  INTEGER :: x_cells, y_cells
+  INTEGER :: level,x_cells,y_cells,xs_cells,ys_cells
 
   INTEGER :: delta_x,delta_y
   INTEGER  :: tiles_x,tiles_y,mod_x,mod_y
@@ -165,83 +165,158 @@ SUBROUTINE tea_decompose_tiles(x_cells, y_cells)
   INTEGER :: err, j, k, t
   INTEGER,PARAMETER :: sub_tile_nx=2, sub_tile_ny=2
 
-  chunk%tile_dims = 0
+  INTEGER :: best_fit_i,i
+  REAL(KIND=8) :: best_fit_v,fit_v
+
+  chunk(level)%tile_dims = 0
 
   ! TODO input parameter to say how to split it - rows, columns, etc
-  !chunk%tile_dims(1) = 1
+  !chunk(level)%tile_dims(1) = 1
 
   ! get good split for tiles
-  CALL MPI_DIMS_CREATE(tiles_per_task, 2, chunk%tile_dims, err)
+  !write(6,*) "MPI_DIMS_CREATE:tile input :",level, tiles_per_task, 2
+  !CALL MPI_DIMS_CREATE(tiles_per_task, 2, chunk(level)%tile_dims, err)
+  !write(6,*) "MPI_DIMS_CREATE:tile output:",level, chunk(level)%tile_dims, err
+  best_fit_v=0.0_8
+  best_fit_i=0
+  IF (MOD(x_cells*y_cells,tiles_per_task) /= 0) THEN
+    DO i=1,tiles_per_task-1
+      IF (MOD(x_cells*y_cells,tiles_per_task+i) == 0) THEN
+        tiles_per_task=tiles_per_task+i
+        EXIT
+      ENDIF
+      IF (MOD(x_cells*y_cells,tiles_per_task-i) == 0) THEN
+        tiles_per_task=tiles_per_task-i
+        EXIT
+      ENDIF
+    ENDDO
+    WRITE(6,*) "modified task_per_tile to match domains size:",tiles_per_task
+  ENDIF
+  DO i=1,tiles_per_task
+    IF (mod(tiles_per_task,i) /= 0) CYCLE
+    j=tiles_per_task/i
+    IF (mod(x_cells,i) /= 0) CYCLE
+    IF (mod(y_cells,j) /= 0) CYCLE
+    fit_v=real(min(x_cells/i,y_cells/j),8)/real(max(x_cells/i,y_cells/j),8)
+    IF (fit_v > best_fit_v) THEN
+      best_fit_v=fit_v
+      best_fit_i=i
+    ENDIF
+  ENDDO
+  IF (best_fit_i == 0) STOP
+  chunk(level)%tile_dims(1)=best_fit_i
+  chunk(level)%tile_dims(2)=tiles_per_task/chunk(level)%tile_dims(1)
+  WRITE(6,*) "tiles_per_task optimisation    :",tiles_per_task,x_cells,y_cells, &
+    " best fit:",best_fit_i,tiles_per_task/chunk(level)%tile_dims(1),fit_v
 
   ! get good split for sub-tiles
-  CALL MPI_DIMS_CREATE(sub_tiles_per_tile, 2, chunk%sub_tile_dims, err) 
+  IF (level < 2) THEN
+!    write(6,*) "MPI_DIMS_CREATE:sub_tile input :",level, sub_tiles_per_tile, 2
+!    CALL MPI_DIMS_CREATE(sub_tiles_per_tile, 2, chunk(level)%sub_tile_dims, err)
+!    write(6,*) "MPI_DIMS_CREATE:sub_tile output:",level, chunk(level)%sub_tile_dims, err
+  best_fit_v=0.0_8
+  best_fit_i=0
+  xs_cells=x_cells/chunk(level)%tile_dims(1); ys_cells=y_cells/chunk(level)%tile_dims(2)
+  IF (MOD(xs_cells*ys_cells,sub_tiles_per_tile) /= 0) THEN
+    DO i=1,sub_tiles_per_tile-1
+      IF (MOD(xs_cells*ys_cells,sub_tiles_per_tile+i) == 0) THEN
+        sub_tiles_per_tile=sub_tiles_per_tile+i
+        EXIT
+      ENDIF
+      IF (MOD(xs_cells*ys_cells,sub_tiles_per_tile-i) == 0) THEN
+        sub_tiles_per_tile=sub_tiles_per_tile-i
+        EXIT
+      ENDIF
+    ENDDO
+    WRITE(6,*) "modified sub_tiles_per_tile to match domains size:",sub_tiles_per_tile
+  ENDIF
+  DO i=1,sub_tiles_per_tile
+    IF (mod(sub_tiles_per_tile,i) /= 0) CYCLE
+    j=sub_tiles_per_tile/i
+    IF (mod(x_cells/chunk(level)%tile_dims(1),i) /= 0) CYCLE
+    IF (mod(y_cells/chunk(level)%tile_dims(2),j) /= 0) CYCLE
+    fit_v=real(min(x_cells/chunk(level)%tile_dims(1)/i, &
+                   y_cells/chunk(level)%tile_dims(2)/j),8)/ &
+          real(max(x_cells/chunk(level)%tile_dims(1)/i, &
+                   y_cells/chunk(level)%tile_dims(2)/j),8)
+    IF (fit_v > best_fit_v) THEN
+      best_fit_v=fit_v
+      best_fit_i=i
+    ENDIF
+  ENDDO
+  IF (best_fit_i == 0) STOP
+  chunk(level)%sub_tile_dims(1)=best_fit_i
+  chunk(level)%sub_tile_dims(2)=sub_tiles_per_tile/chunk(level)%sub_tile_dims(1)
+  WRITE(6,*) "sub_tiles_per_tile optimisation:",sub_tiles_per_tile,xs_cells,ys_cells, &
+    " best fit:",best_fit_i,sub_tiles_per_tile/chunk(level)%sub_tile_dims(1),fit_v
+  ENDIF
 
-  tiles_x = chunk%tile_dims(1)
-  tiles_y = chunk%tile_dims(2)
+  tiles_x = chunk(level)%tile_dims(1)
+  tiles_y = chunk(level)%tile_dims(2)
 
   delta_x=x_cells/tiles_x
   delta_y=y_cells/tiles_y
   mod_x=MOD(x_cells,tiles_x)
   mod_y=MOD(y_cells,tiles_y)
 
-  DO j=0,chunk%tile_dims(1)-1
-    DO k=0,chunk%tile_dims(2)-1
-      t = j*chunk%tile_dims(2) + k + 1
+  DO j=0,chunk(level)%tile_dims(1)-1
+    DO k=0,chunk(level)%tile_dims(2)-1
+      t = j*chunk(level)%tile_dims(2) + k + 1
 
       ! start off with 0-indexed for figuring out where in the grid it is
-      chunk%tiles(t)%tile_coords(1) = j
-      chunk%tiles(t)%tile_coords(2) = k
+      chunk(level)%tiles(t)%tile_coords(1) = j
+      chunk(level)%tiles(t)%tile_coords(2) = k
 
-      chunk%tiles(t)%left = chunk%left + chunk%tiles(t)%tile_coords(1)*delta_x
-      if (chunk%tiles(t)%tile_coords(1) .le. mod_x) then
-        chunk%tiles(t)%left = chunk%tiles(t)%left + chunk%tiles(t)%tile_coords(1)
+      chunk(level)%tiles(t)%left = chunk(level)%left + chunk(level)%tiles(t)%tile_coords(1)*delta_x
+      if (chunk(level)%tiles(t)%tile_coords(1) .le. mod_x) then
+        chunk(level)%tiles(t)%left = chunk(level)%tiles(t)%left + chunk(level)%tiles(t)%tile_coords(1)
       else
-        chunk%tiles(t)%left = chunk%tiles(t)%left + mod_x
+        chunk(level)%tiles(t)%left = chunk(level)%tiles(t)%left + mod_x
       endif
 
-      chunk%tiles(t)%right = chunk%tiles(t)%left+delta_x - 1
-      if (chunk%tiles(t)%tile_coords(1) .lt. mod_x) then
-        chunk%tiles(t)%right = chunk%tiles(t)%right + 1
+      chunk(level)%tiles(t)%right = chunk(level)%tiles(t)%left+delta_x - 1
+      if (chunk(level)%tiles(t)%tile_coords(1) .lt. mod_x) then
+        chunk(level)%tiles(t)%right = chunk(level)%tiles(t)%right + 1
       endif
 
-      chunk%tiles(t)%bottom = chunk%bottom + chunk%tiles(t)%tile_coords(2)*delta_y
-      if (chunk%tiles(t)%tile_coords(2) .le. mod_y) then
-        chunk%tiles(t)%bottom = chunk%tiles(t)%bottom + chunk%tiles(t)%tile_coords(2)
+      chunk(level)%tiles(t)%bottom = chunk(level)%bottom + chunk(level)%tiles(t)%tile_coords(2)*delta_y
+      if (chunk(level)%tiles(t)%tile_coords(2) .le. mod_y) then
+        chunk(level)%tiles(t)%bottom = chunk(level)%tiles(t)%bottom + chunk(level)%tiles(t)%tile_coords(2)
       else
-        chunk%tiles(t)%bottom = chunk%tiles(t)%bottom + mod_y
+        chunk(level)%tiles(t)%bottom = chunk(level)%tiles(t)%bottom + mod_y
       endif
 
-      chunk%tiles(t)%top = chunk%tiles(t)%bottom+delta_y - 1
-      if (chunk%tiles(t)%tile_coords(2) .lt. mod_y) then
-        chunk%tiles(t)%top = chunk%tiles(t)%top + 1
+      chunk(level)%tiles(t)%top = chunk(level)%tiles(t)%bottom+delta_y - 1
+      if (chunk(level)%tiles(t)%tile_coords(2) .lt. mod_y) then
+        chunk(level)%tiles(t)%top = chunk(level)%tiles(t)%top + 1
       endif
 
       ! add one to make it into 1 indexed
-      chunk%tiles(t)%tile_coords = chunk%tiles(t)%tile_coords + 1
+      chunk(level)%tiles(t)%tile_coords = chunk(level)%tiles(t)%tile_coords + 1
 
       ! absolute position of tile compared to all other tiles in grid
-      chunk%tiles(t)%def_tile_coords(1) = (mpi_coords(1)*chunk%tile_dims(1) + j)*chunk%sub_tile_dims(1) + 1
-      chunk%tiles(t)%def_tile_coords(2) = (mpi_coords(2)*chunk%tile_dims(2) + k)*chunk%sub_tile_dims(2) + 1
+      chunk(level)%tiles(t)%def_tile_coords(1) = (mpi_coords(1)*chunk(level)%tile_dims(1) + j)*chunk(level)%sub_tile_dims(1) + 1
+      chunk(level)%tiles(t)%def_tile_coords(2) = (mpi_coords(2)*chunk(level)%tile_dims(2) + k)*chunk(level)%sub_tile_dims(2) + 1
 
-      chunk%tiles(t)%def_tile_idx = (chunk%tiles(t)%def_tile_coords(2) - 1)*mpi_dims(1)*chunk%tile_dims(1) + &
-                                     chunk%tiles(t)%def_tile_coords(1)
+      chunk(level)%tiles(t)%def_tile_idx = (chunk(level)%tiles(t)%def_tile_coords(2) - 1)*mpi_dims(1)*chunk(level)%tile_dims(1) + &
+                                            chunk(level)%tiles(t)%def_tile_coords(1)
 
-      chunk%tiles(t)%tile_neighbours = EXTERNAL_FACE
+      chunk(level)%tiles(t)%tile_neighbours = EXTERNAL_FACE
 
       IF (j .GT. 0) THEN
-        chunk%tiles(t)%tile_neighbours(CHUNK_LEFT) = (j-1)*chunk%tile_dims(2) + (k+0) + 1
+        chunk(level)%tiles(t)%tile_neighbours(CHUNK_LEFT) = (j-1)*chunk(level)%tile_dims(2) + (k+0) + 1
       ENDIF
 
-      IF (j .LT. chunk%tile_dims(1)-1) THEN
-        chunk%tiles(t)%tile_neighbours(CHUNK_RIGHT) = (j+1)*chunk%tile_dims(2) + (k+0) + 1
+      IF (j .LT. chunk(level)%tile_dims(1)-1) THEN
+        chunk(level)%tiles(t)%tile_neighbours(CHUNK_RIGHT) = (j+1)*chunk(level)%tile_dims(2) + (k+0) + 1
       ENDIF
 
       IF (k .GT. 0) THEN
-        chunk%tiles(t)%tile_neighbours(CHUNK_BOTTOM) = (j+0)*chunk%tile_dims(2) + (k-1) + 1
+        chunk(level)%tiles(t)%tile_neighbours(CHUNK_BOTTOM) = (j+0)*chunk(level)%tile_dims(2) + (k-1) + 1
       ENDIF
 
-      IF (k .LT. chunk%tile_dims(2)-1) THEN
-        chunk%tiles(t)%tile_neighbours(CHUNK_TOP) = (j+0)*chunk%tile_dims(2) + (k+1) + 1
+      IF (k .LT. chunk(level)%tile_dims(2)-1) THEN
+        chunk(level)%tiles(t)%tile_neighbours(CHUNK_TOP) = (j+0)*chunk(level)%tile_dims(2) + (k+1) + 1
       ENDIF
     ENDDO
   ENDDO
@@ -254,55 +329,59 @@ SUBROUTINE tea_decompose_tiles(x_cells, y_cells)
 
 END SUBROUTINE tea_decompose_tiles
 
-SUBROUTINE tea_allocate_buffers()
+SUBROUTINE tea_allocate_buffers(level)
 
   IMPLICIT NONE
 
-  INTEGER      :: bt_size, lr_size
+  INTEGER           :: level
+
+  INTEGER           :: bt_size, lr_size
   INTEGER,PARAMETER :: num_buffered=NUM_FIELDS
 
   INTEGER           :: allocate_extra_size
 
   allocate_extra_size = max(2, halo_exchange_depth)
 
-  lr_size = num_buffered*(chunk%y_cells + 2*allocate_extra_size)*halo_exchange_depth
-  bt_size = num_buffered*(chunk%x_cells + 2*allocate_extra_size)*halo_exchange_depth
+  lr_size = num_buffered*(chunk(level)%y_cells + 2*allocate_extra_size)*halo_exchange_depth
+  bt_size = num_buffered*(chunk(level)%x_cells + 2*allocate_extra_size)*halo_exchange_depth
+  write(6,*) lr_size,bt_size
 
   ! Unallocated buffers for external boundaries caused issues on some systems so they are now
   !  all allocated
-  !IF (chunk%chunk_neighbours(CHUNK_LEFT).NE.EXTERNAL_FACE) THEN
-    ALLOCATE(chunk%left_snd_buffer(lr_size))
-    ALLOCATE(chunk%left_rcv_buffer(lr_size))
+  !IF (chunk(level)%chunk_neighbours(CHUNK_LEFT).NE.EXTERNAL_FACE) THEN
+    ALLOCATE(chunk(level)%left_snd_buffer(lr_size))
+    ALLOCATE(chunk(level)%left_rcv_buffer(lr_size))
   !ENDIF
-  !IF (chunk%chunk_neighbours(CHUNK_RIGHT).NE.EXTERNAL_FACE) THEN
-    ALLOCATE(chunk%right_snd_buffer(lr_size))
-    ALLOCATE(chunk%right_rcv_buffer(lr_size))
+  !IF (chunk(level)%chunk_neighbours(CHUNK_RIGHT).NE.EXTERNAL_FACE) THEN
+    ALLOCATE(chunk(level)%right_snd_buffer(lr_size))
+    ALLOCATE(chunk(level)%right_rcv_buffer(lr_size))
   !ENDIF
-  !IF (chunk%chunk_neighbours(CHUNK_BOTTOM).NE.EXTERNAL_FACE) THEN
-    ALLOCATE(chunk%bottom_snd_buffer(bt_size))
-    ALLOCATE(chunk%bottom_rcv_buffer(bt_size))
+  !IF (chunk(level)%chunk_neighbours(CHUNK_BOTTOM).NE.EXTERNAL_FACE) THEN
+    ALLOCATE(chunk(level)%bottom_snd_buffer(bt_size))
+    ALLOCATE(chunk(level)%bottom_rcv_buffer(bt_size))
   !ENDIF
-  !IF (chunk%chunk_neighbours(CHUNK_TOP).NE.EXTERNAL_FACE) THEN
-    ALLOCATE(chunk%top_snd_buffer(bt_size))
-    ALLOCATE(chunk%top_rcv_buffer(bt_size))
+  !IF (chunk(level)%chunk_neighbours(CHUNK_TOP).NE.EXTERNAL_FACE) THEN
+    ALLOCATE(chunk(level)%top_snd_buffer(bt_size))
+    ALLOCATE(chunk(level)%top_rcv_buffer(bt_size))
   !ENDIF
 
-  chunk%left_snd_buffer = 0
-  chunk%right_snd_buffer = 0
-  chunk%bottom_snd_buffer = 0
-  chunk%top_snd_buffer = 0
+  chunk(level)%left_snd_buffer = 0
+  chunk(level)%right_snd_buffer = 0
+  chunk(level)%bottom_snd_buffer = 0
+  chunk(level)%top_snd_buffer = 0
 
-  chunk%left_rcv_buffer = 0
-  chunk%right_rcv_buffer = 0
-  chunk%bottom_rcv_buffer = 0
-  chunk%top_rcv_buffer = 0
+  chunk(level)%left_rcv_buffer = 0
+  chunk(level)%right_rcv_buffer = 0
+  chunk(level)%bottom_rcv_buffer = 0
+  chunk(level)%top_rcv_buffer = 0
 
 END SUBROUTINE tea_allocate_buffers
 
-SUBROUTINE tea_exchange(fields,depth)
+SUBROUTINE tea_exchange(level,fields,depth)
 
   IMPLICIT NONE
 
+    INTEGER         :: level
     INTEGER      :: fields(NUM_FIELDS),depth, err
     INTEGER      :: left_right_offset(NUM_FIELDS),bottom_top_offset(NUM_FIELDS)
     INTEGER      :: end_pack_index_left_right, end_pack_index_bottom_top,field
@@ -312,10 +391,10 @@ SUBROUTINE tea_exchange(fields,depth)
     INTEGER, DIMENSION(MPI_STATUS_SIZE,4) :: status_lr, status_ud
     LOGICAL :: test_complete
 
-    IF (ALL(chunk%chunk_neighbours .eq. EXTERNAL_FACE)) return
+    IF (ALL(chunk(level)%chunk_neighbours .eq. EXTERNAL_FACE)) return
 
-    exchange_size_lr = depth*(chunk%y_cells + 2*depth)
-    exchange_size_ud = depth*(chunk%x_cells + 2*depth)
+    exchange_size_lr = depth*(chunk(level)%y_cells + 2*depth)
+    exchange_size_ud = depth*(chunk(level)%x_cells + 2*depth)
 
     request_lr = 0
     message_count_lr = 0
@@ -336,28 +415,28 @@ SUBROUTINE tea_exchange(fields,depth)
       ENDIF
     ENDDO
 
-    IF (chunk%chunk_neighbours(CHUNK_LEFT).NE.EXTERNAL_FACE) THEN
+    IF (chunk(level)%chunk_neighbours(CHUNK_LEFT).NE.EXTERNAL_FACE) THEN
       ! do left exchanges
-      CALL tea_pack_buffers(fields, depth, CHUNK_LEFT, &
-        chunk%left_snd_buffer, left_right_offset)
+      CALL tea_pack_buffers(level, fields, depth, CHUNK_LEFT, &
+        chunk(level)%left_snd_buffer, left_right_offset)
 
       !send and recv messagse to the left
-      CALL tea_send_recv_message_left(chunk%left_snd_buffer,                      &
-                                         chunk%left_rcv_buffer,                      &
+      CALL tea_send_recv_message_left(level, chunk(level)%left_snd_buffer,                      &
+                                         chunk(level)%left_rcv_buffer,                      &
                                          end_pack_index_left_right,                    &
                                          1, 2,                                               &
                                          request_lr(message_count_lr+1), request_lr(message_count_lr+2))
       message_count_lr = message_count_lr + 2
     ENDIF
 
-    IF (chunk%chunk_neighbours(CHUNK_RIGHT).NE.EXTERNAL_FACE) THEN
+    IF (chunk(level)%chunk_neighbours(CHUNK_RIGHT).NE.EXTERNAL_FACE) THEN
       ! do right exchanges
-      CALL tea_pack_buffers(fields, depth, CHUNK_RIGHT, &
-        chunk%right_snd_buffer, left_right_offset)
+      CALL tea_pack_buffers(level, fields, depth, CHUNK_RIGHT, &
+        chunk(level)%right_snd_buffer, left_right_offset)
 
       !send message to the right
-      CALL tea_send_recv_message_right(chunk%right_snd_buffer,                     &
-                                          chunk%right_rcv_buffer,                     &
+      CALL tea_send_recv_message_right(level, chunk(level)%right_snd_buffer,                     &
+                                          chunk(level)%right_rcv_buffer,                     &
                                           end_pack_index_left_right,                    &
                                           2, 1,                                               &
                                           request_lr(message_count_lr+1), request_lr(message_count_lr+2))
@@ -376,40 +455,40 @@ SUBROUTINE tea_exchange(fields,depth)
 
     IF (test_complete .EQV. .TRUE.) THEN
       !unpack in left direction
-      IF (chunk%chunk_neighbours(CHUNK_LEFT).NE.EXTERNAL_FACE) THEN
-        CALL tea_unpack_buffers(fields, depth, CHUNK_LEFT, &
-          chunk%left_rcv_buffer, left_right_offset)
+      IF (chunk(level)%chunk_neighbours(CHUNK_LEFT).NE.EXTERNAL_FACE) THEN
+        CALL tea_unpack_buffers(level, fields, depth, CHUNK_LEFT, &
+          chunk(level)%left_rcv_buffer, left_right_offset)
       ENDIF
 
       !unpack in right direction
-      IF (chunk%chunk_neighbours(CHUNK_RIGHT).NE.EXTERNAL_FACE) THEN
-        CALL tea_unpack_buffers(fields, depth, CHUNK_RIGHT, &
-          chunk%right_rcv_buffer, left_right_offset)
+      IF (chunk(level)%chunk_neighbours(CHUNK_RIGHT).NE.EXTERNAL_FACE) THEN
+        CALL tea_unpack_buffers(level, fields, depth, CHUNK_RIGHT, &
+          chunk(level)%right_rcv_buffer, left_right_offset)
       ENDIF
     ENDIF
 
-    IF (chunk%chunk_neighbours(CHUNK_BOTTOM).NE.EXTERNAL_FACE) THEN
+    IF (chunk(level)%chunk_neighbours(CHUNK_BOTTOM).NE.EXTERNAL_FACE) THEN
       ! do bottom exchanges
-      CALL tea_pack_buffers(fields, depth, CHUNK_BOTTOM, &
-        chunk%bottom_snd_buffer, bottom_top_offset)
+      CALL tea_pack_buffers(level, fields, depth, CHUNK_BOTTOM, &
+        chunk(level)%bottom_snd_buffer, bottom_top_offset)
 
       !send message downwards
-      CALL tea_send_recv_message_bottom(chunk%bottom_snd_buffer,                     &
-                                           chunk%bottom_rcv_buffer,                     &
+      CALL tea_send_recv_message_bottom(level, chunk(level)%bottom_snd_buffer,                     &
+                                           chunk(level)%bottom_rcv_buffer,                     &
                                            end_pack_index_bottom_top,                     &
                                            3, 4,                                                &
                                            request_ud(message_count_ud+1), request_ud(message_count_ud+2))
       message_count_ud = message_count_ud + 2
     ENDIF
 
-    IF (chunk%chunk_neighbours(CHUNK_TOP).NE.EXTERNAL_FACE) THEN
+    IF (chunk(level)%chunk_neighbours(CHUNK_TOP).NE.EXTERNAL_FACE) THEN
       ! do top exchanges
-      CALL tea_pack_buffers(fields, depth, CHUNK_TOP, &
-        chunk%top_snd_buffer, bottom_top_offset)
+      CALL tea_pack_buffers(level, fields, depth, CHUNK_TOP, &
+        chunk(level)%top_snd_buffer, bottom_top_offset)
 
       !send message upwards
-      CALL tea_send_recv_message_top(chunk%top_snd_buffer,                           &
-                                        chunk%top_rcv_buffer,                           &
+      CALL tea_send_recv_message_top(level, chunk(level)%top_snd_buffer,                           &
+                                        chunk(level)%top_rcv_buffer,                           &
                                         end_pack_index_bottom_top,                        &
                                         4, 3,                                                   &
                                         request_ud(message_count_ud+1), request_ud(message_count_ud+2))
@@ -421,15 +500,15 @@ SUBROUTINE tea_exchange(fields,depth)
       CALL MPI_WAITALL(message_count_lr,request_lr,status_lr,err)
 
       !unpack in left direction
-      IF (chunk%chunk_neighbours(CHUNK_LEFT).NE.EXTERNAL_FACE) THEN
-        CALL tea_unpack_buffers(fields, depth, CHUNK_LEFT, &
-          chunk%left_rcv_buffer, left_right_offset)
+      IF (chunk(level)%chunk_neighbours(CHUNK_LEFT).NE.EXTERNAL_FACE) THEN
+        CALL tea_unpack_buffers(level, fields, depth, CHUNK_LEFT, &
+          chunk(level)%left_rcv_buffer, left_right_offset)
       ENDIF
 
       !unpack in right direction
-      IF (chunk%chunk_neighbours(CHUNK_RIGHT).NE.EXTERNAL_FACE) THEN
-        CALL tea_unpack_buffers(fields, depth, CHUNK_RIGHT, &
-          chunk%right_rcv_buffer, left_right_offset)
+      IF (chunk(level)%chunk_neighbours(CHUNK_RIGHT).NE.EXTERNAL_FACE) THEN
+        CALL tea_unpack_buffers(level, fields, depth, CHUNK_RIGHT, &
+          chunk(level)%right_rcv_buffer, left_right_offset)
       ENDIF
     ENDIF
 
@@ -437,30 +516,31 @@ SUBROUTINE tea_exchange(fields,depth)
     CALL MPI_WAITALL(message_count_ud,request_ud,status_ud,err)
 
     !unpack in top direction
-    IF (chunk%chunk_neighbours(CHUNK_TOP).NE.EXTERNAL_FACE) THEN
-      CALL tea_unpack_buffers(fields, depth, CHUNK_TOP, &
-        chunk%top_rcv_buffer, bottom_top_offset)
+    IF (chunk(level)%chunk_neighbours(CHUNK_TOP).NE.EXTERNAL_FACE) THEN
+      CALL tea_unpack_buffers(level, fields, depth, CHUNK_TOP, &
+        chunk(level)%top_rcv_buffer, bottom_top_offset)
     ENDIF
 
     !unpack in bottom direction
-    IF (chunk%chunk_neighbours(CHUNK_BOTTOM).NE.EXTERNAL_FACE) THEN
-      CALL tea_unpack_buffers(fields, depth, CHUNK_BOTTOM, &
-        chunk%bottom_rcv_buffer, bottom_top_offset)
+    IF (chunk(level)%chunk_neighbours(CHUNK_BOTTOM).NE.EXTERNAL_FACE) THEN
+      CALL tea_unpack_buffers(level, fields, depth, CHUNK_BOTTOM, &
+        chunk(level)%bottom_rcv_buffer, bottom_top_offset)
     ENDIF
 
 END SUBROUTINE tea_exchange
 
-SUBROUTINE tea_send_recv_message_left(left_snd_buffer, left_rcv_buffer,      &
+SUBROUTINE tea_send_recv_message_left(level,left_snd_buffer, left_rcv_buffer,      &
                                          total_size,                     &
                                          tag_send, tag_recv,                    &
                                          req_send, req_recv)
 
+  INTEGER         :: level
   REAL(KIND=8)    :: left_snd_buffer(:), left_rcv_buffer(:)
   INTEGER         :: left_task
   INTEGER         :: total_size, tag_send, tag_recv, err
   INTEGER         :: req_send, req_recv
 
-  left_task =chunk%chunk_neighbours(CHUNK_LEFT)
+  left_task =chunk(level)%chunk_neighbours(CHUNK_LEFT)
 
   CALL MPI_ISEND(left_snd_buffer,total_size,MPI_DOUBLE_PRECISION,left_task,tag_send &
                 ,mpi_cart_comm,req_send,err)
@@ -470,19 +550,20 @@ SUBROUTINE tea_send_recv_message_left(left_snd_buffer, left_rcv_buffer,      &
 
 END SUBROUTINE tea_send_recv_message_left
 
-SUBROUTINE tea_send_recv_message_right(right_snd_buffer, right_rcv_buffer,   &
+SUBROUTINE tea_send_recv_message_right(level, right_snd_buffer, right_rcv_buffer,   &
                                           total_size,                    &
                                           tag_send, tag_recv,                   &
                                           req_send, req_recv)
 
   IMPLICIT NONE
 
+  INTEGER         :: level
   REAL(KIND=8) :: right_snd_buffer(:), right_rcv_buffer(:)
   INTEGER      :: right_task
   INTEGER      :: total_size, tag_send, tag_recv, err
   INTEGER      :: req_send, req_recv
 
-  right_task=chunk%chunk_neighbours(CHUNK_RIGHT)
+  right_task=chunk(level)%chunk_neighbours(CHUNK_RIGHT)
 
   CALL MPI_ISEND(right_snd_buffer,total_size,MPI_DOUBLE_PRECISION,right_task,tag_send, &
                  mpi_cart_comm,req_send,err)
@@ -492,19 +573,20 @@ SUBROUTINE tea_send_recv_message_right(right_snd_buffer, right_rcv_buffer,   &
 
 END SUBROUTINE tea_send_recv_message_right
 
-SUBROUTINE tea_send_recv_message_top(top_snd_buffer, top_rcv_buffer,     &
+SUBROUTINE tea_send_recv_message_top(level, top_snd_buffer, top_rcv_buffer,     &
                                         total_size,                  &
                                         tag_send, tag_recv,                 &
                                         req_send, req_recv)
 
     IMPLICIT NONE
 
+    INTEGER         :: level
     REAL(KIND=8) :: top_snd_buffer(:), top_rcv_buffer(:)
     INTEGER      :: top_task
     INTEGER      :: total_size, tag_send, tag_recv, err
     INTEGER      :: req_send, req_recv
 
-    top_task=chunk%chunk_neighbours(CHUNK_TOP)
+    top_task=chunk(level)%chunk_neighbours(CHUNK_TOP)
 
     CALL MPI_ISEND(top_snd_buffer,total_size,MPI_DOUBLE_PRECISION,top_task,tag_send, &
                    mpi_cart_comm,req_send,err)
@@ -514,19 +596,20 @@ SUBROUTINE tea_send_recv_message_top(top_snd_buffer, top_rcv_buffer,     &
 
 END SUBROUTINE tea_send_recv_message_top
 
-SUBROUTINE tea_send_recv_message_bottom(bottom_snd_buffer, bottom_rcv_buffer,        &
+SUBROUTINE tea_send_recv_message_bottom(level, bottom_snd_buffer, bottom_rcv_buffer,        &
                                            total_size,                           &
                                            tag_send, tag_recv,                          &
                                            req_send, req_recv)
 
   IMPLICIT NONE
 
+  INTEGER         :: level
   REAL(KIND=8) :: bottom_snd_buffer(:), bottom_rcv_buffer(:)
   INTEGER      :: bottom_task
   INTEGER      :: total_size, tag_send, tag_recv, err
   INTEGER      :: req_send, req_recv
 
-  bottom_task=chunk%chunk_neighbours(CHUNK_BOTTOM)
+  bottom_task=chunk(level)%chunk_neighbours(CHUNK_BOTTOM)
 
   CALL MPI_ISEND(bottom_snd_buffer,total_size,MPI_DOUBLE_PRECISION,bottom_task,tag_send &
                 ,mpi_cart_comm,req_send,err)

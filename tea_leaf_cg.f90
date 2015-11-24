@@ -8,9 +8,11 @@ MODULE tea_leaf_cg_module
 
 CONTAINS
 
-SUBROUTINE tea_leaf_cg_init(rro)
+SUBROUTINE tea_leaf_cg_init(level, rro)
 
   IMPLICIT NONE
+
+  INTEGER :: level
 
   INTEGER :: t
   REAL(KIND=8) :: rro, tile_rro
@@ -23,23 +25,31 @@ SUBROUTINE tea_leaf_cg_init(rro)
     DO t=1,tiles_per_task
       tile_rro = 0.0_8
 
-      CALL tea_leaf_cg_init_kernel(chunk%tiles(t)%field%x_min, &
-          chunk%tiles(t)%field%x_max,                                  &
-          chunk%tiles(t)%field%y_min,                                  &
-          chunk%tiles(t)%field%y_max,                                  &
+      CALL tea_leaf_cg_init_kernel(chunk(level)%tiles(t)%field%x_min, &
+          chunk(level)%tiles(t)%field%x_max,                                  &
+          chunk(level)%tiles(t)%field%y_min,                                  &
+          chunk(level)%tiles(t)%field%y_max,                                  &
           halo_exchange_depth,                                  &
-          chunk%tiles(t)%field%vector_p,                               &
-          chunk%tiles(t)%field%vector_r,                               &
-          chunk%tiles(t)%field%vector_Mi,                              &
-          chunk%tiles(t)%field%vector_z,                               &
-          chunk%tiles(t)%field%vector_Kx,                              &
-          chunk%tiles(t)%field%vector_Ky,                              &
-          chunk%tiles(t)%field%tri_cp,   &
-          chunk%tiles(t)%field%tri_bfp,    &
-          chunk%tiles(t)%field%rx,  &
-          chunk%tiles(t)%field%ry,  &
+          chunk(level)%tiles(t)%field%vector_p,                               &
+          chunk(level)%tiles(t)%field%vector_r,                               &
+          chunk(level)%tiles(t)%field%vector_Mi,                              &
+          chunk(level)%tiles(t)%field%vector_z,                               &
+          chunk(level)%tiles(t)%field%vector_Kx,                              &
+          chunk(level)%tiles(t)%field%vector_Ky,                              &
+          chunk(level)%tiles(t)%field%vector_Di,                              &
+          chunk(level)%tiles(t)%field%tri_cp,   &
+          chunk(level)%tiles(t)%field%tri_bfp,    &
+          chunk(level)%tiles(t)%field%rx,  &
+          chunk(level)%tiles(t)%field%ry,  &
           tile_rro, tl_preconditioner_type)
 
+      !write(6,'("tile_rro:",i3,4es25.18)') t,tile_rro,sum(chunk(level)%tiles(t)%field%vector_r**2), &
+      !                                                sum(chunk(level)%tiles(t)%field%vector_z**2), &
+      !                                                sum(chunk(level)%tiles(t)%field%vector_p**2)
+      !write(6,'("tile_rro:",i3,5es25.18)') t,tile_rro,sum(chunk(level)%tiles(t)%field%vector_Mi**2), &
+      !                                                sum(chunk(level)%tiles(t)%field%vector_Kx**2), &
+      !                                                sum(chunk(level)%tiles(t)%field%vector_Ky**2), &
+      !                                                sum(chunk(level)%tiles(t)%field%vector_Di**2)
       rro = rro + tile_rro
     ENDDO
 !$OMP END DO NOWAIT
@@ -48,9 +58,11 @@ SUBROUTINE tea_leaf_cg_init(rro)
 
 END SUBROUTINE tea_leaf_cg_init
 
-SUBROUTINE tea_leaf_cg_calc_w(pw)
+SUBROUTINE tea_leaf_cg_calc_w(level, pw)
 
   IMPLICIT NONE
+
+  INTEGER :: level
 
   INTEGER :: t
   REAL(KIND=8) :: pw, tile_pw
@@ -63,17 +75,18 @@ SUBROUTINE tea_leaf_cg_calc_w(pw)
     DO t=1,tiles_per_task
       tile_pw = 0.0_8
 
-      CALL tea_leaf_cg_calc_w_kernel(chunk%tiles(t)%field%x_min,&
-          chunk%tiles(t)%field%x_max,                                         &
-          chunk%tiles(t)%field%y_min,                                         &
-          chunk%tiles(t)%field%y_max,                                         &
+      CALL tea_leaf_cg_calc_w_kernel(chunk(level)%tiles(t)%field%x_min,&
+          chunk(level)%tiles(t)%field%x_max,                                         &
+          chunk(level)%tiles(t)%field%y_min,                                         &
+          chunk(level)%tiles(t)%field%y_max,                                         &
           halo_exchange_depth,                                         &
-          chunk%tiles(t)%field%vector_p,                                      &
-          chunk%tiles(t)%field%vector_w,                                      &
-          chunk%tiles(t)%field%vector_Kx,                                     &
-          chunk%tiles(t)%field%vector_Ky,                                     &
-          chunk%tiles(t)%field%rx,  &
-          chunk%tiles(t)%field%ry,  &
+          chunk(level)%tiles(t)%field%vector_p,                                      &
+          chunk(level)%tiles(t)%field%vector_w,                                      &
+          chunk(level)%tiles(t)%field%vector_Kx,                                     &
+          chunk(level)%tiles(t)%field%vector_Ky,                                     &
+          chunk(level)%tiles(t)%field%vector_Di,                                     &
+          chunk(level)%tiles(t)%field%rx,  &
+          chunk(level)%tiles(t)%field%ry,  &
           tile_pw)
 
       pw = pw + tile_pw
@@ -84,9 +97,11 @@ SUBROUTINE tea_leaf_cg_calc_w(pw)
 
 END SUBROUTINE tea_leaf_cg_calc_w
 
-SUBROUTINE tea_leaf_cg_calc_ur(alpha, rrn)
+SUBROUTINE tea_leaf_cg_calc_ur(level, alpha, rrn)
 
   IMPLICIT NONE
+
+  INTEGER :: level
 
   INTEGER :: t
   REAL(KIND=8) :: alpha, rrn, tile_rrn
@@ -99,23 +114,24 @@ SUBROUTINE tea_leaf_cg_calc_ur(alpha, rrn)
     DO t=1,tiles_per_task
       tile_rrn = 0.0_8
 
-      CALL tea_leaf_cg_calc_ur_kernel(chunk%tiles(t)%field%x_min,&
-          chunk%tiles(t)%field%x_max,                                          &
-          chunk%tiles(t)%field%y_min,                                          &
-          chunk%tiles(t)%field%y_max,                                          &
+      CALL tea_leaf_cg_calc_ur_kernel(chunk(level)%tiles(t)%field%x_min,&
+          chunk(level)%tiles(t)%field%x_max,                                          &
+          chunk(level)%tiles(t)%field%y_min,                                          &
+          chunk(level)%tiles(t)%field%y_max,                                          &
           halo_exchange_depth,                                          &
-          chunk%tiles(t)%field%u,                                              &
-          chunk%tiles(t)%field%vector_p,                                       &
-          chunk%tiles(t)%field%vector_r,                                       &
-          chunk%tiles(t)%field%vector_Mi,                                      &
-          chunk%tiles(t)%field%vector_w,                                       &
-          chunk%tiles(t)%field%vector_z,                                       &
-          chunk%tiles(t)%field%tri_cp,   &
-          chunk%tiles(t)%field%tri_bfp,    &
-          chunk%tiles(t)%field%vector_Kx,                              &
-          chunk%tiles(t)%field%vector_Ky,                              &
-          chunk%tiles(t)%field%rx,  &
-          chunk%tiles(t)%field%ry, &
+          chunk(level)%tiles(t)%field%u,                                              &
+          chunk(level)%tiles(t)%field%vector_p,                                       &
+          chunk(level)%tiles(t)%field%vector_r,                                       &
+          chunk(level)%tiles(t)%field%vector_Mi,                                      &
+          chunk(level)%tiles(t)%field%vector_w,                                       &
+          chunk(level)%tiles(t)%field%vector_z,                                       &
+          chunk(level)%tiles(t)%field%tri_cp,   &
+          chunk(level)%tiles(t)%field%tri_bfp,    &
+          chunk(level)%tiles(t)%field%vector_Kx,                              &
+          chunk(level)%tiles(t)%field%vector_Ky,                              &
+          chunk(level)%tiles(t)%field%vector_Di,                              &
+          chunk(level)%tiles(t)%field%rx,  &
+          chunk(level)%tiles(t)%field%ry, &
           alpha, tile_rrn, tl_preconditioner_type)
 
       rrn = rrn + tile_rrn
@@ -126,9 +142,11 @@ SUBROUTINE tea_leaf_cg_calc_ur(alpha, rrn)
 
 END SUBROUTINE tea_leaf_cg_calc_ur
 
-SUBROUTINE tea_leaf_cg_calc_p(beta)
+SUBROUTINE tea_leaf_cg_calc_p(level, beta)
 
   IMPLICIT NONE
+
+  INTEGER :: level
 
   INTEGER :: t
   REAL(KIND=8) :: beta
@@ -137,14 +155,14 @@ SUBROUTINE tea_leaf_cg_calc_p(beta)
 !$OMP PARALLEL
 !$OMP DO
     DO t=1,tiles_per_task
-      CALL tea_leaf_cg_calc_p_kernel(chunk%tiles(t)%field%x_min,&
-          chunk%tiles(t)%field%x_max,                                         &
-          chunk%tiles(t)%field%y_min,                                         &
-          chunk%tiles(t)%field%y_max,                                         &
+      CALL tea_leaf_cg_calc_p_kernel(chunk(level)%tiles(t)%field%x_min,&
+          chunk(level)%tiles(t)%field%x_max,                                         &
+          chunk(level)%tiles(t)%field%y_min,                                         &
+          chunk(level)%tiles(t)%field%y_max,                                         &
           halo_exchange_depth,                                         &
-          chunk%tiles(t)%field%vector_p,                                      &
-          chunk%tiles(t)%field%vector_r,                                      &
-          chunk%tiles(t)%field%vector_z,                                      &
+          chunk(level)%tiles(t)%field%vector_p,                                      &
+          chunk(level)%tiles(t)%field%vector_r,                                      &
+          chunk(level)%tiles(t)%field%vector_z,                                      &
           beta, tl_preconditioner_type)
     ENDDO
 !$OMP END DO NOWAIT
