@@ -78,7 +78,7 @@ SUBROUTINE tea_leaf_dpcg_init_x0(solve_time)
         inner_ch_alphas, inner_ch_betas       &
         )
 
-    !!write(6,"(12es12.5)") chunk(level)%def%t2
+    !!write(6,"(12f10.6)") chunk(level)%def%t2
     !tile_sum2 = sum(chunk(level)%def%t2**2)
     !IF (parallel%boss) write(6,"(a17,es25.18)") "out-serial solve:",sqrt(tile_sum2)
 
@@ -100,7 +100,7 @@ SUBROUTINE tea_leaf_dpcg_init_x0(solve_time)
     !tile_sum2 = 0.0_8
     !DO t=1,tiles_per_task
     !  !write(6,*) "Tile:",t
-    !  !write(6,"(7es12.5)") chunk(level+1)%tiles(t)%field%u
+    !  !write(6,"(7f10.6)") chunk(level+1)%tiles(t)%field%u
     !  tile_sum2 = tile_sum2+sum(chunk(level+1)%tiles(t)%field%u(1:chunk(level)%sub_tile_dims(1), &
     !                                                            1:chunk(level)%sub_tile_dims(2))**2)
     !ENDDO
@@ -120,7 +120,7 @@ SUBROUTINE tea_leaf_dpcg_init_x0(solve_time)
     !tile_sum2 = 0.0_8
     !DO t=1,tiles_per_task
     !  !write(6,*) "Tile:",t
-    !  !write(6,"(7es12.5)") chunk(level+1)%tiles(t)%field%u
+    !  !write(6,"(7f10.6)") chunk(level+1)%tiles(t)%field%u
     !  tile_sum2 = tile_sum2+sum(chunk(level+1)%tiles(t)%field%u(1:chunk(level)%sub_tile_dims(1), &
     !                                                            1:chunk(level)%sub_tile_dims(2))**2)
     !ENDDO
@@ -189,7 +189,7 @@ SUBROUTINE tea_leaf_dpcg_setup_and_solve_E(solve_time)
   CALL tea_leaf_dpcg_matmul_ZTA(solve_time)
   CALL tea_leaf_dpcg_restrict_ZT(.TRUE.)
 
-  !!write(6,"(12es12.5)") chunk(level)%def%t2
+  !!write(6,"(12f10.6)") chunk(level)%def%t2
   !tile_sum1 = sum(chunk(level)%def%t2**2)
   !IF (parallel%boss) write(6,"(a17,es25.18)") "in -serial solve:",sqrt(tile_sum1)
 
@@ -219,7 +219,7 @@ SUBROUTINE tea_leaf_dpcg_setup_and_solve_E(solve_time)
       inner_ch_alphas, inner_ch_betas       &
       )
 
-  !!write(6,"(12es12.5)") chunk(level)%def%t2
+  !!write(6,"(12f10.6)") chunk(level)%def%t2
   !tile_sum2 = sum(chunk(level)%def%t2**2)
   !IF (parallel%boss) write(6,"(a17,es25.18)") "out-serial solve:",sqrt(tile_sum2)
 
@@ -228,7 +228,7 @@ SUBROUTINE tea_leaf_dpcg_setup_and_solve_E(solve_time)
   !tile_sum2 = 0.0_8
   !DO t=1,tiles_per_task
   !  !write(6,*) "Tile:",t
-  !  !write(6,"(7es12.5)") chunk(level+1)%tiles(t)%field%u
+  !  !write(6,"(7f10.6)") chunk(level+1)%tiles(t)%field%u
   !  tile_sum2 = tile_sum2+sum(chunk(level+1)%tiles(t)%field%u(1:chunk(level)%sub_tile_dims(1), &
   !                                                            1:chunk(level)%sub_tile_dims(2))**2)
   !ENDDO
@@ -253,7 +253,7 @@ SUBROUTINE tea_leaf_dpcg_setup_and_solve_E_level(level,solve_time)
   !tile_sum2 = 0.0_8
   !DO t=1,tiles_per_task
   !  !write(6,*) "Tile:",t
-  !  !write(6,"(7es12.5)") chunk(level+1)%tiles(t)%field%u
+  !  !write(6,"(7f10.6)") chunk(level+1)%tiles(t)%field%u
   !  tile_sum2 = tile_sum2+sum(chunk(level+1)%tiles(t)%field%u(1:chunk(level)%sub_tile_dims(1), &
   !                                                            1:chunk(level)%sub_tile_dims(2))**2)
   !ENDDO
@@ -284,7 +284,7 @@ SUBROUTINE tea_leaf_dpcg_coarsen_matrix()
 
   INTEGER(KIND=4) :: j,k
   INTEGER(KIND=4) :: jj,j_start,j_end,kk,k_start,k_end
-  REAL(KIND=8) :: tile_size
+  REAL(KIND=8) :: tile_size,solve_time
   REAL(KIND=8),dimension(chunk(level)%sub_tile_dims(1), chunk(level)%sub_tile_dims(2)) :: kx_local, ky_local
 
   chunk(level)%def%def_Kx = 0.0_8
@@ -376,9 +376,13 @@ SUBROUTINE tea_leaf_dpcg_coarsen_matrix()
 
   !write(6,*) "Deflation matrix:",shape(chunk(level)%def%def_kx),shape(chunk(level)%def%def_ky)
   !write(6,*) "Kx:"
-  !write(6,"(12es12.5)") chunk(level)%def%def_kx
+  !write(6,"(14f10.6)") chunk(level)%def%def_kx
   !write(6,*) "Ky:"
-  !write(6,"(12es12.5)") chunk(level)%def%def_ky
+  !write(6,"(14f10.6)") chunk(level)%def%def_ky
+  !write(6,*) "Di:"
+  !write(6,"(14f10.6)") chunk(level)%def%def_di
+
+  !CALL tea_leaf_dpcg_coarsen_matrix_level(level,solve_time)
 
 END SUBROUTINE tea_leaf_dpcg_coarsen_matrix
 
@@ -459,13 +463,13 @@ SUBROUTINE tea_leaf_dpcg_coarsen_matrix_level(level,solve_time)
   !call tea_allsum(kx_tot); call tea_allsum(ky_tot)
   !write(6,*) "Kx_tot,Ky_tot:",kx_tot,ky_tot
 
-!Need a depth one halo exchange on Kx and Ky
+!Need a depth halo_exchange_depth halo exchange on Kx and Ky
 !use custom comms for Kx, Ky (and Kz in 3D)
   fields=0
   fields(FIELD_KX)=1
   fields(FIELD_KY)=1
   IF (profiler_on) halo_time = timer()
-  CALL update_halo(level+1, fields, 1)
+  CALL update_halo(level+1, fields, halo_exchange_depth)
   IF (profiler_on) solve_time = solve_time + (timer()-halo_time)
 
   IF (use_fortran_kernels) THEN
@@ -498,6 +502,17 @@ SUBROUTINE tea_leaf_dpcg_coarsen_matrix_level(level,solve_time)
 !$OMP END DO
 !$OMP END PARALLEL
   ENDIF
+
+!Need a depth halo_exchange_depth-1 halo exchange on Di
+!use custom comms for Di
+  IF (halo_exchange_depth-1 > 0) THEN
+    fields=0
+    fields(FIELD_DI)=1
+    IF (profiler_on) halo_time = timer()
+    CALL update_halo(level+1, fields, halo_exchange_depth-1)
+    IF (profiler_on) solve_time = solve_time + (timer()-halo_time)
+  ENDIF
+
   !Di_tot=0.0_8
   !DO t=1,tiles_per_task
   !  Di_tot=Di_tot+sum(chunk(level+1)%tiles(t)%field%vector_Di**2)
@@ -551,9 +566,11 @@ SUBROUTINE tea_leaf_dpcg_coarsen_matrix_level(level,solve_time)
   !DO t=1,tiles_per_task
   !  write(6,*) "Tile:",t,size(chunk(level+1)%tiles(t)%field%vector_Kx),size(chunk(level+1)%tiles(t)%field%vector_Ky)
   !  write(6,*) "Kx:"
-  !  write(6,"(7es12.5)") chunk(level+1)%tiles(t)%field%vector_Kx
+  !  write(6,"(9f10.6)") chunk(level+1)%tiles(t)%field%vector_Kx
   !  write(6,*) "Ky:"
-  !  write(6,"(7es12.5)") chunk(level+1)%tiles(t)%field%vector_Ky
+  !  write(6,"(9f10.6)") chunk(level+1)%tiles(t)%field%vector_Ky
+  !  write(6,*) "Di:"
+  !  write(6,"(9f10.6)") chunk(level+1)%tiles(t)%field%vector_Di
   !ENDDO
 
 END SUBROUTINE tea_leaf_dpcg_coarsen_matrix_level
@@ -1514,7 +1531,7 @@ SUBROUTINE tea_leaf_dpcg_local_solve_level(level,               &
   fields(FIELD_P) = 1
 
   ppcg_inner_iters = 0
-  DO n=1,max_iters
+  DO n=1,inner_iters
 
     CALL tea_leaf_cg_calc_w(level+1, pw)
     !normu = 0.0_8; normz = 0.0_8
@@ -1615,7 +1632,7 @@ SUBROUTINE tea_leaf_run_dpcg_inner_steps(level, ch_alphas, ch_betas, theta, &
   IMPLICIT NONE
 
   INTEGER :: level, fields(NUM_FIELDS)
-  INTEGER :: tl_ppcg_inner_steps, ppcg_cur_step
+  INTEGER :: tl_ppcg_inner_steps, ppcg_cur_step, t
   REAL(KIND=8) :: theta
   REAL(KIND=8) :: halo_time, timer, solve_time
   REAL(KIND=8), DIMENSION(max_iters) :: ch_alphas, ch_betas
@@ -1639,7 +1656,7 @@ SUBROUTINE tea_leaf_run_dpcg_inner_steps(level, ch_alphas, ch_betas, theta, &
     fields(FIELD_R) = 1
 
     IF (profiler_on) halo_time = timer()
-    CALL update_halo(level, fields,halo_exchange_depth)
+    CALL update_halo(level, fields, halo_exchange_depth)
     IF (profiler_on) solve_time = solve_time + (timer()-halo_time)
 
     inner_step = ppcg_cur_step
@@ -1648,15 +1665,35 @@ SUBROUTINE tea_leaf_run_dpcg_inner_steps(level, ch_alphas, ch_betas, theta, &
     fields(FIELD_SD) = 1
 
     DO bounds_extra = halo_exchange_depth-1, 0, -1
+
+      do t=1,tiles_per_task
+        if (any(chunk(level)%tiles(t)%field%vector_sd /= chunk(level)%tiles(t)%field%vector_sd)) then
+          write(6,*) "NaN in sd before ppcg_inner"; stop
+        endif
+      enddo
+
       CALL tea_leaf_ppcg_inner(level, ch_alphas, ch_betas, inner_step, bounds_extra)
+
+      do t=1,tiles_per_task
+        if (any(chunk(level)%tiles(t)%field%vector_sd /= chunk(level)%tiles(t)%field%vector_sd)) then
+          write(6,*) "NaN in sd after ppcg_inner"; stop
+        endif
+      enddo
 
       IF (profiler_on) halo_time = timer()
       CALL update_boundary(level, fields, 1)
       IF (profiler_on) solve_time = solve_time + (timer()-halo_time)
 
+      do t=1,tiles_per_task
+        if (any(chunk(level)%tiles(t)%field%vector_sd /= chunk(level)%tiles(t)%field%vector_sd)) then
+          write(6,*) "NaN in sd after update_boundary"; stop
+        endif
+      enddo
+
       inner_step = inner_step + 1
       IF (inner_step .gt. tl_ppcg_inner_steps) EXIT
     ENDDO
+
   ENDDO
 
   fields = 0

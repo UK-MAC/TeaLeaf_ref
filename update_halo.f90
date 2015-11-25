@@ -77,6 +77,7 @@ SUBROUTINE update_boundary(level, fields,depth)
                                 chunk(level)%tiles(t)%field%vector_z,      &
                                 chunk(level)%tiles(t)%field%vector_kx,     &
                                 chunk(level)%tiles(t)%field%vector_ky,     &
+                                chunk(level)%tiles(t)%field%vector_di,     &
                                 fields,                         &
                                 depth                           )
       ENDDO
@@ -121,6 +122,7 @@ SUBROUTINE update_tile_boundary(level, fields, depth)
                                   chunk(level)%tiles(t)%field%vector_z,       &
                                   chunk(level)%tiles(t)%field%vector_kx,      &
                                   chunk(level)%tiles(t)%field%vector_ky,      &
+                                  chunk(level)%tiles(t)%field%vector_di,      &
                                   chunk(level)%tiles(right_idx)%field%x_min,          &
                                   chunk(level)%tiles(right_idx)%field%x_max,          &
                                   chunk(level)%tiles(right_idx)%field%y_min,          &
@@ -135,6 +137,7 @@ SUBROUTINE update_tile_boundary(level, fields, depth)
                                   chunk(level)%tiles(right_idx)%field%vector_z,       &
                                   chunk(level)%tiles(right_idx)%field%vector_kx,      &
                                   chunk(level)%tiles(right_idx)%field%vector_ky,      &
+                                  chunk(level)%tiles(right_idx)%field%vector_di,      &
                                   halo_exchange_depth,          &
                                   fields,                         &
                                   depth                           )
@@ -166,6 +169,7 @@ SUBROUTINE update_tile_boundary(level, fields, depth)
                                   chunk(level)%tiles(t)%field%vector_z,       &
                                   chunk(level)%tiles(t)%field%vector_kx,      &
                                   chunk(level)%tiles(t)%field%vector_ky,      &
+                                  chunk(level)%tiles(t)%field%vector_di,      &
                                   chunk(level)%tiles(up_idx)%field%x_min,          &
                                   chunk(level)%tiles(up_idx)%field%x_max,          &
                                   chunk(level)%tiles(up_idx)%field%y_min,          &
@@ -180,6 +184,7 @@ SUBROUTINE update_tile_boundary(level, fields, depth)
                                   chunk(level)%tiles(up_idx)%field%vector_z,       &
                                   chunk(level)%tiles(up_idx)%field%vector_kx,      &
                                   chunk(level)%tiles(up_idx)%field%vector_ky,      &
+                                  chunk(level)%tiles(up_idx)%field%vector_di,      &
                                   halo_exchange_depth,          &
                                   fields,                         &
                                   depth                           )

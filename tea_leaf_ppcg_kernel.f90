@@ -106,6 +106,12 @@ SUBROUTINE tea_leaf_kernel_ppcg_inner(x_min,             &
 
   INTEGER(KIND=4) :: x_min_bound, x_max_bound, y_min_bound, y_max_bound, inner_step
 
+    !write(6,*) "sd:"; write(6,"(9f10.6)") sd
+    !if (any(kx /= kx)) then; write(6,*) "Kx:"; write(6,"(9f10.6)") rx*Kx; stop; endif
+    !if (any(ky /= ky)) then; write(6,*) "Ky:"; write(6,"(9f10.6)") ry*Ky; stop; endif
+    !if (any(di /= di)) then; write(6,*) "Di:"; write(6,"(9f10.6)") Di   ; stop; endif
+    !if (any(sd /= sd)) then; write(6,*) "sd:"; write(6,"(9f10.6)") sd   ; stop; endif
+
 !$OMP PARALLEL PRIVATE(smvp)
 !$OMP DO
     DO k=y_min_bound,y_max_bound
@@ -116,6 +122,17 @@ SUBROUTINE tea_leaf_kernel_ppcg_inner(x_min,             &
 
             r(j, k) = r(j, k) - smvp
             u(j, k) = u(j, k) + sd(j, k)
+            !if (j == 1 .and. k == 1) then
+            !  write(6,"('1,1:t:',5es12.5)") Di(j,k)*sd(j, k),           &
+            !    - ry*Ky(j, k+1)*sd(j, k+1), -ry*Ky(j, k)*sd(j, k-1),  &
+            !    - rx*Kx(j+1, k)*sd(j+1, k), -rx*Kx(j, k)*sd(j-1, k)
+            !  write(6,"('1,1:c:',5es12.5)") Di(j,k),           &
+            !    - ry*Ky(j, k+1), -ry*Ky(j, k),  &
+            !    - rx*Kx(j+1, k), -rx*Kx(j, k)
+            !  write(6,"('1,1:v:',5es12.5)") sd(j, k),           &
+            !    sd(j, k+1), sd(j, k-1),  &
+            !    sd(j+1, k), sd(j-1, k)
+            !endif
         ENDDO
     ENDDO
 !$OMP END DO
@@ -146,6 +163,16 @@ SUBROUTINE tea_leaf_kernel_ppcg_inner(x_min,             &
 !$OMP END DO
     ENDIF
 !$OMP END PARALLEL
+
+    !write(6,*) "sd:"; write(6,"(9f10.6)") sd
+    !if (any(kx /= kx)) then; write(6,*) "Kx:"; write(6,"(9f10.6)") rx*Kx; stop; endif
+    !if (any(ky /= ky)) then; write(6,*) "Ky:"; write(6,"(9f10.6)") ry*Ky; stop; endif
+    !if (any(di /= di)) then; write(6,*) "Di:"; write(6,"(9f10.6)") Di   ; stop; endif
+    !if (any(sd /= sd)) then; write(6,*) "sd:"; write(6,"(9f10.6)") sd   ; stop; endif
+
+    !write(6,*) inner_step," rnorm =",sqrt(sum(r (x_min:x_max,y_min:y_max)**2)),sqrt(sum(r (x_min+1:x_max-1,y_min+1:y_max-1)**2))
+    !write(6,*) inner_step," unorm =",sqrt(sum(u (x_min:x_max,y_min:y_max)**2)),sqrt(sum(u (x_min+1:x_max-1,y_min+1:y_max-1)**2))
+    !write(6,*) inner_step," sdnorm=",sqrt(sum(sd(x_min:x_max,y_min:y_max)**2)),sqrt(sum(sd(x_min+1:x_max-1,y_min+1:y_max-1)**2))
 
 END SUBROUTINE
 

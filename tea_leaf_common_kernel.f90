@@ -142,8 +142,8 @@ SUBROUTINE tea_leaf_common_init_kernel(x_min,  &
 
 !Setup storage for the diagonal entries - on coarser grids they are more complex
 !$OMP DO
-  DO k=y_min,y_max
-    DO j=x_min,x_max
+  DO k=y_min-halo_exchange_depth+1,y_max+halo_exchange_depth-1
+    DO j=x_min-halo_exchange_depth+1,x_max+halo_exchange_depth-1
       Di(j,k)=(1.0_8                                              &
                 + ry*(Ky(j, k+1) + Ky(j, k))                      &
                 + rx*(Kx(j+1, k) + Kx(j, k)))
@@ -293,10 +293,16 @@ SUBROUTINE tea_diag_init(x_min,             &
   REAL(KIND=8), PARAMETER :: omega=1.0_8
 
 !$OMP DO
-    DO k=y_min,y_max
-      DO j=x_min,x_max
+!    DO k=y_min,y_max
+!      DO j=x_min,x_max
+    DO k=y_min-halo_exchange_depth+1,y_max+halo_exchange_depth-1
+      DO j=x_min-halo_exchange_depth+1,x_max+halo_exchange_depth-1
 !        Mi(j, k) = 1.0_8/(1.0_8                 &
-        Mi(j, k) = omega/Di(j, k)
+        IF (Di(j, k) /= 0.0_8) THEN
+          Mi(j, k) = omega/Di(j, k)
+        ELSE
+          Mi(j, k) = 0.0_8
+        ENDIF
       ENDDO
     ENDDO
 !$OMP END DO
@@ -320,12 +326,24 @@ SUBROUTINE tea_diag_solve(x_min,             &
                           :: r, z, Mi
 
 !$OMP DO
-    DO k=y_min,y_max
-      DO j=x_min,x_max
+!    DO k=y_min,y_max
+!      DO j=x_min,x_max
+    DO k=y_min-halo_exchange_depth+1,y_max+halo_exchange_depth-1
+      DO j=x_min-halo_exchange_depth+1,x_max+halo_exchange_depth-1
         z(j, k) = Mi(j, k)*r(j, k)
       ENDDO
     ENDDO
 !$OMP END DO
+
+    if (any(z /= z)) then
+      write(6,*) "z not finite"
+      DO k=y_min-halo_exchange_depth+1,y_max+halo_exchange_depth-1
+        DO j=x_min-halo_exchange_depth+1,x_max+halo_exchange_depth-1
+          if (z(j, k) /= z(j, k)) write(6,*) j,k,Mi(j, k),r(j, k)
+        ENDDO
+      ENDDO
+      stop
+    endif
 
 END SUBROUTINE
 

@@ -38,7 +38,8 @@ MODULE pack_kernel_module
                                 ,FIELD_Z          = 8         &
                                 ,FIELD_KX         = 9         &
                                 ,FIELD_KY         = 10        &
-                                ,NUM_FIELDS       = 10
+                                ,FIELD_DI         = 11        &
+                                ,NUM_FIELDS       = 11
 
    INTEGER,         PARAMETER :: CELL_DATA     = 1,        &
                                  VERTEX_DATA   = 2,        &
@@ -95,6 +96,7 @@ SUBROUTINE pack_all(x_min, x_max, y_min, y_max, halo_exchange_depth, &
     z,                                                          &
     kx,                                                         &
     ky,                                                         &
+    di,                                                         &
     fields, depth, face, packing, mpi_buffer, offsets, tile_offset)
 
   IMPLICIT NONE
@@ -123,7 +125,7 @@ SUBROUTINE pack_all(x_min, x_max, y_min, y_max, halo_exchange_depth, &
 
   REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,&
                           y_min-halo_exchange_depth:y_max+halo_exchange_depth)&
-                        :: density,energy0,energy1, u, sd, p, r, z, kx, ky
+                        :: density,energy0,energy1, u, sd, p, r, z, kx, ky, di
 
   PROCEDURE(pack_or_unpack), POINTER :: pack_func => NULL()
 
@@ -298,6 +300,19 @@ SUBROUTINE pack_all(x_min, x_max, y_min, y_max, halo_exchange_depth, &
                      mpi_buffer,                &
                      depth, xincs(CELL_DATA), yincs(CELL_DATA),   &
                      tile_offset + offsets(FIELD_ky),   &
+                     edge_minus, edge_plus)
+                     !depth, xincs(Y_FACE_DATA), yincs(Y_FACE_DATA),   &
+  ENDIF
+  IF (fields(FIELD_di).EQ.1) THEN
+      CALL pack_func(x_min,                    &
+                     x_max,                    &
+                     y_min,                    &
+                     y_max,                    &
+                     halo_exchange_depth,                    &
+                     ky,                  &
+                     mpi_buffer,                &
+                     depth, xincs(CELL_DATA), yincs(CELL_DATA),   &
+                     tile_offset + offsets(FIELD_di),   &
                      edge_minus, edge_plus)
                      !depth, xincs(Y_FACE_DATA), yincs(Y_FACE_DATA),   &
   ENDIF
