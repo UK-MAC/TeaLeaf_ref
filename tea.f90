@@ -340,11 +340,11 @@ SUBROUTINE tea_allocate_buffers(level)
 
   INTEGER           :: allocate_extra_size
 
-  allocate_extra_size = max(2, halo_exchange_depth)
+  allocate_extra_size = max(2, chunk(level)%halo_exchange_depth)
 
-  lr_size = num_buffered*(chunk(level)%y_cells + 2*allocate_extra_size)*halo_exchange_depth
-  bt_size = num_buffered*(chunk(level)%x_cells + 2*allocate_extra_size)*halo_exchange_depth
-  write(6,*) lr_size,bt_size
+  lr_size = num_buffered*(chunk(level)%y_cells + 2*allocate_extra_size)*chunk(level)%halo_exchange_depth
+  bt_size = num_buffered*(chunk(level)%x_cells + 2*allocate_extra_size)*chunk(level)%halo_exchange_depth
+  !write(6,*) lr_size,bt_size
 
   ! Unallocated buffers for external boundaries caused issues on some systems so they are now
   !  all allocated

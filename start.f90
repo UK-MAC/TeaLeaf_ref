@@ -52,7 +52,6 @@ SUBROUTINE start
 
   CALL tea_barrier()
 
-  ALLOCATE(chunk(2))
   DO level=1,2
   !write(6,*) "level=",level
   CALL tea_decompose(level, grid(level)%x_cells, grid(level)%y_cells)
@@ -129,7 +128,7 @@ SUBROUTINE start
   fields(FIELD_ENERGY0)=1
   fields(FIELD_ENERGY1)=1
 
-  CALL update_halo(level,fields,halo_exchange_depth)
+  CALL update_halo(level,fields,chunk(level)%halo_exchange_depth)
 
   IF (parallel%boss)THEN
     WRITE(g_out,*)

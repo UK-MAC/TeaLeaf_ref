@@ -64,7 +64,7 @@ SUBROUTINE update_boundary(level, fields,depth)
                                 chunk(level)%tiles(t)%field%x_max,          &
                                 chunk(level)%tiles(t)%field%y_min,          &
                                 chunk(level)%tiles(t)%field%y_max,          &
-                                halo_exchange_depth,          &
+                                chunk(level)%halo_exchange_depth,           &
                                 chunk(level)%chunk_neighbours,     &
                                 chunk(level)%tiles(t)%tile_neighbours,     &
                                 chunk(level)%tiles(t)%field%density,        &
@@ -138,7 +138,7 @@ SUBROUTINE update_tile_boundary(level, fields, depth)
                                   chunk(level)%tiles(right_idx)%field%vector_kx,      &
                                   chunk(level)%tiles(right_idx)%field%vector_ky,      &
                                   chunk(level)%tiles(right_idx)%field%vector_di,      &
-                                  halo_exchange_depth,          &
+                                  chunk(level)%halo_exchange_depth,                   &
                                   fields,                         &
                                   depth                           )
         ENDIF
@@ -185,7 +185,7 @@ SUBROUTINE update_tile_boundary(level, fields, depth)
                                   chunk(level)%tiles(up_idx)%field%vector_kx,      &
                                   chunk(level)%tiles(up_idx)%field%vector_ky,      &
                                   chunk(level)%tiles(up_idx)%field%vector_di,      &
-                                  halo_exchange_depth,          &
+                                  chunk(level)%halo_exchange_depth,                &
                                   fields,                         &
                                   depth                           )
         ENDIF

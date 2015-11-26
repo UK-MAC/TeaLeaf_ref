@@ -25,7 +25,7 @@ SUBROUTINE tea_leaf_cheby_init(level, theta)
             chunk(level)%tiles(t)%field%x_max,                          &
             chunk(level)%tiles(t)%field%y_min,                          &
             chunk(level)%tiles(t)%field%y_max,                          &
-            halo_exchange_depth,                          &
+            chunk(level)%halo_exchange_depth,                           &
             chunk(level)%tiles(t)%field%u,                              &
             chunk(level)%tiles(t)%field%u0,                             &
             chunk(level)%tiles(t)%field%vector_p,                       &
@@ -65,7 +65,7 @@ SUBROUTINE tea_leaf_cheby_iterate(level, ch_alphas, ch_betas, max_cheby_iters, c
                   chunk(level)%tiles(t)%field%x_max,                       &
                   chunk(level)%tiles(t)%field%y_min,                       &
                   chunk(level)%tiles(t)%field%y_max,                       &
-                  halo_exchange_depth,                       &
+                  chunk(level)%halo_exchange_depth,                        &
                   chunk(level)%tiles(t)%field%u,                           &
                   chunk(level)%tiles(t)%field%u0,                          &
                   chunk(level)%tiles(t)%field%vector_p,                    &

@@ -57,7 +57,7 @@ SUBROUTINE tea_leaf_dpcg_init_x0(solve_time)
         chunk(level)%def%x_max,                                  &
         chunk(level)%def%y_min,                                  &
         chunk(level)%def%y_max,                                  &
-        halo_exchange_depth,                                  &
+        chunk(level)%halo_exchange_depth,                        &
         chunk(level)%def%t2,                               &
         chunk(level)%def%t1,                               &
         chunk(level)%def%def_Kx, &
@@ -198,7 +198,7 @@ SUBROUTINE tea_leaf_dpcg_setup_and_solve_E(solve_time)
       chunk(level)%def%x_max,                                  &
       chunk(level)%def%y_min,                                  &
       chunk(level)%def%y_max,                                  &
-      halo_exchange_depth,                                  &
+      chunk(level)%halo_exchange_depth,                        &
       chunk(level)%def%t2,                               &
       chunk(level)%def%t1,                               &
       chunk(level)%def%def_Kx, &
@@ -307,7 +307,7 @@ SUBROUTINE tea_leaf_dpcg_coarsen_matrix()
                                                chunk(level)%tiles(t)%field%x_max,     &
                                                chunk(level)%tiles(t)%field%y_min,     &
                                                chunk(level)%tiles(t)%field%y_max,     &
-                                               halo_exchange_depth,            &
+                                               chunk(level)%halo_exchange_depth,      &
                                                chunk(level)%tiles(t)%field%vector_Kx, &
                                                chunk(level)%tiles(t)%field%vector_Ky, &
                                                chunk(level)%sub_tile_dims(1),         &
@@ -414,7 +414,7 @@ SUBROUTINE tea_leaf_dpcg_coarsen_matrix_level(level,solve_time)
 !$OMP PARALLEL PRIVATE(Kx_local, Ky_local,sub_tile_dx,sub_tile_dy)
 !$OMP DO
     DO t=1,tiles_per_task
-      ! define the coarse Kx and Ky with unit scaling factor
+      ! define the coarse Kx and Ky with unit scaling factor as the coefficient values are obtained by a Galerkin projection of the matrix
       chunk(level+1)%tiles(t)%field%rx = 1.0_8
       chunk(level+1)%tiles(t)%field%ry = 1.0_8
     ENDDO
@@ -437,7 +437,7 @@ SUBROUTINE tea_leaf_dpcg_coarsen_matrix_level(level,solve_time)
                                                chunk(level)%tiles(t)%field%x_max,     &
                                                chunk(level)%tiles(t)%field%y_min,     &
                                                chunk(level)%tiles(t)%field%y_max,     &
-                                               halo_exchange_depth,            &
+                                               chunk(level)%halo_exchange_depth,      &
                                                chunk(level)%tiles(t)%field%vector_Kx, &
                                                chunk(level)%tiles(t)%field%vector_Ky, &
                                                chunk(level)%sub_tile_dims(1),         &
@@ -463,13 +463,13 @@ SUBROUTINE tea_leaf_dpcg_coarsen_matrix_level(level,solve_time)
   !call tea_allsum(kx_tot); call tea_allsum(ky_tot)
   !write(6,*) "Kx_tot,Ky_tot:",kx_tot,ky_tot
 
-!Need a depth halo_exchange_depth halo exchange on Kx and Ky
+!Need a depth chunk(level+1)%halo_exchange_depth halo exchange on Kx and Ky
 !use custom comms for Kx, Ky (and Kz in 3D)
   fields=0
   fields(FIELD_KX)=1
   fields(FIELD_KY)=1
   IF (profiler_on) halo_time = timer()
-  CALL update_halo(level+1, fields, halo_exchange_depth)
+  CALL update_halo(level+1, fields, chunk(level+1)%halo_exchange_depth)
   IF (profiler_on) solve_time = solve_time + (timer()-halo_time)
 
   IF (use_fortran_kernels) THEN
@@ -503,13 +503,13 @@ SUBROUTINE tea_leaf_dpcg_coarsen_matrix_level(level,solve_time)
 !$OMP END PARALLEL
   ENDIF
 
-!Need a depth halo_exchange_depth-1 halo exchange on Di
+!Need a depth chunk(level+1)%halo_exchange_depth-1 halo exchange on Di
 !use custom comms for Di
-  IF (halo_exchange_depth-1 > 0) THEN
+  IF (chunk(level+1)%halo_exchange_depth-1 > 0) THEN
     fields=0
     fields(FIELD_DI)=1
     IF (profiler_on) halo_time = timer()
-    CALL update_halo(level+1, fields, halo_exchange_depth-1)
+    CALL update_halo(level+1, fields, chunk(level+1)%halo_exchange_depth-1)
     IF (profiler_on) solve_time = solve_time + (timer()-halo_time)
   ENDIF
 
@@ -529,7 +529,7 @@ SUBROUTINE tea_leaf_dpcg_coarsen_matrix_level(level,solve_time)
                             chunk(level+1)%tiles(t)%field%x_max,     &
                             chunk(level+1)%tiles(t)%field%y_min,     &
                             chunk(level+1)%tiles(t)%field%y_max,     &
-                            halo_exchange_depth,                     &
+                            chunk(level+1)%halo_exchange_depth,      &
                             chunk(level+1)%tiles(t)%field%tri_cp,    &
                             chunk(level+1)%tiles(t)%field%tri_bfp,   &
                             chunk(level+1)%tiles(t)%field%vector_Kx, &
@@ -546,7 +546,7 @@ SUBROUTINE tea_leaf_dpcg_coarsen_matrix_level(level,solve_time)
                            chunk(level+1)%tiles(t)%field%x_max,     &
                            chunk(level+1)%tiles(t)%field%y_min,     &
                            chunk(level+1)%tiles(t)%field%y_max,     &
-                           halo_exchange_depth,                     &
+                           chunk(level+1)%halo_exchange_depth,      &
                            chunk(level+1)%tiles(t)%field%vector_Mi, &
                            chunk(level+1)%tiles(t)%field%vector_Kx, &
                            chunk(level+1)%tiles(t)%field%vector_Ky, &
@@ -600,7 +600,7 @@ SUBROUTINE tea_leaf_dpcg_matmul_ZTA(solve_time)
                                         chunk(level)%tiles(t)%field%x_max,     &
                                         chunk(level)%tiles(t)%field%y_min,     &
                                         chunk(level)%tiles(t)%field%y_max,     &
-                                        halo_exchange_depth,            &
+                                        chunk(level)%halo_exchange_depth,      &
                                         chunk(level)%tiles(t)%field%vector_r,  &
                                         chunk(level)%tiles(t)%field%vector_z,  &
                                         chunk(level)%tiles(t)%field%vector_Kx, &
@@ -643,7 +643,7 @@ SUBROUTINE tea_leaf_dpcg_matmul_ZTA(solve_time)
           chunk(level)%tiles(t)%field%x_max,                                  &
           chunk(level)%tiles(t)%field%y_min,                                  &
           chunk(level)%tiles(t)%field%y_max,                                  &
-          halo_exchange_depth,                                         &
+          chunk(level)%halo_exchange_depth,                                   &
           chunk(level)%sub_tile_dims(1),sub_tile_dx,                          &
           chunk(level)%sub_tile_dims(2),sub_tile_dy,                          &
           chunk(level)%tiles(t)%field%vector_z,                               &
@@ -693,7 +693,7 @@ SUBROUTINE tea_leaf_dpcg_matmul_ZTA_level(level,solve_time)
                                         chunk(level)%tiles(t)%field%x_max,     &
                                         chunk(level)%tiles(t)%field%y_min,     &
                                         chunk(level)%tiles(t)%field%y_max,     &
-                                        halo_exchange_depth,            &
+                                        chunk(level)%halo_exchange_depth,      &
                                         chunk(level)%tiles(t)%field%vector_r,  &
                                         chunk(level)%tiles(t)%field%vector_z,  &
                                         chunk(level)%tiles(t)%field%vector_Kx, &
@@ -744,7 +744,7 @@ SUBROUTINE tea_leaf_dpcg_matmul_ZTA_level(level,solve_time)
           chunk(level)%tiles(t)%field%x_max,                                  &
           chunk(level)%tiles(t)%field%y_min,                                  &
           chunk(level)%tiles(t)%field%y_max,                                  &
-          halo_exchange_depth,                                         &
+          chunk(level)%halo_exchange_depth,                                   &
           chunk(level)%sub_tile_dims(1),sub_tile_dx,                          &
           chunk(level)%sub_tile_dims(2),sub_tile_dy,                          &
           chunk(level)%tiles(t)%field%vector_z,                               &
@@ -793,7 +793,7 @@ SUBROUTINE tea_leaf_dpcg_restrict_ZT(not_init)
                                               chunk(level)%tiles(t)%field%x_max, &
                                               chunk(level)%tiles(t)%field%y_min,           &
                                               chunk(level)%tiles(t)%field%y_max,           &
-                                              halo_exchange_depth,                  &
+                                              chunk(level)%halo_exchange_depth,            &
                                               chunk(level)%sub_tile_dims(1),               &
                                               sub_tile_dx,                          &
                                               chunk(level)%sub_tile_dims(2),               &
@@ -827,7 +827,7 @@ SUBROUTINE tea_leaf_dpcg_restrict_ZT(not_init)
                                               chunk(level)%tiles(t)%field%x_max, &
                                               chunk(level)%tiles(t)%field%y_min,           &
                                               chunk(level)%tiles(t)%field%y_max,           &
-                                              halo_exchange_depth,                  &
+                                              chunk(level)%halo_exchange_depth,            &
                                               chunk(level)%sub_tile_dims(1),               &
                                               sub_tile_dx,                          &
                                               chunk(level)%sub_tile_dims(2),               &
@@ -876,7 +876,7 @@ SUBROUTINE tea_leaf_dpcg_restrict_ZT_level(level,not_init)
                                               chunk(level)%tiles(t)%field%x_max, &
                                               chunk(level)%tiles(t)%field%y_min,           &
                                               chunk(level)%tiles(t)%field%y_max,           &
-                                              halo_exchange_depth,                  &
+                                              chunk(level)%halo_exchange_depth,            &
                                               chunk(level)%sub_tile_dims(1),               &
                                               sub_tile_dx,                          &
                                               chunk(level)%sub_tile_dims(2),               &
@@ -906,7 +906,7 @@ SUBROUTINE tea_leaf_dpcg_restrict_ZT_level(level,not_init)
                                               chunk(level)%tiles(t)%field%x_max, &
                                               chunk(level)%tiles(t)%field%y_min,           &
                                               chunk(level)%tiles(t)%field%y_max,           &
-                                              halo_exchange_depth,                  &
+                                              chunk(level)%halo_exchange_depth,            &
                                               chunk(level)%sub_tile_dims(1),               &
                                               sub_tile_dx,                          &
                                               chunk(level)%sub_tile_dims(2),               &
@@ -952,7 +952,7 @@ SUBROUTINE tea_leaf_dpcg_prolong_Z()
                                           chunk(level)%tiles(t)%field%x_max,    &
                                           chunk(level)%tiles(t)%field%y_min,    &
                                           chunk(level)%tiles(t)%field%y_max,    &
-                                          halo_exchange_depth,           &
+                                          chunk(level)%halo_exchange_depth,     &
                                           chunk(level)%sub_tile_dims(1),        &
                                           sub_tile_dx,                   &
                                           chunk(level)%sub_tile_dims(2),        &
@@ -992,7 +992,7 @@ SUBROUTINE tea_leaf_dpcg_prolong_Z_level(level)
                                           chunk(level)%tiles(t)%field%x_max,    &
                                           chunk(level)%tiles(t)%field%y_min,    &
                                           chunk(level)%tiles(t)%field%y_max,    &
-                                          halo_exchange_depth,                  &
+                                          chunk(level)%halo_exchange_depth,     &
                                           chunk(level)%sub_tile_dims(1),        &
                                           sub_tile_dx,                          &
                                           chunk(level)%sub_tile_dims(2),        &
@@ -1033,7 +1033,7 @@ SUBROUTINE tea_leaf_dpcg_subtract_z()
                                            chunk(level)%tiles(t)%field%x_max, &
                                            chunk(level)%tiles(t)%field%y_min, &
                                            chunk(level)%tiles(t)%field%y_max, &
-                                           halo_exchange_depth,        &
+                                           chunk(level)%halo_exchange_depth,  &
                                            chunk(level)%sub_tile_dims(1),     &
                                            sub_tile_dx,                &
                                            chunk(level)%sub_tile_dims(2),     &
@@ -1072,7 +1072,7 @@ SUBROUTINE tea_leaf_dpcg_subtract_z_level(level)
                                            chunk(level)%tiles(t)%field%x_max, &
                                            chunk(level)%tiles(t)%field%y_min, &
                                            chunk(level)%tiles(t)%field%y_max, &
-                                           halo_exchange_depth,        &
+                                           chunk(level)%halo_exchange_depth,  &
                                            chunk(level)%sub_tile_dims(1),     &
                                            sub_tile_dx,                &
                                            chunk(level)%sub_tile_dims(2),     &
@@ -1101,7 +1101,7 @@ SUBROUTINE tea_leaf_dpcg_init_p()
                                        chunk(level)%tiles(t)%field%x_max,    &
                                        chunk(level)%tiles(t)%field%y_min,    &
                                        chunk(level)%tiles(t)%field%y_max,    &
-                                       halo_exchange_depth,           &
+                                       chunk(level)%halo_exchange_depth,     &
                                        chunk(level)%tiles(t)%field%vector_p, &
                                        chunk(level)%tiles(t)%field%vector_z)
     ENDDO
@@ -1125,7 +1125,7 @@ SUBROUTINE tea_leaf_dpcg_store_r()
                                         chunk(level)%tiles(t)%field%x_max,    &
                                         chunk(level)%tiles(t)%field%y_min,    &
                                         chunk(level)%tiles(t)%field%y_max,    &
-                                        halo_exchange_depth,           &
+                                        chunk(level)%halo_exchange_depth,     &
                                         chunk(level)%tiles(t)%field%vector_r, &
                                         chunk(level)%tiles(t)%field%vector_r_m1 )
       ENDDO
@@ -1154,7 +1154,7 @@ SUBROUTINE tea_leaf_dpcg_calc_rrn(rrn)
                                          chunk(level)%tiles(t)%field%x_max,       &
                                          chunk(level)%tiles(t)%field%y_min,       &
                                          chunk(level)%tiles(t)%field%y_max,       &
-                                         halo_exchange_depth,              &
+                                         chunk(level)%halo_exchange_depth,        &
                                          chunk(level)%tiles(t)%field%vector_r,    &
                                          chunk(level)%tiles(t)%field%vector_r_m1, &
                                          chunk(level)%tiles(t)%field%vector_z,    &
@@ -1183,7 +1183,7 @@ SUBROUTINE tea_leaf_dpcg_calc_p(beta)
                                        chunk(level)%tiles(t)%field%x_max,    &
                                        chunk(level)%tiles(t)%field%y_min,    &
                                        chunk(level)%tiles(t)%field%y_max,    &
-                                       halo_exchange_depth,           &
+                                       chunk(level)%halo_exchange_depth,     &
                                        chunk(level)%tiles(t)%field%vector_p, &
                                        chunk(level)%tiles(t)%field%vector_z, &
                                        beta)
@@ -1214,7 +1214,7 @@ SUBROUTINE tea_leaf_dpcg_calc_zrnorm(rro)
                                             chunk(level)%tiles(t)%field%x_max,    &
                                             chunk(level)%tiles(t)%field%y_min,    &
                                             chunk(level)%tiles(t)%field%y_max,    &
-                                            halo_exchange_depth,           &
+                                            chunk(level)%halo_exchange_depth,     &
                                             chunk(level)%tiles(t)%field%vector_z, &
                                             chunk(level)%tiles(t)%field%vector_r, &
                                             tile_rro)
@@ -1649,14 +1649,14 @@ SUBROUTINE tea_leaf_run_dpcg_inner_steps(level, ch_alphas, ch_betas, theta, &
   CALL tea_leaf_ppcg_init_sd(level, theta)
 
   ! inner steps
-  DO ppcg_cur_step=1,tl_ppcg_inner_steps,halo_exchange_depth
+  DO ppcg_cur_step=1,tl_ppcg_inner_steps,chunk(level)%halo_exchange_depth
 
     fields = 0
     fields(FIELD_SD) = 1
     fields(FIELD_R) = 1
 
     IF (profiler_on) halo_time = timer()
-    CALL update_halo(level, fields, halo_exchange_depth)
+    CALL update_halo(level, fields, chunk(level)%halo_exchange_depth)
     IF (profiler_on) solve_time = solve_time + (timer()-halo_time)
 
     inner_step = ppcg_cur_step
@@ -1664,31 +1664,31 @@ SUBROUTINE tea_leaf_run_dpcg_inner_steps(level, ch_alphas, ch_betas, theta, &
     fields = 0
     fields(FIELD_SD) = 1
 
-    DO bounds_extra = halo_exchange_depth-1, 0, -1
+    DO bounds_extra = chunk(level)%halo_exchange_depth-1, 0, -1
 
-      do t=1,tiles_per_task
-        if (any(chunk(level)%tiles(t)%field%vector_sd /= chunk(level)%tiles(t)%field%vector_sd)) then
-          write(6,*) "NaN in sd before ppcg_inner"; stop
-        endif
-      enddo
+      !do t=1,tiles_per_task
+      !  if (any(chunk(level)%tiles(t)%field%vector_sd /= chunk(level)%tiles(t)%field%vector_sd)) then
+      !    write(6,*) "NaN in sd before ppcg_inner"; stop
+      !  endif
+      !enddo
 
       CALL tea_leaf_ppcg_inner(level, ch_alphas, ch_betas, inner_step, bounds_extra)
 
-      do t=1,tiles_per_task
-        if (any(chunk(level)%tiles(t)%field%vector_sd /= chunk(level)%tiles(t)%field%vector_sd)) then
-          write(6,*) "NaN in sd after ppcg_inner"; stop
-        endif
-      enddo
+      !do t=1,tiles_per_task
+      !  if (any(chunk(level)%tiles(t)%field%vector_sd /= chunk(level)%tiles(t)%field%vector_sd)) then
+      !    write(6,*) "NaN in sd after ppcg_inner"; stop
+      !  endif
+      !enddo
 
       IF (profiler_on) halo_time = timer()
       CALL update_boundary(level, fields, 1)
       IF (profiler_on) solve_time = solve_time + (timer()-halo_time)
 
-      do t=1,tiles_per_task
-        if (any(chunk(level)%tiles(t)%field%vector_sd /= chunk(level)%tiles(t)%field%vector_sd)) then
-          write(6,*) "NaN in sd after update_boundary"; stop
-        endif
-      enddo
+      !do t=1,tiles_per_task
+      !  if (any(chunk(level)%tiles(t)%field%vector_sd /= chunk(level)%tiles(t)%field%vector_sd)) then
+      !    write(6,*) "NaN in sd after update_boundary"; stop
+      !  endif
+      !enddo
 
       inner_step = inner_step + 1
       IF (inner_step .gt. tl_ppcg_inner_steps) EXIT

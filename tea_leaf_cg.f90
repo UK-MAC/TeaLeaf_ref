@@ -29,7 +29,7 @@ SUBROUTINE tea_leaf_cg_init(level, rro)
           chunk(level)%tiles(t)%field%x_max,                                  &
           chunk(level)%tiles(t)%field%y_min,                                  &
           chunk(level)%tiles(t)%field%y_max,                                  &
-          halo_exchange_depth,                                  &
+          chunk(level)%halo_exchange_depth,                                   &
           chunk(level)%tiles(t)%field%vector_p,                               &
           chunk(level)%tiles(t)%field%vector_r,                               &
           chunk(level)%tiles(t)%field%vector_Mi,                              &
@@ -79,7 +79,7 @@ SUBROUTINE tea_leaf_cg_calc_w(level, pw)
           chunk(level)%tiles(t)%field%x_max,                                         &
           chunk(level)%tiles(t)%field%y_min,                                         &
           chunk(level)%tiles(t)%field%y_max,                                         &
-          halo_exchange_depth,                                         &
+          chunk(level)%halo_exchange_depth,                                          &
           chunk(level)%tiles(t)%field%vector_p,                                      &
           chunk(level)%tiles(t)%field%vector_w,                                      &
           chunk(level)%tiles(t)%field%vector_Kx,                                     &
@@ -118,7 +118,7 @@ SUBROUTINE tea_leaf_cg_calc_ur(level, alpha, rrn)
           chunk(level)%tiles(t)%field%x_max,                                          &
           chunk(level)%tiles(t)%field%y_min,                                          &
           chunk(level)%tiles(t)%field%y_max,                                          &
-          halo_exchange_depth,                                          &
+          chunk(level)%halo_exchange_depth,                                           &
           chunk(level)%tiles(t)%field%u,                                              &
           chunk(level)%tiles(t)%field%vector_p,                                       &
           chunk(level)%tiles(t)%field%vector_r,                                       &
@@ -159,7 +159,7 @@ SUBROUTINE tea_leaf_cg_calc_p(level, beta)
           chunk(level)%tiles(t)%field%x_max,                                         &
           chunk(level)%tiles(t)%field%y_min,                                         &
           chunk(level)%tiles(t)%field%y_max,                                         &
-          halo_exchange_depth,                                         &
+          chunk(level)%halo_exchange_depth,                                          &
           chunk(level)%tiles(t)%field%vector_p,                                      &
           chunk(level)%tiles(t)%field%vector_r,                                      &
           chunk(level)%tiles(t)%field%vector_z,                                      &

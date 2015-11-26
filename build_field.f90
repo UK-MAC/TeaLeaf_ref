@@ -43,53 +43,85 @@ SUBROUTINE build_field(level)
     ! TODO only allocate extra halo on external tiles
 
     ALLOCATE(chunk(level)%tiles(t)%field%density &
-        (chunk(level)%tiles(t)%field%x_min-halo_exchange_depth:chunk(level)%tiles(t)%field%x_max+halo_exchange_depth, &
-         chunk(level)%tiles(t)%field%y_min-halo_exchange_depth:chunk(level)%tiles(t)%field%y_max+halo_exchange_depth))
+        (chunk(level)%tiles(t)%field%x_min-chunk(level)%halo_exchange_depth: &
+         chunk(level)%tiles(t)%field%x_max+chunk(level)%halo_exchange_depth, &
+         chunk(level)%tiles(t)%field%y_min-chunk(level)%halo_exchange_depth: &
+         chunk(level)%tiles(t)%field%y_max+chunk(level)%halo_exchange_depth))
     ALLOCATE(chunk(level)%tiles(t)%field%energy0 &
-        (chunk(level)%tiles(t)%field%x_min-halo_exchange_depth:chunk(level)%tiles(t)%field%x_max+halo_exchange_depth, &
-         chunk(level)%tiles(t)%field%y_min-halo_exchange_depth:chunk(level)%tiles(t)%field%y_max+halo_exchange_depth))
+        (chunk(level)%tiles(t)%field%x_min-chunk(level)%halo_exchange_depth: &
+         chunk(level)%tiles(t)%field%x_max+chunk(level)%halo_exchange_depth, &
+         chunk(level)%tiles(t)%field%y_min-chunk(level)%halo_exchange_depth: &
+         chunk(level)%tiles(t)%field%y_max+chunk(level)%halo_exchange_depth))
     ALLOCATE(chunk(level)%tiles(t)%field%energy1 &
-        (chunk(level)%tiles(t)%field%x_min-halo_exchange_depth:chunk(level)%tiles(t)%field%x_max+halo_exchange_depth, &
-         chunk(level)%tiles(t)%field%y_min-halo_exchange_depth:chunk(level)%tiles(t)%field%y_max+halo_exchange_depth))
+        (chunk(level)%tiles(t)%field%x_min-chunk(level)%halo_exchange_depth: &
+         chunk(level)%tiles(t)%field%x_max+chunk(level)%halo_exchange_depth, &
+         chunk(level)%tiles(t)%field%y_min-chunk(level)%halo_exchange_depth: &
+         chunk(level)%tiles(t)%field%y_max+chunk(level)%halo_exchange_depth))
     ALLOCATE(chunk(level)%tiles(t)%field%u       &
-        (chunk(level)%tiles(t)%field%x_min-halo_exchange_depth:chunk(level)%tiles(t)%field%x_max+halo_exchange_depth, &
-         chunk(level)%tiles(t)%field%y_min-halo_exchange_depth:chunk(level)%tiles(t)%field%y_max+halo_exchange_depth))
+        (chunk(level)%tiles(t)%field%x_min-chunk(level)%halo_exchange_depth: &
+         chunk(level)%tiles(t)%field%x_max+chunk(level)%halo_exchange_depth, &
+         chunk(level)%tiles(t)%field%y_min-chunk(level)%halo_exchange_depth: &
+         chunk(level)%tiles(t)%field%y_max+chunk(level)%halo_exchange_depth))
     ALLOCATE(chunk(level)%tiles(t)%field%u0      &
-        (chunk(level)%tiles(t)%field%x_min-halo_exchange_depth:chunk(level)%tiles(t)%field%x_max+halo_exchange_depth, &
-         chunk(level)%tiles(t)%field%y_min-halo_exchange_depth:chunk(level)%tiles(t)%field%y_max+halo_exchange_depth))
+        (chunk(level)%tiles(t)%field%x_min-chunk(level)%halo_exchange_depth: &
+         chunk(level)%tiles(t)%field%x_max+chunk(level)%halo_exchange_depth, &
+         chunk(level)%tiles(t)%field%y_min-chunk(level)%halo_exchange_depth: &
+         chunk(level)%tiles(t)%field%y_max+chunk(level)%halo_exchange_depth))
     ALLOCATE(chunk(level)%tiles(t)%field%vector_r &
-        (chunk(level)%tiles(t)%field%x_min-halo_exchange_depth:chunk(level)%tiles(t)%field%x_max+halo_exchange_depth, &
-         chunk(level)%tiles(t)%field%y_min-halo_exchange_depth:chunk(level)%tiles(t)%field%y_max+halo_exchange_depth))
+        (chunk(level)%tiles(t)%field%x_min-chunk(level)%halo_exchange_depth: &
+         chunk(level)%tiles(t)%field%x_max+chunk(level)%halo_exchange_depth, &
+         chunk(level)%tiles(t)%field%y_min-chunk(level)%halo_exchange_depth: &
+         chunk(level)%tiles(t)%field%y_max+chunk(level)%halo_exchange_depth))
     ALLOCATE(chunk(level)%tiles(t)%field%vector_r_m1 &
-        (chunk(level)%tiles(t)%field%x_min-halo_exchange_depth:chunk(level)%tiles(t)%field%x_max+halo_exchange_depth, &
-         chunk(level)%tiles(t)%field%y_min-halo_exchange_depth:chunk(level)%tiles(t)%field%y_max+halo_exchange_depth))
+        (chunk(level)%tiles(t)%field%x_min-chunk(level)%halo_exchange_depth: &
+         chunk(level)%tiles(t)%field%x_max+chunk(level)%halo_exchange_depth, &
+         chunk(level)%tiles(t)%field%y_min-chunk(level)%halo_exchange_depth: &
+         chunk(level)%tiles(t)%field%y_max+chunk(level)%halo_exchange_depth))
     ALLOCATE(chunk(level)%tiles(t)%field%vector_Mi &
-        (chunk(level)%tiles(t)%field%x_min-halo_exchange_depth:chunk(level)%tiles(t)%field%x_max+halo_exchange_depth, &
-         chunk(level)%tiles(t)%field%y_min-halo_exchange_depth:chunk(level)%tiles(t)%field%y_max+halo_exchange_depth))
+        (chunk(level)%tiles(t)%field%x_min-chunk(level)%halo_exchange_depth: &
+         chunk(level)%tiles(t)%field%x_max+chunk(level)%halo_exchange_depth, &
+         chunk(level)%tiles(t)%field%y_min-chunk(level)%halo_exchange_depth: &
+         chunk(level)%tiles(t)%field%y_max+chunk(level)%halo_exchange_depth))
     ALLOCATE(chunk(level)%tiles(t)%field%vector_w &
-        (chunk(level)%tiles(t)%field%x_min-halo_exchange_depth:chunk(level)%tiles(t)%field%x_max+halo_exchange_depth, &
-         chunk(level)%tiles(t)%field%y_min-halo_exchange_depth:chunk(level)%tiles(t)%field%y_max+halo_exchange_depth))
+        (chunk(level)%tiles(t)%field%x_min-chunk(level)%halo_exchange_depth: &
+         chunk(level)%tiles(t)%field%x_max+chunk(level)%halo_exchange_depth, &
+         chunk(level)%tiles(t)%field%y_min-chunk(level)%halo_exchange_depth: &
+         chunk(level)%tiles(t)%field%y_max+chunk(level)%halo_exchange_depth))
     ALLOCATE(chunk(level)%tiles(t)%field%vector_z &
-        (chunk(level)%tiles(t)%field%x_min-halo_exchange_depth:chunk(level)%tiles(t)%field%x_max+halo_exchange_depth, &
-         chunk(level)%tiles(t)%field%y_min-halo_exchange_depth:chunk(level)%tiles(t)%field%y_max+halo_exchange_depth))
+        (chunk(level)%tiles(t)%field%x_min-chunk(level)%halo_exchange_depth: &
+         chunk(level)%tiles(t)%field%x_max+chunk(level)%halo_exchange_depth, &
+         chunk(level)%tiles(t)%field%y_min-chunk(level)%halo_exchange_depth: &
+         chunk(level)%tiles(t)%field%y_max+chunk(level)%halo_exchange_depth))
     ALLOCATE(chunk(level)%tiles(t)%field%vector_Di &
-        (chunk(level)%tiles(t)%field%x_min-halo_exchange_depth:chunk(level)%tiles(t)%field%x_max+halo_exchange_depth, &
-         chunk(level)%tiles(t)%field%y_min-halo_exchange_depth:chunk(level)%tiles(t)%field%y_max+halo_exchange_depth))
+        (chunk(level)%tiles(t)%field%x_min-chunk(level)%halo_exchange_depth: &
+         chunk(level)%tiles(t)%field%x_max+chunk(level)%halo_exchange_depth, &
+         chunk(level)%tiles(t)%field%y_min-chunk(level)%halo_exchange_depth: &
+         chunk(level)%tiles(t)%field%y_max+chunk(level)%halo_exchange_depth))
     ALLOCATE(chunk(level)%tiles(t)%field%vector_Kx &
-        (chunk(level)%tiles(t)%field%x_min-halo_exchange_depth:chunk(level)%tiles(t)%field%x_max+halo_exchange_depth, &
-         chunk(level)%tiles(t)%field%y_min-halo_exchange_depth:chunk(level)%tiles(t)%field%y_max+halo_exchange_depth))
+        (chunk(level)%tiles(t)%field%x_min-chunk(level)%halo_exchange_depth: &
+         chunk(level)%tiles(t)%field%x_max+chunk(level)%halo_exchange_depth, &
+         chunk(level)%tiles(t)%field%y_min-chunk(level)%halo_exchange_depth: &
+         chunk(level)%tiles(t)%field%y_max+chunk(level)%halo_exchange_depth))
     ALLOCATE(chunk(level)%tiles(t)%field%vector_Ky &
-        (chunk(level)%tiles(t)%field%x_min-halo_exchange_depth:chunk(level)%tiles(t)%field%x_max+halo_exchange_depth, &
-         chunk(level)%tiles(t)%field%y_min-halo_exchange_depth:chunk(level)%tiles(t)%field%y_max+halo_exchange_depth))
+        (chunk(level)%tiles(t)%field%x_min-chunk(level)%halo_exchange_depth: &
+         chunk(level)%tiles(t)%field%x_max+chunk(level)%halo_exchange_depth, &
+         chunk(level)%tiles(t)%field%y_min-chunk(level)%halo_exchange_depth: &
+         chunk(level)%tiles(t)%field%y_max+chunk(level)%halo_exchange_depth))
     ALLOCATE(chunk(level)%tiles(t)%field%vector_p &
-        (chunk(level)%tiles(t)%field%x_min-halo_exchange_depth:chunk(level)%tiles(t)%field%x_max+halo_exchange_depth, &
-         chunk(level)%tiles(t)%field%y_min-halo_exchange_depth:chunk(level)%tiles(t)%field%y_max+halo_exchange_depth))
+        (chunk(level)%tiles(t)%field%x_min-chunk(level)%halo_exchange_depth: &
+         chunk(level)%tiles(t)%field%x_max+chunk(level)%halo_exchange_depth, &
+         chunk(level)%tiles(t)%field%y_min-chunk(level)%halo_exchange_depth: &
+         chunk(level)%tiles(t)%field%y_max+chunk(level)%halo_exchange_depth))
     ALLOCATE(chunk(level)%tiles(t)%field%vector_sd &
-        (chunk(level)%tiles(t)%field%x_min-halo_exchange_depth:chunk(level)%tiles(t)%field%x_max+halo_exchange_depth, &
-         chunk(level)%tiles(t)%field%y_min-halo_exchange_depth:chunk(level)%tiles(t)%field%y_max+halo_exchange_depth))
+        (chunk(level)%tiles(t)%field%x_min-chunk(level)%halo_exchange_depth: &
+         chunk(level)%tiles(t)%field%x_max+chunk(level)%halo_exchange_depth, &
+         chunk(level)%tiles(t)%field%y_min-chunk(level)%halo_exchange_depth: &
+         chunk(level)%tiles(t)%field%y_max+chunk(level)%halo_exchange_depth))
     ALLOCATE(chunk(level)%tiles(t)%field%row_sums &
-        (chunk(level)%tiles(t)%field%x_min-halo_exchange_depth:chunk(level)%tiles(t)%field%x_max+halo_exchange_depth, &
-         chunk(level)%tiles(t)%field%y_min-halo_exchange_depth:chunk(level)%tiles(t)%field%y_max+halo_exchange_depth))
+        (chunk(level)%tiles(t)%field%x_min-chunk(level)%halo_exchange_depth: &
+         chunk(level)%tiles(t)%field%x_max+chunk(level)%halo_exchange_depth, &
+         chunk(level)%tiles(t)%field%y_min-chunk(level)%halo_exchange_depth: &
+         chunk(level)%tiles(t)%field%y_max+chunk(level)%halo_exchange_depth))
 
     ALLOCATE(chunk(level)%tiles(t)%field%tri_cp &
         (chunk(level)%tiles(t)%field%x_min:chunk(level)%tiles(t)%field%x_max, &
@@ -122,8 +154,10 @@ SUBROUTINE build_field(level)
   ! not
 !$OMP PARALLEL
 !$OMP DO
-  DO k=chunk(level)%tiles(t)%field%y_min-halo_exchange_depth,chunk(level)%tiles(t)%field%y_max+halo_exchange_depth
-    DO j=chunk(level)%tiles(t)%field%x_min-halo_exchange_depth,chunk(level)%tiles(t)%field%x_max+halo_exchange_depth
+  DO k=chunk(level)%tiles(t)%field%y_min-chunk(level)%halo_exchange_depth, &
+       chunk(level)%tiles(t)%field%y_max+chunk(level)%halo_exchange_depth
+    DO j=chunk(level)%tiles(t)%field%x_min-chunk(level)%halo_exchange_depth, &
+         chunk(level)%tiles(t)%field%x_max+chunk(level)%halo_exchange_depth
       chunk(level)%tiles(t)%field%density(j,k)=0.0
       chunk(level)%tiles(t)%field%energy0(j,k)=0.0
       chunk(level)%tiles(t)%field%energy1(j,k)=0.0
@@ -203,44 +237,68 @@ SUBROUTINE build_field(level)
 !$OMP END DO
 !$OMP END PARALLEL
 
-  ALLOCATE(chunk(level)%def%t1(                                                            &
-    chunk(level)%def%x_min - halo_exchange_depth:chunk(level)%def%x_max + halo_exchange_depth,    &
-    chunk(level)%def%y_min - halo_exchange_depth:chunk(level)%def%y_max + halo_exchange_depth))
+  ALLOCATE(chunk(level)%def%t1(                                &
+    chunk(level)%def%x_min - chunk(level)%halo_exchange_depth: &
+    chunk(level)%def%x_max + chunk(level)%halo_exchange_depth, &
+    chunk(level)%def%y_min - chunk(level)%halo_exchange_depth: &
+    chunk(level)%def%y_max + chunk(level)%halo_exchange_depth))
   ALLOCATE(chunk(level)%def%t2(                                                            &
-    chunk(level)%def%x_min - halo_exchange_depth:chunk(level)%def%x_max + halo_exchange_depth,    &
-    chunk(level)%def%y_min - halo_exchange_depth:chunk(level)%def%y_max + halo_exchange_depth))
+    chunk(level)%def%x_min - chunk(level)%halo_exchange_depth: &
+    chunk(level)%def%x_max + chunk(level)%halo_exchange_depth, &
+    chunk(level)%def%y_min - chunk(level)%halo_exchange_depth: &
+    chunk(level)%def%y_max + chunk(level)%halo_exchange_depth))
   ALLOCATE(chunk(level)%def%def_kx(                                                            &
-    chunk(level)%def%x_min - halo_exchange_depth:chunk(level)%def%x_max + halo_exchange_depth,    &
-    chunk(level)%def%y_min - halo_exchange_depth:chunk(level)%def%y_max + halo_exchange_depth))
+    chunk(level)%def%x_min - chunk(level)%halo_exchange_depth: &
+    chunk(level)%def%x_max + chunk(level)%halo_exchange_depth, &
+    chunk(level)%def%y_min - chunk(level)%halo_exchange_depth: &
+    chunk(level)%def%y_max + chunk(level)%halo_exchange_depth))
   ALLOCATE(chunk(level)%def%def_ky(                                                            &
-    chunk(level)%def%x_min - halo_exchange_depth:chunk(level)%def%x_max + halo_exchange_depth,    &
-    chunk(level)%def%y_min - halo_exchange_depth:chunk(level)%def%y_max + halo_exchange_depth))
+    chunk(level)%def%x_min - chunk(level)%halo_exchange_depth: &
+    chunk(level)%def%x_max + chunk(level)%halo_exchange_depth, &
+    chunk(level)%def%y_min - chunk(level)%halo_exchange_depth: &
+    chunk(level)%def%y_max + chunk(level)%halo_exchange_depth))
   ALLOCATE(chunk(level)%def%def_di(                                                            &
-    chunk(level)%def%x_min - halo_exchange_depth:chunk(level)%def%x_max + halo_exchange_depth,    &
-    chunk(level)%def%y_min - halo_exchange_depth:chunk(level)%def%y_max + halo_exchange_depth))
+    chunk(level)%def%x_min - chunk(level)%halo_exchange_depth: &
+    chunk(level)%def%x_max + chunk(level)%halo_exchange_depth, &
+    chunk(level)%def%y_min - chunk(level)%halo_exchange_depth: &
+    chunk(level)%def%y_max + chunk(level)%halo_exchange_depth))
   ALLOCATE(chunk(level)%def%def_p(                                                            &
-    chunk(level)%def%x_min - halo_exchange_depth:chunk(level)%def%x_max + halo_exchange_depth,    &
-    chunk(level)%def%y_min - halo_exchange_depth:chunk(level)%def%y_max + halo_exchange_depth))
+    chunk(level)%def%x_min - chunk(level)%halo_exchange_depth: &
+    chunk(level)%def%x_max + chunk(level)%halo_exchange_depth, &
+    chunk(level)%def%y_min - chunk(level)%halo_exchange_depth: &
+    chunk(level)%def%y_max + chunk(level)%halo_exchange_depth))
   ALLOCATE(chunk(level)%def%def_r(                                                            &
-    chunk(level)%def%x_min - halo_exchange_depth:chunk(level)%def%x_max + halo_exchange_depth,    &
-    chunk(level)%def%y_min - halo_exchange_depth:chunk(level)%def%y_max + halo_exchange_depth))
+    chunk(level)%def%x_min - chunk(level)%halo_exchange_depth: &
+    chunk(level)%def%x_max + chunk(level)%halo_exchange_depth, &
+    chunk(level)%def%y_min - chunk(level)%halo_exchange_depth: &
+    chunk(level)%def%y_max + chunk(level)%halo_exchange_depth))
   ALLOCATE(chunk(level)%def%def_w(                                                            &
-    chunk(level)%def%x_min - halo_exchange_depth:chunk(level)%def%x_max + halo_exchange_depth,    &
-    chunk(level)%def%y_min - halo_exchange_depth:chunk(level)%def%y_max + halo_exchange_depth))
+    chunk(level)%def%x_min - chunk(level)%halo_exchange_depth: &
+    chunk(level)%def%x_max + chunk(level)%halo_exchange_depth, &
+    chunk(level)%def%y_min - chunk(level)%halo_exchange_depth: &
+    chunk(level)%def%y_max + chunk(level)%halo_exchange_depth))
   ALLOCATE(chunk(level)%def%def_Mi(                                                           &
-    chunk(level)%def%x_min - halo_exchange_depth:chunk(level)%def%x_max + halo_exchange_depth,    &
-    chunk(level)%def%y_min - halo_exchange_depth:chunk(level)%def%y_max + halo_exchange_depth))
+    chunk(level)%def%x_min - chunk(level)%halo_exchange_depth: &
+    chunk(level)%def%x_max + chunk(level)%halo_exchange_depth, &
+    chunk(level)%def%y_min - chunk(level)%halo_exchange_depth: &
+    chunk(level)%def%y_max + chunk(level)%halo_exchange_depth))
   ALLOCATE(chunk(level)%def%def_z(                                                            &
-    chunk(level)%def%x_min - halo_exchange_depth:chunk(level)%def%x_max + halo_exchange_depth,    &
-    chunk(level)%def%y_min - halo_exchange_depth:chunk(level)%def%y_max + halo_exchange_depth))
+    chunk(level)%def%x_min - chunk(level)%halo_exchange_depth: &
+    chunk(level)%def%x_max + chunk(level)%halo_exchange_depth, &
+    chunk(level)%def%y_min - chunk(level)%halo_exchange_depth: &
+    chunk(level)%def%y_max + chunk(level)%halo_exchange_depth))
   ALLOCATE(chunk(level)%def%def_sd(                                                            &
-    chunk(level)%def%x_min - halo_exchange_depth:chunk(level)%def%x_max + halo_exchange_depth,    &
-    chunk(level)%def%y_min - halo_exchange_depth:chunk(level)%def%y_max + halo_exchange_depth))
+    chunk(level)%def%x_min - chunk(level)%halo_exchange_depth: &
+    chunk(level)%def%x_max + chunk(level)%halo_exchange_depth, &
+    chunk(level)%def%y_min - chunk(level)%halo_exchange_depth: &
+    chunk(level)%def%y_max + chunk(level)%halo_exchange_depth))
 
 !$OMP PARALLEL
 !$OMP DO
-  DO k=chunk(level)%def%y_min - halo_exchange_depth,chunk(level)%def%y_max + halo_exchange_depth
-    DO j=chunk(level)%def%x_min - halo_exchange_depth,chunk(level)%def%x_max + halo_exchange_depth
+  DO k=chunk(level)%def%y_min - chunk(level)%halo_exchange_depth, &
+       chunk(level)%def%y_max + chunk(level)%halo_exchange_depth
+    DO j=chunk(level)%def%x_min - chunk(level)%halo_exchange_depth, &
+         chunk(level)%def%x_max + chunk(level)%halo_exchange_depth
       chunk(level)%def%t1(j, k) = 0.0
       chunk(level)%def%t2(j, k) = 0.0
       chunk(level)%def%def_kx(j, k) = 0.0

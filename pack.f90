@@ -66,7 +66,7 @@ SUBROUTINE call_packing_functions(level, fields, depth, face, packing, mpi_buffe
                   chunk(level)%tiles(t)%field%x_max,                    &
                   chunk(level)%tiles(t)%field%y_min,                    &
                   chunk(level)%tiles(t)%field%y_max,                    &
-                  halo_exchange_depth,                    &
+                  chunk(level)%halo_exchange_depth,                     &
                   chunk(level)%tiles(t)%tile_neighbours,     &
                   chunk(level)%tiles(t)%field%density,        &
                   chunk(level)%tiles(t)%field%energy0,        &

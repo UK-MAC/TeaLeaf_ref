@@ -53,7 +53,8 @@ SUBROUTINE generate_chunk(level)
       CALL generate_chunk_kernel(chunk(level)%tiles(t)%field%x_min,             &
                                  chunk(level)%tiles(t)%field%x_max,             &
                                  chunk(level)%tiles(t)%field%y_min,             &
-                                 chunk(level)%tiles(t)%field%y_max,halo_exchange_depth,             &
+                                 chunk(level)%tiles(t)%field%y_max,             &
+                                 chunk(level)%halo_exchange_depth,              &
                                  chunk(level)%tiles(t)%field%vertexx,           &
                                  chunk(level)%tiles(t)%field%vertexy,           &
                                  chunk(level)%tiles(t)%field%cellx,             &

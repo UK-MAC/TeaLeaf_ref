@@ -46,7 +46,7 @@ SUBROUTINE set_field(level)
                             chunk(level)%tiles(t)%field%x_max,     &
                             chunk(level)%tiles(t)%field%y_min,     &
                             chunk(level)%tiles(t)%field%y_max,     &
-                            halo_exchange_depth,     &
+                            chunk(level)%halo_exchange_depth,      &
                             chunk(level)%tiles(t)%field%energy0,   &
                             chunk(level)%tiles(t)%field%energy1)
     ENDDO

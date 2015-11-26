@@ -237,6 +237,9 @@ MODULE definitions_module
      ! how sub-tiles are arranged
      INTEGER,DIMENSION(2) :: sub_tile_dims
 
+     ! depth of halo for matrix powers
+     INTEGER :: halo_exchange_depth
+
   END TYPE chunk_type
 
   TYPE(chunk_type), DIMENSION(:), ALLOCATABLE :: chunk

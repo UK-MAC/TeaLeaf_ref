@@ -26,7 +26,7 @@ SUBROUTINE tea_leaf_ppcg_init_sd(level, theta)
           chunk(level)%tiles(t)%field%x_max,                              &
           chunk(level)%tiles(t)%field%y_min,                              &
           chunk(level)%tiles(t)%field%y_max,                              &
-          halo_exchange_depth,                              &
+          chunk(level)%halo_exchange_depth,                               &
           chunk(level)%tiles(t)%field%vector_r,                           &
           chunk(level)%tiles(t)%field%vector_Kx,                        &
           chunk(level)%tiles(t)%field%vector_Ky,                        &
@@ -92,7 +92,7 @@ SUBROUTINE tea_leaf_ppcg_inner(level, ch_alphas, ch_betas, inner_step, bounds_ex
           chunk(level)%tiles(t)%field%x_max,                            &
           chunk(level)%tiles(t)%field%y_min,                            &
           chunk(level)%tiles(t)%field%y_max,                            &
-          halo_exchange_depth,                            &
+          chunk(level)%halo_exchange_depth,                             &
           x_min_bound,                                    &
           x_max_bound,                                    &
           y_min_bound,                                    &
@@ -140,7 +140,7 @@ SUBROUTINE tea_leaf_ppcg_calc_zrnorm(level, rrn)
             chunk(level)%tiles(t)%field%x_max,                           &
             chunk(level)%tiles(t)%field%y_min,                           &
             chunk(level)%tiles(t)%field%y_max,                           &
-            halo_exchange_depth,                           &
+            chunk(level)%halo_exchange_depth,                            &
             chunk(level)%tiles(t)%field%vector_z,                        &
             chunk(level)%tiles(t)%field%vector_r,                        &
             tl_preconditioner_type, tile_rrn)

@@ -27,7 +27,7 @@ SUBROUTINE tea_leaf_jacobi_solve(level, error)
           chunk(level)%tiles(t)%field%x_max,                       &
           chunk(level)%tiles(t)%field%y_min,                       &
           chunk(level)%tiles(t)%field%y_max,                       &
-          halo_exchange_depth,                       &
+          chunk(level)%halo_exchange_depth,                        &
           chunk(level)%tiles(t)%field%rx,                                          &
           chunk(level)%tiles(t)%field%ry,                                          &
           chunk(level)%tiles(t)%field%vector_Kx,                   &

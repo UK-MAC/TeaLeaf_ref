@@ -37,7 +37,7 @@ SUBROUTINE tea_leaf_init_common(level)
           chunk(level)%tiles(t)%field%x_max,                                  &
           chunk(level)%tiles(t)%field%y_min,                                  &
           chunk(level)%tiles(t)%field%y_max,                                  &
-          halo_exchange_depth,                                  &
+          chunk(level)%halo_exchange_depth,                                   &
           zero_boundary,                               &
           reflective_boundary,                                    &
           chunk(level)%tiles(t)%field%density,                                &
@@ -79,7 +79,7 @@ SUBROUTINE tea_leaf_calc_residual(level)
           chunk(level)%tiles(t)%field%x_max,                        &
           chunk(level)%tiles(t)%field%y_min,                        &
           chunk(level)%tiles(t)%field%y_max,                        &
-          halo_exchange_depth,                                      &
+          chunk(level)%halo_exchange_depth,                         &
           chunk(level)%tiles(t)%field%u,                            &
           chunk(level)%tiles(t)%field%u0,                           &
           chunk(level)%tiles(t)%field%vector_r,                     &
@@ -123,7 +123,7 @@ SUBROUTINE tea_leaf_calc_2norm(level, norm_array, norm)
             chunk(level)%tiles(t)%field%x_max,                                    &
             chunk(level)%tiles(t)%field%y_min,                                    &
             chunk(level)%tiles(t)%field%y_max,                                    &
-            halo_exchange_depth,                                    &
+            chunk(level)%halo_exchange_depth,                                     &
             chunk(level)%tiles(t)%field%u0,                                 &
             tile_norm)
       ELSE IF (norm_array .EQ. 1) THEN
@@ -131,7 +131,7 @@ SUBROUTINE tea_leaf_calc_2norm(level, norm_array, norm)
             chunk(level)%tiles(t)%field%x_max,                                    &
             chunk(level)%tiles(t)%field%y_min,                                    &
             chunk(level)%tiles(t)%field%y_max,                                    &
-            halo_exchange_depth,                                    &
+            chunk(level)%halo_exchange_depth,                                     &
             chunk(level)%tiles(t)%field%vector_r,                                 &
             tile_norm)
       ELSE
@@ -162,7 +162,7 @@ SUBROUTINE tea_leaf_finalise(level)
           chunk(level)%tiles(t)%field%x_max,                           &
           chunk(level)%tiles(t)%field%y_min,                           &
           chunk(level)%tiles(t)%field%y_max,                           &
-          halo_exchange_depth,                           &
+          chunk(level)%halo_exchange_depth,                            &
           chunk(level)%tiles(t)%field%energy1,                         &
           chunk(level)%tiles(t)%field%density,                         &
           chunk(level)%tiles(t)%field%u)

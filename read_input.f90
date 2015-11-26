@@ -100,7 +100,8 @@ SUBROUTINE read_input()
   tl_use_jacobi = .TRUE.
   verbose_on = .FALSE.
 
-  halo_exchange_depth=1
+  ALLOCATE(chunk(2))
+  chunk(1:2)%halo_exchange_depth=1
 
   coarse_solve_max_iters=200
   coarse_solve_eps=1.0e-15
@@ -260,9 +261,13 @@ SUBROUTINE read_input()
         profiler_on=.TRUE.
         IF(parallel%boss)WRITE(g_out,"(1x,a25)")'Profiler on'
       CASE('halo_depth')
-        halo_exchange_depth = parse_getival(parse_getword(.TRUE.))
-        IF(halo_exchange_depth .lt. 1) CALL report_error('read_input', 'Invalid halo exchange depth specified')
-        IF(parallel%boss)WRITE(g_out,"(1x,a25,i12)")'halo_depth',halo_exchange_depth
+        chunk(1)%halo_exchange_depth = parse_getival(parse_getword(.TRUE.))
+        IF(chunk(1)%halo_exchange_depth .lt. 1) CALL report_error('read_input', 'Invalid halo exchange depth specified')
+        IF(parallel%boss)WRITE(g_out,"(1x,a25,i12)")'halo_depth',chunk(1)%halo_exchange_depth
+      CASE('coarse_halo_depth')
+        chunk(2)%halo_exchange_depth = parse_getival(parse_getword(.TRUE.))
+        IF(chunk(2)%halo_exchange_depth .lt. 1) CALL report_error('read_input', 'Invalid halo exchange depth specified')
+        IF(parallel%boss)WRITE(g_out,"(1x,a25,i12)")'halo_depth',chunk(2)%halo_exchange_depth
       CASE('tl_max_iters')
         max_iters = parse_getival(parse_getword(.TRUE.))
       CASE('tl_eps')
@@ -350,7 +355,7 @@ SUBROUTINE read_input()
     IF(parallel%boss)WRITE(g_out,"(1x,a25,i12)")'tl_ppcg_inner_steps',tl_ppcg_inner_steps
   endif
 
-  if ((halo_exchange_depth .gt. 1) .and. (tl_preconditioner_type .eq. TL_PREC_JAC_BLOCK) .and. tl_use_ppcg) then
+  if ((minval(chunk(1:2)%halo_exchange_depth) .gt. 1) .and. (tl_preconditioner_type .eq. TL_PREC_JAC_BLOCK) .and. tl_use_ppcg) then
     call report_error('read_input', 'Unable to use nonstandard halo depth with block jacobi preconditioner')
   endif
 

@@ -92,7 +92,7 @@ SUBROUTINE tea_leaf()
   fields(FIELD_DENSITY) = 1
 
   IF (profiler_on) halo_time=timer()
-  CALL update_halo(level, fields,halo_exchange_depth)
+  CALL update_halo(level, fields,chunk(level)%halo_exchange_depth)
   IF (profiler_on) init_time = init_time + (timer()-halo_time)
 
   CALL tea_leaf_init_common(level)
@@ -508,14 +508,14 @@ SUBROUTINE tea_leaf_run_ppcg_inner_steps(level, ch_alphas, ch_betas, theta, &
   CALL tea_leaf_ppcg_init_sd(level, theta)
 
   ! inner steps
-  DO ppcg_cur_step=1,tl_ppcg_inner_steps,halo_exchange_depth
+  DO ppcg_cur_step=1,tl_ppcg_inner_steps,chunk(level)%halo_exchange_depth
 
     fields = 0
     fields(FIELD_SD) = 1
     fields(FIELD_R) = 1
 
     IF (profiler_on) halo_time = timer()
-    CALL update_halo(level, fields,halo_exchange_depth)
+    CALL update_halo(level, fields,chunk(level)%halo_exchange_depth)
     IF (profiler_on) solve_time = solve_time + (timer()-halo_time)
 
     inner_step = ppcg_cur_step
@@ -523,7 +523,7 @@ SUBROUTINE tea_leaf_run_ppcg_inner_steps(level, ch_alphas, ch_betas, theta, &
     fields = 0
     fields(FIELD_SD) = 1
 
-    DO bounds_extra = halo_exchange_depth-1, 0, -1
+    DO bounds_extra = chunk(level)%halo_exchange_depth-1, 0, -1
       CALL tea_leaf_ppcg_inner(level, ch_alphas, ch_betas, inner_step, bounds_extra)
 
       IF (profiler_on) halo_time = timer()
