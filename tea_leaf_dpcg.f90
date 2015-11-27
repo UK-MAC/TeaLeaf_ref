@@ -3,6 +3,7 @@ MODULE tea_leaf_dpcg_module
   USE tea_leaf_dpcg_kernel_module
   USE tea_leaf_cheby_module
   USE tea_leaf_common_module
+  USE tea_leaf_cg_module
 
   USE definitions_module
   use global_mpi_module
@@ -13,20 +14,26 @@ MODULE tea_leaf_dpcg_module
   LOGICAL :: inner_use_ppcg
   REAL(KIND=8), DIMENSION(:), ALLOCATABLE :: inner_cg_alphas, inner_cg_betas
   REAL(KIND=8), DIMENSION(:), ALLOCATABLE :: inner_ch_alphas, inner_ch_betas
-  REAL(KIND=8) :: eigmin, eigmax, theta
+  REAL(KIND=8) :: eigmin, eigmax, inner_ch_theta
 
 CONTAINS
 
-SUBROUTINE tea_leaf_dpcg_init_x0(solve_time)
+SUBROUTINE tea_leaf_dpcg_init_x0(solve_time, ppcg_inner_steps, ch_alphas, ch_betas, ch_theta)
+
+  USE tea_leaf_ppcg_module
 
   IMPLICIT NONE
 
-  REAL(KIND=8) :: solve_time,tile_sum2
+  INTEGER :: ppcg_inner_steps
+  REAL(KIND=8) :: solve_time, ch_theta
+  REAL(KIND=8), DIMENSION(max_iters) :: ch_alphas, ch_betas
+
+  REAL(KIND=8) :: tile_sum2
 
   INTEGER, PARAMETER :: level=1
   INTEGER :: t, it_count, info
   INTEGER :: fields(NUM_FIELDS)
-  REAL(KIND=8) :: halo_time,timer
+  REAL(KIND=8) :: halo_time,timer,rro
 
   IF (.NOT. ALLOCATED(inner_cg_alphas)) THEN
     ALLOCATE(inner_cg_alphas(coarse_solve_max_iters))
@@ -113,7 +120,7 @@ SUBROUTINE tea_leaf_dpcg_init_x0(solve_time)
                                          coarse_solve_max_iters, &
                                          it_count,               &
                                          inner_use_ppcg,         &
-                                         theta,                  &
+                                         inner_ch_theta,         &
                                          inner_ch_alphas,        &
                                          inner_ch_betas)
 
@@ -147,13 +154,24 @@ SUBROUTINE tea_leaf_dpcg_init_x0(solve_time)
   info = 0
 
   ! With jacobi preconditioner on
-  eigmin = 0.1_8
+  !eigmin = 0.1_8
+  eigmin = tl_ppcg_steps_eigmin
   eigmax = 2.0_8
 
   IF (info .NE. 0) CALL report_error('tea_leaf_dpcg_init_x0', 'Error in calculating eigenvalues')
 
   CALL tea_calc_ch_coefs(inner_ch_alphas, inner_ch_betas, eigmin, eigmax, &
-      theta, coarse_solve_max_iters)
+      inner_ch_theta, tl_ppcg_inner_coarse)
+
+  ! With jacobi preconditioner on
+  !eigmin = 0.1_8
+  eigmin = tl_ppcg_coarse_eigmin
+  eigmax = 2.0_8
+
+  CALL tea_calc_ch_coefs(ch_alphas, ch_betas, eigmin, eigmax, &
+      ch_theta, ppcg_inner_steps)
+  !write(6,*) maxval(abs(inner_ch_alphas)), maxval(abs(inner_ch_betas)), inner_ch_theta, &
+  !  tl_ppcg_inner_coarse, level
 
   fields = 0
   fields(FIELD_U) = 1
@@ -165,6 +183,15 @@ SUBROUTINE tea_leaf_dpcg_init_x0(solve_time)
 
   ! calc residual again, and do initial solve
   CALL tea_leaf_calc_residual(level)
+
+  ! init z using the preconditioner - note that we don't need rro
+  CALL tea_leaf_cg_init(level, rro)
+
+  !write(6,*) "tea_leaf_run_ppcg_inner_steps:",ppcg_inner_steps,level, &
+  !    maxval(abs(ch_alphas(1:ppcg_inner_steps))), &
+  !    maxval(abs(ch_betas (1:ppcg_inner_steps))), ch_theta
+  CALL tea_leaf_run_ppcg_inner_steps(level, ch_alphas, ch_betas, ch_theta, &
+      ppcg_inner_steps, solve_time)
 
   IF (coarse_solve_serial) THEN
     CALL tea_leaf_dpcg_setup_and_solve_E(solve_time)
@@ -213,7 +240,7 @@ SUBROUTINE tea_leaf_dpcg_setup_and_solve_E(solve_time)
       coarse_solve_eps, &
       coarse_solve_max_iters,                          &
       it_count,         &
-      theta,            &
+      inner_ch_theta,            &
       inner_use_ppcg,       &
       inner_cg_alphas, inner_cg_betas,      &
       inner_ch_alphas, inner_ch_betas       &
@@ -266,7 +293,7 @@ SUBROUTINE tea_leaf_dpcg_setup_and_solve_E_level(level,solve_time)
                                        coarse_solve_max_iters, &
                                        it_count,               &
                                        inner_use_ppcg,         &
-                                       theta,                  &
+                                       inner_ch_theta,         &
                                        inner_ch_alphas,        &
                                        inner_ch_betas)
 
@@ -592,30 +619,30 @@ SUBROUTINE tea_leaf_dpcg_matmul_ZTA(solve_time)
 
   INTEGER :: fields(NUM_FIELDS)
 
-  IF (use_fortran_kernels) THEN
-!$OMP PARALLEL PRIVATE(ztaz)
-!$OMP DO
-    DO t=1,tiles_per_task
-      CALL tea_leaf_dpcg_solve_z_kernel(chunk(level)%tiles(t)%field%x_min,     &
-                                        chunk(level)%tiles(t)%field%x_max,     &
-                                        chunk(level)%tiles(t)%field%y_min,     &
-                                        chunk(level)%tiles(t)%field%y_max,     &
-                                        chunk(level)%halo_exchange_depth,      &
-                                        chunk(level)%tiles(t)%field%vector_r,  &
-                                        chunk(level)%tiles(t)%field%vector_z,  &
-                                        chunk(level)%tiles(t)%field%vector_Kx, &
-                                        chunk(level)%tiles(t)%field%vector_Ky, &
-                                        chunk(level)%tiles(t)%field%vector_Di, &
-                                        chunk(level)%tiles(t)%field%vector_Mi, &
-                                        chunk(level)%tiles(t)%field%tri_cp,    &
-                                        chunk(level)%tiles(t)%field%tri_bfp,   &
-                                        chunk(level)%tiles(t)%field%rx,        &
-                                        chunk(level)%tiles(t)%field%ry,        &
-                                        tl_preconditioner_type)
-    ENDDO
-!$OMP END DO NOWAIT
-!$OMP END PARALLEL
-  ENDIF
+!  IF (use_fortran_kernels) THEN
+!!$OMP PARALLEL PRIVATE(ztaz)
+!!$OMP DO
+!    DO t=1,tiles_per_task
+!      CALL tea_leaf_dpcg_solve_z_kernel(chunk(level)%tiles(t)%field%x_min,     &
+!                                        chunk(level)%tiles(t)%field%x_max,     &
+!                                        chunk(level)%tiles(t)%field%y_min,     &
+!                                        chunk(level)%tiles(t)%field%y_max,     &
+!                                        chunk(level)%halo_exchange_depth,      &
+!                                        chunk(level)%tiles(t)%field%vector_r,  &
+!                                        chunk(level)%tiles(t)%field%vector_z,  &
+!                                        chunk(level)%tiles(t)%field%vector_Kx, &
+!                                        chunk(level)%tiles(t)%field%vector_Ky, &
+!                                        chunk(level)%tiles(t)%field%vector_Di, &
+!                                        chunk(level)%tiles(t)%field%vector_Mi, &
+!                                        chunk(level)%tiles(t)%field%tri_cp,    &
+!                                        chunk(level)%tiles(t)%field%tri_bfp,   &
+!                                        chunk(level)%tiles(t)%field%rx,        &
+!                                        chunk(level)%tiles(t)%field%ry,        &
+!                                        tl_preconditioner_type)
+!    ENDDO
+!!$OMP END DO NOWAIT
+!!$OMP END PARALLEL
+!  ENDIF
 
   fields = 0
   fields(FIELD_Z) = 1
@@ -685,30 +712,30 @@ SUBROUTINE tea_leaf_dpcg_matmul_ZTA_level(level,solve_time)
 
   INTEGER :: fields(NUM_FIELDS)
 
-  IF (use_fortran_kernels) THEN
-!$OMP PARALLEL PRIVATE(ztaz)
-!$OMP DO
-    DO t=1,tiles_per_task
-      CALL tea_leaf_dpcg_solve_z_kernel(chunk(level)%tiles(t)%field%x_min,     &
-                                        chunk(level)%tiles(t)%field%x_max,     &
-                                        chunk(level)%tiles(t)%field%y_min,     &
-                                        chunk(level)%tiles(t)%field%y_max,     &
-                                        chunk(level)%halo_exchange_depth,      &
-                                        chunk(level)%tiles(t)%field%vector_r,  &
-                                        chunk(level)%tiles(t)%field%vector_z,  &
-                                        chunk(level)%tiles(t)%field%vector_Kx, &
-                                        chunk(level)%tiles(t)%field%vector_Ky, &
-                                        chunk(level)%tiles(t)%field%vector_Di, &
-                                        chunk(level)%tiles(t)%field%vector_Mi, &
-                                        chunk(level)%tiles(t)%field%tri_cp,    &
-                                        chunk(level)%tiles(t)%field%tri_bfp,   &
-                                        chunk(level)%tiles(t)%field%rx,        &
-                                        chunk(level)%tiles(t)%field%ry,        &
-                                        tl_preconditioner_type)
-    ENDDO
-!$OMP END DO NOWAIT
-!$OMP END PARALLEL
-  ENDIF
+!  IF (use_fortran_kernels) THEN
+!!$OMP PARALLEL PRIVATE(ztaz)
+!!$OMP DO
+!    DO t=1,tiles_per_task
+!      CALL tea_leaf_dpcg_solve_z_kernel(chunk(level)%tiles(t)%field%x_min,     &
+!                                        chunk(level)%tiles(t)%field%x_max,     &
+!                                        chunk(level)%tiles(t)%field%y_min,     &
+!                                        chunk(level)%tiles(t)%field%y_max,     &
+!                                        chunk(level)%halo_exchange_depth,      &
+!                                        chunk(level)%tiles(t)%field%vector_r,  &
+!                                        chunk(level)%tiles(t)%field%vector_z,  &
+!                                        chunk(level)%tiles(t)%field%vector_Kx, &
+!                                        chunk(level)%tiles(t)%field%vector_Ky, &
+!                                        chunk(level)%tiles(t)%field%vector_Di, &
+!                                        chunk(level)%tiles(t)%field%vector_Mi, &
+!                                        chunk(level)%tiles(t)%field%tri_cp,    &
+!                                        chunk(level)%tiles(t)%field%tri_bfp,   &
+!                                        chunk(level)%tiles(t)%field%rx,        &
+!                                        chunk(level)%tiles(t)%field%ry,        &
+!                                        tl_preconditioner_type)
+!    ENDDO
+!!$OMP END DO NOWAIT
+!!$OMP END PARALLEL
+!  ENDIF
 
   fields = 0
   fields(FIELD_Z) = 1
@@ -1246,7 +1273,7 @@ SUBROUTINE tea_leaf_dpcg_local_solve(x_min,               &
                                      eps,                 &
                                      inner_iters,         &
                                      it_count,            &
-                                     theta,               &
+                                     inner_ch_theta,      &
                                      use_ppcg,            &
                                      inner_cg_alphas,     &
                                      inner_cg_betas,      &
@@ -1270,8 +1297,10 @@ SUBROUTINE tea_leaf_dpcg_local_solve(x_min,               &
   LOGICAL :: use_ppcg
   REAL(KIND=8), DIMENSION(inner_iters) :: inner_cg_alphas, inner_cg_betas
   REAL(KIND=8), DIMENSION(inner_iters) :: inner_ch_alphas, inner_ch_betas
-  REAL(KIND=8) :: theta
+  REAL(KIND=8) :: inner_ch_theta
   REAL(KIND=8), PARAMETER :: omega=1.0_8
+
+!$ INTEGER :: OMP_GET_THREAD_NUM
 
   rro = 0.0_8
   initial_residual = 0.0_8
@@ -1317,7 +1346,11 @@ SUBROUTINE tea_leaf_dpcg_local_solve(x_min,               &
     rro = initial_residual
     initial_residual = sqrt(abs(initial_residual))
 !$OMP END SINGLE
-    !write(6,*) "initial_residual:",initial_residual
+  IF (parallel%boss.AND.verbose_on) THEN
+!$  IF (OMP_GET_THREAD_NUM().EQ.0) THEN
+      WRITE(g_out,*)"Coarse solve - Initial residual ",initial_residual
+!$  ENDIF
+  ENDIF
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -1365,7 +1398,7 @@ SUBROUTINE tea_leaf_dpcg_local_solve(x_min,               &
 !$OMP DO
       DO k=y_min,y_max
         DO j=x_min,x_max
-          sd(j, k) = z(j, k)/theta
+          sd(j, k) = z(j, k)/inner_ch_theta
         ENDDO
       ENDDO
 !$OMP END DO
@@ -1431,6 +1464,12 @@ SUBROUTINE tea_leaf_dpcg_local_solve(x_min,               &
 !$OMP END SINGLE
 
     !write(6,*) "serial solve:",sqrt(abs(rrn)),eps,initial_residual
+    IF (parallel%boss.AND.verbose_on) THEN
+!$    IF (OMP_GET_THREAD_NUM().EQ.0) THEN
+        WRITE(g_out,*)"Coarse solve - Residual ",sqrt(abs(rrn))
+!$    ENDIF
+    ENDIF
+
   ENDDO
 
 !$OMP END PARALLEL
@@ -1440,7 +1479,7 @@ SUBROUTINE tea_leaf_dpcg_local_solve(x_min,               &
   !  write(6,'("serial iteration:",i3," alpha=",es20.13," beta=",es20.13," rrn=",es20.13," norm u:",es20.13," norm z:",es20.13)') &
   !    it_count,alpha,beta,rrn,sqrt(sum(u**2)),sqrt(sum(z**2))
   !endif
-  !if (use_ppcg) write(6,*) theta,inner_ch_alphas(1:10),inner_ch_betas(1:10)
+  !if (use_ppcg) write(6,*) inner_ch_theta,inner_ch_alphas(1:10),inner_ch_betas(1:10)
   !if (it_count == 0) stop
 
 END SUBROUTINE tea_leaf_dpcg_local_solve
@@ -1451,7 +1490,7 @@ SUBROUTINE tea_leaf_dpcg_local_solve_level(level,               &
                                            inner_iters,         &
                                            n,                   &
                                            use_ppcg,            &
-                                           theta,               &
+                                           inner_ch_theta,      &
                                            inner_ch_alphas,     &
                                            inner_ch_betas)
 
@@ -1467,7 +1506,7 @@ SUBROUTINE tea_leaf_dpcg_local_solve_level(level,               &
   INTEGER :: fields(NUM_FIELDS)
   REAL(KIND=8) :: solve_time,eps_inner
   REAL(KIND=8), DIMENSION(inner_iters) :: inner_ch_alphas, inner_ch_betas
-  REAL(KIND=8) :: theta
+  REAL(KIND=8) :: inner_ch_theta
 
   REAL(KIND=8) :: alpha, beta
   REAL(KIND=8) :: timer,halo_time,dot_product_time
@@ -1487,7 +1526,7 @@ SUBROUTINE tea_leaf_dpcg_local_solve_level(level,               &
   fields(FIELD_U) = 1
 
   IF (profiler_on) halo_time=timer()
-  CALL update_halo(level+1, fields,1)
+  CALL update_halo(level+1, fields, 1)
   IF (profiler_on) solve_time = solve_time + (timer()-halo_time)
 
   CALL tea_leaf_calc_residual(level+1)
@@ -1497,11 +1536,6 @@ SUBROUTINE tea_leaf_dpcg_local_solve_level(level,               &
   CALL tea_allsum(initial_residual)
   IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
 
-  IF (parallel%boss.AND.verbose_on) THEN
-!$  IF (OMP_GET_THREAD_NUM().EQ.0) THEN
-      WRITE(g_out,*)"Coarse solve - Initial residual ",initial_residual
-!$  ENDIF
-  ENDIF
   !write(6,*) "rnorm:",sqrt(initial_residual)
 
   ! All 3 of these solvers use the CG kernels
@@ -1516,7 +1550,12 @@ SUBROUTINE tea_leaf_dpcg_local_solve_level(level,               &
   initial_residual = rro
   initial_residual=SQRT(initial_residual)
   old_error = initial_residual
-  !write(6,*) "initial_residual:",initial_residual
+
+  IF (parallel%boss.AND.verbose_on) THEN
+!$  IF (OMP_GET_THREAD_NUM().EQ.0) THEN
+      WRITE(g_out,*)"Coarse solve - Initial residual ",initial_residual
+!$  ENDIF
+  ENDIF
 
   ! need to update p when using CG due to matrix/vector multiplication
   fields=0
@@ -1559,9 +1598,12 @@ SUBROUTINE tea_leaf_dpcg_local_solve_level(level,               &
     ! not using rrn, so don't do a tea_allsum
 
     IF (use_ppcg) THEN
-      CALL tea_leaf_run_dpcg_inner_steps(level+1, inner_ch_alphas, inner_ch_betas, theta, &
-          tl_ppcg_inner_steps, solve_time)
-      ppcg_inner_iters = ppcg_inner_iters + tl_ppcg_inner_steps
+      !write(6,*) "tea_leaf_run_ppcg_inner_steps:",tl_ppcg_inner_coarse,level+1, &
+      !    maxval(abs(inner_ch_alphas(1:tl_ppcg_inner_coarse))), &
+      !    maxval(abs(inner_ch_betas (1:tl_ppcg_inner_coarse))), inner_ch_theta
+      CALL tea_leaf_run_ppcg_inner_steps(level+1, inner_ch_alphas, inner_ch_betas, inner_ch_theta, &
+          tl_ppcg_inner_coarse, solve_time)
+      ppcg_inner_iters = ppcg_inner_iters + tl_ppcg_inner_coarse
     ENDIF
 
     CALL tea_leaf_ppcg_calc_zrnorm(level+1, rrn)
@@ -1623,83 +1665,6 @@ SUBROUTINE tea_leaf_dpcg_local_solve_level(level,               &
   !    n,alpha,beta,rrn,sqrt(normu),sqrt(normz)
 
 END SUBROUTINE tea_leaf_dpcg_local_solve_level
-
-SUBROUTINE tea_leaf_run_dpcg_inner_steps(level, ch_alphas, ch_betas, theta, &
-    tl_ppcg_inner_steps, solve_time)
-
-  USE tea_leaf_ppcg_module, only : tea_leaf_ppcg_init_sd,tea_leaf_ppcg_inner
-
-  IMPLICIT NONE
-
-  INTEGER :: level, fields(NUM_FIELDS)
-  INTEGER :: tl_ppcg_inner_steps, ppcg_cur_step, t
-  REAL(KIND=8) :: theta
-  REAL(KIND=8) :: halo_time, timer, solve_time
-  REAL(KIND=8), DIMENSION(max_iters) :: ch_alphas, ch_betas
-
-  INTEGER(KIND=4) :: inner_step, bounds_extra
-
-  fields = 0
-  fields(FIELD_U) = 1
-
-  IF (profiler_on) halo_time=timer()
-  CALL update_halo(level, fields,1)
-  IF (profiler_on) solve_time = solve_time + (timer() - halo_time)
-
-  CALL tea_leaf_ppcg_init_sd(level, theta)
-
-  ! inner steps
-  DO ppcg_cur_step=1,tl_ppcg_inner_steps,chunk(level)%halo_exchange_depth
-
-    fields = 0
-    fields(FIELD_SD) = 1
-    fields(FIELD_R) = 1
-
-    IF (profiler_on) halo_time = timer()
-    CALL update_halo(level, fields, chunk(level)%halo_exchange_depth)
-    IF (profiler_on) solve_time = solve_time + (timer()-halo_time)
-
-    inner_step = ppcg_cur_step
-
-    fields = 0
-    fields(FIELD_SD) = 1
-
-    DO bounds_extra = chunk(level)%halo_exchange_depth-1, 0, -1
-
-      !do t=1,tiles_per_task
-      !  if (any(chunk(level)%tiles(t)%field%vector_sd /= chunk(level)%tiles(t)%field%vector_sd)) then
-      !    write(6,*) "NaN in sd before ppcg_inner"; stop
-      !  endif
-      !enddo
-
-      CALL tea_leaf_ppcg_inner(level, ch_alphas, ch_betas, inner_step, bounds_extra)
-
-      !do t=1,tiles_per_task
-      !  if (any(chunk(level)%tiles(t)%field%vector_sd /= chunk(level)%tiles(t)%field%vector_sd)) then
-      !    write(6,*) "NaN in sd after ppcg_inner"; stop
-      !  endif
-      !enddo
-
-      IF (profiler_on) halo_time = timer()
-      CALL update_boundary(level, fields, 1)
-      IF (profiler_on) solve_time = solve_time + (timer()-halo_time)
-
-      !do t=1,tiles_per_task
-      !  if (any(chunk(level)%tiles(t)%field%vector_sd /= chunk(level)%tiles(t)%field%vector_sd)) then
-      !    write(6,*) "NaN in sd after update_boundary"; stop
-      !  endif
-      !enddo
-
-      inner_step = inner_step + 1
-      IF (inner_step .gt. tl_ppcg_inner_steps) EXIT
-    ENDDO
-
-  ENDDO
-
-  fields = 0
-  fields(FIELD_P) = 1
-
-END SUBROUTINE tea_leaf_run_dpcg_inner_steps
 
 END MODULE tea_leaf_dpcg_module
 

@@ -335,15 +335,15 @@ SUBROUTINE tea_diag_solve(x_min,             &
     ENDDO
 !$OMP END DO
 
-    if (any(z /= z)) then
-      write(6,*) "z not finite"
-      DO k=y_min-halo_exchange_depth+1,y_max+halo_exchange_depth-1
-        DO j=x_min-halo_exchange_depth+1,x_max+halo_exchange_depth-1
-          if (z(j, k) /= z(j, k)) write(6,*) j,k,Mi(j, k),r(j, k)
-        ENDDO
-      ENDDO
-      stop
-    endif
+    !if (any(z /= z)) then
+    !  write(6,*) "z not finite"
+    !  DO k=y_min-halo_exchange_depth+1,y_max+halo_exchange_depth-1
+    !    DO j=x_min-halo_exchange_depth+1,x_max+halo_exchange_depth-1
+    !      if (z(j, k) /= z(j, k)) write(6,*) j,k,Mi(j, k),r(j, k)
+    !    ENDDO
+    !  ENDDO
+    !  stop
+    !endif
 
 END SUBROUTINE
 

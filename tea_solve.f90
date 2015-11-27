@@ -113,7 +113,7 @@ SUBROUTINE tea_leaf()
 
   old_error = initial_residual
 
-  initial_residual=SQRT(initial_residual)
+  initial_residual=SQRT(abs(initial_residual))
 
   IF (parallel%boss.AND.verbose_on) THEN
 !$  IF (OMP_GET_THREAD_NUM().EQ.0) THEN
@@ -122,7 +122,7 @@ SUBROUTINE tea_leaf()
   ENDIF
 
   IF (tl_use_dpcg) THEN
-    CALL tea_leaf_dpcg_init_x0(solve_time)
+    CALL tea_leaf_dpcg_init_x0(solve_time, tl_ppcg_inner_steps, ch_alphas, ch_betas, theta)
 
     ! need to update p when using CG due to matrix/vector multiplication
     fields=0
@@ -263,6 +263,9 @@ SUBROUTINE tea_leaf()
 
         ! not using rrn, so don't do a tea_allsum
 
+        !write(6,*) "tea_leaf_run_ppcg_inner_steps:",tl_ppcg_inner_steps,level, &
+        !    maxval(abs(ch_alphas(1:tl_ppcg_inner_steps))), &
+        !    maxval(abs(ch_betas (1:tl_ppcg_inner_steps))), theta
         CALL tea_leaf_run_ppcg_inner_steps(level, ch_alphas, ch_betas, theta, &
             tl_ppcg_inner_steps, solve_time)
         ppcg_inner_iters = ppcg_inner_iters + tl_ppcg_inner_steps
@@ -309,6 +312,12 @@ SUBROUTINE tea_leaf()
       CALL tea_leaf_cg_calc_ur(level, alpha, rrn)
 
       ! not calculating rrn here
+
+      !write(6,*) "tea_leaf_run_ppcg_inner_steps:",tl_ppcg_inner_steps,level, &
+      !    maxval(abs(ch_alphas(1:tl_ppcg_inner_steps))), &
+      !    maxval(abs(ch_betas (1:tl_ppcg_inner_steps))), theta
+      CALL tea_leaf_run_ppcg_inner_steps(level, ch_alphas, ch_betas, theta, &
+          tl_ppcg_inner_steps, solve_time)
 
       IF (coarse_solve_serial) THEN
         CALL tea_leaf_dpcg_setup_and_solve_E(solve_time)
@@ -381,7 +390,7 @@ SUBROUTINE tea_leaf()
       ENDIF
     ENDIF
 
-    error=SQRT(error)
+    error=SQRT(abs(error))
 
     IF (parallel%boss.AND.verbose_on) THEN
 !$    IF (OMP_GET_THREAD_NUM().EQ.0) THEN
@@ -484,61 +493,6 @@ SUBROUTINE tea_leaf()
   ENDIF
 
 END SUBROUTINE tea_leaf
-
-SUBROUTINE tea_leaf_run_ppcg_inner_steps(level, ch_alphas, ch_betas, theta, &
-    tl_ppcg_inner_steps, solve_time)
-
-  IMPLICIT NONE
-
-  INTEGER :: level, fields(NUM_FIELDS)
-  INTEGER :: tl_ppcg_inner_steps, ppcg_cur_step
-  REAL(KIND=8) :: theta
-  REAL(KIND=8) :: halo_time, timer, solve_time
-  REAL(KIND=8), DIMENSION(max_iters) :: ch_alphas, ch_betas
-
-  INTEGER(KIND=4) :: inner_step, bounds_extra
-
-  fields = 0
-  fields(FIELD_U) = 1
-
-  IF (profiler_on) halo_time=timer()
-  CALL update_halo(level, fields,1)
-  IF (profiler_on) solve_time = solve_time + (timer() - halo_time)
-
-  CALL tea_leaf_ppcg_init_sd(level, theta)
-
-  ! inner steps
-  DO ppcg_cur_step=1,tl_ppcg_inner_steps,chunk(level)%halo_exchange_depth
-
-    fields = 0
-    fields(FIELD_SD) = 1
-    fields(FIELD_R) = 1
-
-    IF (profiler_on) halo_time = timer()
-    CALL update_halo(level, fields,chunk(level)%halo_exchange_depth)
-    IF (profiler_on) solve_time = solve_time + (timer()-halo_time)
-
-    inner_step = ppcg_cur_step
-
-    fields = 0
-    fields(FIELD_SD) = 1
-
-    DO bounds_extra = chunk(level)%halo_exchange_depth-1, 0, -1
-      CALL tea_leaf_ppcg_inner(level, ch_alphas, ch_betas, inner_step, bounds_extra)
-
-      IF (profiler_on) halo_time = timer()
-      CALL update_boundary(level, fields, 1)
-      IF (profiler_on) solve_time = solve_time + (timer()-halo_time)
-
-      inner_step = inner_step + 1
-      IF (inner_step .gt. tl_ppcg_inner_steps) EXIT
-    ENDDO
-  ENDDO
-
-  fields = 0
-  fields(FIELD_P) = 1
-
-END SUBROUTINE tea_leaf_run_ppcg_inner_steps
 
 SUBROUTINE tea_leaf_cheby_first_step(ch_alphas, ch_betas, fields, &
     error, theta, cn, max_cheby_iters, est_itc, solve_time)

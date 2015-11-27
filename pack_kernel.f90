@@ -309,12 +309,11 @@ SUBROUTINE pack_all(x_min, x_max, y_min, y_max, halo_exchange_depth, &
                      y_min,                    &
                      y_max,                    &
                      halo_exchange_depth,                    &
-                     ky,                  &
+                     di,                  &
                      mpi_buffer,                &
                      depth, xincs(CELL_DATA), yincs(CELL_DATA),   &
                      tile_offset + offsets(FIELD_di),   &
                      edge_minus, edge_plus)
-                     !depth, xincs(Y_FACE_DATA), yincs(Y_FACE_DATA),   &
   ENDIF
 !$OMP END PARALLEL
 

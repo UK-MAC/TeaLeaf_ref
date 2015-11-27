@@ -92,6 +92,9 @@ SUBROUTINE read_input()
   reflective_boundary = .FALSE.
 
   tl_ppcg_inner_steps = -1
+  tl_ppcg_steps_eigmin = 0.1
+  tl_ppcg_inner_coarse = -1
+  tl_ppcg_coarse_eigmin = 0.1
 
   tl_use_chebyshev = .FALSE.
   tl_use_cg = .FALSE.
@@ -200,6 +203,16 @@ SUBROUTINE read_input()
         IF(parallel%boss)WRITE(g_out,"(1x,a25,i12)")'tl_ch_cg_presteps',tl_ch_cg_presteps
       CASE('tl_ppcg_inner_steps')
         tl_ppcg_inner_steps=parse_getival(parse_getword(.TRUE.))
+        IF(parallel%boss)WRITE(g_out,"(1x,a25,i12)")'tl_ppcg_inner_steps',tl_ppcg_inner_steps
+      CASE('tl_ppcg_steps_eigmin')
+        tl_ppcg_steps_eigmin=parse_getrval(parse_getword(.TRUE.))
+        IF(parallel%boss)WRITE(g_out,"(1x,a25,e12.4)")'tl_ppcg_steps_eigmin',tl_ppcg_steps_eigmin
+      CASE('tl_ppcg_inner_coarse')
+        tl_ppcg_inner_coarse=parse_getival(parse_getword(.TRUE.))
+        IF(parallel%boss)WRITE(g_out,"(1x,a25,i12)")'tl_ppcg_inner_coarse',tl_ppcg_inner_coarse
+      CASE('tl_ppcg_coarse_eigmin')
+        tl_ppcg_coarse_eigmin=parse_getrval(parse_getword(.TRUE.))
+        IF(parallel%boss)WRITE(g_out,"(1x,a25,e12.4)")'tl_ppcg_coarse_eigmin',tl_ppcg_coarse_eigmin
       CASE('tl_ch_cg_epslim')
         tl_ch_cg_epslim=parse_getrval(parse_getword(.TRUE.))
         IF(parallel%boss)WRITE(g_out,"(1x,a25,e12.4)")'tl_ch_cg_epslim',tl_ch_cg_epslim
@@ -264,10 +277,10 @@ SUBROUTINE read_input()
         chunk(1)%halo_exchange_depth = parse_getival(parse_getword(.TRUE.))
         IF(chunk(1)%halo_exchange_depth .lt. 1) CALL report_error('read_input', 'Invalid halo exchange depth specified')
         IF(parallel%boss)WRITE(g_out,"(1x,a25,i12)")'halo_depth',chunk(1)%halo_exchange_depth
-      CASE('coarse_halo_depth')
+      CASE('coarse_depth')
         chunk(2)%halo_exchange_depth = parse_getival(parse_getword(.TRUE.))
         IF(chunk(2)%halo_exchange_depth .lt. 1) CALL report_error('read_input', 'Invalid halo exchange depth specified')
-        IF(parallel%boss)WRITE(g_out,"(1x,a25,i12)")'halo_depth',chunk(2)%halo_exchange_depth
+        IF(parallel%boss)WRITE(g_out,"(1x,a25,i12)")'coarse_depth',chunk(2)%halo_exchange_depth
       CASE('tl_max_iters')
         max_iters = parse_getival(parse_getword(.TRUE.))
       CASE('tl_eps')
@@ -350,13 +363,17 @@ SUBROUTINE read_input()
   ENDDO
 
   ! Simple guess - better than a default of 10
-  if (tl_ppcg_inner_steps .eq. -1) then
+  if (tl_ppcg_inner_steps .eq. -1 .and. tl_use_ppcg) then
     tl_ppcg_inner_steps = 4*INT(SQRT(SQRT(REAL(grid(1)%x_cells*grid(1)%y_cells))))
     IF(parallel%boss)WRITE(g_out,"(1x,a25,i12)")'tl_ppcg_inner_steps',tl_ppcg_inner_steps
   endif
 
-  if ((minval(chunk(1:2)%halo_exchange_depth) .gt. 1) .and. (tl_preconditioner_type .eq. TL_PREC_JAC_BLOCK) .and. tl_use_ppcg) then
+  if ((minval(chunk(1:2)%halo_exchange_depth) .gt. 1) .and. (tl_preconditioner_type .eq. TL_PREC_JAC_BLOCK)) then
     call report_error('read_input', 'Unable to use nonstandard halo depth with block jacobi preconditioner')
+  endif
+
+  if ((chunk(1)%halo_exchange_depth .gt. 1) .and. (tl_use_dpcg .and. tl_ppcg_inner_steps > 0)) then
+    call report_error('read_input', 'Unable to use nonstandard halo depth with deflation')
   endif
 
   IF(parallel%boss) THEN

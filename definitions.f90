@@ -81,8 +81,12 @@ MODULE definitions_module
    INTEGER      :: tl_ch_cg_presteps
    ! do b-Ax after finishing to make sure solver actually converged
    LOGICAL      :: tl_check_result
-   ! number of inner steps in ppcg solver
+   ! number of inner steps/max eigenvalue in ppcg solver
    INTEGER      :: tl_ppcg_inner_steps
+   REAL(KIND=8) :: tl_ppcg_steps_eigmin
+   ! number of inner steps/max eigenvalue in ppcg solver on the coarse grid
+   INTEGER      :: tl_ppcg_inner_coarse
+   REAL(KIND=8) :: tl_ppcg_coarse_eigmin
 
    ! Reflective boundaries at edge of mesh
    LOGICAL      :: reflective_boundary
