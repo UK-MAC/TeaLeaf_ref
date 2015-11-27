@@ -372,10 +372,6 @@ SUBROUTINE read_input()
     call report_error('read_input', 'Unable to use nonstandard halo depth with block jacobi preconditioner')
   endif
 
-  if ((chunk(1)%halo_exchange_depth .gt. 1) .and. (tl_use_dpcg .and. tl_ppcg_inner_steps > 0)) then
-    call report_error('read_input', 'Unable to use nonstandard halo depth with deflation')
-  endif
-
   IF(parallel%boss) THEN
     WRITE(g_out,"(1x,a25,i12)")'tiles per task ',tiles_per_task
     WRITE(g_out,*)
