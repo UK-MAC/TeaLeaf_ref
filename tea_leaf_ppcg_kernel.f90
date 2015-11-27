@@ -100,7 +100,7 @@ SUBROUTINE tea_leaf_kernel_ppcg_inner(x_min,             &
   REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth)&
                           :: u, r, Kx, Ky, sd , z, Mi, Di
   REAL(KIND=8), DIMENSION(x_min:x_max,y_min:y_max) :: cp, bfp
-  INTEGER(KIND=4) :: j,k
+  INTEGER(KIND=4) :: j,k,depth
   REAL(KIND=8), DIMENSION(:) :: alpha, beta
   REAL(KIND=8) :: smvp, rx, ry
 
@@ -137,12 +137,13 @@ SUBROUTINE tea_leaf_kernel_ppcg_inner(x_min,             &
     ENDDO
 !$OMP END DO
 
+    depth=max(x_min-x_min_bound,y_min-y_min_bound,x_max_bound-x_max,y_max_bound-y_max)
     IF (preconditioner_type .NE. TL_PREC_NONE) THEN
       IF (preconditioner_type .EQ. TL_PREC_JAC_BLOCK) THEN
         CALL tea_block_solve(x_min, x_max, y_min, y_max, halo_exchange_depth,             &
                                r, z, cp, bfp, Kx, Ky, Di, rx, ry)
       ELSE IF (preconditioner_type .EQ. TL_PREC_JAC_DIAG) THEN
-        CALL tea_diag_solve(x_min, x_max, y_min, y_max, halo_exchange_depth,             &
+        CALL tea_diag_solve(x_min, x_max, y_min, y_max, halo_exchange_depth, depth,       &
                                r, z, Mi)
       ENDIF
   
@@ -207,7 +208,7 @@ SUBROUTINE tea_leaf_kernel_ppcg_inner_nouup(x_min,             &
   REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth)&
                           :: u, r, Kx, Ky, sd , z, Mi, Di
   REAL(KIND=8), DIMENSION(x_min:x_max,y_min:y_max) :: cp, bfp
-  INTEGER(KIND=4) :: j,k
+  INTEGER(KIND=4) :: j,k,depth
   REAL(KIND=8), DIMENSION(:) :: alpha, beta
   REAL(KIND=8) :: smvp, rx, ry
 
@@ -244,12 +245,13 @@ SUBROUTINE tea_leaf_kernel_ppcg_inner_nouup(x_min,             &
     ENDDO
 !$OMP END DO
 
+    depth=max(x_min-x_min_bound,y_min-y_min_bound,x_max_bound-x_max,y_max_bound-y_max)
     IF (preconditioner_type .NE. TL_PREC_NONE) THEN
       IF (preconditioner_type .EQ. TL_PREC_JAC_BLOCK) THEN
         CALL tea_block_solve(x_min, x_max, y_min, y_max, halo_exchange_depth,             &
                                r, z, cp, bfp, Kx, Ky, Di, rx, ry)
       ELSE IF (preconditioner_type .EQ. TL_PREC_JAC_DIAG) THEN
-        CALL tea_diag_solve(x_min, x_max, y_min, y_max, halo_exchange_depth,             &
+        CALL tea_diag_solve(x_min, x_max, y_min, y_max, halo_exchange_depth, depth,       &
                                r, z, Mi)
       ENDIF
   

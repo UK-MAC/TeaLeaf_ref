@@ -309,27 +309,28 @@ SUBROUTINE tea_diag_init(x_min,             &
 
 END SUBROUTINE
 
-SUBROUTINE tea_diag_solve(x_min,             &
-                         x_max,             &
-                         y_min,             &
-                         y_max,             &
-                         halo_exchange_depth,             &
-                         r,                 &
-                         z,                 &
+SUBROUTINE tea_diag_solve(x_min,              &
+                         x_max,               &
+                         y_min,               &
+                         y_max,               &
+                         halo_exchange_depth, &
+                         depth,               &
+                         r,                   &
+                         z,                   &
                          Mi)
 
   IMPLICIT NONE
 
   INTEGER(KIND=4):: j, k
-  INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
+  INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth,depth
   REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) &
                           :: r, z, Mi
 
 !$OMP DO
 !    DO k=y_min,y_max
 !      DO j=x_min,x_max
-    DO k=y_min-halo_exchange_depth+1,y_max+halo_exchange_depth-1
-      DO j=x_min-halo_exchange_depth+1,x_max+halo_exchange_depth-1
+    DO k=y_min-depth,y_max+depth
+      DO j=x_min-depth,x_max+depth
         z(j, k) = Mi(j, k)*r(j, k)
       ENDDO
     ENDDO

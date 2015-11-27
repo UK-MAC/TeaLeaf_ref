@@ -77,7 +77,7 @@ SUBROUTINE tea_leaf_kernel_cheby_init(x_min,  &
       CALL tea_block_solve(x_min, x_max, y_min, y_max, halo_exchange_depth,             &
                              r, z, cp, bfp, Kx, Ky, Di, rx, ry)
     ELSE IF (preconditioner_type .EQ. TL_PREC_JAC_DIAG) THEN
-      CALL tea_diag_solve(x_min, x_max, y_min, y_max, halo_exchange_depth,             &
+      CALL tea_diag_solve(x_min, x_max, y_min, y_max, halo_exchange_depth, 0,           &
                              r, z, Mi)
     ENDIF
 
@@ -168,7 +168,7 @@ SUBROUTINE tea_leaf_kernel_cheby_iterate(x_min, &
       CALL tea_block_solve(x_min, x_max, y_min, y_max, halo_exchange_depth,             &
                              r, z, cp, bfp, Kx, Ky, Di, rx, ry)
     ELSE IF (preconditioner_type .EQ. TL_PREC_JAC_DIAG) THEN
-      CALL tea_diag_solve(x_min, x_max, y_min, y_max, halo_exchange_depth,             &
+      CALL tea_diag_solve(x_min, x_max, y_min, y_max, halo_exchange_depth, 0,           &
                              r, z, Mi)
     ENDIF
 
