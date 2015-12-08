@@ -126,14 +126,23 @@ class Grid(HasInner):
         # TODO make numpy
         for i in xrange(self.dims[0]):
             for j in xrange(self.dims[1]):
-                Kx_c=np.sum(self.Kx[self.x_cumsum_minus[i]+1,self.y_cumsum_minus[j]+1:self.y_cumsum[j]+1])
-                Kx_r=np.sum(self.Kx[self.x_cumsum      [i]+1,self.y_cumsum_minus[j]+1:self.y_cumsum[j]+1])
-                Ky_c=np.sum(self.Ky[self.x_cumsum_minus[i]+1:self.x_cumsum[i]+1,self.y_cumsum_minus[j]+1])
-                Ky_r=np.sum(self.Ky[self.x_cumsum_minus[i]+1:self.x_cumsum[i]+1,self.y_cumsum      [j]+1])
+                Kx_c=np.sum(self.Kx[self.x_cumsum_minus[i]+1:self.x_cumsum[i    ]+1, self.y_cumsum_minus[j]+1:self.y_cumsum[j]+1])
+                try:
+                    Kx_r=np.sum(self.Kx[self.x_cumsum      [i]+1:self.x_cumsum[i + 1]+1, self.y_cumsum_minus[j]+1:self.y_cumsum[j]+1])
+                except IndexError as e:
+                    Kx_r = np.zeros_like(Kx_c)
+
+                Ky_c=np.sum(self.Ky[self.x_cumsum_minus[i]+1:self.x_cumsum[i]+1,     self.y_cumsum_minus[j]+1:self.y_cumsum[j    ]+1])
+                try:
+                    Ky_r=np.sum(self.Ky[self.x_cumsum_minus[i]+1:self.x_cumsum[i]+1,     self.y_cumsum      [j]+1:self.y_cumsum[j + 1]+1])
+                except IndexError as e:
+                    Ky_r = np.zeros_like(Ky_c)
+
                 self.Kx_small[i+1,j+1]=Kx_c
                 self.Kx_small[i+2,j+1]=Kx_r
                 self.Ky_small[i+1,j+1]=Ky_c
                 self.Ky_small[i+1,j+2]=Ky_r
+
                 self.Di_small[i+1,j+1]=(self.x_cumsum[i]-self.x_cumsum_minus[i])*(self.y_cumsum[j]-self.y_cumsum_minus[j]) # sum the diagonals
                 self.Di_small[i+1,j+1]+=Kx_c+Kx_r+Ky_c+Ky_r
 
@@ -351,7 +360,7 @@ class Grid(HasInner):
         t1 = np.zeros((2+self.dims[0], 2+self.dims[1]))
 
         def sum_and_multiply(x, y, big_array, small_array, arr_slice):
-            small_array[self.inner][x, y] += np.sum(big_array[arr_slice])
+            small_array[self.inner][x, y] = np.sum(big_array[arr_slice])
 
         self.iter_sub_array(self.matmul(z), t1, sum_and_multiply)
 
@@ -388,44 +397,51 @@ class Grid(HasInner):
 
         inner_its = 4
 
-        for i in xrange(100):
-            rro, alpha, beta = self.cg(x_s, p_s, r_s, w_s, z_s, rro, matmul_bound, M=M_s)
-            if np.sqrt(abs(rro)) < self.params.tl_eps*np.sqrt(abs(initial)):
-            #if np.sqrt(abs(rro)) < 0.9*np.sqrt(abs(initial)):
-                break
+        if 0:
+            for i in xrange(self.params.coarse_solve_max_iters):
+                rro, alpha, beta = self.cg(x_s, p_s, r_s, w_s, z_s, rro, self.matmul_small, M=M_s)
+                if np.sqrt(abs(rro)) < self.params.coarse_solve_eps*np.sqrt(abs(initial)):
+                #if np.sqrt(abs(rro)) < 0.9*np.sqrt(abs(initial)):
+                    break
+        else:
+            for i in xrange(self.params.coarse_solve_max_iters):
+                if self.calculated_coarse_eigs:
+                    rro = self.ppcg(x_s, p_s, r_s, sd_s, w_s, z_s,
+                        self.inner_theta, self.inner_ch_alphas, self.inner_ch_betas,
+                        inner_its, rro, matmul_bound, M=M_s)
+                else:
+                    eigmin = 0.1
+                    eigmax = 2
 
-        #for i in xrange(100):
-        #    if self.calculated_coarse_eigs:
-        #        rro = self.ppcg(x_s, p_s, r_s, sd_s, w_s, z_s,
-        #            self.inner_theta, self.inner_ch_alphas, self.inner_ch_betas,
-        #            inner_its, rro, matmul_bound, M=M_s)
-        #    else:
-        #        eigmin = 0.1
-        #        eigmax = 2
+                    # use above bounds if diagonal jacobi is used
+                    if 1:
+                        for j in xrange(35):
+                            rro, alpha, beta = self.cg(x_s, p_s, r_s, w_s, z_s, rro, matmul_bound, M=M_s)
+                            if rro == 0:
+                                break
 
-        #        # use above bounds if diagonal jacobi is used
-        #        if 1:
-        #            for i in xrange(35):
-        #                rro, alpha, beta = self.cg(x_s, p_s, r_s, w_s, z_s, rro, matmul_bound, M=M_s)
-        #                if rro == 0:
-        #                    break
+                            cg_alphas.append(alpha)
+                            cg_betas.append(beta)
 
-        #                cg_alphas.append(alpha)
-        #                cg_betas.append(beta)
+                        eigmin, eigmax = calc_eigs(cg_alphas, cg_betas)
 
-        #            eigmin, eigmax = calc_eigs(cg_alphas, cg_betas)
+                    self.inner_theta, self.inner_ch_alphas, self.inner_ch_betas = calc_ch_coefs(eigmin, eigmax,
+                        self.dotvec(self.u0, self.u0),
+                        self.dotvec(self.r, self.r),
+                        self.params.coarse_solve_eps
+                        )
 
-        #        self.inner_theta, self.inner_ch_alphas, self.inner_ch_betas = calc_ch_coefs(eigmin, eigmax,
-        #            self.dotvec(self.u0, self.u0),
-        #            self.dotvec(self.r, self.r),
-        #            self.params.tl_eps
-        #            )
+                    #self.calculated_coarse_eigs = True
 
-        #        #self.calculated_coarse_eigs = True
+                    #print eigmin, eigmax, eigmax/eigmin
 
-        #    if np.sqrt(abs(rro)) < self.params.tl_eps*np.sqrt(abs(initial)):
-        #    #if np.sqrt(abs(rro)) < 0.9*np.sqrt(abs(initial)):
-        #        break
+                if np.sqrt(abs(rro)) < self.params.coarse_solve_eps*np.sqrt(abs(initial)):
+                #if np.sqrt(abs(rro)) < 0.9*np.sqrt(abs(initial)):
+                    break
+
+        #print self.Kx_small
+        #pltim(self.Kx_small)
+        #exit()
 
         #print i
         #self.calc_residual(w_s, r_s, b_s, x_s, matmul_func=matmul_bound)

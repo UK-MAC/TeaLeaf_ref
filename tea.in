@@ -1,9 +1,9 @@
 *tea
 state 1 density=100.0 energy=0.0001
-state 2 density=  0.1 energy=25.0 geometry=rectangle xmin=0.0 xmax= 1.0 ymin=1.0 ymax=2.0
-state 3 density=  0.1 energy= 0.1 geometry=rectangle xmin=1.0 xmax= 6.0 ymin=1.0 ymax=2.0
-state 4 density=  0.1 energy= 0.1 geometry=rectangle xmin=5.0 xmax= 6.0 ymin=1.0 ymax=8.0
-state 5 density=  0.1 energy= 0.1 geometry=rectangle xmin=5.0 xmax=10.0 ymin=7.0 ymax=8.0
+state 2 density=0.1   energy=25.0 geometry=rectangle xmin=0.0  xmax=1.0 ymin=1.0 ymax=2.0
+state 3 density=0.1   energy=0.1  geometry=rectangle xmin=1.0  xmax=6.0 ymin=1.0 ymax=2.0
+state 4 density=0.1   energy=0.1  geometry=rectangle xmin=5.0  xmax=6.0 ymin=1.0 ymax=8.0
+state 5 density=0.1   energy=0.1  geometry=rectangle xmin=5.0 xmax=10.0 ymin=7.0 ymax=8.0
 x_cells=500
 y_cells=500
 xmin=0.0
@@ -20,11 +20,13 @@ tl_check_result
 tl_eps=1.0e-15
 profiler_on
 
-total_tiles=100
-sub_tiles_per_tile=625
+tiles_per_task=3969
+!total_tiles=3969
+!sub_tiles_per_tile=625
 tl_preconditioner_type=jac_diag
 halo_depth=1
 verbose_on
 coarse_solve_eps=0.1
+coarse_solve_max_iters=100
 
 *endtea

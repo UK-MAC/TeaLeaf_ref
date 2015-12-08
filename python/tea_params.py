@@ -209,6 +209,9 @@ class Params(object):
         match_param("tl_eps", float, needed=True)
         match_param("tiles_per_task", int, False, default=1)
 
+        match_param("coarse_solve_eps", float, needed=True)
+        match_param("coarse_solve_max_iters", int, needed=True)
+
         check_param_enabled("tl_use_cg")
         check_param_enabled("tl_use_dpcg")
         check_param_enabled("reflective_boundary")
