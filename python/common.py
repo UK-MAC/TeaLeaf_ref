@@ -26,13 +26,14 @@ def pltim(*arrs):
                     axes_pad = 0.1,
                     label_mode = "1",
                     share_all = True,
-                    cbar_location="bottom",
+                    cbar_location="top",
                     cbar_mode="each",
                     cbar_size="7%",
-                    cbar_pad="2%",
+                    cbar_pad="8%",
                     )
 
     for i,arr in enumerate(arrs):
+        arr = arr.T
         extent = [0, arr.shape[0]+0, 0, arr.shape[1]+0]
         grid[i].title.set_text(i)
         im = grid[i].imshow(arr[1:-1, 1:-1], interpolation='nearest', cmap='seismic', extent=extent)
