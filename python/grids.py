@@ -463,8 +463,8 @@ class Grid(HasInner):
             #if np.sqrt(abs(rro)) < 0.9*np.sqrt(abs(initial)):
                 break
 
-        print initial
-        print i, "iterations", rro
+        #print initial
+        #print i, "iterations", rro
 
         #self.calc_residual(w_s, r_s, b_s, x_s, matmul_func=matmul_bound)
         #print initial, i, rro, self.exactrro(b_s, x_s, matmul_bound)
@@ -499,12 +499,12 @@ class Grid(HasInner):
             t1 = self.restrict_Zt(r)
 
             # 7
-            t2 = t1.copy()
+            t2 = -t1
 
             t2 = self.solve_E(t2, t1)
 
             # 8/9
-            u[self.inner] += self.prolong_Z(t2)
+            u[self.inner] -= self.prolong_Z(t2)
 
             # 10/11
             self.calc_residual(w, r, self.u0, u, matmul_func=self.matmul)
