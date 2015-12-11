@@ -111,40 +111,60 @@ class Grid(HasInner):
         Ky_r = self.Ky[self.yr_idx]
         Ky_c = self.Ky[self.inner]
 
-        down  = -Ky_c
-        up    = -Ky_r
-        left  = -Kx_c
-        right = -Kx_r
+        down  = Ky_c
+        up    = Ky_r
+        left  = Kx_c
+        right = Kx_r
 
-        self.Di[self.inner] = 1.0 - down - up - left - right
+        self.Di[self.inner] = 1.0 + (left + right) + (down + up)
 
     def makeA_small(self):
         self.Kx_small[:] = 0
         self.Ky_small[:] = 0
         self.Di_small[:] = 0
 
+        Kx_inner = self.Kx[self.inner]
+        Ky_inner = self.Ky[self.inner]
+
+        Kx_small_inner = self.Kx_small[self.inner]
+        Ky_small_inner = self.Ky_small[self.inner]
+        Di_small_inner = self.Di_small[self.inner]
+
         # TODO make numpy
         for i in xrange(self.dims[0]):
             for j in xrange(self.dims[1]):
-                Kx_c=np.sum(self.Kx[self.x_cumsum_minus[i]+1:self.x_cumsum[i    ]+1, self.y_cumsum_minus[j]+1:self.y_cumsum[j]+1])
+                Kx_c =   np.sum(Kx_inner[self.x_cumsum_minus[i  ]:self.x_cumsum[i  ], self.y_cumsum_minus[j  ]:self.y_cumsum[j  ]])
+
                 try:
-                    Kx_r=np.sum(self.Kx[self.x_cumsum      [i]+1:self.x_cumsum[i + 1]+1, self.y_cumsum_minus[j]+1:self.y_cumsum[j]+1])
+                    Kx_r=np.sum(Kx_inner[self.x_cumsum_minus[i+1]:self.x_cumsum[i+1], self.y_cumsum_minus[j  ]:self.y_cumsum[j  ]])
                 except IndexError as e:
-                    Kx_r = np.zeros_like(Kx_c)
+                    Kx_r=0
 
-                Ky_c=np.sum(self.Ky[self.x_cumsum_minus[i]+1:self.x_cumsum[i]+1,     self.y_cumsum_minus[j]+1:self.y_cumsum[j    ]+1])
+                Ky_c =   np.sum(Ky_inner[self.x_cumsum_minus[i  ]:self.x_cumsum[i  ], self.y_cumsum_minus[j  ]:self.y_cumsum[j  ]])
+
                 try:
-                    Ky_r=np.sum(self.Ky[self.x_cumsum_minus[i]+1:self.x_cumsum[i]+1,     self.y_cumsum      [j]+1:self.y_cumsum[j + 1]+1])
+                    Ky_r=np.sum(Ky_inner[self.x_cumsum_minus[i  ]:self.x_cumsum[i  ], self.y_cumsum_minus[j+1]:self.y_cumsum[j+1]])
                 except IndexError as e:
-                    Ky_r = np.zeros_like(Ky_c)
+                    Ky_r=0
 
-                self.Kx_small[i+1,j+1]=Kx_c
-                self.Kx_small[i+2,j+1]=Kx_r
-                self.Ky_small[i+1,j+1]=Ky_c
-                self.Ky_small[i+1,j+2]=Ky_r
+                if i == 0:
+                    Kx_c = 0
+                if j == 0:
+                    Ky_c = 0
 
-                self.Di_small[i+1,j+1]=(self.x_cumsum[i]-self.x_cumsum_minus[i])*(self.y_cumsum[j]-self.y_cumsum_minus[j]) # sum the diagonals
-                self.Di_small[i+1,j+1]+=Kx_c+Kx_r+Ky_c+Ky_r
+                Kx_small_inner[i  ,j  ]=Kx_c
+                Ky_small_inner[i,  j  ]=Ky_c
+
+                #if i < self.dims[0] - 1:
+                #    Kx_small_inner[i+1,j  ]=Kx_r
+                #if j < self.dims[1] - 1:
+                #    Ky_small_inner[i,  j+1]=Ky_r
+
+                Di_small_inner[i,j]  = (self.x_cumsum[i]-self.x_cumsum_minus[i])*(self.y_cumsum[j]-self.y_cumsum_minus[j]) # sum the diagonals
+                Di_small_inner[i,j] += (Kx_c + Kx_r) + (Ky_c + Ky_r)
+
+        self.zero_boundaries(self.Kx_small)
+        self.zero_boundaries(self.Ky_small)
 
     def dotvec(self, a, b):
         an = a[self.inner].ravel()
@@ -175,7 +195,7 @@ class Grid(HasInner):
     def calc_residual(self, w, r, b, x, matmul_func):
         # r = b - Ax
         w[self.inner] = matmul_func(x)
-        r[:] = b - w
+        r[self.inner] = b[self.inner] - w[self.inner]
 
     def exactrro(self, b, x, matmul_func):
         r = np.zeros_like(b)
@@ -305,8 +325,8 @@ class Grid(HasInner):
 
         diag = self.Di[self.inner]
 
-        return ne.evaluate("""diag*ins - (Kx_r*ux_r + Kx_c*ux_l) - (Ky_r*uy_r + Ky_c*uy_l)""")
-        #return diag*ins - (Kx_r*ux_r + Kx_c*ux_l) - (Ky_r*uy_r + Ky_c*uy_l)
+        #return ne.evaluate("""diag*ins - (Kx_r*ux_r + Kx_c*ux_l) - (Ky_r*uy_r + Ky_c*uy_l)""")
+        return diag*ins - (Kx_r*ux_r + Kx_c*ux_l) - (Ky_r*uy_r + Ky_c*uy_l)
 
     def matmul_small(self, arr):
         ux_r = arr[self.xr_idx]
@@ -325,8 +345,8 @@ class Grid(HasInner):
 
         diag = self.Di_small[self.inner]
 
-        return ne.evaluate("""diag*ins - (Kx_r*ux_r + Kx_c*ux_l) - (Ky_r*uy_r + Ky_c*uy_l)""")
-        #return diag*ins - (Kx_r*ux_r + Kx_c*ux_l) - (Ky_r*uy_r + Ky_c*uy_l)
+        #return ne.evaluate("""diag*ins - (Kx_r*ux_r + Kx_c*ux_l) - (Ky_r*uy_r + Ky_c*uy_l)""")
+        return diag*ins - (Kx_r*ux_r + Kx_c*ux_l) - (Ky_r*uy_r + Ky_c*uy_l)
 
     def iter_sub_array(self, big_array, small_array, function):
         def get_slice_and_call(((x,y),_)):
@@ -376,7 +396,13 @@ class Grid(HasInner):
         matmul_bound = functools.partial(self.matmul_small)
 
         #M_s = NoPrec(E, E)
-        M_s = JacDiag(self.Di_small)
+        #M_s = JacDiag(self.Di_small)
+        if self.params.tl_preconditioner_type == "jac_diag":
+            M_s = JacDiag(self.Di_small)
+        elif self.params.tl_preconditioner_type == "jac_block":
+            M_s = JacBlock(self.Kx_small, self.Ky_small)
+        else:
+            M_s = NoPrec(self.Kx, self.Ky)
 
         # use zero initial guess which allows for inexact coarse solves
         x_s[:] = 0
@@ -388,29 +414,25 @@ class Grid(HasInner):
 
         rro = self.dotvec(r_s, p_s)
 
+        initial = rro
+
+        inner_its = 4
+
         cg_alphas = []
         cg_betas = []
 
         i = 0
 
-        initial = rro
-
-        inner_its = 4
-
-        if 0:
-            for i in xrange(self.params.coarse_solve_max_iters):
+        for i in xrange(self.params.coarse_solve_max_iters):
+            if 1:
                 rro, alpha, beta = self.cg(x_s, p_s, r_s, w_s, z_s, rro, self.matmul_small, M=M_s)
-                if np.sqrt(abs(rro)) < self.params.coarse_solve_eps*np.sqrt(abs(initial)):
-                #if np.sqrt(abs(rro)) < 0.9*np.sqrt(abs(initial)):
-                    break
-        else:
-            for i in xrange(self.params.coarse_solve_max_iters):
+            else:
                 if self.calculated_coarse_eigs:
                     rro = self.ppcg(x_s, p_s, r_s, sd_s, w_s, z_s,
                         self.inner_theta, self.inner_ch_alphas, self.inner_ch_betas,
                         inner_its, rro, matmul_bound, M=M_s)
                 else:
-                    eigmin = 0.1
+                    eigmin = 0.01
                     eigmax = 2
 
                     # use above bounds if diagonal jacobi is used
@@ -422,6 +444,8 @@ class Grid(HasInner):
 
                             cg_alphas.append(alpha)
                             cg_betas.append(beta)
+
+                        i += j
 
                         eigmin, eigmax = calc_eigs(cg_alphas, cg_betas)
 
@@ -435,15 +459,13 @@ class Grid(HasInner):
 
                     #print eigmin, eigmax, eigmax/eigmin
 
-                if np.sqrt(abs(rro)) < self.params.coarse_solve_eps*np.sqrt(abs(initial)):
-                #if np.sqrt(abs(rro)) < 0.9*np.sqrt(abs(initial)):
-                    break
+            if np.sqrt(abs(rro)) < self.params.coarse_solve_eps*np.sqrt(abs(initial)):
+            #if np.sqrt(abs(rro)) < 0.9*np.sqrt(abs(initial)):
+                break
 
-        #print self.Kx_small
-        #pltim(self.Kx_small)
-        #exit()
+        print initial
+        print i, "iterations", rro
 
-        #print i
         #self.calc_residual(w_s, r_s, b_s, x_s, matmul_func=matmul_bound)
         #print initial, i, rro, self.exactrro(b_s, x_s, matmul_bound)
 
