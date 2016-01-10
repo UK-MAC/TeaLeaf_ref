@@ -197,6 +197,10 @@ SUBROUTINE read_input()
         IF(mod(total_tiles,parallel%max_task) /= 0)THEN
           IF(parallel%boss)WRITE(g_out,"(1x,a80)") &
             'WARNING: total_tiles should be divisible by the number of MPI ranks'
+          IF(tiles_per_task == 0)THEN
+            IF(parallel%boss)WRITE(g_out,"(1x,a80)") 'WARNING: tiles_per_task reset to 1 instead of 0'
+            tiles_per_task=1
+          ENDIF
         ENDIF
       CASE('tl_ch_cg_presteps')
         tl_ch_cg_presteps=parse_getival(parse_getword(.TRUE.))

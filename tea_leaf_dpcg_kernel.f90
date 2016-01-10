@@ -198,6 +198,7 @@ SUBROUTINE tea_leaf_dpcg_matmul_ZTA_kernel(x_min,  &
                           :: Kx, Ky, Di, z
   REAL(KIND=8) :: rx, ry
   REAL(KIND=8), DIMENSION(nx, ny) :: ztaz
+  REAL(kind=8), DIMENSION(x_min:x_max) :: ztazj ! store the values on the row to enable vectorization of the loop
 
   INTEGER(KIND=4) :: j,k
   INTEGER(KIND=4) :: jj,j_start,j_end,kk,k_start,k_end
@@ -208,17 +209,44 @@ SUBROUTINE tea_leaf_dpcg_matmul_ZTA_kernel(x_min,  &
     k_start=y_min+(kk-1)*dy
     k_end  =min(k_start+dy-1,y_max)
 !$OMP PARALLEL
-!$OMP DO REDUCTION (+:ztaz) PRIVATE(j,jj,j_start,j_end)
+!!$OMP DO REDUCTION (+:ztaz) PRIVATE(j,jj,j_start,j_end)
+!$OMP DO REDUCTION (+:ztaz) PRIVATE(j,jj,j_start,j_end,ztazj)
     DO k=k_start,k_end
+!      DO jj=1,nx
+!        j_start=x_min+(jj-1)*dx
+!        j_end  =min(j_start+dx-1,x_max)
+!        DO j=j_start,j_end
+!          ztaz(jj,kk) = ztaz(jj,kk) + Di(j,k)*z(j, k)       &
+!          - ry*(Ky(j, k+1)*z(j, k+1) + Ky(j, k)*z(j, k-1))  &
+!          - rx*(Kx(j+1, k)*z(j+1, k) + Kx(j, k)*z(j-1, k))
+!        ENDDO
+!      ENDDO
+
+      DO j=x_min,x_max
+        ztazj(j) = Di(j,k)*z(j, k)       &
+        - ry*(Ky(j, k+1)*z(j, k+1) + Ky(j, k)*z(j, k-1))  &
+        - rx*(Kx(j+1, k)*z(j+1, k) + Kx(j, k)*z(j-1, k))
+      ENDDO
       DO jj=1,nx
         j_start=x_min+(jj-1)*dx
         j_end  =min(j_start+dx-1,x_max)
         DO j=j_start,j_end
-          ztaz(jj,kk) = ztaz(jj,kk) + Di(j,k)*z(j, k)       &
-          - ry*(Ky(j, k+1)*z(j, k+1) + Ky(j, k)*z(j, k-1))  &
-          - rx*(Kx(j+1, k)*z(j+1, k) + Kx(j, k)*z(j-1, k))
+          ztaz(jj,kk) = ztaz(jj,kk) + ztazj(j)
         ENDDO
       ENDDO
+
+!      DO jj=1,nx
+!        j_start=x_min+(jj-1)*dx
+!        j_end  =min(j_start+dx-1,x_max)
+!        DO j=j_start,j_end
+!          ztazj(j) = Di(j,k)*z(j, k)       &
+!          - ry*(Ky(j, k+1)*z(j, k+1) + Ky(j, k)*z(j, k-1))  &
+!          - rx*(Kx(j+1, k)*z(j+1, k) + Kx(j, k)*z(j-1, k))
+!        ENDDO
+!        DO j=j_start,j_end
+!          ztaz(jj,kk) = ztaz(jj,kk) + ztazj(j)
+!        ENDDO
+!      ENDDO
     ENDDO
 !$OMP END DO
 !$OMP END PARALLEL
@@ -424,37 +452,6 @@ SUBROUTINE tea_leaf_dpcg_calc_p_kernel(x_min, x_max, y_min, y_max, halo_exchange
 !$OMP END PARALLEL
 
 END SUBROUTINE tea_leaf_dpcg_calc_p_kernel
-
-SUBROUTINE tea_leaf_dpcg_calc_zrnorm_kernel(x_min, &
-                          x_max,             &
-                          y_min,             &
-                          y_max,             &
-                          halo_exchange_depth,             &
-                          z, r,               &
-                          norm)
-
-  IMPLICIT NONE
-
-  INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
-  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,&
-                          y_min-halo_exchange_depth:y_max+halo_exchange_depth)&
-                          :: r, z
-  REAL(KIND=8) :: norm
-  integer :: j, k
-
-  norm = 0.0_8
-
-!$OMP PARALLEL
-!$OMP DO REDUCTION(+:norm)
-  DO k=y_min,y_max
-    DO j=x_min,x_max
-      norm = norm + z(j, k)*r(j, k)
-    ENDDO
-  ENDDO
-!$OMP END DO
-!$OMP END PARALLEL
-
-END SUBROUTINE tea_leaf_dpcg_calc_zrnorm_kernel
 
 END MODULE
 

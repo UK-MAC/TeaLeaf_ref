@@ -21,7 +21,9 @@
 
 MODULE tea_leaf_cg_kernel_module
 
+  USE definitions_module, only: tl_ppcg_active, tl_ppcg_inner_steps
   USE tea_leaf_common_kernel_module
+  USE tea_leaf_ppcg_module, only: tea_leaf_run_ppcg_inner_steps
 
   IMPLICIT NONE
 
@@ -44,20 +46,28 @@ SUBROUTINE tea_leaf_cg_init_kernel(x_min,  &
                            rx,                     &
                            ry,                     &
                            rro,                    &
-                           preconditioner_type)
+                           preconditioner_type,    &
+                           level,                  &
+                           ppcg_inner_iters,       &
+                           ch_alphas,              &
+                           ch_betas,               &
+                           theta,                  &
+                           solve_time)
 
   IMPLICIT NONE
 
-  INTEGER :: preconditioner_type
-  INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
+  INTEGER :: preconditioner_type,level
+  INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth,ppcg_inner_iters
   REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth)&
                           :: r, Kx, Ky, Di, z, Mi, p
   REAL(KIND=8), DIMENSION(x_min:x_max,y_min:y_max) :: cp, bfp
+  REAL(KIND=8) :: theta,solve_time
+  REAL(KIND=8), DIMENSION(:) :: ch_alphas,ch_betas
 
   INTEGER(KIND=4) :: j,k
 
   REAL(kind=8) :: rro
-  REAL(KIND=8) ::  rx, ry
+  REAL(KIND=8) :: rx, ry
 
   rro = 0.0_8
 
@@ -71,7 +81,7 @@ SUBROUTINE tea_leaf_cg_init_kernel(x_min,  &
   ENDDO
 !$OMP END DO
 
-  IF (preconditioner_type .NE. TL_PREC_NONE) THEN
+  IF (preconditioner_type .NE. TL_PREC_NONE .or. tl_ppcg_active) THEN
 
     IF (preconditioner_type .EQ. TL_PREC_JAC_BLOCK) THEN
       CALL tea_block_solve(x_min, x_max, y_min, y_max, halo_exchange_depth,             &
@@ -79,6 +89,12 @@ SUBROUTINE tea_leaf_cg_init_kernel(x_min,  &
     ELSE IF (preconditioner_type .EQ. TL_PREC_JAC_DIAG) THEN
       CALL tea_diag_solve(x_min, x_max, y_min, y_max, halo_exchange_depth, 0,           &
                              r, z, Mi)
+    ENDIF
+
+    IF (tl_ppcg_active) THEN
+      CALL tea_leaf_run_ppcg_inner_steps(level, ch_alphas, ch_betas, theta, &
+          tl_ppcg_inner_steps, solve_time)
+      ppcg_inner_iters = ppcg_inner_iters + tl_ppcg_inner_steps
     ENDIF
 
 !$OMP DO
@@ -142,7 +158,8 @@ SUBROUTINE tea_leaf_cg_calc_w_kernel(x_min,             &
             w(j, k) = Di(j,k)*p(j, k)                             &
                 - ry*(Ky(j, k+1)*p(j, k+1) + Ky(j, k)*p(j, k-1))  &
                 - rx*(Kx(j+1, k)*p(j+1, k) + Kx(j, k)*p(j-1, k))
-
+        ENDDO
+        DO j=x_min,x_max
             pw = pw + w(j, k)*p(j, k)
         ENDDO
     ENDDO
@@ -150,6 +167,46 @@ SUBROUTINE tea_leaf_cg_calc_w_kernel(x_min,             &
 !$OMP END PARALLEL
 
 END SUBROUTINE tea_leaf_cg_calc_w_kernel
+
+SUBROUTINE tea_leaf_cg_calc_w_kernel_norxy(x_min,             &
+                                                   x_max,             &
+                                                   y_min,             &
+                                                   y_max,             &
+                                                   halo_exchange_depth,             &
+                                                   p,                 &
+                                                   w,                 &
+                                                   Kx,                &
+                                                   Ky,                &
+                                                   Di,                &
+                                                   pw                 )
+
+  IMPLICIT NONE
+
+  INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
+  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth)&
+                          :: w, Kx, Ky, p, Di
+
+    INTEGER(KIND=4) :: j,k
+    REAL(kind=8) :: pw
+
+  pw = 0.0_8
+
+!$OMP PARALLEL REDUCTION(+:pw)
+!$OMP DO
+    DO k=y_min,y_max
+        DO j=x_min,x_max
+            w(j, k) = Di(j,k)*p(j, k)                             &
+                - (Ky(j, k+1)*p(j, k+1) + Ky(j, k)*p(j, k-1))  &
+                - (Kx(j+1, k)*p(j+1, k) + Kx(j, k)*p(j-1, k))
+        ENDDO
+        DO j=x_min,x_max
+            pw = pw + w(j, k)*p(j, k)
+        ENDDO
+    ENDDO
+!$OMP END DO NOWAIT
+!$OMP END PARALLEL
+
+END SUBROUTINE tea_leaf_cg_calc_w_kernel_norxy
 
 SUBROUTINE tea_leaf_cg_calc_ur_kernel(x_min,             &
                                                     x_max,             &
@@ -188,46 +245,70 @@ SUBROUTINE tea_leaf_cg_calc_ur_kernel(x_min,             &
   rrn = 0.0_8
 
 !$OMP PARALLEL REDUCTION(+:rrn)
-!$OMP DO
-    DO k=y_min,y_max
-        DO j=x_min,x_max
-            u(j, k) = u(j, k) + alpha*p(j, k)
-        ENDDO
-    ENDDO
-!$OMP END DO NOWAIT
-
   IF (preconditioner_type .NE. TL_PREC_NONE) THEN
 
+    IF (preconditioner_type .EQ. TL_PREC_JAC_DIAG) THEN
+
 !$OMP DO
-    DO k=y_min, y_max
-      DO j=x_min,x_max
-        r(j, k) = r(j, k) - alpha*w(j, k)
+      DO k=y_min,y_max
+        DO j=x_min,x_max
+          u(j, k) =  u(j, k) + alpha   *p(j, k)
+        ENDDO
       ENDDO
-    ENDDO
+!$OMP END DO NOWAIT
+!$OMP DO
+      DO k=y_min,y_max
+        DO j=x_min,x_max
+          r(j, k) =  r(j, k) - alpha   *w(j, k)
+          z(j, k) =            Mi(j, k)*r(j, k)
+          rrn     = rrn      +  r(j, k)*z(j, k)
+        ENDDO
+      ENDDO
+!$OMP END DO NOWAIT
+
+    ELSE IF (preconditioner_type .EQ. TL_PREC_JAC_BLOCK) THEN
+
+!$OMP DO
+      DO k=y_min,y_max
+        DO j=x_min,x_max
+          u(j, k) = u(j, k) + alpha*p(j, k)
+        ENDDO
+      ENDDO
+!$OMP END DO
+!$OMP DO
+      DO k=y_min,y_max
+        DO j=x_min,x_max
+          r(j, k) = r(j, k) - alpha*w(j, k)
+        ENDDO
+      ENDDO
 !$OMP END DO
 
-    IF (preconditioner_type .EQ. TL_PREC_JAC_BLOCK) THEN
       CALL tea_block_solve(x_min, x_max, y_min, y_max, halo_exchange_depth,             &
                              r, z, cp, bfp, Kx, Ky, Di, rx, ry)
-    ELSE IF (preconditioner_type .EQ. TL_PREC_JAC_DIAG) THEN
-      CALL tea_diag_solve(x_min, x_max, y_min, y_max, halo_exchange_depth, 0,           &
-                             r, z, Mi)
-    ENDIF
 
 !$OMP DO
-    DO k=y_min,y_max
+      DO k=y_min,y_max
         DO j=x_min,x_max
-            rrn = rrn + r(j, k)*z(j, k)
+          rrn = rrn + r(j, k)*z(j, k)
         ENDDO
-    ENDDO
+      ENDDO
 !$OMP END DO NOWAIT
+
+    ENDIF
   ELSE
 !$OMP DO
     DO k=y_min,y_max
-        DO j=x_min,x_max
-            r(j, k) = r(j, k) - alpha*w(j, k)
-            rrn = rrn + r(j, k)*r(j, k)
-        ENDDO
+      DO j=x_min,x_max
+        u(j, k) = u(j, k) + alpha*p(j, k)
+      ENDDO
+    ENDDO
+!$OMP END DO
+!$OMP DO
+    DO k=y_min,y_max
+      DO j=x_min,x_max
+        r(j, k) = r(j, k) - alpha*w(j, k)
+        rrn     = rrn + r(j, k)*r(j, k)
+      ENDDO
     ENDDO
 !$OMP END DO NOWAIT
   ENDIF
@@ -257,7 +338,7 @@ SUBROUTINE tea_leaf_cg_calc_p_kernel(x_min,             &
   REAL(kind=8) :: beta
 
 !$OMP PARALLEL
-  IF (preconditioner_type .NE. TL_PREC_NONE) THEN
+  IF (preconditioner_type .NE. TL_PREC_NONE .or. tl_ppcg_active) THEN
 !$OMP DO
     DO k=y_min,y_max
         DO j=x_min,x_max

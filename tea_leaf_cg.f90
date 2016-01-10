@@ -8,14 +8,16 @@ MODULE tea_leaf_cg_module
 
 CONTAINS
 
-SUBROUTINE tea_leaf_cg_init(level, rro)
+SUBROUTINE tea_leaf_cg_init(level, ppcg_inner_iters, ch_alphas, ch_betas, theta, solve_time, rro)
 
   IMPLICIT NONE
 
-  INTEGER :: level
+  INTEGER :: level,ppcg_inner_iters
+  REAL(KIND=8) :: rro,theta,solve_time
+  REAL(KIND=8), DIMENSION(:) :: ch_alphas,ch_betas
 
   INTEGER :: t
-  REAL(KIND=8) :: rro, tile_rro
+  REAL(KIND=8) :: tile_rro
 
   rro = 0.0_8
 
@@ -41,7 +43,8 @@ SUBROUTINE tea_leaf_cg_init(level, rro)
           chunk(level)%tiles(t)%field%tri_bfp,    &
           chunk(level)%tiles(t)%field%rx,  &
           chunk(level)%tiles(t)%field%ry,  &
-          tile_rro, tl_preconditioner_type)
+          tile_rro, tl_preconditioner_type, &
+          level, ppcg_inner_iters, ch_alphas, ch_betas, theta, solve_time)
 
       !write(6,'("tile_rro:",i3,4es25.18)') t,tile_rro,sum(chunk(level)%tiles(t)%field%vector_r**2), &
       !                                                sum(chunk(level)%tiles(t)%field%vector_z**2), &
@@ -69,6 +72,31 @@ SUBROUTINE tea_leaf_cg_calc_w(level, pw)
 
   pw = 0.0_08
 
+  IF (level > 1) THEN
+  IF (use_fortran_kernels) THEN
+!$OMP PARALLEL PRIVATE(tile_pw) REDUCTION(+:pw)
+!$OMP DO
+    DO t=1,tiles_per_task
+      tile_pw = 0.0_8
+
+      CALL tea_leaf_cg_calc_w_kernel_norxy(chunk(level)%tiles(t)%field%x_min,&
+          chunk(level)%tiles(t)%field%x_max,                                         &
+          chunk(level)%tiles(t)%field%y_min,                                         &
+          chunk(level)%tiles(t)%field%y_max,                                         &
+          chunk(level)%halo_exchange_depth,                                          &
+          chunk(level)%tiles(t)%field%vector_p,                                      &
+          chunk(level)%tiles(t)%field%vector_w,                                      &
+          chunk(level)%tiles(t)%field%vector_Kx,                                     &
+          chunk(level)%tiles(t)%field%vector_Ky,                                     &
+          chunk(level)%tiles(t)%field%vector_Di,                                     &
+          tile_pw)
+
+      pw = pw + tile_pw
+    ENDDO
+!$OMP END DO NOWAIT
+!$OMP END PARALLEL
+  ENDIF
+  ELSE
   IF (use_fortran_kernels) THEN
 !$OMP PARALLEL PRIVATE(tile_pw) REDUCTION(+:pw)
 !$OMP DO
@@ -93,6 +121,7 @@ SUBROUTINE tea_leaf_cg_calc_w(level, pw)
     ENDDO
 !$OMP END DO NOWAIT
 !$OMP END PARALLEL
+  ENDIF
   ENDIF
 
 END SUBROUTINE tea_leaf_cg_calc_w

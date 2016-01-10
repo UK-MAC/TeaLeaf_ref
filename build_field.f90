@@ -92,6 +92,16 @@ SUBROUTINE build_field(level)
          chunk(level)%tiles(t)%field%x_max+chunk(level)%halo_exchange_depth, &
          chunk(level)%tiles(t)%field%y_min-chunk(level)%halo_exchange_depth: &
          chunk(level)%tiles(t)%field%y_max+chunk(level)%halo_exchange_depth))
+    ALLOCATE(chunk(level)%tiles(t)%field%vector_y &
+        (chunk(level)%tiles(t)%field%x_min-chunk(level)%halo_exchange_depth: &
+         chunk(level)%tiles(t)%field%x_max+chunk(level)%halo_exchange_depth, &
+         chunk(level)%tiles(t)%field%y_min-chunk(level)%halo_exchange_depth: &
+         chunk(level)%tiles(t)%field%y_max+chunk(level)%halo_exchange_depth))
+    ALLOCATE(chunk(level)%tiles(t)%field%vector_r1 &
+        (chunk(level)%tiles(t)%field%x_min-chunk(level)%halo_exchange_depth: &
+         chunk(level)%tiles(t)%field%x_max+chunk(level)%halo_exchange_depth, &
+         chunk(level)%tiles(t)%field%y_min-chunk(level)%halo_exchange_depth: &
+         chunk(level)%tiles(t)%field%y_max+chunk(level)%halo_exchange_depth))
     ALLOCATE(chunk(level)%tiles(t)%field%vector_Di &
         (chunk(level)%tiles(t)%field%x_min-chunk(level)%halo_exchange_depth: &
          chunk(level)%tiles(t)%field%x_max+chunk(level)%halo_exchange_depth, &
@@ -169,6 +179,8 @@ SUBROUTINE build_field(level)
       chunk(level)%tiles(t)%field%vector_Mi(j,k)=0.0
       chunk(level)%tiles(t)%field%vector_w(j,k)=0.0
       chunk(level)%tiles(t)%field%vector_z(j,k)=0.0
+      chunk(level)%tiles(t)%field%vector_y(j,k)=0.0
+      chunk(level)%tiles(t)%field%vector_r1(j,k)=0.0
       chunk(level)%tiles(t)%field%vector_Di(j,k)=0.0
       chunk(level)%tiles(t)%field%vector_Kx(j,k)=0.0
       chunk(level)%tiles(t)%field%vector_Ky(j,k)=0.0

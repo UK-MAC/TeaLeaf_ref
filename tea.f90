@@ -179,6 +179,7 @@ SUBROUTINE tea_decompose_tiles(level,x_cells, y_cells)
   !write(6,*) "MPI_DIMS_CREATE:tile output:",level, chunk(level)%tile_dims, err
   best_fit_v=0.0_8
   best_fit_i=0
+  !write(6,*) x_cells,y_cells,tiles_per_task
   IF (MOD(x_cells*y_cells,tiles_per_task) /= 0) THEN
     DO i=1,tiles_per_task-1
       IF (MOD(x_cells*y_cells,tiles_per_task+i) == 0) THEN
@@ -206,8 +207,8 @@ SUBROUTINE tea_decompose_tiles(level,x_cells, y_cells)
   IF (best_fit_i == 0) STOP
   chunk(level)%tile_dims(1)=best_fit_i
   chunk(level)%tile_dims(2)=tiles_per_task/chunk(level)%tile_dims(1)
-  WRITE(6,*) "tiles_per_task optimisation    :",tiles_per_task,x_cells,y_cells, &
-    " best fit:",best_fit_i,tiles_per_task/chunk(level)%tile_dims(1),fit_v
+!  WRITE(6,*) "tiles_per_task optimisation    :",tiles_per_task,x_cells,y_cells, &
+!    " best fit:",best_fit_i,tiles_per_task/chunk(level)%tile_dims(1),fit_v
 
   ! get good split for sub-tiles
   IF (level < 2) THEN
@@ -247,8 +248,8 @@ SUBROUTINE tea_decompose_tiles(level,x_cells, y_cells)
   IF (best_fit_i == 0) STOP
   chunk(level)%sub_tile_dims(1)=best_fit_i
   chunk(level)%sub_tile_dims(2)=sub_tiles_per_tile/chunk(level)%sub_tile_dims(1)
-  WRITE(6,*) "sub_tiles_per_tile optimisation:",sub_tiles_per_tile,xs_cells,ys_cells, &
-    " best fit:",best_fit_i,sub_tiles_per_tile/chunk(level)%sub_tile_dims(1),fit_v
+!  WRITE(6,*) "sub_tiles_per_tile optimisation:",sub_tiles_per_tile,xs_cells,ys_cells, &
+!    " best fit:",best_fit_i,sub_tiles_per_tile/chunk(level)%sub_tile_dims(1),fit_v
   ENDIF
 
   tiles_x = chunk(level)%tile_dims(1)

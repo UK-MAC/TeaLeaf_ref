@@ -77,6 +77,8 @@ SUBROUTINE tea_leaf()
     CALL report_error('tea_leaf', 'unknown coefficient option')
   ENDIF
 
+  tl_ppcg_active = tl_use_ppcg .and. tl_use_dpcg ! disable ppcg until we have the eigenvalue estimates
+                                                 ! unless we are using it as a smoother for dpcg
   cheby_calc_steps = 0
   cg_calc_steps = 0
 
@@ -137,7 +139,7 @@ SUBROUTINE tea_leaf()
     fields(FIELD_P) = 1
   ELSEIF (tl_use_cg .OR. tl_use_chebyshev .OR. tl_use_ppcg) THEN
     ! All 3 of these solvers use the CG kernels
-    CALL tea_leaf_cg_init(level,rro)
+    CALL tea_leaf_cg_init(level, ppcg_inner_iters, ch_alphas, ch_betas, theta, solve_time, rro)
 
     ! and globally sum rro
     IF (profiler_on) dot_product_time=timer()
@@ -213,6 +215,7 @@ SUBROUTINE tea_leaf()
           ! currently also calculate chebyshev coefficients
           CALL tea_calc_ls_coefs(ch_alphas, ch_betas, eigmin, eigmax, &
               theta, tl_ppcg_inner_steps)
+          tl_ppcg_active=.true.
         ENDIF
 
         cn = eigmax/eigmin
@@ -253,8 +256,14 @@ SUBROUTINE tea_leaf()
       ELSE IF (tl_use_ppcg) THEN
         CALL tea_leaf_cg_calc_w(level, pw)
 
+        ! keep old value of r for rrn calculation
+        CALL tea_leaf_dpcg_store_r()
+
+        ! r.z
+        CALL tea_leaf_ppcg_calc_zrnorm(level, rro)
+
         IF (profiler_on) dot_product_time=timer()
-        CALL tea_allsum(pw)
+        CALL tea_allsum2(pw, rro)
         IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
 
         alpha = rro/pw
@@ -270,7 +279,8 @@ SUBROUTINE tea_leaf()
             tl_ppcg_inner_steps, solve_time)
         ppcg_inner_iters = ppcg_inner_iters + tl_ppcg_inner_steps
 
-        CALL tea_leaf_ppcg_calc_zrnorm(level, rrn)
+        !CALL tea_leaf_ppcg_calc_zrnorm(level, rrn)
+        CALL tea_leaf_dpcg_calc_rrn(level, rrn) ! use FCG(1) instead of CG to account for roundoff issues in the PP
 
         IF (profiler_on) dot_product_time=timer()
         CALL tea_allsum(rrn)
@@ -296,12 +306,10 @@ SUBROUTINE tea_leaf()
       CALL tea_leaf_dpcg_store_r()
 
       ! r.z
-      CALL tea_leaf_dpcg_calc_zrnorm(rro)
+      CALL tea_leaf_ppcg_calc_zrnorm(level, rro)
 
       IF (profiler_on) dot_product_time=timer()
-      ! TODO coalesce
-      CALL tea_allsum(pw)
-      CALL tea_allsum(rro)
+      CALL tea_allsum2(pw, rro)
       IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
 
       alpha = rro/pw
@@ -318,6 +326,7 @@ SUBROUTINE tea_leaf()
       !    maxval(abs(ch_betas (1:tl_ppcg_inner_steps))), theta
       CALL tea_leaf_run_ppcg_inner_steps(level, ch_alphas, ch_betas, theta, &
           tl_ppcg_inner_steps, solve_time)
+      ppcg_inner_iters = ppcg_inner_iters + tl_ppcg_inner_steps
 
       IF (coarse_solve_serial) THEN
         CALL tea_leaf_dpcg_setup_and_solve_E(solve_time)
@@ -325,7 +334,7 @@ SUBROUTINE tea_leaf()
         CALL tea_leaf_dpcg_setup_and_solve_E_level(level,solve_time)
       ENDIF
 
-      CALL tea_leaf_dpcg_calc_rrn(rrn)
+      CALL tea_leaf_dpcg_calc_rrn(level, rrn)
       IF (profiler_on) dot_product_time=timer()
       CALL tea_allsum(rrn)
       IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
@@ -345,7 +354,6 @@ SUBROUTINE tea_leaf()
       ! w = Ap
       ! pw = p.w
       CALL tea_leaf_cg_calc_w(level, pw)
-
       IF (profiler_on) dot_product_time=timer()
       CALL tea_allsum(pw)
       IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
@@ -356,7 +364,6 @@ SUBROUTINE tea_leaf()
       ! u = u + a*p
       ! r = r - a*w
       CALL tea_leaf_cg_calc_ur(level, alpha, rrn)
-
       IF (profiler_on) dot_product_time=timer()
       CALL tea_allsum(rrn)
       IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
@@ -371,7 +378,6 @@ SUBROUTINE tea_leaf()
       rro = rrn
     ELSEIF (tl_use_jacobi) THEN
       CALL tea_leaf_jacobi_solve(level, error)
-
       IF (profiler_on) dot_product_time=timer()
       CALL tea_allsum(error)
       IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
@@ -414,7 +420,6 @@ SUBROUTINE tea_leaf()
 
     CALL tea_leaf_calc_residual(level)
     CALL tea_leaf_calc_2norm(level,1, exact_error)
-
     IF (profiler_on) dot_product_time=timer()
     CALL tea_allsum(exact_error)
     IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
@@ -509,7 +514,6 @@ SUBROUTINE tea_leaf_cheby_first_step(ch_alphas, ch_betas, fields, &
 
   ! calculate 2 norm of u0
   CALL tea_leaf_calc_2norm(level, 0, bb)
-
   IF (profiler_on) dot_product_time=timer()
   CALL tea_allsum(bb)
   IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)

@@ -53,7 +53,7 @@ SUBROUTINE start
   CALL tea_barrier()
 
   DO level=1,2
-  !write(6,*) "level=",level
+  !write(6,*) "level=",level," tiles_per_task=",tiles_per_task
   CALL tea_decompose(level, grid(level)%x_cells, grid(level)%y_cells)
 
   ALLOCATE(chunk(level)%tiles(tiles_per_task))
@@ -66,9 +66,9 @@ SUBROUTINE start
   chunk(level)%chunk_x_max = chunk(level)%x_cells
   chunk(level)%chunk_y_max = chunk(level)%y_cells
 
-  write(6,*) "calling tea_decompose_tiles"
+  !write(6,*) "calling tea_decompose_tiles"
   CALL tea_decompose_tiles(level, chunk(level)%x_cells, chunk(level)%y_cells)
-  write(6,*) "after   tea_decompose_tiles"
+  !write(6,*) "after   tea_decompose_tiles"
 
   DO t=1,tiles_per_task
     chunk(level)%tiles(t)%x_cells = chunk(level)%tiles(t)%right -chunk(level)%tiles(t)%left  +1

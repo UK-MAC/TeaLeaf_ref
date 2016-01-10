@@ -73,7 +73,7 @@ SUBROUTINE update_boundary(level, fields,depth)
                                 chunk(level)%tiles(t)%field%u,              &
                                 chunk(level)%tiles(t)%field%vector_p,       &
                                 chunk(level)%tiles(t)%field%vector_sd,      &
-                                chunk(level)%tiles(t)%field%vector_r,      &
+                                chunk(level)%tiles(t)%field%vector_r1,      &
                                 chunk(level)%tiles(t)%field%vector_z,      &
                                 chunk(level)%tiles(t)%field%vector_kx,     &
                                 chunk(level)%tiles(t)%field%vector_ky,     &
@@ -118,7 +118,7 @@ SUBROUTINE update_tile_boundary(level, fields, depth)
                                   chunk(level)%tiles(t)%field%u,              &
                                   chunk(level)%tiles(t)%field%vector_p,       &
                                   chunk(level)%tiles(t)%field%vector_sd,      &
-                                  chunk(level)%tiles(t)%field%vector_r,       &
+                                  chunk(level)%tiles(t)%field%vector_r1,       &
                                   chunk(level)%tiles(t)%field%vector_z,       &
                                   chunk(level)%tiles(t)%field%vector_kx,      &
                                   chunk(level)%tiles(t)%field%vector_ky,      &
@@ -133,7 +133,7 @@ SUBROUTINE update_tile_boundary(level, fields, depth)
                                   chunk(level)%tiles(right_idx)%field%u,              &
                                   chunk(level)%tiles(right_idx)%field%vector_p,       &
                                   chunk(level)%tiles(right_idx)%field%vector_sd,      &
-                                  chunk(level)%tiles(right_idx)%field%vector_r,       &
+                                  chunk(level)%tiles(right_idx)%field%vector_r1,       &
                                   chunk(level)%tiles(right_idx)%field%vector_z,       &
                                   chunk(level)%tiles(right_idx)%field%vector_kx,      &
                                   chunk(level)%tiles(right_idx)%field%vector_ky,      &
@@ -165,7 +165,7 @@ SUBROUTINE update_tile_boundary(level, fields, depth)
                                   chunk(level)%tiles(t)%field%u,              &
                                   chunk(level)%tiles(t)%field%vector_p,       &
                                   chunk(level)%tiles(t)%field%vector_sd,      &
-                                  chunk(level)%tiles(t)%field%vector_r,       &
+                                  chunk(level)%tiles(t)%field%vector_r1,      &
                                   chunk(level)%tiles(t)%field%vector_z,       &
                                   chunk(level)%tiles(t)%field%vector_kx,      &
                                   chunk(level)%tiles(t)%field%vector_ky,      &
@@ -180,7 +180,7 @@ SUBROUTINE update_tile_boundary(level, fields, depth)
                                   chunk(level)%tiles(up_idx)%field%u,              &
                                   chunk(level)%tiles(up_idx)%field%vector_p,       &
                                   chunk(level)%tiles(up_idx)%field%vector_sd,      &
-                                  chunk(level)%tiles(up_idx)%field%vector_r,       &
+                                  chunk(level)%tiles(up_idx)%field%vector_r1,      &
                                   chunk(level)%tiles(up_idx)%field%vector_z,       &
                                   chunk(level)%tiles(up_idx)%field%vector_kx,      &
                                   chunk(level)%tiles(up_idx)%field%vector_ky,      &
