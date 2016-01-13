@@ -49,108 +49,6 @@ SUBROUTINE tea_leaf_ppcg_init_sd(level, theta)
 
 END SUBROUTINE tea_leaf_ppcg_init_sd
 
-SUBROUTINE tea_leaf_ppcg_inner(level, ch_alphas, ch_betas, inner_step, bounds_extra)
-
-  IMPLICIT NONE
-
-  INTEGER :: level
-
-  INTEGER :: t, inner_step, bounds_extra
-  INTEGER :: x_min_bound, x_max_bound, y_min_bound, y_max_bound
-  REAL(KIND=8), DIMENSION(:) :: ch_alphas, ch_betas
-
-  IF (use_fortran_kernels) THEN
-!$OMP PARALLEL PRIVATE(x_min_bound, x_max_bound, y_min_bound, y_max_bound)
-!$OMP DO
-    DO t=1,tiles_per_task
-      IF (chunk(level)%tiles(t)%tile_neighbours(CHUNK_LEFT).NE.EXTERNAL_FACE .OR. &
-          chunk(level)%chunk_neighbours(CHUNK_LEFT).NE.EXTERNAL_FACE) THEN
-        x_min_bound = chunk(level)%tiles(t)%field%x_min - bounds_extra
-      ELSE
-        x_min_bound = chunk(level)%tiles(t)%field%x_min
-      ENDIF
-
-      IF (chunk(level)%tiles(t)%tile_neighbours(CHUNK_RIGHT).NE.EXTERNAL_FACE .OR. &
-          chunk(level)%chunk_neighbours(CHUNK_RIGHT).NE.EXTERNAL_FACE) THEN
-        x_max_bound = chunk(level)%tiles(t)%field%x_max + bounds_extra
-      ELSE
-        x_max_bound = chunk(level)%tiles(t)%field%x_max
-      ENDIF
-
-      IF (chunk(level)%tiles(t)%tile_neighbours(CHUNK_BOTTOM).NE.EXTERNAL_FACE .OR. &
-          chunk(level)%chunk_neighbours(CHUNK_BOTTOM).NE.EXTERNAL_FACE) THEN
-        y_min_bound = chunk(level)%tiles(t)%field%y_min - bounds_extra
-      ELSE
-        y_min_bound = chunk(level)%tiles(t)%field%y_min
-      ENDIF
-
-      IF (chunk(level)%tiles(t)%tile_neighbours(CHUNK_TOP).NE.EXTERNAL_FACE .OR. &
-          chunk(level)%chunk_neighbours(CHUNK_TOP).NE.EXTERNAL_FACE) THEN
-        y_max_bound = chunk(level)%tiles(t)%field%y_max + bounds_extra
-      ELSE
-        y_max_bound = chunk(level)%tiles(t)%field%y_max
-      ENDIF
-
-      IF (level > 1) THEN
-      CALL tea_leaf_kernel_ppcg_inner_norxy(chunk(level)%tiles(t)%field%x_min,&
-          chunk(level)%tiles(t)%field%x_max,                            &
-          chunk(level)%tiles(t)%field%y_min,                            &
-          chunk(level)%tiles(t)%field%y_max,                            &
-          chunk(level)%halo_exchange_depth,                             &
-          x_min_bound,                                    &
-          x_max_bound,                                    &
-          y_min_bound,                                    &
-          y_max_bound,                                    &
-          ch_alphas, ch_betas,                              &
-          inner_step,                                     &
-          chunk(level)%tiles(t)%field%u,                                &
-          chunk(level)%tiles(t)%field%vector_r,                         &
-          chunk(level)%tiles(t)%field%vector_Kx,                        &
-          chunk(level)%tiles(t)%field%vector_Ky,                        &
-          chunk(level)%tiles(t)%field%vector_Di,                        &
-          chunk(level)%tiles(t)%field%vector_sd,                        &
-          chunk(level)%tiles(t)%field%vector_z,                          &
-          chunk(level)%tiles(t)%field%vector_y,                          &
-          chunk(level)%tiles(t)%field%vector_r1,                          &
-          chunk(level)%tiles(t)%field%tri_cp,                          &
-          chunk(level)%tiles(t)%field%tri_bfp,                          &
-          chunk(level)%tiles(t)%field%vector_Mi,                          &
-          tl_preconditioner_type)
-      ELSE IF (level == 1) THEN
-      CALL tea_leaf_kernel_ppcg_inner(chunk(level)%tiles(t)%field%x_min,&
-          chunk(level)%tiles(t)%field%x_max,                            &
-          chunk(level)%tiles(t)%field%y_min,                            &
-          chunk(level)%tiles(t)%field%y_max,                            &
-          chunk(level)%halo_exchange_depth,                             &
-          x_min_bound,                                    &
-          x_max_bound,                                    &
-          y_min_bound,                                    &
-          y_max_bound,                                    &
-          ch_alphas, ch_betas,                              &
-          chunk(level)%tiles(t)%field%rx,  &
-          chunk(level)%tiles(t)%field%ry,                                           &
-          inner_step,                                     &
-          chunk(level)%tiles(t)%field%u,                                &
-          chunk(level)%tiles(t)%field%vector_r,                         &
-          chunk(level)%tiles(t)%field%vector_Kx,                        &
-          chunk(level)%tiles(t)%field%vector_Ky,                        &
-          chunk(level)%tiles(t)%field%vector_Di,                        &
-          chunk(level)%tiles(t)%field%vector_sd,                        &
-          chunk(level)%tiles(t)%field%vector_z,                          &
-          chunk(level)%tiles(t)%field%vector_y,                          &
-          chunk(level)%tiles(t)%field%vector_r1,                          &
-          chunk(level)%tiles(t)%field%tri_cp,                          &
-          chunk(level)%tiles(t)%field%tri_bfp,                          &
-          chunk(level)%tiles(t)%field%vector_Mi,                          &
-          tl_preconditioner_type)
-      ENDIF
-    ENDDO
-!$OMP END DO NOWAIT
-!$OMP END PARALLEL
-  ENDIF
-
-END SUBROUTINE tea_leaf_ppcg_inner
-
 SUBROUTINE tea_leaf_ppcg_calc_zrnorm(level, rrn)
 
   IMPLICIT NONE
@@ -263,19 +161,9 @@ SUBROUTINE tea_leaf_run_ppcg_inner_steps(level, ch_alphas, ch_betas, theta, &
 
   INTEGER :: t, inner_step, bounds_extra
   INTEGER :: x_min_bound, x_max_bound, y_min_bound, y_max_bound
+!$  INTEGER :: OMP_GET_THREAD_NUM
 
   IF (ppcg_inner_steps < 0) RETURN
-
-  !write(6,*) maxval(abs(ch_alphas)), maxval(abs(ch_betas)), theta, &
-  !  ppcg_inner_steps, level
-  !stop
-
-  !fields = 0
-  !fields(FIELD_U) = 1
-
-  !IF (profiler_on) halo_time=timer()
-  !CALL update_halo(level, fields,1)
-  !IF (profiler_on) solve_time = solve_time + (timer() - halo_time)
 
   CALL tea_leaf_ppcg_init_sd(level, theta)
 
@@ -297,13 +185,13 @@ SUBROUTINE tea_leaf_run_ppcg_inner_steps(level, ch_alphas, ch_betas, theta, &
 
     if (reflective_boundary) then
 
-! TODO - move the tile loop outside the bounds_extra loop to improve the cache reuse
-    DO bounds_extra = chunk(level)%halo_exchange_depth-1, 0, -1
-
-  IF (use_fortran_kernels) THEN
 !$OMP PARALLEL PRIVATE(x_min_bound, x_max_bound, y_min_bound, y_max_bound)
 !$OMP DO
     DO t=1,tiles_per_task
+
+    DO bounds_extra = chunk(level)%halo_exchange_depth-1, 0, -1
+
+    IF (use_fortran_kernels) THEN
       IF (chunk(level)%tiles(t)%tile_neighbours(CHUNK_LEFT).NE.EXTERNAL_FACE .OR. &
           chunk(level)%chunk_neighbours(CHUNK_LEFT).NE.EXTERNAL_FACE) THEN
         x_min_bound = chunk(level)%tiles(t)%field%x_min - bounds_extra
@@ -385,18 +273,14 @@ SUBROUTINE tea_leaf_run_ppcg_inner_steps(level, ch_alphas, ch_betas, theta, &
           chunk(level)%tiles(t)%field%vector_Mi,                          &
           tl_preconditioner_type)
       ENDIF
-    ENDDO
-!$OMP END DO NOWAIT
-!$OMP END PARALLEL
-  ENDIF
+    ENDIF
 
+!$    IF(OMP_GET_THREAD_NUM().EQ.0) THEN
       IF (profiler_on) halo_time = timer()
+!$    ENDIF
 
-  IF (reflective_boundary .EQV. .TRUE. .AND. ANY(chunk(level)%chunk_neighbours .EQ. EXTERNAL_FACE)) THEN
-    IF (use_fortran_kernels)THEN
-!$OMP PARALLEL
-!$OMP DO
-      DO t=1,tiles_per_task
+    IF (reflective_boundary .EQV. .TRUE. .AND. ANY(chunk(level)%chunk_neighbours .EQ. EXTERNAL_FACE)) THEN
+      IF (use_fortran_kernels)THEN
         CALL update_halo_kernel(chunk(level)%tiles(t)%field%x_min,          &
                                 chunk(level)%tiles(t)%field%x_max,          &
                                 chunk(level)%tiles(t)%field%y_min,          &
@@ -417,17 +301,19 @@ SUBROUTINE tea_leaf_run_ppcg_inner_steps(level, ch_alphas, ch_betas, theta, &
                                 chunk(level)%tiles(t)%field%vector_di,      &
                                 fields,                                     &
                                 1)
+      ENDIF
+    ENDIF
+
+!$    IF(OMP_GET_THREAD_NUM().EQ.0) THEN
+      IF (profiler_on) profiler%halo_update = profiler%halo_update + (timer() - halo_time)
+      IF (profiler_on) solve_time           = solve_time           + (timer() - halo_time)
+!$    ENDIF
+
+      IF (ppcg_cur_step + chunk(level)%halo_exchange_depth-1 - bounds_extra .eq. ppcg_inner_steps) EXIT
+      ENDDO
       ENDDO
 !$OMP END DO NOWAIT
 !$OMP END PARALLEL
-    ENDIF
-  ENDIF
-
-      IF (profiler_on) profiler%halo_update = profiler%halo_update + (timer() - halo_time)
-      IF (profiler_on) solve_time           = solve_time           + (timer() - halo_time)
-
-      IF (ppcg_cur_step + chunk(level)%halo_exchange_depth-1 - bounds_extra .eq. ppcg_inner_steps) EXIT
-    ENDDO
 
     else ! .not. reflective_boundary
 

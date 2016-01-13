@@ -123,8 +123,29 @@ SUBROUTINE tea_leaf_kernel_ppcg_inner(x_min,             &
 
 !$OMP PARALLEL PRIVATE(smvp)
     depth=max(x_min-x_min_bound,y_min-y_min_bound,x_max_bound-x_max,y_max_bound-y_max)
-    IF (preconditioner_type .NE. TL_PREC_NONE) THEN
-      IF (preconditioner_type .EQ. TL_PREC_JAC_BLOCK) THEN
+      IF (preconditioner_type .EQ. TL_PREC_JAC_DIAG) THEN
+!$OMP DO
+        DO k=y_min_bound,y_max_bound
+          DO j=x_min_bound,x_max_bound
+            smvp = Di(j,k)*sd(j, k)                                 &
+              - ry*(Ky(j, k+1)*sd(j, k+1) + Ky(j, k)*sd(j, k-1))  &
+              - rx*(Kx(j+1, k)*sd(j+1, k) + Kx(j, k)*sd(j-1, k))
+!don't change r or u
+            r1(j, k) = r1(j, k) - smvp
+          ENDDO
+        ENDDO
+!$OMP END DO
+!$OMP DO
+        DO k=y_min_bound,y_max_bound
+          DO j=x_min_bound,x_max_bound
+            !z(j, k) = Mi(j, k)*r1(j, k)
+            !sd(j, k) = alpha(inner_step)*sd(j, k) + beta(inner_step)*z(j, k)
+            sd(j, k) = alpha(inner_step)*sd(j, k) + beta(inner_step)*Mi(j, k)*r1(j, k)
+            y (j, k) = y (j, k) + sd(j, k)
+          ENDDO
+        ENDDO
+!$OMP END DO
+      ELSE IF (preconditioner_type .EQ. TL_PREC_JAC_BLOCK) THEN
 !$OMP DO
         DO k=y_min_bound,y_max_bound
           DO j=x_min_bound,x_max_bound
@@ -147,39 +168,16 @@ SUBROUTINE tea_leaf_kernel_ppcg_inner(x_min,             &
           ENDDO
         ENDDO
 !$OMP END DO
-      ELSE IF (preconditioner_type .EQ. TL_PREC_JAC_DIAG) THEN
+      ELSE
 !$OMP DO
         DO k=y_min_bound,y_max_bound
-          DO j=x_min_bound,x_max_bound
-            smvp = Di(j,k)*sd(j, k)                                 &
-              - ry*(Ky(j, k+1)*sd(j, k+1) + Ky(j, k)*sd(j, k-1))  &
-              - rx*(Kx(j+1, k)*sd(j+1, k) + Kx(j, k)*sd(j-1, k))
-!don't change r or u
-            r1(j, k) = r1(j, k) - smvp
-          ENDDO
-        ENDDO
-!$OMP END DO
-!$OMP DO
-        DO k=y_min_bound,y_max_bound
-          DO j=x_min_bound,x_max_bound
-            !z(j, k) = Mi(j, k)*r1(j, k)
-            !sd(j, k) = alpha(inner_step)*sd(j, k) + beta(inner_step)*z(j, k)
-            sd(j, k) = alpha(inner_step)*sd(j, k) + beta(inner_step)*Mi(j, k)*r1(j, k)
-            y (j, k) = y (j, k) + sd(j, k)
-          ENDDO
-        ENDDO
-!$OMP END DO
-      ENDIF
-    ELSE
-!$OMP DO
-      DO k=y_min_bound,y_max_bound
           DO j=x_min_bound,x_max_bound
               sd(j, k) = alpha(inner_step)*sd(j, k) + beta(inner_step)*r1(j, k)
               y (j, k) = y (j, k) + sd(j, k)
           ENDDO
-      ENDDO
+        ENDDO
 !$OMP END DO
-    ENDIF
+      ENDIF
 !$OMP END PARALLEL
 
     !write(6,*) "sd:"; write(6,"(9f10.6)") sd
@@ -263,7 +261,7 @@ SUBROUTINE tea_leaf_kernel_ppcg_inner_norxy(x_min,             &
             y (j, k) = y (j, k) + sd(j, k)
           ENDDO
         ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
       ELSE
 !$OMP DO
     DO k=y_min_bound,y_max_bound
@@ -302,7 +300,7 @@ SUBROUTINE tea_leaf_kernel_ppcg_inner_norxy(x_min,             &
                 y (j, k) = y (j, k) + sd(j, k)
             ENDDO
         ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
       ELSE
 !$OMP DO
         DO k=y_min_bound,y_max_bound
@@ -311,7 +309,7 @@ SUBROUTINE tea_leaf_kernel_ppcg_inner_norxy(x_min,             &
             y (j, k) = y (j, k) + sd(j, k)
           ENDDO
         ENDDO
-!$OMP END DO
+!$OMP END DO NOWAIT
       ENDIF
     ENDIF
 !$OMP END PARALLEL

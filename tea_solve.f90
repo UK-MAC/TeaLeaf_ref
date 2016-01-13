@@ -233,7 +233,7 @@ SUBROUTINE tea_leaf()
 
       IF (tl_use_chebyshev) THEN
         IF (cheby_calc_steps .EQ. 0) THEN
-          CALL tea_leaf_cheby_first_step(ch_alphas, ch_betas, fields, &
+          CALL tea_leaf_cheby_first_step(level, ch_alphas, ch_betas, fields, &
               old_error, theta, cn, max_cheby_iters, est_itc, solve_time)
 
           cheby_calc_steps = 1
@@ -499,7 +499,7 @@ SUBROUTINE tea_leaf()
 
 END SUBROUTINE tea_leaf
 
-SUBROUTINE tea_leaf_cheby_first_step(ch_alphas, ch_betas, fields, &
+SUBROUTINE tea_leaf_cheby_first_step(level, ch_alphas, ch_betas, fields, &
     error, theta, cn, max_cheby_iters, est_itc, solve_time)
 
   IMPLICIT NONE
@@ -509,8 +509,6 @@ SUBROUTINE tea_leaf_cheby_first_step(ch_alphas, ch_betas, fields, &
   REAL(KIND=8) :: it_alpha, cn, gamm, bb, error, theta
   REAL(KIND=8), DIMENSION(:) :: ch_alphas, ch_betas
   REAL(KIND=8) :: halo_time, timer, dot_product_time, solve_time
-
-  level=1
 
   ! calculate 2 norm of u0
   CALL tea_leaf_calc_2norm(level, 0, bb)
