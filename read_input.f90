@@ -93,7 +93,7 @@ SUBROUTINE read_input()
 
   tl_ppcg_inner_steps = -1
   tl_ppcg_steps_eigmin = 0.1
-  tl_ppcg_inner_coarse = -1
+  tl_ppcg_inner_coarse_steps = -1
   tl_ppcg_coarse_eigmin = 0.1
 
   tl_use_chebyshev = .FALSE.
@@ -109,7 +109,6 @@ SUBROUTINE read_input()
   coarse_solve_max_iters=200
   coarse_solve_eps=1.0e-15
 
-  coarse_solve_serial=.FALSE.
   coarse_solve_ppcg=.FALSE.
 
   IF(parallel%boss)WRITE(g_out,*) 'Reading input file'
@@ -211,9 +210,9 @@ SUBROUTINE read_input()
       CASE('tl_ppcg_steps_eigmin')
         tl_ppcg_steps_eigmin=parse_getrval(parse_getword(.TRUE.))
         IF(parallel%boss)WRITE(g_out,"(1x,a25,e12.4)")'tl_ppcg_steps_eigmin',tl_ppcg_steps_eigmin
-      CASE('tl_ppcg_inner_coarse')
-        tl_ppcg_inner_coarse=parse_getival(parse_getword(.TRUE.))
-        IF(parallel%boss)WRITE(g_out,"(1x,a25,i12)")'tl_ppcg_inner_coarse',tl_ppcg_inner_coarse
+      CASE('tl_ppcg_inner_coarse_steps')
+        tl_ppcg_inner_coarse_steps=parse_getival(parse_getword(.TRUE.))
+        IF(parallel%boss)WRITE(g_out,"(1x,a25,i12)")'tl_ppcg_inner_coarse_steps',tl_ppcg_inner_coarse_steps
       CASE('tl_ppcg_coarse_eigmin')
         tl_ppcg_coarse_eigmin=parse_getrval(parse_getword(.TRUE.))
         IF(parallel%boss)WRITE(g_out,"(1x,a25,e12.4)")'tl_ppcg_coarse_eigmin',tl_ppcg_coarse_eigmin
@@ -301,9 +300,6 @@ SUBROUTINE read_input()
       CASE('coarse_solve_eps')
         coarse_solve_eps = parse_getrval(parse_getword(.TRUE.))
         IF(parallel%boss)WRITE(g_out,"(1x,a25,e12.4)")'coarse_solve_eps',coarse_solve_eps
-      CASE('coarse_solve_serial')
-        coarse_solve_serial = .TRUE.
-        IF(parallel%boss)WRITE(g_out,"(1x,a25)")'Serial coarse solve'
       CASE('coarse_solve_ppcg')
         coarse_solve_ppcg = .TRUE.
         IF(parallel%boss)WRITE(g_out,"(1x,a25)")'PPCG coarse solve'
