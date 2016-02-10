@@ -29,7 +29,7 @@ SUBROUTINE read_input()
 
   IMPLICIT NONE
 
-  INTEGER            :: state,stat,state_max,n,total_tiles
+  INTEGER            :: state,stat,state_max,n,tiles_per_problem
 !$ INTEGER            :: omp_get_num_threads
 
   REAL(KIND=8) :: dx,dy
@@ -190,13 +190,13 @@ SUBROUTINE read_input()
       CASE('sub_tiles_per_tile')
         sub_tiles_per_tile=parse_getival(parse_getword(.TRUE.))
         IF(parallel%boss)WRITE(g_out,"(1x,a25,i12)")'sub_tiles_per_tile',sub_tiles_per_tile
-      CASE('total_tiles')
-        total_tiles=parse_getival(parse_getword(.TRUE.))
-        IF(parallel%boss)WRITE(g_out,"(1x,a25,i12)")'total_tiles',total_tiles
-        tiles_per_task=int(real(total_tiles)/real(parallel%max_task)+0.5)
-        IF(mod(total_tiles,parallel%max_task) /= 0)THEN
+      CASE('tiles_per_problem')
+        tiles_per_problem=parse_getival(parse_getword(.TRUE.))
+        IF(parallel%boss)WRITE(g_out,"(1x,a25,i12)")'tiles_per_problem',tiles_per_problem
+        tiles_per_task=tiles_per_problem/parallel%max_task
+        IF(mod(tiles_per_problem,parallel%max_task) /= 0)THEN
           IF(parallel%boss)WRITE(g_out,"(1x,a80)") &
-            'WARNING: total_tiles should be divisible by the number of MPI ranks'
+            'WARNING: tiles_per_problem should be divisible by the number of MPI ranks'
           IF(tiles_per_task == 0)THEN
             IF(parallel%boss)WRITE(g_out,"(1x,a80)") 'WARNING: tiles_per_task reset to 1 instead of 0'
             tiles_per_task=1
