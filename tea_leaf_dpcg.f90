@@ -34,66 +34,19 @@ SUBROUTINE tea_leaf_dpcg_init_x0(solve_time, ppcg_inner_steps, ch_alphas, ch_bet
   INTEGER :: t, it_count, info
   INTEGER :: fields(NUM_FIELDS)
   REAL(KIND=8) :: halo_time,timer,rro
+!$ INTEGER :: OMP_GET_THREAD_NUM
 
   IF (.NOT. ALLOCATED(inner_cg_alphas)) THEN
-    ALLOCATE(inner_cg_alphas(coarse_solve_max_iters))
-    ALLOCATE(inner_cg_betas (coarse_solve_max_iters))
-    ALLOCATE(inner_ch_alphas(tl_ppcg_inner_coarse))
-    ALLOCATE(inner_ch_betas (tl_ppcg_inner_coarse))
+    ALLOCATE(inner_cg_alphas(tl_ch_cg_presteps))
+    ALLOCATE(inner_cg_betas (tl_ch_cg_presteps))
+    ALLOCATE(inner_ch_alphas(tl_ppcg_inner_coarse_steps))
+    ALLOCATE(inner_ch_betas (tl_ppcg_inner_coarse_steps))
   ENDIF
 
-  IF (coarse_solve_serial) THEN
-    CALL tea_leaf_dpcg_coarsen_matrix()
-    CALL tea_leaf_dpcg_coarsen_matrix_level(level,solve_time)
-  ELSE
-    CALL tea_leaf_dpcg_coarsen_matrix_level(level,solve_time)
-  ENDIF
+  CALL tea_leaf_dpcg_coarsen_matrix_level(level,solve_time)
 
   ! just use CG on the first one
   inner_use_ppcg = .FALSE.
-
-  IF (coarse_solve_serial) THEN
-
-    chunk(level)%def%t1 = 0.0_8
-    CALL tea_leaf_dpcg_restrict_ZT(.TRUE.)
-
-    !tile_sum2 = sum(chunk(level)%def%t2**2)
-    !IF (parallel%boss) write(6,"(a17,es25.18)") "in -serial solve:",sqrt(tile_sum2)
-
-    CALL tea_leaf_dpcg_local_solve1(   &
-        chunk(level)%def%x_min, &
-        chunk(level)%def%x_max,                                  &
-        chunk(level)%def%y_min,                                  &
-        chunk(level)%def%y_max,                                  &
-        chunk(level)%halo_exchange_depth,                        &
-        chunk(level)%def%t2,                               &
-        chunk(level)%def%t1,                               &
-        chunk(level)%def%def_Kx, &
-        chunk(level)%def%def_Ky, &
-        chunk(level)%def%def_di, &
-        chunk(level)%def%def_p,                               &
-        chunk(level)%def%def_r,                               &
-        chunk(level)%def%def_Mi,                               &
-        chunk(level)%def%def_w,                               &
-        chunk(level)%def%def_z, &
-        chunk(level)%def%def_sd, &
-        coarse_solve_eps, &
-        coarse_solve_max_iters,                          &
-        it_count,         &
-        0.0_8,            &
-        inner_use_ppcg,       &
-        inner_cg_alphas, inner_cg_betas,      &
-        inner_ch_alphas, inner_ch_betas       &
-        )
-
-    !!write(6,"(12f10.6)") chunk(level)%def%t2
-    !tile_sum2 = sum(chunk(level)%def%t2**2)
-    !IF (parallel%boss) write(6,"(a17,es25.18)") "out-serial solve:",sqrt(tile_sum2)
-
-    ! add back onto the fine grid
-    CALL tea_leaf_dpcg_subtract_z()
-
-  ELSE
 
 !$OMP PARALLEL
 !$OMP DO
@@ -105,54 +58,52 @@ SUBROUTINE tea_leaf_dpcg_init_x0(solve_time, ppcg_inner_steps, ch_alphas, ch_bet
 !$OMP END PARALLEL
     CALL tea_leaf_dpcg_restrict_ZT_level(level,.TRUE.)
 
-    !tile_sum2 = 0.0_8
-    !DO t=1,tiles_per_task
-    !  !write(6,*) "Tile:",t
-    !  !write(6,"(7f10.6)") chunk(level+1)%tiles(t)%field%u
-    !  tile_sum2 = tile_sum2+sum(chunk(level+1)%tiles(t)%field%u(1:chunk(level)%sub_tile_dims(1), &
-    !                                                            1:chunk(level)%sub_tile_dims(2))**2)
-    !ENDDO
-    !CALL tea_allsum(tile_sum2)
-    !IF (parallel%boss) write(6,"(a17,es25.18)") "in -tiled  solve:",sqrt(tile_sum2)
-
     CALL tea_leaf_dpcg_local_solve_level(level,                  &
                                          solve_time,             &
-                                         coarse_solve_eps,       &
-                                         coarse_solve_max_iters, &
+                                         tl_ch_cg_epslim,        &
+                                         tl_ch_cg_presteps+1,    & ! need beta(tl_ch_cg_presteps)!=0
                                          it_count,               &
                                          inner_use_ppcg,         &
+                                         inner_cg_alphas,        &
+                                         inner_cg_betas,         &
                                          inner_ch_theta,         &
                                          inner_ch_alphas,        &
                                          inner_ch_betas)
 
-    !tile_sum2 = 0.0_8
-    !DO t=1,tiles_per_task
-    !  !write(6,*) "Tile:",t
-    !  !write(6,"(7f10.6)") chunk(level+1)%tiles(t)%field%u
-    !  tile_sum2 = tile_sum2+sum(chunk(level+1)%tiles(t)%field%u(1:chunk(level)%sub_tile_dims(1), &
-    !                                                            1:chunk(level)%sub_tile_dims(2))**2)
-    !ENDDO
-    !CALL tea_allsum(tile_sum2)
-    !IF (parallel%boss) write(6,"(a17,es25.18)") "out-tiled  solve:",sqrt(tile_sum2)
-
-    !!$OMP PARALLEL
-    !!$OMP DO
-    ! zero the coarse grid solution u so that we don't change the answer 
-    !DO t=1,tiles_per_task
-    !  chunk(level+1)%tiles(t)%field%u = 0.0_8
-    !ENDDO
-    !!$OMP END DO
-    !!$OMP END PARALLEL
     CALL tea_leaf_dpcg_subtract_z_level(level)
-
-  ENDIF
 
   ! for all subsequent steps, use ppcg if requested
   inner_use_ppcg = coarse_solve_ppcg
 
-  !CALL tea_calc_eigenvalues(inner_cg_alphas, inner_cg_betas, eigmin, eigmax, &
-  !    coarse_solve_max_iters, it_count, info)
-  info = 0
+  IF (parallel%boss.AND.verbose_on) THEN
+!$  IF (OMP_GET_THREAD_NUM().EQ.0) THEN
+      do t=1,it_count-1
+        write(g_out,*) "i=",t," alpha=",inner_cg_alphas(t)," beta=",inner_cg_betas(t)
+      enddo
+!$  ENDIF
+  ENDIF
+  CALL tea_calc_eigenvalues(inner_cg_alphas, inner_cg_betas, eigmin, eigmax, &
+      coarse_solve_max_iters, it_count-1, info) ! we don't have the beta value for the last iteration
+  IF (parallel%boss.AND.verbose_on) THEN
+!$  IF (OMP_GET_THREAD_NUM().EQ.0) THEN
+      write(g_out,*) "eigmin=",eigmin," eigmax=",eigmax
+!$  ENDIF
+  ENDIF
+  !info = 0
+  eigmin = eigmin * 0.95
+  eigmax = eigmax * 1.05
+
+  !! With jacobi preconditioner on
+  !!eigmin = 0.1_8
+  !eigmin = tl_ppcg_coarse_eigmin
+  !!eigmax = 2.0_8
+  !!New bound with the l1 Jacobi preconditioner
+  !eigmax = 1.0_8
+
+  IF (info .NE. 0) CALL report_error('tea_leaf_dpcg_init_x0', 'Error in calculating eigenvalues')
+
+  CALL tea_calc_ch_coefs(inner_ch_alphas, inner_ch_betas, eigmin, eigmax, &
+      inner_ch_theta, tl_ppcg_inner_coarse_steps)
 
   ! With jacobi preconditioner on
   !eigmin = 0.1_8
@@ -161,22 +112,10 @@ SUBROUTINE tea_leaf_dpcg_init_x0(solve_time, ppcg_inner_steps, ch_alphas, ch_bet
   !New bound with the l1 Jacobi preconditioner
   eigmax = 1.0_8
 
-  IF (info .NE. 0) CALL report_error('tea_leaf_dpcg_init_x0', 'Error in calculating eigenvalues')
-
-  CALL tea_calc_ch_coefs(inner_ch_alphas, inner_ch_betas, eigmin, eigmax, &
-      inner_ch_theta, tl_ppcg_inner_coarse)
-
-  ! With jacobi preconditioner on
-  !eigmin = 0.1_8
-  eigmin = tl_ppcg_coarse_eigmin
-  !eigmax = 2.0_8
-  !New bound with the l1 Jacobi preconditioner
-  eigmax = 1.0_8
-
   CALL tea_calc_ch_coefs(ch_alphas, ch_betas, eigmin, eigmax, &
       ch_theta, ppcg_inner_steps)
   !write(6,*) maxval(abs(inner_ch_alphas)), maxval(abs(inner_ch_betas)), inner_ch_theta, &
-  !  tl_ppcg_inner_coarse, level
+  !  tl_ppcg_inner_coarse_steps, level
 
   fields = 0
   fields(FIELD_U) = 1
@@ -198,78 +137,11 @@ SUBROUTINE tea_leaf_dpcg_init_x0(solve_time, ppcg_inner_steps, ch_alphas, ch_bet
   CALL tea_leaf_run_ppcg_inner_steps(level, ch_alphas, ch_betas, ch_theta, &
       ppcg_inner_steps, solve_time)
 
-  IF (coarse_solve_serial) THEN
-    CALL tea_leaf_dpcg_setup_and_solve_E(solve_time)
-  ELSE
-    CALL tea_leaf_dpcg_setup_and_solve_E_level(level,solve_time)
-  ENDIF
+  CALL tea_leaf_dpcg_setup_and_solve_E_level(level,solve_time)
 
-  CALL tea_leaf_dpcg_init_p()
+  CALL tea_leaf_dpcg_init_p(level)
 
 END SUBROUTINE tea_leaf_dpcg_init_x0
-
-SUBROUTINE tea_leaf_dpcg_setup_and_solve_E(solve_time)
-
-  IMPLICIT NONE
-
-  REAL(KIND=8) :: solve_time, tile_sum1, tile_sum2
-
-  INTEGER :: level, it_count, t
-
-  level=1
-
-  CALL tea_leaf_dpcg_matmul_ZTA(solve_time)
-  CALL tea_leaf_dpcg_restrict_ZT(.TRUE.)
-
-  !write(6,"(12f10.6)") chunk(level)%def%t2
-  !tile_sum1 = sum(chunk(level)%def%t2**2)
-  !IF (parallel%boss) write(6,"(a17,es25.18)") "in -serial solve:",sqrt(tile_sum1)
-
-  CALL tea_leaf_dpcg_local_solve1(   &
-      chunk(level)%def%x_min, &
-      chunk(level)%def%x_max,                                  &
-      chunk(level)%def%y_min,                                  &
-      chunk(level)%def%y_max,                                  &
-      chunk(level)%halo_exchange_depth,                        &
-      chunk(level)%def%t2,                               &
-      chunk(level)%def%t1,                               &
-      chunk(level)%def%def_Kx, &
-      chunk(level)%def%def_Ky, &
-      chunk(level)%def%def_di, &
-      chunk(level)%def%def_p,                               &
-      chunk(level)%def%def_r,                               &
-      chunk(level)%def%def_Mi,                               &
-      chunk(level)%def%def_w,                               &
-      chunk(level)%def%def_z, &
-      chunk(level)%def%def_sd, &
-      coarse_solve_eps, &
-      coarse_solve_max_iters,                          &
-      it_count,         &
-      inner_ch_theta,            &
-      inner_use_ppcg,       &
-      inner_cg_alphas, inner_cg_betas,      &
-      inner_ch_alphas, inner_ch_betas       &
-      )
-
-  !write(6,"(12f10.6)") chunk(level)%def%t2
-  !tile_sum2 = sum(chunk(level)%def%t2**2)
-  !IF (parallel%boss) write(6,"(a17,es25.18)") "out-serial solve:",sqrt(tile_sum2)
-
-  !CALL tea_leaf_dpcg_setup_and_solve_E_level(level,solve_time)
-
-  !tile_sum2 = 0.0_8
-  !DO t=1,tiles_per_task
-  !  !write(6,*) "Tile:",t
-  !  !write(6,"(7f10.6)") chunk(level+1)%tiles(t)%field%u
-  !  tile_sum2 = tile_sum2+sum(chunk(level+1)%tiles(t)%field%u(1:chunk(level)%sub_tile_dims(1), &
-  !                                                            1:chunk(level)%sub_tile_dims(2))**2)
-  !ENDDO
-  !CALL tea_allsum(tile_sum2)
-  !IF (parallel%boss) write(6,"(a17,es25.18)") "out-tiled  solve:",sqrt(tile_sum2)
-
-  CALL tea_leaf_dpcg_prolong_Z()
-
-END SUBROUTINE tea_leaf_dpcg_setup_and_solve_E
 
 SUBROUTINE tea_leaf_dpcg_setup_and_solve_E_level(level,solve_time)
 
@@ -282,22 +154,14 @@ SUBROUTINE tea_leaf_dpcg_setup_and_solve_E_level(level,solve_time)
   CALL tea_leaf_dpcg_matmul_ZTA_level(level,solve_time)
   CALL tea_leaf_dpcg_restrict_ZT_level(level,.TRUE.)
 
-  !tile_sum2 = 0.0_8
-  !DO t=1,tiles_per_task
-  !  !write(6,*) "Tile:",t
-  !  !write(6,"(7f10.6)") chunk(level+1)%tiles(t)%field%u
-  !  tile_sum2 = tile_sum2+sum(chunk(level+1)%tiles(t)%field%u(1:chunk(level)%sub_tile_dims(1), &
-  !                                                            1:chunk(level)%sub_tile_dims(2))**2)
-  !ENDDO
-  !CALL tea_allsum(tile_sum2)
-  !IF (parallel%boss) write(6,"(a17,es25.18)") "in -tiled  solve:",sqrt(tile_sum2)
-
   CALL tea_leaf_dpcg_local_solve_level(level,                  &
                                        solve_time,             &
                                        coarse_solve_eps,       &
                                        coarse_solve_max_iters, &
                                        it_count,               &
                                        inner_use_ppcg,         &
+                                       inner_cg_alphas,        &
+                                       inner_cg_betas,         &
                                        inner_ch_theta,         &
                                        inner_ch_alphas,        &
                                        inner_ch_betas)
@@ -306,118 +170,6 @@ SUBROUTINE tea_leaf_dpcg_setup_and_solve_E_level(level,solve_time)
 
 END SUBROUTINE tea_leaf_dpcg_setup_and_solve_E_level
 
-SUBROUTINE tea_leaf_dpcg_coarsen_matrix()
-
-  IMPLICIT NONE
-  INTEGER :: t, err
-  INTEGER, PARAMETER :: level=1
-
-  INTEGER :: sub_tile_dx, sub_tile_dy
-
-  INTEGER(KIND=4) :: j,k
-  INTEGER(KIND=4) :: jj,j_start,j_end,kk,k_start,k_end
-  REAL(KIND=8) :: tile_size,solve_time
-  REAL(KIND=8),dimension(chunk(level)%sub_tile_dims(1), chunk(level)%sub_tile_dims(2)) :: kx_local, ky_local
-
-  chunk(level)%def%def_Kx = 0.0_8
-  chunk(level)%def%def_Ky = 0.0_8
-  chunk(level)%def%def_di = 0.0_8
-
-  IF (use_fortran_kernels) THEN
-!$OMP PARALLEL PRIVATE(Kx_local, Ky_local,sub_tile_dx,sub_tile_dy)
-!$OMP DO
-    DO t=1,tiles_per_task
-      sub_tile_dx=(chunk(level)%tiles(t)%field%x_max-chunk(level)%tiles(t)%field%x_min+ &
-                   chunk(level)%sub_tile_dims(1))/chunk(level)%sub_tile_dims(1)
-      sub_tile_dy=(chunk(level)%tiles(t)%field%y_max-chunk(level)%tiles(t)%field%y_min+ &
-                   chunk(level)%sub_tile_dims(2))/chunk(level)%sub_tile_dims(2)
-
-      kx_local = 0.0_8
-      ky_local = 0.0_8
-
-      CALL tea_leaf_dpcg_coarsen_matrix_kernel(chunk(level)%tiles(t)%field%x_min,     &
-                                               chunk(level)%tiles(t)%field%x_max,     &
-                                               chunk(level)%tiles(t)%field%y_min,     &
-                                               chunk(level)%tiles(t)%field%y_max,     &
-                                               chunk(level)%halo_exchange_depth,      &
-                                               chunk(level)%tiles(t)%field%vector_Kx, &
-                                               chunk(level)%tiles(t)%field%vector_Ky, &
-                                               chunk(level)%sub_tile_dims(1),         &
-                                               sub_tile_dx,                    &
-                                               chunk(level)%sub_tile_dims(2),         &
-                                               sub_tile_dy,                    &
-                                               kx_local,                       &
-                                               ky_local,                       &
-                                               chunk(level)%tiles(t)%field%rx,        &
-                                               chunk(level)%tiles(t)%field%ry)
-
-      chunk(level)%def%def_kx(chunk(level)%tiles(t)%def_tile_coords(1): &
-                       chunk(level)%tiles(t)%def_tile_coords(1)+chunk(level)%sub_tile_dims(1)-1, &
-                       chunk(level)%tiles(t)%def_tile_coords(2): &
-                       chunk(level)%tiles(t)%def_tile_coords(2)+chunk(level)%sub_tile_dims(2)-1) = kx_local
-      chunk(level)%def%def_ky(chunk(level)%tiles(t)%def_tile_coords(1): &
-                       chunk(level)%tiles(t)%def_tile_coords(1)+chunk(level)%sub_tile_dims(1)-1, &
-                       chunk(level)%tiles(t)%def_tile_coords(2): &
-                       chunk(level)%tiles(t)%def_tile_coords(2)+chunk(level)%sub_tile_dims(2)-1) = ky_local
-    ENDDO
-!$OMP END DO
-!$OMP END PARALLEL
-  ENDIF
-
-  CALL MPI_Allreduce(MPI_IN_PLACE, chunk(level)%def%def_kx, size(chunk(level)%def%def_kx), &
-    MPI_DOUBLE_PRECISION, MPI_SUM, mpi_cart_comm, err)
-  CALL MPI_Allreduce(MPI_IN_PLACE, chunk(level)%def%def_ky, size(chunk(level)%def%def_ky), &
-    MPI_DOUBLE_PRECISION, MPI_SUM, mpi_cart_comm, err)
-
-  IF (use_fortran_kernels) THEN
-!$OMP PARALLEL PRIVATE(tile_size,sub_tile_dx,sub_tile_dy,k,kk,k_start,k_end,j,jj,j_start,j_end)
-!$OMP DO
-    DO t=1,tiles_per_task
-      sub_tile_dx=(chunk(level)%tiles(t)%field%x_max-chunk(level)%tiles(t)%field%x_min+ &
-                   chunk(level)%sub_tile_dims(1))/chunk(level)%sub_tile_dims(1)
-      sub_tile_dy=(chunk(level)%tiles(t)%field%y_max-chunk(level)%tiles(t)%field%y_min+ &
-                   chunk(level)%sub_tile_dims(2))/chunk(level)%sub_tile_dims(2)
-
-      DO kk=1,chunk(level)%sub_tile_dims(2)
-        k_start=chunk(level)%tiles(t)%field%y_min+(kk-1)*sub_tile_dy
-        k_end  =min(k_start+sub_tile_dy-1,chunk(level)%tiles(t)%field%y_max)
-        DO jj=1,chunk(level)%sub_tile_dims(1)
-          j_start=chunk(level)%tiles(t)%field%x_min+(jj-1)*sub_tile_dx
-          j_end  =min(j_start+sub_tile_dx-1,chunk(level)%tiles(t)%field%x_max)
-          tile_size=(j_end-j_start+1)*(k_end-k_start+1)
-          chunk(level)%def%def_di(chunk(level)%tiles(t)%def_tile_coords(1)+jj-1, &
-                                  chunk(level)%tiles(t)%def_tile_coords(2)+kk-1) = &
-            tile_size + &
-            chunk(level)%def%def_kx(chunk(level)%tiles(t)%def_tile_coords(1)+jj-1    , &
-                                    chunk(level)%tiles(t)%def_tile_coords(2)+kk-1    ) + &
-            chunk(level)%def%def_ky(chunk(level)%tiles(t)%def_tile_coords(1)+jj-1    , &
-                                    chunk(level)%tiles(t)%def_tile_coords(2)+kk-1    ) + &
-            chunk(level)%def%def_kx(chunk(level)%tiles(t)%def_tile_coords(1)+jj-1 + 1, &
-                                    chunk(level)%tiles(t)%def_tile_coords(2)+kk-1    ) + &
-            chunk(level)%def%def_ky(chunk(level)%tiles(t)%def_tile_coords(1)+jj-1    , &
-                                    chunk(level)%tiles(t)%def_tile_coords(2)+kk-1 + 1)
-        ENDDO
-      ENDDO
-    ENDDO
-!$OMP END DO
-!$OMP END PARALLEL
-  ENDIF
-
-  CALL MPI_Allreduce(MPI_IN_PLACE, chunk(level)%def%def_di, size(chunk(level)%def%def_di), &
-     MPI_DOUBLE_PRECISION, MPI_SUM, mpi_cart_comm, err)
-
-  !write(6,*) "Deflation matrix:",shape(chunk(level)%def%def_kx),shape(chunk(level)%def%def_ky)
-  !write(6,*) "Kx:"
-  !write(6,"(14f10.6)") chunk(level)%def%def_kx
-  !write(6,*) "Ky:"
-  !write(6,"(14f10.6)") chunk(level)%def%def_ky
-  !write(6,*) "Di:"
-  !write(6,"(14f10.6)") chunk(level)%def%def_di
-
-  !CALL tea_leaf_dpcg_coarsen_matrix_level(level,solve_time)
-
-END SUBROUTINE tea_leaf_dpcg_coarsen_matrix
-
 SUBROUTINE tea_leaf_dpcg_coarsen_matrix_level(level,solve_time)
 
   IMPLICIT NONE
@@ -425,6 +177,8 @@ SUBROUTINE tea_leaf_dpcg_coarsen_matrix_level(level,solve_time)
   INTEGER :: level
 
   INTEGER :: sub_tile_dx, sub_tile_dy
+  INTEGER :: sx, sy
+  INTEGER :: xrem, yrem
 
   INTEGER(KIND=4) :: j,k
   INTEGER(KIND=4) :: jj,j_start,j_end,kk,k_start,k_end
@@ -454,10 +208,11 @@ SUBROUTINE tea_leaf_dpcg_coarsen_matrix_level(level,solve_time)
 
 !$OMP DO
     DO t=1,tiles_per_task
-      sub_tile_dx=(chunk(level)%tiles(t)%field%x_max-chunk(level)%tiles(t)%field%x_min+ &
-                   chunk(level)%sub_tile_dims(1))/chunk(level)%sub_tile_dims(1)
-      sub_tile_dy=(chunk(level)%tiles(t)%field%y_max-chunk(level)%tiles(t)%field%y_min+ &
-                   chunk(level)%sub_tile_dims(2))/chunk(level)%sub_tile_dims(2)
+      sub_tile_dx=(chunk(level)%tiles(t)%field%x_max-chunk(level)%tiles(t)%field%x_min+1)/chunk(level)%sub_tile_dims(1)
+      sub_tile_dy=(chunk(level)%tiles(t)%field%y_max-chunk(level)%tiles(t)%field%y_min+1)/chunk(level)%sub_tile_dims(2)
+
+      xrem        =mod(chunk(level)%tiles(t)%field%x_max-chunk(level)%tiles(t)%field%x_min+1,chunk(level)%sub_tile_dims(1))
+      yrem        =mod(chunk(level)%tiles(t)%field%y_max-chunk(level)%tiles(t)%field%y_min+1,chunk(level)%sub_tile_dims(2))
 
       chunk(level+1)%tiles(t)%field%vector_Kx = 0.0_8
       chunk(level+1)%tiles(t)%field%vector_Ky = 0.0_8
@@ -473,9 +228,9 @@ SUBROUTINE tea_leaf_dpcg_coarsen_matrix_level(level,solve_time)
                                                chunk(level)%tiles(t)%field%vector_Kx, &
                                                chunk(level)%tiles(t)%field%vector_Ky, &
                                                chunk(level)%sub_tile_dims(1),         &
-                                               sub_tile_dx,                    &
+                                               sub_tile_dx, xrem,                     &
                                                chunk(level)%sub_tile_dims(2),         &
-                                               sub_tile_dy,                    &
+                                               sub_tile_dy, yrem,                     &
                                                kx_local,                       &
                                                ky_local,                       &
                                                chunk(level)%tiles(t)%field%rx,        &
@@ -487,13 +242,6 @@ SUBROUTINE tea_leaf_dpcg_coarsen_matrix_level(level,solve_time)
 !$OMP END DO
 !$OMP END PARALLEL
   ENDIF
-  !kx_tot=0.0_8; ky_tot=0.0_8
-  !DO t=1,tiles_per_task
-  !  kx_tot=kx_tot+sum(chunk(level+1)%tiles(t)%field%vector_Kx**2)
-  !  ky_tot=ky_tot+sum(chunk(level+1)%tiles(t)%field%vector_Ky**2)
-  !ENDDO
-  !call tea_allsum(kx_tot); call tea_allsum(ky_tot)
-  !write(6,*) "Kx_tot,Ky_tot:",kx_tot,ky_tot
 
 !Need a depth chunk(level+1)%halo_exchange_depth halo exchange on Kx and Ky
 !use custom comms for Kx, Ky (and Kz in 3D)
@@ -508,19 +256,20 @@ SUBROUTINE tea_leaf_dpcg_coarsen_matrix_level(level,solve_time)
 !$OMP PARALLEL PRIVATE(tile_size,sub_tile_dx,sub_tile_dy,k,kk,k_start,k_end,j,jj,j_start,j_end)
 !$OMP DO
     DO t=1,tiles_per_task
-      sub_tile_dx=(chunk(level)%tiles(t)%field%x_max-chunk(level)%tiles(t)%field%x_min+ &
-                   chunk(level)%sub_tile_dims(1))/chunk(level)%sub_tile_dims(1)
-      sub_tile_dy=(chunk(level)%tiles(t)%field%y_max-chunk(level)%tiles(t)%field%y_min+ &
-                   chunk(level)%sub_tile_dims(2))/chunk(level)%sub_tile_dims(2)
+      sub_tile_dx=(chunk(level)%tiles(t)%field%x_max-chunk(level)%tiles(t)%field%x_min+1)/chunk(level)%sub_tile_dims(1)
+      sub_tile_dy=(chunk(level)%tiles(t)%field%y_max-chunk(level)%tiles(t)%field%y_min+1)/chunk(level)%sub_tile_dims(2)
+
+      xrem        =mod(chunk(level)%tiles(t)%field%x_max-chunk(level)%tiles(t)%field%x_min+1,chunk(level)%sub_tile_dims(1))
+      yrem        =mod(chunk(level)%tiles(t)%field%y_max-chunk(level)%tiles(t)%field%y_min+1,chunk(level)%sub_tile_dims(2))
 
       chunk(level+1)%tiles(t)%field%vector_Di = 0.0_8
 
       DO kk=1,chunk(level)%sub_tile_dims(2)
-        k_start=chunk(level)%tiles(t)%field%y_min+(kk-1)*sub_tile_dy
-        k_end  =min(k_start+sub_tile_dy-1,chunk(level)%tiles(t)%field%y_max)
+        k_start=min(kk-1,yrem)+(kk-1)*sub_tile_dy+chunk(level)%tiles(t)%field%y_min
+        k_end  =min(kk  ,yrem)+kk    *sub_tile_dy+chunk(level)%tiles(t)%field%y_min-1
         DO jj=1,chunk(level)%sub_tile_dims(1)
-          j_start=chunk(level)%tiles(t)%field%x_min+(jj-1)*sub_tile_dx
-          j_end  =min(j_start+sub_tile_dx-1,chunk(level)%tiles(t)%field%x_max)
+          j_start=min(jj-1,xrem)+(jj-1)*sub_tile_dx+chunk(level)%tiles(t)%field%x_min
+          j_end  =min(jj  ,xrem)+jj    *sub_tile_dx+chunk(level)%tiles(t)%field%x_min-1
           tile_size=(j_end-j_start+1)*(k_end-k_start+1)
           chunk(level+1)%tiles(t)%field%vector_Di(jj,kk) = &
             tile_size + &
@@ -544,13 +293,6 @@ SUBROUTINE tea_leaf_dpcg_coarsen_matrix_level(level,solve_time)
     CALL update_halo(level+1, fields, chunk(level+1)%halo_exchange_depth-1)
     IF (profiler_on) solve_time = solve_time + (timer()-halo_time)
   ENDIF
-
-  !Di_tot=0.0_8
-  !DO t=1,tiles_per_task
-  !  Di_tot=Di_tot+sum(chunk(level+1)%tiles(t)%field%vector_Di**2)
-  !ENDDO
-  !call tea_allsum(Di_tot)
-  !write(6,*) "Di_tot:",Di_tot
 
   IF (use_fortran_kernels) THEN
     IF (tl_preconditioner_type .EQ. TL_PREC_JAC_BLOCK) THEN
@@ -588,117 +330,8 @@ SUBROUTINE tea_leaf_dpcg_coarsen_matrix_level(level,solve_time)
       ENDDO
     ENDIF
   ENDIF
-  !Mi_tot=0.0_8
-  !DO t=1,tiles_per_task
-  !  Mi_tot=Mi_tot+sum(chunk(level+1)%tiles(t)%field%vector_Mi**2)
-  !ENDDO
-  !call tea_allsum(Mi_tot)
-  !write(6,*) "Mi_tot:",Mi_tot
-
-  !DO t=1,tiles_per_task
-  !  write(6,*) "Tile:",t,size(chunk(level+1)%tiles(t)%field%vector_Kx),size(chunk(level+1)%tiles(t)%field%vector_Ky)
-  !  write(6,*) "Kx:"
-  !  write(6,"(9f10.6)") chunk(level+1)%tiles(t)%field%vector_Kx
-  !  write(6,*) "Ky:"
-  !  write(6,"(9f10.6)") chunk(level+1)%tiles(t)%field%vector_Ky
-  !  write(6,*) "Di:"
-  !  write(6,"(9f10.6)") chunk(level+1)%tiles(t)%field%vector_Di
-  !ENDDO
 
 END SUBROUTINE tea_leaf_dpcg_coarsen_matrix_level
-
-SUBROUTINE tea_leaf_dpcg_matmul_ZTA(solve_time)
-
-  IMPLICIT NONE
-
-  REAL(KIND=8) :: solve_time
-  INTEGER, PARAMETER :: level=1
-
-  INTEGER :: t, err
-
-  INTEGER :: sub_tile_dx, sub_tile_dy
-
-  REAL(KIND=8),dimension(chunk(level)%sub_tile_dims(1), chunk(level)%sub_tile_dims(2)) :: ztaz
-
-  REAL(KIND=8) :: halo_time,timer
-
-  INTEGER :: fields(NUM_FIELDS)
-
-!  IF (use_fortran_kernels) THEN
-!!$OMP PARALLEL PRIVATE(ztaz)
-!!$OMP DO
-!    DO t=1,tiles_per_task
-!      CALL tea_leaf_dpcg_solve_z_kernel(chunk(level)%tiles(t)%field%x_min,     &
-!                                        chunk(level)%tiles(t)%field%x_max,     &
-!                                        chunk(level)%tiles(t)%field%y_min,     &
-!                                        chunk(level)%tiles(t)%field%y_max,     &
-!                                        chunk(level)%halo_exchange_depth,      &
-!                                        chunk(level)%tiles(t)%field%vector_r,  &
-!                                        chunk(level)%tiles(t)%field%vector_z,  &
-!                                        chunk(level)%tiles(t)%field%vector_Kx, &
-!                                        chunk(level)%tiles(t)%field%vector_Ky, &
-!                                        chunk(level)%tiles(t)%field%vector_Di, &
-!                                        chunk(level)%tiles(t)%field%vector_Mi, &
-!                                        chunk(level)%tiles(t)%field%tri_cp,    &
-!                                        chunk(level)%tiles(t)%field%tri_bfp,   &
-!                                        chunk(level)%tiles(t)%field%rx,        &
-!                                        chunk(level)%tiles(t)%field%ry,        &
-!                                        tl_preconditioner_type)
-!    ENDDO
-!!$OMP END DO NOWAIT
-!!$OMP END PARALLEL
-!  ENDIF
-
-  fields = 0
-  fields(FIELD_Z) = 1
-
-  IF (profiler_on) halo_time = timer()
-  CALL update_halo(level, fields,1)
-  IF (profiler_on) solve_time = solve_time + (timer()-halo_time)
-
-  fields = 0
-  fields(FIELD_P) = 1
-
-  chunk(level)%def%t1 = 0.0_8
-  IF (use_fortran_kernels) THEN
-!$OMP PARALLEL PRIVATE(ztaz,sub_tile_dx,sub_tile_dy)
-!$OMP DO
-    DO t=1,tiles_per_task
-      sub_tile_dx=(chunk(level)%tiles(t)%field%x_max-chunk(level)%tiles(t)%field%x_min+ &
-        chunk(level)%sub_tile_dims(1))/chunk(level)%sub_tile_dims(1)
-      sub_tile_dy=(chunk(level)%tiles(t)%field%y_max-chunk(level)%tiles(t)%field%y_min+ &
-        chunk(level)%sub_tile_dims(2))/chunk(level)%sub_tile_dims(2)
-
-      ztaz = 0.0_8
-
-      CALL tea_leaf_dpcg_matmul_ZTA_kernel(chunk(level)%tiles(t)%field%x_min, &
-          chunk(level)%tiles(t)%field%x_max,                                  &
-          chunk(level)%tiles(t)%field%y_min,                                  &
-          chunk(level)%tiles(t)%field%y_max,                                  &
-          chunk(level)%halo_exchange_depth,                                   &
-          chunk(level)%sub_tile_dims(1),sub_tile_dx,                          &
-          chunk(level)%sub_tile_dims(2),sub_tile_dy,                          &
-          chunk(level)%tiles(t)%field%vector_z,                               &
-          chunk(level)%tiles(t)%field%vector_Kx,                              &
-          chunk(level)%tiles(t)%field%vector_Ky,                              &
-          chunk(level)%tiles(t)%field%vector_Di,                              &
-          chunk(level)%tiles(t)%field%rx,  &
-          chunk(level)%tiles(t)%field%ry,  &
-          ztaz)
-
-      ! write back into the GLOBAL vector
-      chunk(level)%def%t1(chunk(level)%tiles(t)%def_tile_coords(1): &
-                          chunk(level)%tiles(t)%def_tile_coords(1)+chunk(level)%sub_tile_dims(1)-1, &
-                          chunk(level)%tiles(t)%def_tile_coords(2): &
-                          chunk(level)%tiles(t)%def_tile_coords(2)+chunk(level)%sub_tile_dims(2)-1) = ztaz
-    ENDDO
-!$OMP END DO NOWAIT
-!$OMP END PARALLEL
-  ENDIF
-
-  !CALL MPI_Allreduce(MPI_IN_PLACE, chunk(level)%def%t1, size(chunk(level)%def%t1), MPI_DOUBLE_PRECISION, MPI_SUM, mpi_cart_comm, err)
-
-END SUBROUTINE tea_leaf_dpcg_matmul_ZTA
 
 SUBROUTINE tea_leaf_dpcg_matmul_ZTA_level(level,solve_time)
 
@@ -710,6 +343,7 @@ SUBROUTINE tea_leaf_dpcg_matmul_ZTA_level(level,solve_time)
   INTEGER :: t, err
 
   INTEGER :: sub_tile_dx, sub_tile_dy
+  INTEGER :: xrem, yrem
 
   REAL(KIND=8),dimension(chunk(level)%sub_tile_dims(1), chunk(level)%sub_tile_dims(2)) :: ztaz
 
@@ -717,40 +351,12 @@ SUBROUTINE tea_leaf_dpcg_matmul_ZTA_level(level,solve_time)
 
   INTEGER :: fields(NUM_FIELDS)
 
-!  IF (use_fortran_kernels) THEN
-!!$OMP PARALLEL PRIVATE(ztaz)
-!!$OMP DO
-!    DO t=1,tiles_per_task
-!      CALL tea_leaf_dpcg_solve_z_kernel(chunk(level)%tiles(t)%field%x_min,     &
-!                                        chunk(level)%tiles(t)%field%x_max,     &
-!                                        chunk(level)%tiles(t)%field%y_min,     &
-!                                        chunk(level)%tiles(t)%field%y_max,     &
-!                                        chunk(level)%halo_exchange_depth,      &
-!                                        chunk(level)%tiles(t)%field%vector_r,  &
-!                                        chunk(level)%tiles(t)%field%vector_z,  &
-!                                        chunk(level)%tiles(t)%field%vector_Kx, &
-!                                        chunk(level)%tiles(t)%field%vector_Ky, &
-!                                        chunk(level)%tiles(t)%field%vector_Di, &
-!                                        chunk(level)%tiles(t)%field%vector_Mi, &
-!                                        chunk(level)%tiles(t)%field%tri_cp,    &
-!                                        chunk(level)%tiles(t)%field%tri_bfp,   &
-!                                        chunk(level)%tiles(t)%field%rx,        &
-!                                        chunk(level)%tiles(t)%field%ry,        &
-!                                        tl_preconditioner_type)
-!    ENDDO
-!!$OMP END DO NOWAIT
-!!$OMP END PARALLEL
-!  ENDIF
-
   fields = 0
   fields(FIELD_Z) = 1
 
   IF (profiler_on) halo_time = timer()
   CALL update_halo(level, fields,1)
   IF (profiler_on) solve_time = solve_time + (timer()-halo_time)
-
-  fields = 0
-  fields(FIELD_P) = 1
 
   ! store the RHS in u which will then be copied into u0
 !$OMP PARALLEL
@@ -765,10 +371,11 @@ SUBROUTINE tea_leaf_dpcg_matmul_ZTA_level(level,solve_time)
 !$OMP PARALLEL PRIVATE(ztaz,sub_tile_dx,sub_tile_dy)
 !$OMP DO
     DO t=1,tiles_per_task
-      sub_tile_dx=(chunk(level)%tiles(t)%field%x_max-chunk(level)%tiles(t)%field%x_min+ &
-        chunk(level)%sub_tile_dims(1))/chunk(level)%sub_tile_dims(1)
-      sub_tile_dy=(chunk(level)%tiles(t)%field%y_max-chunk(level)%tiles(t)%field%y_min+ &
-        chunk(level)%sub_tile_dims(2))/chunk(level)%sub_tile_dims(2)
+      sub_tile_dx=(chunk(level)%tiles(t)%field%x_max-chunk(level)%tiles(t)%field%x_min+1)/chunk(level)%sub_tile_dims(1)
+      sub_tile_dy=(chunk(level)%tiles(t)%field%y_max-chunk(level)%tiles(t)%field%y_min+1)/chunk(level)%sub_tile_dims(2)
+
+      xrem        =mod(chunk(level)%tiles(t)%field%x_max-chunk(level)%tiles(t)%field%x_min+1,chunk(level)%sub_tile_dims(1))
+      yrem        =mod(chunk(level)%tiles(t)%field%y_max-chunk(level)%tiles(t)%field%y_min+1,chunk(level)%sub_tile_dims(2))
 
       ztaz = 0.0_8
 
@@ -777,8 +384,8 @@ SUBROUTINE tea_leaf_dpcg_matmul_ZTA_level(level,solve_time)
           chunk(level)%tiles(t)%field%y_min,                                  &
           chunk(level)%tiles(t)%field%y_max,                                  &
           chunk(level)%halo_exchange_depth,                                   &
-          chunk(level)%sub_tile_dims(1),sub_tile_dx,                          &
-          chunk(level)%sub_tile_dims(2),sub_tile_dy,                          &
+          chunk(level)%sub_tile_dims(1),sub_tile_dx,xrem,                     &
+          chunk(level)%sub_tile_dims(2),sub_tile_dy,yrem,                     &
           chunk(level)%tiles(t)%field%vector_z,                               &
           chunk(level)%tiles(t)%field%vector_Kx,                              &
           chunk(level)%tiles(t)%field%vector_Ky,                              &
@@ -795,92 +402,7 @@ SUBROUTINE tea_leaf_dpcg_matmul_ZTA_level(level,solve_time)
 !$OMP END PARALLEL
   ENDIF
 
-  !CALL MPI_Allreduce(MPI_IN_PLACE, chunk(level)%def%t1, size(chunk(level)%def%t1), MPI_DOUBLE_PRECISION, MPI_SUM, mpi_cart_comm, err)
-
 END SUBROUTINE tea_leaf_dpcg_matmul_ZTA_level
-
-SUBROUTINE tea_leaf_dpcg_restrict_ZT(not_init)
-
-  IMPLICIT NONE
-  LOGICAL :: not_init
-  INTEGER :: t, err
-  INTEGER, PARAMETER :: level=1
-
-  INTEGER :: sub_tile_dx, sub_tile_dy
-  REAL(KIND=8),dimension(chunk(level)%sub_tile_dims(1), chunk(level)%sub_tile_dims(2)) :: ZTr
-
-  IF (use_fortran_kernels) THEN
-    IF (not_init) THEN
-!$OMP PARALLEL PRIVATE(ZTr,sub_tile_dx,sub_tile_dy)
-!$OMP DO
-      DO t=1,tiles_per_task
-        sub_tile_dx=(chunk(level)%tiles(t)%field%x_max-chunk(level)%tiles(t)%field%x_min+ &
-          chunk(level)%sub_tile_dims(1))/chunk(level)%sub_tile_dims(1)
-        sub_tile_dy=(chunk(level)%tiles(t)%field%y_max-chunk(level)%tiles(t)%field%y_min+ &
-          chunk(level)%sub_tile_dims(2))/chunk(level)%sub_tile_dims(2)
-
-        ztr = 0.0_8
-
-        CALL tea_leaf_dpcg_restrict_ZT_kernel(chunk(level)%tiles(t)%field%x_min, &
-                                              chunk(level)%tiles(t)%field%x_max, &
-                                              chunk(level)%tiles(t)%field%y_min,           &
-                                              chunk(level)%tiles(t)%field%y_max,           &
-                                              chunk(level)%halo_exchange_depth,            &
-                                              chunk(level)%sub_tile_dims(1),               &
-                                              sub_tile_dx,                          &
-                                              chunk(level)%sub_tile_dims(2),               &
-                                              sub_tile_dy,                          &
-                                              chunk(level)%tiles(t)%field%vector_r,        &
-                                              ztr)
-
-        chunk(level)%def%t1(chunk(level)%tiles(t)%def_tile_coords(1): &
-                            chunk(level)%tiles(t)%def_tile_coords(1)+chunk(level)%sub_tile_dims(1)-1, &
-                            chunk(level)%tiles(t)%def_tile_coords(2): &
-                            chunk(level)%tiles(t)%def_tile_coords(2)+chunk(level)%sub_tile_dims(2)-1) = &
-        chunk(level)%def%t1(chunk(level)%tiles(t)%def_tile_coords(1): &
-                            chunk(level)%tiles(t)%def_tile_coords(1)+chunk(level)%sub_tile_dims(1)-1, &
-                            chunk(level)%tiles(t)%def_tile_coords(2): &
-                            chunk(level)%tiles(t)%def_tile_coords(2)+chunk(level)%sub_tile_dims(2)-1) - ztr
-      ENDDO
-!$OMP END DO
-!$OMP END PARALLEL
-    ELSE
-!$OMP PARALLEL PRIVATE(ZTr,sub_tile_dx,sub_tile_dy)
-!$OMP DO
-      DO t=1,tiles_per_task
-        sub_tile_dx=(chunk(level)%tiles(t)%field%x_max-chunk(level)%tiles(t)%field%x_min+ &
-          chunk(level)%sub_tile_dims(1))/chunk(level)%sub_tile_dims(1)
-        sub_tile_dy=(chunk(level)%tiles(t)%field%y_max-chunk(level)%tiles(t)%field%y_min+ &
-          chunk(level)%sub_tile_dims(2))/chunk(level)%sub_tile_dims(2)
-
-        ztr = 0.0_8
-
-        CALL tea_leaf_dpcg_restrict_ZT_kernel(chunk(level)%tiles(t)%field%x_min, &
-                                              chunk(level)%tiles(t)%field%x_max, &
-                                              chunk(level)%tiles(t)%field%y_min,           &
-                                              chunk(level)%tiles(t)%field%y_max,           &
-                                              chunk(level)%halo_exchange_depth,            &
-                                              chunk(level)%sub_tile_dims(1),               &
-                                              sub_tile_dx,                          &
-                                              chunk(level)%sub_tile_dims(2),               &
-                                              sub_tile_dy,                          &
-                                              chunk(level)%tiles(t)%field%vector_r,        &
-                                              ztr)
-
-        chunk(level)%def%t1(chunk(level)%tiles(t)%def_tile_coords(1): &
-                            chunk(level)%tiles(t)%def_tile_coords(1)+chunk(level)%sub_tile_dims(1)-1, &
-                            chunk(level)%tiles(t)%def_tile_coords(2): &
-                            chunk(level)%tiles(t)%def_tile_coords(2)+chunk(level)%sub_tile_dims(2)-1) = - ztr
-      ENDDO
-!$OMP END DO
-!$OMP END PARALLEL
-    ENDIF
-  ENDIF
-
-  CALL MPI_Allreduce(chunk(level)%def%t1, chunk(level)%def%t2, size(chunk(level)%def%t2), &
-    MPI_DOUBLE_PRECISION, MPI_SUM, mpi_cart_comm, err)
-
-END SUBROUTINE tea_leaf_dpcg_restrict_ZT
 
 SUBROUTINE tea_leaf_dpcg_restrict_ZT_level(level,not_init)
 
@@ -890,6 +412,7 @@ SUBROUTINE tea_leaf_dpcg_restrict_ZT_level(level,not_init)
 
   INTEGER :: t, err
   INTEGER :: sub_tile_dx, sub_tile_dy
+  INTEGER :: xrem, yrem
   REAL(KIND=8),dimension(chunk(level)%sub_tile_dims(1), chunk(level)%sub_tile_dims(2)) :: ZTr
 
   IF (use_fortran_kernels) THEN
@@ -897,10 +420,11 @@ SUBROUTINE tea_leaf_dpcg_restrict_ZT_level(level,not_init)
 !$OMP PARALLEL PRIVATE(ZTr,sub_tile_dx,sub_tile_dy)
 !$OMP DO
       DO t=1,tiles_per_task
-        sub_tile_dx=(chunk(level)%tiles(t)%field%x_max-chunk(level)%tiles(t)%field%x_min+ &
-          chunk(level)%sub_tile_dims(1))/chunk(level)%sub_tile_dims(1)
-        sub_tile_dy=(chunk(level)%tiles(t)%field%y_max-chunk(level)%tiles(t)%field%y_min+ &
-          chunk(level)%sub_tile_dims(2))/chunk(level)%sub_tile_dims(2)
+        sub_tile_dx=(chunk(level)%tiles(t)%field%x_max-chunk(level)%tiles(t)%field%x_min+1)/chunk(level)%sub_tile_dims(1)
+        sub_tile_dy=(chunk(level)%tiles(t)%field%y_max-chunk(level)%tiles(t)%field%y_min+1)/chunk(level)%sub_tile_dims(2)
+
+        xrem        =mod(chunk(level)%tiles(t)%field%x_max-chunk(level)%tiles(t)%field%x_min+1,chunk(level)%sub_tile_dims(1))
+        yrem        =mod(chunk(level)%tiles(t)%field%y_max-chunk(level)%tiles(t)%field%y_min+1,chunk(level)%sub_tile_dims(2))
 
         ztr = 0.0_8
 
@@ -910,9 +434,9 @@ SUBROUTINE tea_leaf_dpcg_restrict_ZT_level(level,not_init)
                                               chunk(level)%tiles(t)%field%y_max,           &
                                               chunk(level)%halo_exchange_depth,            &
                                               chunk(level)%sub_tile_dims(1),               &
-                                              sub_tile_dx,                          &
+                                              sub_tile_dx, xrem,                           &
                                               chunk(level)%sub_tile_dims(2),               &
-                                              sub_tile_dy,                          &
+                                              sub_tile_dy, yrem,                           &
                                               chunk(level)%tiles(t)%field%vector_r,        &
                                               ztr)
 
@@ -927,10 +451,11 @@ SUBROUTINE tea_leaf_dpcg_restrict_ZT_level(level,not_init)
 !$OMP PARALLEL PRIVATE(ZTr,sub_tile_dx,sub_tile_dy)
 !$OMP DO
       DO t=1,tiles_per_task
-        sub_tile_dx=(chunk(level)%tiles(t)%field%x_max-chunk(level)%tiles(t)%field%x_min+ &
-          chunk(level)%sub_tile_dims(1))/chunk(level)%sub_tile_dims(1)
-        sub_tile_dy=(chunk(level)%tiles(t)%field%y_max-chunk(level)%tiles(t)%field%y_min+ &
-          chunk(level)%sub_tile_dims(2))/chunk(level)%sub_tile_dims(2)
+        sub_tile_dx=(chunk(level)%tiles(t)%field%x_max-chunk(level)%tiles(t)%field%x_min+1)/chunk(level)%sub_tile_dims(1)
+        sub_tile_dy=(chunk(level)%tiles(t)%field%y_max-chunk(level)%tiles(t)%field%y_min+1)/chunk(level)%sub_tile_dims(2)
+
+        xrem        =mod(chunk(level)%tiles(t)%field%x_max-chunk(level)%tiles(t)%field%x_min+1,chunk(level)%sub_tile_dims(1))
+        yrem        =mod(chunk(level)%tiles(t)%field%y_max-chunk(level)%tiles(t)%field%y_min+1,chunk(level)%sub_tile_dims(2))
 
         ztr = 0.0_8
 
@@ -940,9 +465,9 @@ SUBROUTINE tea_leaf_dpcg_restrict_ZT_level(level,not_init)
                                               chunk(level)%tiles(t)%field%y_max,           &
                                               chunk(level)%halo_exchange_depth,            &
                                               chunk(level)%sub_tile_dims(1),               &
-                                              sub_tile_dx,                          &
+                                              sub_tile_dx, xrem,                           &
                                               chunk(level)%sub_tile_dims(2),               &
-                                              sub_tile_dy,                          &
+                                              sub_tile_dy, yrem,                           &
                                               chunk(level)%tiles(t)%field%vector_r,        &
                                               ztr)
 
@@ -956,48 +481,6 @@ SUBROUTINE tea_leaf_dpcg_restrict_ZT_level(level,not_init)
 
 END SUBROUTINE tea_leaf_dpcg_restrict_ZT_level
 
-SUBROUTINE tea_leaf_dpcg_prolong_Z()
-
-  IMPLICIT NONE
-
-  INTEGER :: t
-  INTEGER, PARAMETER :: level=1
-
-  INTEGER :: sub_tile_dx, sub_tile_dy
-
-  REAL(KIND=8), DIMENSION(chunk(level)%sub_tile_dims(1), chunk(level)%sub_tile_dims(2)) :: t2_local
-
-  IF (use_fortran_kernels) THEN
-!$OMP PARALLEL PRIVATE(sub_tile_dx,sub_tile_dy,t2_local)
-!$OMP DO
-    DO t=1,tiles_per_task
-      sub_tile_dx=(chunk(level)%tiles(t)%field%x_max-chunk(level)%tiles(t)%field%x_min+ &
-        chunk(level)%sub_tile_dims(1))/chunk(level)%sub_tile_dims(1)
-      sub_tile_dy=(chunk(level)%tiles(t)%field%y_max-chunk(level)%tiles(t)%field%y_min+ &
-        chunk(level)%sub_tile_dims(2))/chunk(level)%sub_tile_dims(2)
-
-      t2_local = chunk(level)%def%t2(chunk(level)%tiles(t)%def_tile_coords(1): &
-                                     chunk(level)%tiles(t)%def_tile_coords(1)+chunk(level)%sub_tile_dims(1)-1, &
-                                     chunk(level)%tiles(t)%def_tile_coords(2): &
-                                     chunk(level)%tiles(t)%def_tile_coords(2)+chunk(level)%sub_tile_dims(2)-1)
-      CALL tea_leaf_dpcg_prolong_Z_kernel(chunk(level)%tiles(t)%field%x_min,    &
-                                          chunk(level)%tiles(t)%field%x_max,    &
-                                          chunk(level)%tiles(t)%field%y_min,    &
-                                          chunk(level)%tiles(t)%field%y_max,    &
-                                          chunk(level)%halo_exchange_depth,     &
-                                          chunk(level)%sub_tile_dims(1),        &
-                                          sub_tile_dx,                   &
-                                          chunk(level)%sub_tile_dims(2),        &
-                                          sub_tile_dy,                   &
-                                          chunk(level)%tiles(t)%field%vector_z, &
-                                          t2_local)
-    ENDDO
-!$OMP END DO
-!$OMP END PARALLEL
-  ENDIF
-
-END SUBROUTINE tea_leaf_dpcg_prolong_Z
-
 SUBROUTINE tea_leaf_dpcg_prolong_Z_level(level)
 
   IMPLICIT NONE
@@ -1006,6 +489,7 @@ SUBROUTINE tea_leaf_dpcg_prolong_Z_level(level)
 
   INTEGER :: t
   INTEGER :: sub_tile_dx, sub_tile_dy
+  INTEGER :: xrem, yrem
 
   REAL(KIND=8), DIMENSION(chunk(level)%sub_tile_dims(1), chunk(level)%sub_tile_dims(2)) :: t2_local
 
@@ -1013,10 +497,11 @@ SUBROUTINE tea_leaf_dpcg_prolong_Z_level(level)
 !$OMP PARALLEL PRIVATE(sub_tile_dx,sub_tile_dy,t2_local)
 !$OMP DO
     DO t=1,tiles_per_task
-      sub_tile_dx=(chunk(level)%tiles(t)%field%x_max-chunk(level)%tiles(t)%field%x_min+ &
-        chunk(level)%sub_tile_dims(1))/chunk(level)%sub_tile_dims(1)
-      sub_tile_dy=(chunk(level)%tiles(t)%field%y_max-chunk(level)%tiles(t)%field%y_min+ &
-        chunk(level)%sub_tile_dims(2))/chunk(level)%sub_tile_dims(2)
+      sub_tile_dx=(chunk(level)%tiles(t)%field%x_max-chunk(level)%tiles(t)%field%x_min+1)/chunk(level)%sub_tile_dims(1)
+      sub_tile_dy=(chunk(level)%tiles(t)%field%y_max-chunk(level)%tiles(t)%field%y_min+1)/chunk(level)%sub_tile_dims(2)
+
+      xrem        =mod(chunk(level)%tiles(t)%field%x_max-chunk(level)%tiles(t)%field%x_min+1,chunk(level)%sub_tile_dims(1))
+      yrem        =mod(chunk(level)%tiles(t)%field%y_max-chunk(level)%tiles(t)%field%y_min+1,chunk(level)%sub_tile_dims(2))
 
       t2_local = chunk(level+1)%tiles(t)%field%u(1:chunk(level)%sub_tile_dims(1), &
                                                  1:chunk(level)%sub_tile_dims(2))
@@ -1026,9 +511,9 @@ SUBROUTINE tea_leaf_dpcg_prolong_Z_level(level)
                                           chunk(level)%tiles(t)%field%y_max,    &
                                           chunk(level)%halo_exchange_depth,     &
                                           chunk(level)%sub_tile_dims(1),        &
-                                          sub_tile_dx,                          &
+                                          sub_tile_dx, xrem,                    &
                                           chunk(level)%sub_tile_dims(2),        &
-                                          sub_tile_dy,                          &
+                                          sub_tile_dy, yrem,                    &
                                           chunk(level)%tiles(t)%field%vector_z, &
                                           t2_local)
     ENDDO
@@ -1038,47 +523,6 @@ SUBROUTINE tea_leaf_dpcg_prolong_Z_level(level)
 
 END SUBROUTINE tea_leaf_dpcg_prolong_Z_level
 
-SUBROUTINE tea_leaf_dpcg_subtract_z()
-
-  IMPLICIT NONE
-  INTEGER :: t
-  INTEGER, PARAMETER :: level=1
-
-  INTEGER :: sub_tile_dx, sub_tile_dy
-
-  REAL(KIND=8), DIMENSION(chunk(level)%sub_tile_dims(1), chunk(level)%sub_tile_dims(2)) :: t2_local
-
-  IF (use_fortran_kernels) THEN
-!$OMP PARALLEL PRIVATE(sub_tile_dx,sub_tile_dy,t2_local)
-!$OMP DO
-    DO t=1,tiles_per_task
-      sub_tile_dx=(chunk(level)%tiles(t)%field%x_max-chunk(level)%tiles(t)%field%x_min+ &
-        chunk(level)%sub_tile_dims(1))/chunk(level)%sub_tile_dims(1)
-      sub_tile_dy=(chunk(level)%tiles(t)%field%y_max-chunk(level)%tiles(t)%field%y_min+ &
-        chunk(level)%sub_tile_dims(2))/chunk(level)%sub_tile_dims(2)
-
-      t2_local=chunk(level)%def%t2(chunk(level)%tiles(t)%def_tile_coords(1): &
-                                   chunk(level)%tiles(t)%def_tile_coords(1)+chunk(level)%sub_tile_dims(1)-1, &
-                                   chunk(level)%tiles(t)%def_tile_coords(2): &
-                                   chunk(level)%tiles(t)%def_tile_coords(2)+chunk(level)%sub_tile_dims(2)-1)
-      CALL tea_leaf_dpcg_subtract_z_kernel(chunk(level)%tiles(t)%field%x_min, &
-                                           chunk(level)%tiles(t)%field%x_max, &
-                                           chunk(level)%tiles(t)%field%y_min, &
-                                           chunk(level)%tiles(t)%field%y_max, &
-                                           chunk(level)%halo_exchange_depth,  &
-                                           chunk(level)%sub_tile_dims(1),     &
-                                           sub_tile_dx,                &
-                                           chunk(level)%sub_tile_dims(2),     &
-                                           sub_tile_dy,                &
-                                           chunk(level)%tiles(t)%field%u,     &
-                                           t2_local)
-    ENDDO
-!$OMP END DO
-!$OMP END PARALLEL
-  ENDIF
-
-END SUBROUTINE tea_leaf_dpcg_subtract_z
-
 SUBROUTINE tea_leaf_dpcg_subtract_z_level(level)
 
   IMPLICIT NONE
@@ -1086,6 +530,7 @@ SUBROUTINE tea_leaf_dpcg_subtract_z_level(level)
   INTEGER :: t
 
   INTEGER :: sub_tile_dx, sub_tile_dy
+  INTEGER :: xrem, yrem
 
   REAL(KIND=8), DIMENSION(chunk(level)%sub_tile_dims(1), chunk(level)%sub_tile_dims(2)) :: t2_local
 
@@ -1093,10 +538,11 @@ SUBROUTINE tea_leaf_dpcg_subtract_z_level(level)
 !$OMP PARALLEL PRIVATE(sub_tile_dx,sub_tile_dy,t2_local)
 !$OMP DO
     DO t=1,tiles_per_task
-      sub_tile_dx=(chunk(level)%tiles(t)%field%x_max-chunk(level)%tiles(t)%field%x_min+ &
-        chunk(level)%sub_tile_dims(1))/chunk(level)%sub_tile_dims(1)
-      sub_tile_dy=(chunk(level)%tiles(t)%field%y_max-chunk(level)%tiles(t)%field%y_min+ &
-        chunk(level)%sub_tile_dims(2))/chunk(level)%sub_tile_dims(2)
+      sub_tile_dx=(chunk(level)%tiles(t)%field%x_max-chunk(level)%tiles(t)%field%x_min+1)/chunk(level)%sub_tile_dims(1)
+      sub_tile_dy=(chunk(level)%tiles(t)%field%y_max-chunk(level)%tiles(t)%field%y_min+1)/chunk(level)%sub_tile_dims(2)
+
+      xrem        =mod(chunk(level)%tiles(t)%field%x_max-chunk(level)%tiles(t)%field%x_min+1,chunk(level)%sub_tile_dims(1))
+      yrem        =mod(chunk(level)%tiles(t)%field%y_max-chunk(level)%tiles(t)%field%y_min+1,chunk(level)%sub_tile_dims(2))
 
       t2_local=chunk(level+1)%tiles(t)%field%u(1:chunk(level)%sub_tile_dims(1), &
                                                1:chunk(level)%sub_tile_dims(2))
@@ -1106,9 +552,9 @@ SUBROUTINE tea_leaf_dpcg_subtract_z_level(level)
                                            chunk(level)%tiles(t)%field%y_max, &
                                            chunk(level)%halo_exchange_depth,  &
                                            chunk(level)%sub_tile_dims(1),     &
-                                           sub_tile_dx,                &
+                                           sub_tile_dx, xrem,                 &
                                            chunk(level)%sub_tile_dims(2),     &
-                                           sub_tile_dy,                &
+                                           sub_tile_dy, yrem,                 &
                                            chunk(level)%tiles(t)%field%u,     &
                                            t2_local)
     ENDDO
@@ -1118,13 +564,12 @@ SUBROUTINE tea_leaf_dpcg_subtract_z_level(level)
 
 END SUBROUTINE tea_leaf_dpcg_subtract_z_level
 
-SUBROUTINE tea_leaf_dpcg_init_p()
+SUBROUTINE tea_leaf_dpcg_init_p(level)
 
   IMPLICIT NONE
 
   INTEGER :: t, level
 
-  level=1
   IF (use_fortran_kernels) THEN
 !$OMP PARALLEL
 !$OMP DO
@@ -1143,12 +588,11 @@ SUBROUTINE tea_leaf_dpcg_init_p()
 
 END SUBROUTINE tea_leaf_dpcg_init_p
 
-SUBROUTINE tea_leaf_dpcg_store_r()
+SUBROUTINE tea_leaf_dpcg_store_r(level)
 
   IMPLICIT NONE
   INTEGER :: t, level
 
-  level=1
   IF (use_fortran_kernels) THEN
 !$OMP PARALLEL
 !$OMP DO
@@ -1160,7 +604,7 @@ SUBROUTINE tea_leaf_dpcg_store_r()
                                         chunk(level)%halo_exchange_depth,     &
                                         chunk(level)%tiles(t)%field%vector_r, &
                                         chunk(level)%tiles(t)%field%vector_r_m1 )
-      ENDDO
+    ENDDO
 !$OMP END DO
 !$OMP END PARALLEL
   ENDIF
@@ -1199,13 +643,12 @@ SUBROUTINE tea_leaf_dpcg_calc_rrn(level, rrn)
 
 END SUBROUTINE tea_leaf_dpcg_calc_rrn
 
-SUBROUTINE tea_leaf_dpcg_calc_p(beta)
+SUBROUTINE tea_leaf_dpcg_calc_p(level,beta)
 
   IMPLICIT NONE
   INTEGER :: t, level
   REAL(KIND=8) :: beta
 
-  level=1
   IF (use_fortran_kernels) THEN
 !$OMP PARALLEL
 !$OMP DO
@@ -1225,563 +668,14 @@ SUBROUTINE tea_leaf_dpcg_calc_p(beta)
 
 END SUBROUTINE tea_leaf_dpcg_calc_p
 
-SUBROUTINE tea_leaf_dpcg_local_solve(x_min,               &
-                                     x_max,               &
-                                     y_min,               &
-                                     y_max,               &
-                                     halo_exchange_depth, &
-                                     u,                   &
-                                     u0,                  &
-                                     def_kx,              &
-                                     def_ky,              &
-                                     def_di,              &
-                                     p,                   &
-                                     r,                   &
-                                     Mi,                  &
-                                     w,                   &
-                                     z,                   &
-                                     sd,                  &
-                                     eps,                 &
-                                     inner_iters,         &
-                                     it_count,            &
-                                     theta,               &
-                                     use_ppcg,            &
-                                     inner_cg_alphas,     &
-                                     inner_cg_betas,      &
-                                     inner_ch_alphas,     &
-                                     inner_ch_betas)
-
-  IMPLICIT NONE
-
-  INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
-  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,&
-                          y_min-halo_exchange_depth:y_max+halo_exchange_depth) &
-                          :: u, u0, def_kx, def_ky, def_di, p, r, Mi, w, z, sd
-
-  INTEGER(KIND=4) :: j,k
-  INTEGER(KIND=4) :: it_count
-
-  REAL(KIND=8) :: rro, smvp, initial_residual, eps
-  REAL(KIND=8) ::  alpha, beta, pw, rrn
-
-  INTEGER :: inner_iters, inner_step
-  LOGICAL :: use_ppcg
-  REAL(KIND=8), DIMENSION(inner_iters) :: inner_cg_alphas, inner_cg_betas
-  REAL(KIND=8), DIMENSION(inner_iters) :: inner_ch_alphas, inner_ch_betas
-  REAL(KIND=8) :: theta
-  REAL(KIND=8), PARAMETER :: omega=1.0_8
-
-!$ INTEGER :: OMP_GET_THREAD_NUM
-
-  rro = 0.0_8
-  initial_residual = 0.0_8
-  pw = 0.0_8
-
-  !rrn = 1e10
-
-  it_count = 0
-
-!$OMP PARALLEL private(alpha, beta, smvp, inner_step)
-!$OMP DO
-  DO k=y_min,y_max
-    DO j=x_min,x_max
-      ! copy the RHS vector
-      u0(j, k) = u(j, k)
-      ! zero for approximate solve
-      u(j, k) = 0.0_8
-    ENDDO
-  ENDDO
-!$OMP END DO
-
-!$OMP DO REDUCTION(+:initial_residual,rro)
-  DO k=y_min, y_max
-    DO j=x_min, x_max
-      !smvp = (    def_di(j  , k  )*u(j  , k  ) &
-      !         - (def_ky(j  , k+1)*u(j  , k+1) + def_ky(j  , k  )*u(j  , k-1)) &
-      !         - (def_kx(j+1, k  )*u(j+1, k  ) + def_kx(j  , k  )*u(j-1, k  )) )
-
-      Mi(j, k) = omega/def_di(j, k)
-
-      r(j, k) = u0(j, k) !- smvp
-      z(j, k) = r(j, k)*Mi(j, k)
-      p(j, k) = z(j, k)
-
-      rro = rro + r(j, k)*p(j, k)
-      initial_residual = initial_residual + u0(j, k)*p(j, k)
-    ENDDO
-  ENDDO
-!$OMP END DO
-  !write(6,*) "rnorm:",sqrt(sum(r**2))
-
-  !write(6,*) "rro:",rro
-!$OMP SINGLE
-    !rro = initial_residual
-    initial_residual = sqrt(abs(initial_residual))
-    rrn=rro
-!$OMP END SINGLE
-  IF (parallel%boss.AND.verbose_on) THEN
-!$  IF (OMP_GET_THREAD_NUM().EQ.0) THEN
-      WRITE(g_out,*)"Coarse solve - Initial residual ",initial_residual,sqrt(abs(rro))
-!$  ENDIF
-  ENDIF
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-  DO WHILE ((sqrt(abs(rrn)) .gt. eps*initial_residual) .and. (it_count < inner_iters))
-
-!$OMP BARRIER
-
-!$OMP SINGLE
-    pw = 0.0_8
-    rrn = 0.0_8
-!$OMP END SINGLE
-
-!$OMP DO REDUCTION(+:pw)
-    DO k=y_min,y_max
-      DO j=x_min,x_max
-      smvp = (    def_di(j  , k  )*p(j  , k  ) &
-               - (def_ky(j  , k+1)*p(j  , k+1) + def_ky(j  , k  )*p(j  , k-1)) &
-               - (def_kx(j+1, k  )*p(j+1, k  ) + def_kx(j  , k  )*p(j-1, k  )) )
-
-        w(j, k) = smvp
-        pw = pw + smvp*p(j, k)
-      ENDDO
-    ENDDO
-!$OMP END DO
-    !write(6,*) "normw,normp:",sqrt(sum(w**2)),sqrt(sum(p**2))
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-    alpha = rro/pw
-    !write(6,*) "serial:",rro,pw
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-!$OMP DO
-    DO k=y_min,y_max
-      DO j=x_min,x_max
-        u(j, k) = u(j, k) + alpha*p(j, k)
-        r(j, k) = r(j, k) - alpha*w(j, k)
-        z(j, k) = r(j, k)*Mi(j, k)
-      ENDDO
-    ENDDO
-!$OMP END DO
-
-    IF (use_ppcg) THEN
-!$OMP DO
-      DO k=y_min,y_max
-        DO j=x_min,x_max
-          sd(j, k) = z(j, k)/theta
-        ENDDO
-      ENDDO
-!$OMP END DO
-
-      DO inner_step=1,tl_ppcg_inner_coarse!min(10,coarse_solve_max_iters)
-!$OMP DO
-        DO k=y_min,y_max
-          DO j=x_min,x_max
-            smvp = (    def_di(j  , k  )*sd(j  , k  ) &
-                     - (def_ky(j  , k+1)*sd(j  , k+1) + def_ky(j  , k  )*sd(j  , k-1)) &
-                     - (def_kx(j+1, k  )*sd(j+1, k  ) + def_kx(j  , k  )*sd(j-1, k  )) )
-
-
-            r(j, k) = r(j, k) - smvp
-            z(j, k) = r(j, k)*Mi(j, k)
-
-            u(j, k) = u(j, k) + sd(j, k)
-          ENDDO
-        ENDDO
-!$OMP END DO
-!$OMP DO
-        DO k=y_min,y_max
-          DO j=x_min,x_max
-            sd(j, k) = inner_ch_alphas(inner_step)*sd(j, k) + inner_ch_betas(inner_step)*z(j, k)
-          ENDDO
-        ENDDO
-!$OMP END DO
-      ENDDO
-    ENDIF
-
-!$OMP DO REDUCTION(+:rrn)
-    DO k=y_min,y_max
-      DO j=x_min,x_max
-        rrn = rrn + r(j, k)*z(j, k)
-      ENDDO
-    ENDDO
-!$OMP END DO
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-    beta = rrn/rro
-    !if (parallel%boss) then
-    !  !if (it_count == 1) write(6,*) use_ppcg
-    !  write(6,'("serial iteration:",i3," alpha=",es20.13," beta=",es20.13," rrn=",es20.13," norm u:",es20.13," norm z:",es20.13)') &
-    !    it_count+1,alpha,beta,rrn,sqrt(sum(u**2)),sqrt(sum(z**2))
-    !endif
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-!$OMP DO
-    DO k=y_min,y_max
-      DO j=x_min,x_max
-        p(j, k) = z(j, k) + beta*p(j, k)
-      ENDDO
-    ENDDO
-!$OMP END DO
-
-!$OMP SINGLE
-    rro = rrn
-    it_count = it_count + 1
-    inner_cg_alphas(it_count) = alpha
-    inner_cg_betas(it_count) = beta
-!$OMP END SINGLE
-
-    IF (parallel%boss.AND.verbose_on) THEN
-!$    IF (OMP_GET_THREAD_NUM().EQ.0) THEN
-        WRITE(g_out,*)"Coarse solve - Residual ",sqrt(abs(rrn))
-!$    ENDIF
-    ENDIF
-  ENDDO
-
-!$OMP END PARALLEL
-
-  !if (parallel%boss) then
-  !  !if (it_count == 1) write(6,*) use_ppcg
-  !  write(6,'("serial iteration:",i3," alpha=",es20.13," beta=",es20.13," rrn=",es20.13," norm u:",es20.13," norm z:",es20.13)') &
-  !    it_count,alpha,beta,rrn,sqrt(sum(u**2)),sqrt(sum(z**2))
-  !endif
-  !if (use_ppcg) write(6,*) theta,inner_ch_alphas(1:10),inner_ch_betas(1:10)
-  !if (it_count == 0) stop
-
-END SUBROUTINE tea_leaf_dpcg_local_solve
-
-SUBROUTINE tea_leaf_dpcg_local_solve1(x_min,               &
-                                     x_max,               &
-                                     y_min,               &
-                                     y_max,               &
-                                     halo_exchange_depth, &
-                                     u,                   &
-                                     u0,                  &
-                                     def_kx,              &
-                                     def_ky,              &
-                                     def_di,              &
-                                     p,                   &
-                                     r,                   &
-                                     Mi,                  &
-                                     w,                   &
-                                     z,                   &
-                                     sd,                  &
-                                     eps,                 &
-                                     inner_iters,         &
-                                     it_count,            &
-                                     inner_ch_theta,      &
-                                     use_ppcg,            &
-                                     inner_cg_alphas,     &
-                                     inner_cg_betas,      &
-                                     inner_ch_alphas,     &
-                                     inner_ch_betas)
-
-  IMPLICIT NONE
-
-  INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth
-  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,&
-                          y_min-halo_exchange_depth:y_max+halo_exchange_depth) &
-                          :: u, u0, def_kx, def_ky, def_di, p, r, Mi, w, z, sd, r1, y
-
-  INTEGER(KIND=4) :: j,k
-  INTEGER(KIND=4) :: it_count
-
-  REAL(KIND=8) :: rro, smvp, initial_residual, eps
-  REAL(KIND=8) ::  alpha, beta, pw, rrn
-
-  INTEGER :: inner_iters, inner_step
-  LOGICAL :: use_ppcg
-  REAL(KIND=8), DIMENSION(inner_iters) :: inner_cg_alphas, inner_cg_betas
-  REAL(KIND=8), DIMENSION(inner_iters) :: inner_ch_alphas, inner_ch_betas
-  REAL(KIND=8) :: inner_ch_theta
-  REAL(KIND=8), PARAMETER :: omega=1.0_8
-
-!$ INTEGER :: OMP_GET_THREAD_NUM
-
-  rro = 0.0_8
-  initial_residual = 0.0_8
-  pw = 0.0_8
-
-  !rrn = 1e10
-
-  it_count = 0
-
-!$OMP PARALLEL private(alpha, beta, smvp, inner_step)
-!$OMP DO
-  DO k=y_min,y_max
-    DO j=x_min,x_max
-      ! copy the RHS vector
-      u0(j, k) = u(j, k)
-      ! zero for approximate solve
-      u(j, k) = 0.0_8
-    ENDDO
-  ENDDO
-!$OMP END DO
-
-!$OMP DO REDUCTION(+:initial_residual)
-  DO k=y_min, y_max
-    DO j=x_min, x_max
-      !smvp = (    def_di(j  , k  )*u(j  , k  ) &
-      !         - (def_ky(j  , k+1)*u(j  , k+1) + def_ky(j  , k  )*u(j  , k-1)) &
-      !         - (def_kx(j+1, k  )*u(j+1, k  ) + def_kx(j  , k  )*u(j-1, k  )) )
-
-      Mi(j, k) = omega/def_di(j, k)
-
-      r(j, k) = u0(j, k) !- smvp
-      z(j, k) = r(j, k)*Mi(j, k)
-      p(j, k) = z(j, k)
-    ENDDO
-  ENDDO
-
-    IF (use_ppcg .and. tl_ppcg_inner_coarse >= 0) THEN
-!$OMP DO
-      DO k=y_min,y_max
-        DO j=x_min,x_max
-          sd(j, k) = z(j, k)/inner_ch_theta
-          r1(j, k) = r(j, k)
-          y (j, k) =sd(j, k)
-        ENDDO
-      ENDDO
-!$OMP END DO
-
-      DO inner_step=1,tl_ppcg_inner_coarse!min(10,coarse_solve_max_iters)
-!$OMP DO
-        DO k=y_min,y_max
-          DO j=x_min,x_max
-            smvp = (    def_di(j  , k  )*sd(j  , k  ) &
-                     - (def_ky(j  , k+1)*sd(j  , k+1) + def_ky(j  , k  )*sd(j  , k-1)) &
-                     - (def_kx(j+1, k  )*sd(j+1, k  ) + def_kx(j  , k  )*sd(j-1, k  )) )
-
-            !r(j, k) = r(j, k) - smvp; z(j, k) = r(j, k)*Mi(j, k); u(j, k) = u(j, k) + sd(j, k)
-
-!don't change r or u
-            r1(j, k) = r1(j, k) - smvp; z (j, k) = r1(j, k)*Mi(j, k)
-          ENDDO
-        ENDDO
-!$OMP END DO
-
-!$OMP DO
-        DO k=y_min,y_max
-          DO j=x_min,x_max
-            sd(j, k) = inner_ch_alphas(inner_step)*sd(j, k) + inner_ch_betas(inner_step)*z(j, k)
-            y (j, k) = y (j, k) + sd(j, k)
-          ENDDO
-        ENDDO
-!$OMP END DO
-      ENDDO
-
-!copy y into z and p
-!$OMP DO
-      DO k=y_min,y_max
-        DO j=x_min,x_max
-          z(j, k)=y(j, k)
-
-          !u(j, k) = u(j, k) + y(j, k)
-          !smvp = (    def_di(j  , k  )*y(j  , k  ) &
-          !         - (def_ky(j  , k+1)*y(j  , k+1) + def_ky(j  , k  )*y(j  , k-1)) &
-          !         - (def_kx(j+1, k  )*y(j+1, k  ) + def_kx(j  , k  )*y(j-1, k  )) )
-          !r(j, k) = r(j, k) - smvp
-
-          p(j, k) = z(j, k)
-        ENDDO
-      ENDDO
-!$OMP END DO
-
-    ENDIF
-
-!$OMP DO
-  DO k=y_min, y_max
-    DO j=x_min, x_max
-      !initial_residual = initial_residual + r(j, k)*p(j, k)
-      rro = rro + r(j, k)*p(j, k)
-      initial_residual = initial_residual + u0(j, k)*p(j, k)
-    ENDDO
-  ENDDO
-!$OMP END DO
-  !write(6,*) "rnorm:",sqrt(sum(r**2))
-
-  !write(6,*) "rro:",rro
-!$OMP SINGLE
-    !rro = initial_residual
-    rrn=rro
-    initial_residual = sqrt(abs(initial_residual))
-!$OMP END SINGLE
-  IF (parallel%boss.AND.verbose_on) THEN
-!$  IF (OMP_GET_THREAD_NUM().EQ.0) THEN
-      WRITE(g_out,*); WRITE(g_out,*)
-      WRITE(g_out,*)"Coarse solve - Initial residual ",initial_residual,sqrt(abs(rro))
-!$  ENDIF
-  ENDIF
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-  DO WHILE ((sqrt(abs(rrn)) .gt. eps*initial_residual) .and. (it_count < inner_iters))
-
-!$OMP BARRIER
-
-!$OMP SINGLE
-    pw = 0.0_8
-    rrn = 0.0_8
-!$OMP END SINGLE
-
-!$OMP DO REDUCTION(+:pw)
-    DO k=y_min,y_max
-      DO j=x_min,x_max
-      smvp = (    def_di(j  , k  )*p(j  , k  ) &
-               - (def_ky(j  , k+1)*p(j  , k+1) + def_ky(j  , k  )*p(j  , k-1)) &
-               - (def_kx(j+1, k  )*p(j+1, k  ) + def_kx(j  , k  )*p(j-1, k  )) )
-
-        w(j, k) = smvp
-        pw = pw + smvp*p(j, k)
-      ENDDO
-    ENDDO
-!$OMP END DO
-    !write(6,*) "normw,normp:",sqrt(sum(w**2)),sqrt(sum(p**2))
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-    alpha = rro/pw
-    !write(g_out,*) "alpha:",alpha,rro,pw
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-!$OMP DO
-    DO k=y_min,y_max
-      DO j=x_min,x_max
-        u(j, k) = u(j, k) + alpha*p(j, k)
-        r(j, k) = r(j, k) - alpha*w(j, k)
-        z(j, k) = r(j, k)*Mi(j, k)
-      ENDDO
-    ENDDO
-!$OMP END DO
-
-    IF (use_ppcg .and. tl_ppcg_inner_coarse >= 0) THEN
-!$OMP DO
-      DO k=y_min,y_max
-        DO j=x_min,x_max
-          sd(j, k) = z(j, k)/inner_ch_theta
-          r1(j, k) = r(j, k)
-          y (j, k) =sd(j, k)
-        ENDDO
-      ENDDO
-!$OMP END DO
-
-      DO inner_step=1,tl_ppcg_inner_coarse!min(10,coarse_solve_max_iters)
-!$OMP DO
-        DO k=y_min,y_max
-          DO j=x_min,x_max
-            smvp = (    def_di(j  , k  )*sd(j  , k  ) &
-                     - (def_ky(j  , k+1)*sd(j  , k+1) + def_ky(j  , k  )*sd(j  , k-1)) &
-                     - (def_kx(j+1, k  )*sd(j+1, k  ) + def_kx(j  , k  )*sd(j-1, k  )) )
-
-
-            !r(j, k) = r(j, k) - smvp
-            !z(j, k) = r(j, k)*Mi(j, k)
-
-            !u(j, k) = u(j, k) + sd(j, k)
-
-!don't change r or u
-            r1(j, k) = r1(j, k) - smvp
-            z (j, k) = r1(j, k)*Mi(j, k)
-          ENDDO
-        ENDDO
-!$OMP END DO
-
-!$OMP DO
-        DO k=y_min,y_max
-          DO j=x_min,x_max
-            sd(j, k) = inner_ch_alphas(inner_step)*sd(j, k) + inner_ch_betas(inner_step)*z(j, k)
-            y (j, k) = y (j, k) + sd(j, k)
-          ENDDO
-        ENDDO
-!$OMP END DO
-      ENDDO
-
-!copy y into z
-!$OMP DO
-      DO k=y_min,y_max
-        DO j=x_min,x_max
-          z(j, k)=y(j, k)
-
-          !u(j, k)=u(j, k)+y(j, k)
-          !smvp = (    def_di(j  , k  )*y(j  , k  ) &
-          !         - (def_ky(j  , k+1)*y(j  , k+1) + def_ky(j  , k  )*y(j  , k-1)) &
-          !         - (def_kx(j+1, k  )*y(j+1, k  ) + def_kx(j  , k  )*y(j-1, k  )) )
-          !r(j, k)=r(j, k)-smvp
-        ENDDO
-      ENDDO
-!$OMP END DO
-
-    ENDIF
-
-!$OMP DO REDUCTION(+:rrn)
-    DO k=y_min,y_max
-      DO j=x_min,x_max
-        rrn = rrn + r(j, k)*z(j, k)
-      ENDDO
-    ENDDO
-!$OMP END DO
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-    beta = rrn/rro
-    !write(g_out,*) "beta:",beta,rrn,rro
-    !write(g_out,*)
-    !if (parallel%boss) then
-    !  !if (it_count == 1) write(6,*) use_ppcg
-    !  write(6,'("serial iteration:",i3," alpha=",es20.13," beta=",es20.13," rrn=",es20.13," norm u:",es20.13," norm z:",es20.13)') &
-    !    it_count+1,alpha,beta,rrn,sqrt(sum(u**2)),sqrt(sum(z**2))
-    !endif
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-!$OMP DO
-    DO k=y_min,y_max
-      DO j=x_min,x_max
-        p(j, k) = z(j, k) + beta*p(j, k)
-      ENDDO
-    ENDDO
-!$OMP END DO
-
-!$OMP SINGLE
-    rro = rrn
-    it_count = it_count + 1
-    inner_cg_alphas(it_count) = alpha
-    inner_cg_betas(it_count) = beta
-!$OMP END SINGLE
-
-    !write(6,*) "serial solve:",sqrt(abs(rrn)),eps,initial_residual
-    IF (parallel%boss.AND.verbose_on) THEN
-!$    IF (OMP_GET_THREAD_NUM().EQ.0) THEN
-        WRITE(g_out,*)"Coarse solve - Residual ",sqrt(abs(rrn))
-!$    ENDIF
-    ENDIF
-
-  ENDDO
-
-!$OMP END PARALLEL
-
-  !if (parallel%boss) then
-  !  !if (it_count == 1) write(6,*) use_ppcg
-  !  write(6,'("serial iteration:",i3," alpha=",es20.13," beta=",es20.13," rrn=",es20.13," norm u:",es20.13," norm z:",es20.13)') &
-  !    it_count,alpha,beta,rrn,sqrt(sum(u**2)),sqrt(sum(z**2))
-  !endif
-  !if (use_ppcg) write(6,*) inner_ch_theta,inner_ch_alphas(1:10),inner_ch_betas(1:10)
-  !if (it_count == 0) stop
-
-END SUBROUTINE tea_leaf_dpcg_local_solve1
-
 SUBROUTINE tea_leaf_dpcg_local_solve_level(level,               &
                                            solve_time,          &
                                            eps_inner,           &
                                            inner_iters,         &
                                            n,                   &
                                            use_ppcg,            &
+                                           inner_cg_alphas,     &
+                                           inner_cg_betas,      &
                                            inner_ch_theta,      &
                                            inner_ch_alphas,     &
                                            inner_ch_betas)
@@ -1797,6 +691,7 @@ SUBROUTINE tea_leaf_dpcg_local_solve_level(level,               &
   INTEGER :: t,ppcg_inner_iters,n
   INTEGER :: fields(NUM_FIELDS)
   REAL(KIND=8) :: solve_time,eps_inner
+  REAL(KIND=8), DIMENSION(inner_iters) :: inner_cg_alphas, inner_cg_betas
   REAL(KIND=8), DIMENSION(inner_iters) :: inner_ch_alphas, inner_ch_betas
   REAL(KIND=8) :: inner_ch_theta
 
@@ -1835,10 +730,10 @@ SUBROUTINE tea_leaf_dpcg_local_solve_level(level,               &
 
   IF (use_ppcg) THEN
     CALL tea_leaf_run_ppcg_inner_steps(level+1, inner_ch_alphas, inner_ch_betas, inner_ch_theta, &
-        tl_ppcg_inner_coarse, solve_time)
-    ppcg_inner_iters = ppcg_inner_iters + tl_ppcg_inner_coarse
+        tl_ppcg_inner_coarse_steps, solve_time)
+    ppcg_inner_iters = ppcg_inner_iters + tl_ppcg_inner_coarse_steps
 
-    IF (tl_ppcg_inner_coarse >= 0) THEN
+    IF (tl_ppcg_inner_coarse_steps >= 0) THEN
       CALL tea_leaf_ppcg_pupdate    (level+1)
       CALL tea_leaf_ppcg_calc_zrnorm(level+1, rro)
     ENDIF
@@ -1855,8 +750,7 @@ SUBROUTINE tea_leaf_dpcg_local_solve_level(level,               &
 
   IF (parallel%boss.AND.verbose_on) THEN
 !$  IF (OMP_GET_THREAD_NUM().EQ.0) THEN
-      WRITE(g_out,*); WRITE(g_out,*)
-      WRITE(g_out,*)"Coarse solve - Initial residual ",initial_residual,sqrt(abs(rro))
+      WRITE(g_out,*)"Coarse solve - Initial residual ",initial_residual
 !$  ENDIF
   ENDIF
 
@@ -1890,6 +784,7 @@ SUBROUTINE tea_leaf_dpcg_local_solve_level(level,               &
     IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
 
     alpha = rro/pw
+    if (n <= tl_ch_cg_presteps) inner_cg_alphas(n) = alpha
     !write(g_out,*) "alpha:",alpha,rro,pw
     if  (alpha /= alpha) then
       write(6,*) "alpha not finite:",n,alpha,rro,pw
@@ -1902,12 +797,12 @@ SUBROUTINE tea_leaf_dpcg_local_solve_level(level,               &
     ! not using rrn, so don't do a tea_allsum
 
     IF (use_ppcg) THEN
-      !write(6,*) "tea_leaf_run_ppcg_inner_steps:",tl_ppcg_inner_coarse,level+1, &
-      !    maxval(abs(inner_ch_alphas(1:tl_ppcg_inner_coarse))), &
-      !    maxval(abs(inner_ch_betas (1:tl_ppcg_inner_coarse))), inner_ch_theta
+      !write(6,*) "tea_leaf_run_ppcg_inner_steps:",tl_ppcg_inner_coarse_steps,level+1, &
+      !    maxval(abs(inner_ch_alphas(1:tl_ppcg_inner_coarse_steps))), &
+      !    maxval(abs(inner_ch_betas (1:tl_ppcg_inner_coarse_steps))), inner_ch_theta
       CALL tea_leaf_run_ppcg_inner_steps(level+1, inner_ch_alphas, inner_ch_betas, inner_ch_theta, &
-          tl_ppcg_inner_coarse, solve_time)
-      ppcg_inner_iters = ppcg_inner_iters + tl_ppcg_inner_coarse
+          tl_ppcg_inner_coarse_steps, solve_time)
+      ppcg_inner_iters = ppcg_inner_iters + tl_ppcg_inner_coarse_steps
     ENDIF
 
     CALL tea_leaf_ppcg_calc_zrnorm(level+1, rrn)
@@ -1917,20 +812,7 @@ SUBROUTINE tea_leaf_dpcg_local_solve_level(level,               &
     IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
 
     beta = rrn/rro
-    !write(g_out,*) "beta:",beta,rrn,rro
-    !write(g_out,*)
-    !normu = 0.0_8; normz = 0.0_8
-    !DO t=1,tiles_per_task
-    !  normu = normu+sum(chunk(level+1)%tiles(t)%field%u(1:chunk(level)%sub_tile_dims(1), &
-    !                                                    1:chunk(level)%sub_tile_dims(2))**2)
-    !  normz = normz+sum(chunk(level+1)%tiles(t)%field%vector_z(1:chunk(level)%sub_tile_dims(1), &
-    !                                                           1:chunk(level)%sub_tile_dims(2))**2)
-    !ENDDO
-    !CALL tea_allsum(normu)
-    !CALL tea_allsum(normz)
-    !if (parallel%boss) &
-    !  write(6,'("level  iteration:",i3," alpha=",es20.13," beta=",es20.13," rrn=",es20.13," norm u:",es20.13," norm z:",es20.13)') &
-    !    n,alpha,beta,rrn,sqrt(normu),sqrt(normz)
+    if (n <= tl_ch_cg_presteps) inner_cg_betas(n) = beta
 
     CALL tea_leaf_cg_calc_p(level+1, beta)
 
@@ -1946,7 +828,7 @@ SUBROUTINE tea_leaf_dpcg_local_solve_level(level,               &
 
     IF (parallel%boss.AND.verbose_on) THEN
 !$    IF (OMP_GET_THREAD_NUM().EQ.0) THEN
-        WRITE(g_out,*)"Coarse solve - Residual ",error
+        WRITE(g_out,*)"Coarse solve - Residual         ",error
 !$    ENDIF
     ENDIF
 
@@ -1956,19 +838,6 @@ SUBROUTINE tea_leaf_dpcg_local_solve_level(level,               &
     old_error = error
 
   ENDDO
-
-  !normu = 0.0_8; normz = 0.0_8
-  !DO t=1,tiles_per_task
-  !  normu = normu+sum(chunk(level+1)%tiles(t)%field%u(1:chunk(level)%sub_tile_dims(1), &
-  !                                                    1:chunk(level)%sub_tile_dims(2))**2)
-  !  normz = normz+sum(chunk(level+1)%tiles(t)%field%vector_z(1:chunk(level)%sub_tile_dims(1), &
-  !                                                           1:chunk(level)%sub_tile_dims(2))**2)
-  !ENDDO
-  !CALL tea_allsum(normu)
-  !CALL tea_allsum(normz)
-  !if (parallel%boss) &
-  !  write(6,'("level  iteration:",i3," alpha=",es20.13," beta=",es20.13," rrn=",es20.13," norm u:",es20.13," norm z:",es20.13)') &
-  !    n,alpha,beta,rrn,sqrt(normu),sqrt(normz)
 
 END SUBROUTINE tea_leaf_dpcg_local_solve_level
 

@@ -84,24 +84,16 @@ SUBROUTINE start
     WRITE(g_out,*)"Tile size ",chunk(level)%tiles(1)%x_cells," by ",chunk(level)%tiles(1)%y_cells," cells"
   ENDIF
 
-  ! Each chunk has an array the size of the _total_ deflation vector size
-  IF (level < 2) THEN
-    chunk(level)%def%x_cells = mpi_dims(1)*chunk(level)%tile_dims(1)*chunk(level)%sub_tile_dims(1)
-    chunk(level)%def%y_cells = mpi_dims(2)*chunk(level)%tile_dims(2)*chunk(level)%sub_tile_dims(2)
-  ELSE
-    chunk(level)%def%x_cells = 0
-    chunk(level)%def%y_cells = 0
-  ENDIF
-
   IF (parallel%boss .AND. level < 2)THEN
-    WRITE(g_out,*)"Sub-tile size ",chunk(level)%tiles(1)%x_cells/chunk(level)%sub_tile_dims(1)," by ", &
-                                   chunk(level)%tiles(1)%y_cells/chunk(level)%sub_tile_dims(2)," cells"
+    WRITE(g_out,*)"Sub-tile size ranges from ",floor  (chunk(level)%tiles(tiles_per_task)%x_cells/ &
+                                               real(chunk(level)%sub_tile_dims(1)))," by ", &
+                                               floor  (chunk(level)%tiles(tiles_per_task)%y_cells/ &
+                                               real(chunk(level)%sub_tile_dims(2)))," cells", &
+                                        " to ",ceiling(chunk(level)%tiles(1)             %x_cells/ &
+                                               real(chunk(level)%sub_tile_dims(1)))," by ", &
+                                               ceiling(chunk(level)%tiles(1)             %y_cells/ &
+                                               real(chunk(level)%sub_tile_dims(2)))," cells"
   ENDIF
-
-  chunk(level)%def%x_min = 1
-  chunk(level)%def%y_min = 1
-  chunk(level)%def%x_max = chunk(level)%def%x_cells
-  chunk(level)%def%y_max = chunk(level)%def%y_cells
 
   CALL build_field(level)
 
@@ -114,8 +106,8 @@ SUBROUTINE start
   ENDIF
 
   IF (level < 2) THEN
-    grid(level+1)%x_cells=grid(level)%x_cells*chunk(level)%sub_tile_dims(1)/chunk(level)%tiles(1)%x_cells
-    grid(level+1)%y_cells=grid(level)%y_cells*chunk(level)%sub_tile_dims(2)/chunk(level)%tiles(1)%y_cells
+    grid(level+1)%x_cells=mpi_dims(1)*chunk(level)%tile_dims(1)*chunk(level)%sub_tile_dims(1)
+    grid(level+1)%y_cells=mpi_dims(2)*chunk(level)%tile_dims(2)*chunk(level)%sub_tile_dims(2)
   ENDIF
   ENDDO
 

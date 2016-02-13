@@ -194,8 +194,9 @@ SUBROUTINE read_input()
         IF(parallel%boss)WRITE(g_out,"(1x,a25,i12)")'tiles_per_problem',tiles_per_problem
         tiles_per_task=tiles_per_problem/parallel%max_task
         IF(mod(tiles_per_problem,parallel%max_task) /= 0)THEN
-          IF(parallel%boss)WRITE(g_out,"(1x,a80)") &
-            'WARNING: tiles_per_problem should be divisible by the number of MPI ranks'
+          tiles_per_problem=tiles_per_task*parallel%max_task
+          IF(parallel%boss)WRITE(g_out,"(1x,a92,i12)") &
+            'WARNING: tiles_per_problem should be divisible by the number of MPI ranks - value reset to ',tiles_per_problem
           IF(tiles_per_task == 0)THEN
             IF(parallel%boss)WRITE(g_out,"(1x,a80)") 'WARNING: tiles_per_task reset to 1 instead of 0'
             tiles_per_task=1

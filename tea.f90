@@ -148,7 +148,6 @@ SUBROUTINE tea_decompose(level,x_cells,y_cells)
     WRITE(g_out,*)
     WRITE(g_out,*)"Mesh ratio of ",REAL(x_cells)/REAL(y_cells)
     WRITE(g_out,*)"Decomposing the mesh into ",chunk_x," by ",chunk_y," chunks"
-    WRITE(g_out,*)
   ENDIF
 
 END SUBROUTINE tea_decompose
@@ -157,7 +156,7 @@ SUBROUTINE tea_decompose_tiles(level,x_cells, y_cells)
 
   IMPLICIT NONE
 
-  INTEGER :: level,x_cells,y_cells,xs_cells,ys_cells
+  INTEGER :: level,x_cells,y_cells,xs_cells,ys_cells,xs_cellsf,ys_cellsf,xs_cellsc,ys_cellsc
 
   INTEGER :: delta_x,delta_y
   INTEGER  :: tiles_x,tiles_y,mod_x,mod_y
@@ -177,10 +176,12 @@ SUBROUTINE tea_decompose_tiles(level,x_cells, y_cells)
   !write(6,*) "MPI_DIMS_CREATE:tile input :",level, tiles_per_task, 2
   !CALL MPI_DIMS_CREATE(tiles_per_task, 2, chunk(level)%tile_dims, err)
   !write(6,*) "MPI_DIMS_CREATE:tile output:",level, chunk(level)%tile_dims, err
+
+  if (level == 1) then
   best_fit_v=0.0_8
   best_fit_i=0
   !write(6,*) x_cells,y_cells,tiles_per_task
-  IF (MOD(x_cells*y_cells,tiles_per_task) /= 0) THEN
+  IF (MOD(x_cells*y_cells,tiles_per_task) /= 0 .and. level == 0) THEN ! only allow modifications on the fine grid set-up
     DO i=1,tiles_per_task-1
       IF (MOD(x_cells*y_cells,tiles_per_task+i) == 0) THEN
         tiles_per_task=tiles_per_task+i
@@ -191,22 +192,34 @@ SUBROUTINE tea_decompose_tiles(level,x_cells, y_cells)
         EXIT
       ENDIF
     ENDDO
-    WRITE(6,*) "modified task_per_tile to match domains size:",tiles_per_task
+    WRITE(6,*) "modified task_per_tile to match domain size:",tiles_per_task
+    deallocate(chunk(level)%tiles)
+    allocate  (chunk(level)%tiles(tiles_per_task))
   ENDIF
   DO i=1,tiles_per_task
     IF (mod(tiles_per_task,i) /= 0) CYCLE
     j=tiles_per_task/i
-    IF (mod(x_cells,i) /= 0) CYCLE
-    IF (mod(y_cells,j) /= 0) CYCLE
+    !IF (mod(x_cells,i) /= 0) CYCLE
+    !IF (mod(y_cells,j) /= 0) CYCLE
     fit_v=real(min(x_cells/i,y_cells/j),8)/real(max(x_cells/i,y_cells/j),8)
+    !write(6,*) i,j,fit_v
     IF (fit_v > best_fit_v) THEN
       best_fit_v=fit_v
       best_fit_i=i
     ENDIF
   ENDDO
-  IF (best_fit_i == 0) STOP
+  IF (best_fit_i == 0) then
+    WRITE(6,*) "No fit found - tiles_per_task=",tiles_per_task
+    STOP
+  ENDIF
   chunk(level)%tile_dims(1)=best_fit_i
   chunk(level)%tile_dims(2)=tiles_per_task/chunk(level)%tile_dims(1)
+
+  else
+  chunk(level)%tile_dims(1)=chunk(level-1)%tile_dims(1)
+  chunk(level)%tile_dims(2)=chunk(level-1)%tile_dims(2)
+  endif
+
 !  WRITE(6,*) "tiles_per_task optimisation    :",tiles_per_task,x_cells,y_cells, &
 !    " best fit:",best_fit_i,tiles_per_task/chunk(level)%tile_dims(1),fit_v
 
@@ -218,7 +231,7 @@ SUBROUTINE tea_decompose_tiles(level,x_cells, y_cells)
   best_fit_v=0.0_8
   best_fit_i=0
   xs_cells=x_cells/chunk(level)%tile_dims(1); ys_cells=y_cells/chunk(level)%tile_dims(2)
-  IF (MOD(xs_cells*ys_cells,sub_tiles_per_tile) /= 0) THEN
+  IF (MOD(xs_cells*ys_cells,sub_tiles_per_tile) /= 0 .and. level == 0) THEN
     DO i=1,sub_tiles_per_tile-1
       IF (MOD(xs_cells*ys_cells,sub_tiles_per_tile+i) == 0) THEN
         sub_tiles_per_tile=sub_tiles_per_tile+i
@@ -234,8 +247,8 @@ SUBROUTINE tea_decompose_tiles(level,x_cells, y_cells)
   DO i=1,sub_tiles_per_tile
     IF (mod(sub_tiles_per_tile,i) /= 0) CYCLE
     j=sub_tiles_per_tile/i
-    IF (mod(x_cells/chunk(level)%tile_dims(1),i) /= 0) CYCLE
-    IF (mod(y_cells/chunk(level)%tile_dims(2),j) /= 0) CYCLE
+    !IF (mod(x_cells/chunk(level)%tile_dims(1),i) /= 0) CYCLE
+    !IF (mod(y_cells/chunk(level)%tile_dims(2),j) /= 0) CYCLE
     fit_v=real(min(x_cells/chunk(level)%tile_dims(1)/i, &
                    y_cells/chunk(level)%tile_dims(2)/j),8)/ &
           real(max(x_cells/chunk(level)%tile_dims(1)/i, &
@@ -245,11 +258,19 @@ SUBROUTINE tea_decompose_tiles(level,x_cells, y_cells)
       best_fit_i=i
     ENDIF
   ENDDO
-  IF (best_fit_i == 0) STOP
+  IF (best_fit_i == 0) then
+    WRITE(6,*) "No fit found - sub_tiles_per_tile=",sub_tiles_per_tile
+    STOP
+  ENDIF
   chunk(level)%sub_tile_dims(1)=best_fit_i
   chunk(level)%sub_tile_dims(2)=sub_tiles_per_tile/chunk(level)%sub_tile_dims(1)
-!  WRITE(6,*) "sub_tiles_per_tile optimisation:",sub_tiles_per_tile,xs_cells,ys_cells, &
-!    " best fit:",best_fit_i,sub_tiles_per_tile/chunk(level)%sub_tile_dims(1),fit_v
+  !WRITE(6,*) "sub_tiles_per_tile optimisation:",sub_tiles_per_tile,xs_cells,ys_cells, &
+  !  " best fit:",best_fit_i,sub_tiles_per_tile/chunk(level)%sub_tile_dims(1),fit_v
+  !xs_cellsf=floor  (x_cells/real(chunk(level)%tile_dims(1)*chunk(level)%sub_tile_dims(1)))
+  !ys_cellsf=floor  (y_cells/real(chunk(level)%tile_dims(2)*chunk(level)%sub_tile_dims(2)))
+  !xs_cellsc=ceiling(x_cells/real(chunk(level)%tile_dims(1)*chunk(level)%sub_tile_dims(1)))
+  !ys_cellsc=ceiling(y_cells/real(chunk(level)%tile_dims(2)*chunk(level)%sub_tile_dims(2)))
+  !WRITE(6,*) "sub_tile dimensions: from ",xs_cellsf,ys_cellsf," to ",xs_cellsc,ys_cellsc
   ENDIF
 
   tiles_x = chunk(level)%tile_dims(1)
@@ -295,13 +316,6 @@ SUBROUTINE tea_decompose_tiles(level,x_cells, y_cells)
       ! add one to make it into 1 indexed
       chunk(level)%tiles(t)%tile_coords = chunk(level)%tiles(t)%tile_coords + 1
 
-      ! absolute position of tile compared to all other tiles in grid
-      chunk(level)%tiles(t)%def_tile_coords(1) = (mpi_coords(1)*chunk(level)%tile_dims(1) + j)*chunk(level)%sub_tile_dims(1) + 1
-      chunk(level)%tiles(t)%def_tile_coords(2) = (mpi_coords(2)*chunk(level)%tile_dims(2) + k)*chunk(level)%sub_tile_dims(2) + 1
-
-      chunk(level)%tiles(t)%def_tile_idx = (chunk(level)%tiles(t)%def_tile_coords(2) - 1)*mpi_dims(1)*chunk(level)%tile_dims(1) + &
-                                            chunk(level)%tiles(t)%def_tile_coords(1)
-
       chunk(level)%tiles(t)%tile_neighbours = EXTERNAL_FACE
 
       IF (j .GT. 0) THEN
@@ -323,10 +337,10 @@ SUBROUTINE tea_decompose_tiles(level,x_cells, y_cells)
   ENDDO
 
   IF (parallel%boss)THEN
-    WRITE(g_out,*)
     WRITE(g_out,*)"Decomposing each chunk into ",tiles_x," by ",tiles_y," tiles"
     WRITE(g_out,*)
   ENDIF
+  !WRITE(6,*)"Decomposing each chunk into ",tiles_x," by ",tiles_y," tiles"
 
 END SUBROUTINE tea_decompose_tiles
 

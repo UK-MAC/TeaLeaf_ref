@@ -257,7 +257,7 @@ SUBROUTINE tea_leaf()
         CALL tea_leaf_cg_calc_w(level, pw)
 
         ! keep old value of r for rrn calculation
-        CALL tea_leaf_dpcg_store_r()
+        CALL tea_leaf_dpcg_store_r(level)
 
         ! r.z
         CALL tea_leaf_ppcg_calc_zrnorm(level, rro)
@@ -303,7 +303,7 @@ SUBROUTINE tea_leaf()
       CALL tea_leaf_cg_calc_w(level, pw)
 
       ! keep old value of r for rrn calculation
-      CALL tea_leaf_dpcg_store_r()
+      CALL tea_leaf_dpcg_store_r(level)
 
       ! r.z
       CALL tea_leaf_ppcg_calc_zrnorm(level, rro)
@@ -328,11 +328,7 @@ SUBROUTINE tea_leaf()
           tl_ppcg_inner_steps, solve_time)
       ppcg_inner_iters = ppcg_inner_iters + tl_ppcg_inner_steps
 
-      IF (coarse_solve_serial) THEN
-        CALL tea_leaf_dpcg_setup_and_solve_E(solve_time)
-      ELSE
-        CALL tea_leaf_dpcg_setup_and_solve_E_level(level,solve_time)
-      ENDIF
+      CALL tea_leaf_dpcg_setup_and_solve_E_level(level,solve_time)
 
       CALL tea_leaf_dpcg_calc_rrn(level, rrn)
       IF (profiler_on) dot_product_time=timer()
@@ -343,7 +339,7 @@ SUBROUTINE tea_leaf()
       cg_betas(n) = beta
 
       ! p = r + b*p
-      CALL tea_leaf_dpcg_calc_p(beta)
+      CALL tea_leaf_dpcg_calc_p(level, beta)
 
       error = rrn
       rro = rrn

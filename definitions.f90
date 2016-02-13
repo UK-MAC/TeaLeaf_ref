@@ -86,7 +86,7 @@ MODULE definitions_module
    INTEGER      :: tl_ppcg_inner_steps
    REAL(KIND=8) :: tl_ppcg_steps_eigmin
    ! number of inner steps/max eigenvalue in ppcg solver on the coarse grid
-   INTEGER      :: tl_ppcg_inner_coarse
+   INTEGER      :: tl_ppcg_inner_coarse_steps
    REAL(KIND=8) :: tl_ppcg_coarse_eigmin
 
    ! Reflective boundaries at edge of mesh
@@ -102,7 +102,7 @@ MODULE definitions_module
    ! coarse solve convergence and solver options
    INTEGER      :: coarse_solve_max_iters
    REAL(KIND=8) :: coarse_solve_eps
-   LOGICAL      :: coarse_solve_serial,coarse_solve_ppcg
+   LOGICAL      :: coarse_solve_ppcg
 
    TYPE profiler_type
      REAL(KIND=8)       :: timestep        &
@@ -187,27 +187,7 @@ MODULE definitions_module
      INTEGER         :: tile_neighbours(4)
      INTEGER         :: tile_coords(2)
 
-     ! coordinate in the total deflation vector array for this tile
-     INTEGER         :: def_tile_coords(2)
-     ! absolute tile index
-     INTEGER         :: def_tile_idx
    END TYPE tile_type
-
-   TYPE deflate_type
-     ! Arrays the size of mpi_dims*tile_dims
-     REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: t1, t2
-     ! Don't really want to store the diagonal, but otherwise it's impossible to know what the tile size was in the local solve
-     REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: def_Di
-     REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: def_Kx, def_Ky
-     REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: def_p, def_r, def_w, def_sd, def_z
-     REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: def_Mi
-     INTEGER            :: x_cells              &
-                          ,y_cells
-     INTEGER         :: x_min  &
-                       ,y_min  &
-                       ,x_max  &
-                       ,y_max
-   END TYPE deflate_type
 
    TYPE chunk_type
 
@@ -236,7 +216,6 @@ MODULE definitions_module
      REAL(KIND=8),ALLOCATABLE:: left_snd_buffer(:),right_snd_buffer(:),bottom_snd_buffer(:),top_snd_buffer(:)
 
      TYPE(tile_type), DIMENSION(:), ALLOCATABLE :: tiles
-     TYPE(deflate_type) :: def
 
      ! how tiles are arranged
      INTEGER,DIMENSION(2) :: tile_dims
