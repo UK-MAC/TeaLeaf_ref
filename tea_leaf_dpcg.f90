@@ -129,7 +129,7 @@ SUBROUTINE tea_leaf_dpcg_init_x0(solve_time, ppcg_inner_steps, ch_alphas, ch_bet
   CALL tea_leaf_calc_residual(level)
 
   ! init z using the preconditioner - note that we don't need rro
-  CALL tea_leaf_cg_init(level, ppcg_inner_steps, ch_alphas, ch_betas, ch_theta, solve_time, rro)
+  CALL tea_leaf_cg_init(level, ppcg_inner_steps, ch_alphas, ch_betas, ch_theta, solve_time, 1, rro)
 
   !write(6,*) "tea_leaf_run_ppcg_inner_steps:",ppcg_inner_steps,level, &
   !    maxval(abs(ch_alphas(1:ppcg_inner_steps))), &
@@ -726,7 +726,7 @@ SUBROUTINE tea_leaf_dpcg_local_solve_level(level,               &
   !write(6,*) "rnorm:",sqrt(initial_residual)
 
   ! All 3 of these solvers use the CG kernels
-  CALL tea_leaf_cg_init(level+1, ppcg_inner_iters, inner_ch_alphas, inner_ch_betas, inner_ch_theta, solve_time, rro)
+  CALL tea_leaf_cg_init(level+1, ppcg_inner_iters, inner_ch_alphas, inner_ch_betas, inner_ch_theta, solve_time, 1, rro)
 
   IF (use_ppcg) THEN
     CALL tea_leaf_run_ppcg_inner_steps(level+1, inner_ch_alphas, inner_ch_betas, inner_ch_theta, &

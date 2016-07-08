@@ -52,7 +52,7 @@ SUBROUTINE tea_leaf()
 
   ! For chebyshev solver
   REAL(KIND=8), DIMENSION(max_iters) :: cg_alphas, cg_betas
-  REAL(KIND=8), DIMENSION(max_iters) :: ch_alphas, ch_betas
+  REAL(KIND=8), DIMENSION(:),allocatable :: ch_alphas, ch_betas
   REAL(KIND=8),SAVE :: eigmin, eigmax, theta, cn
   INTEGER :: est_itc, cheby_calc_steps, max_cheby_iters, info, ppcg_inner_iters
   LOGICAL :: ch_switch_check
@@ -139,7 +139,7 @@ SUBROUTINE tea_leaf()
     fields(FIELD_P) = 1
   ELSEIF (tl_use_cg .OR. tl_use_chebyshev .OR. tl_use_ppcg) THEN
     ! All 3 of these solvers use the CG kernels
-    CALL tea_leaf_cg_init(level, ppcg_inner_iters, ch_alphas, ch_betas, theta, solve_time, rro)
+    CALL tea_leaf_cg_init(level, ppcg_inner_iters, ch_alphas, ch_betas, theta, solve_time, 1, rro)
 
     ! and globally sum rro
     IF (profiler_on) dot_product_time=timer()
@@ -205,6 +205,7 @@ SUBROUTINE tea_leaf()
 
         IF (tl_use_chebyshev) THEN
           ! calculate chebyshev coefficients
+          allocate(ch_alphas(max_cheby_iters), ch_betas(max_cheby_iters))
           CALL tea_calc_ch_coefs(ch_alphas, ch_betas, eigmin, eigmax, &
               theta, max_cheby_iters)
 
@@ -213,6 +214,7 @@ SUBROUTINE tea_leaf()
           fields(FIELD_U) = 1
         ELSE IF (tl_use_ppcg) THEN
           ! currently also calculate chebyshev coefficients
+          allocate(ch_alphas(tl_ppcg_inner_steps), ch_betas(tl_ppcg_inner_steps))
           CALL tea_calc_ls_coefs(ch_alphas, ch_betas, eigmin, eigmax, &
               theta, tl_ppcg_inner_steps)
           tl_ppcg_active=.true.
@@ -233,24 +235,28 @@ SUBROUTINE tea_leaf()
 ! need to re-initialise the CG iteration (with the PP applied - tl_ppcg_active=.true.)
 
         ! All 3 of these solvers use the CG kernels
-        CALL tea_leaf_cg_init(level, ppcg_inner_iters, ch_alphas, ch_betas, theta, solve_time, rro)
+        ! step 1: initialize z if preconditioning or use r
+        CALL tea_leaf_cg_init(level, ppcg_inner_iters, ch_alphas, ch_betas, theta, solve_time, 2, rro)
+        ! step 2: compute a new z from r or z     
+        CALL tea_leaf_run_ppcg_inner_steps(level, ch_alphas, ch_betas, theta, &
+            tl_ppcg_inner_steps, solve_time)
+        ppcg_inner_iters = ppcg_inner_iters + tl_ppcg_inner_steps
+        ! step3: recompute p
+        CALL tea_leaf_cg_init(level, ppcg_inner_iters, ch_alphas, ch_betas, theta, solve_time, 3, rro)
 
         ! and globally sum rro
         IF (profiler_on) dot_product_time=timer()
         CALL tea_allsum(rro)
         IF (profiler_on) init_time = init_time + (timer()-dot_product_time)
+        !print*,"rro=",rro
 
         ! need to update p when using CG due to matrix/vector multiplication
         fields=0
-        fields(FIELD_U) = 1
         fields(FIELD_P) = 1
 
         IF (profiler_on) halo_time=timer()
         CALL update_halo(level,fields,1)
         IF (profiler_on) init_time=init_time+(timer()-halo_time)
-
-        fields=0
-        fields(FIELD_P) = 1
       ENDIF
 
       IF (tl_use_chebyshev) THEN
@@ -289,6 +295,7 @@ SUBROUTINE tea_leaf()
         IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
 
         alpha = rro/pw
+        !print*,"rro=",rro," pw=",pw
 
         CALL tea_leaf_cg_calc_ur(level, alpha, rrn)
 
@@ -472,6 +479,8 @@ SUBROUTINE tea_leaf()
 
   ! RESET
   IF (profiler_on) reset_time=timer()
+
+  if (allocated(ch_alphas)) deallocate(ch_alphas, ch_betas)
 
   CALL tea_leaf_finalise(level)
 

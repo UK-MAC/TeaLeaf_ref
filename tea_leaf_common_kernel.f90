@@ -297,11 +297,12 @@ SUBROUTINE tea_diag_init(x_min,             &
 !      DO j=x_min,x_max
     DO k=y_min-halo_exchange_depth+1,y_max+halo_exchange_depth-1
       DO j=x_min-halo_exchange_depth+1,x_max+halo_exchange_depth-1
-!        Mi(j, k) = 1.0_8/(1.0_8                 &
         IF (Di(j, k) /= 0.0_8) THEN
-!          Mi(j, k) = omega/Di(j, k)
+          Mi(j, k) = omega/Di(j, k)
 ! Try the l1 Jacobi variant
-          Mi(j, k) = omega/(Di(j, k) + ry*(Ky(j, k+1) + Ky(j, k)) + rx*(Kx(j+1, k) + Kx(j, k)))
+          !Mi(j, k) = omega/(Di(j, k) + ry*(Ky(j, k+1) + Ky(j, k)) + rx*(Kx(j+1, k) + Kx(j, k)))
+! Disable the preconditioner
+          !Mi(j, k) = omega
         ELSE
           Mi(j, k) = 0.0_8
         ENDIF

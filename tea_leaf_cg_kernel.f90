@@ -52,11 +52,12 @@ SUBROUTINE tea_leaf_cg_init_kernel(x_min,  &
                            ch_alphas,              &
                            ch_betas,               &
                            theta,                  &
-                           solve_time)
+                           solve_time,             &
+                           step)
 
   IMPLICIT NONE
 
-  INTEGER :: preconditioner_type,level
+  INTEGER :: preconditioner_type,level,step
   INTEGER(KIND=4):: x_min,x_max,y_min,y_max,halo_exchange_depth,ppcg_inner_iters
   REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth)&
                           :: r, Kx, Ky, Di, z, Mi, p
@@ -69,8 +70,12 @@ SUBROUTINE tea_leaf_cg_init_kernel(x_min,  &
   REAL(kind=8) :: rro
   REAL(KIND=8) :: rx, ry
 
-  rro = 0.0_8
+! step 1 is a CG step, whereas steps 2 and 3 are partial steps from the PPCG algorithm to allow a middle step for the PP application
 
+  !print*,step," r2=",sum(r**2)
+  if (step == 1 .or. step ==3) rro = 0.0_8
+
+  if (step == 1) then
 !$OMP PARALLEL REDUCTION(+:rro)
 !$OMP DO
   DO k=y_min,y_max
@@ -80,9 +85,21 @@ SUBROUTINE tea_leaf_cg_init_kernel(x_min,  &
     ENDDO
   ENDDO
 !$OMP END DO
+  elseif (step == 3) then
+!$OMP PARALLEL REDUCTION(+:rro)
+!$OMP DO
+  DO k=y_min,y_max
+    DO j=x_min,x_max
+      p(j, k) = 0.0_8
+    ENDDO
+  ENDDO
+!$OMP END DO
+  endif
 
-  IF (preconditioner_type .NE. TL_PREC_NONE .or. tl_ppcg_active) THEN
+  !IF (preconditioner_type .NE. TL_PREC_NONE .or. tl_ppcg_active) THEN
+  IF (preconditioner_type .NE. TL_PREC_NONE .or. (tl_ppcg_active .and. step == 3)) THEN
 
+    if (step == 1 .or. step == 2) then
     IF (preconditioner_type .EQ. TL_PREC_JAC_BLOCK) THEN
       CALL tea_block_solve(x_min, x_max, y_min, y_max, halo_exchange_depth,             &
                              r, z, cp, bfp, Kx, Ky, Di, rx, ry)
@@ -90,21 +107,27 @@ SUBROUTINE tea_leaf_cg_init_kernel(x_min,  &
       CALL tea_diag_solve(x_min, x_max, y_min, y_max, halo_exchange_depth, 0,           &
                              r, z, Mi)
     ENDIF
+    !print*,step," z2=",sum(z**2)
+    endif
 
-    IF (tl_ppcg_active) THEN
-      CALL tea_leaf_run_ppcg_inner_steps(level, ch_alphas, ch_betas, theta, &
-          tl_ppcg_inner_steps, solve_time)
-      ppcg_inner_iters = ppcg_inner_iters + tl_ppcg_inner_steps
-    ENDIF
+    !IF (tl_ppcg_active) THEN
+    !  CALL tea_leaf_run_ppcg_inner_steps(level, ch_alphas, ch_betas, theta, &
+    !      tl_ppcg_inner_steps, solve_time)
+    !  ppcg_inner_iters = ppcg_inner_iters + tl_ppcg_inner_steps
+    !ENDIF
 
+    if (step == 1 .or. step == 3) then
 !$OMP DO
     DO k=y_min,y_max
         DO j=x_min,x_max
             p(j, k) = z(j, k)
         ENDDO
     ENDDO
+    !print*,step," z2=",sum(z**2)," r.z=",sum(r*z)
 !$OMP END DO NOWAIT
+    endif
   ELSE
+    if (step == 1) then
 !$OMP DO
     DO k=y_min,y_max
         DO j=x_min,x_max
@@ -112,7 +135,9 @@ SUBROUTINE tea_leaf_cg_init_kernel(x_min,  &
         ENDDO
     ENDDO
 !$OMP END DO NOWAIT
+    endif
   ENDIF
+  if (step == 1 .or. step ==3) then
 !$OMP DO
   DO k=y_min,y_max
     DO j=x_min,x_max
@@ -120,6 +145,7 @@ SUBROUTINE tea_leaf_cg_init_kernel(x_min,  &
     ENDDO
   ENDDO
 !$OMP END DO NOWAIT
+  endif
 !$OMP END PARALLEL
 
 END SUBROUTINE tea_leaf_cg_init_kernel

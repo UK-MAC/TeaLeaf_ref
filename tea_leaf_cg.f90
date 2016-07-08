@@ -8,11 +8,11 @@ MODULE tea_leaf_cg_module
 
 CONTAINS
 
-SUBROUTINE tea_leaf_cg_init(level, ppcg_inner_iters, ch_alphas, ch_betas, theta, solve_time, rro)
+SUBROUTINE tea_leaf_cg_init(level, ppcg_inner_iters, ch_alphas, ch_betas, theta, solve_time, step, rro)
 
   IMPLICIT NONE
 
-  INTEGER :: level,ppcg_inner_iters
+  INTEGER :: level,ppcg_inner_iters,step
   REAL(KIND=8) :: rro,theta,solve_time
   REAL(KIND=8), DIMENSION(:) :: ch_alphas,ch_betas
 
@@ -44,7 +44,7 @@ SUBROUTINE tea_leaf_cg_init(level, ppcg_inner_iters, ch_alphas, ch_betas, theta,
           chunk(level)%tiles(t)%field%rx,  &
           chunk(level)%tiles(t)%field%ry,  &
           tile_rro, tl_preconditioner_type, &
-          level, ppcg_inner_iters, ch_alphas, ch_betas, theta, solve_time)
+          level, ppcg_inner_iters, ch_alphas, ch_betas, theta, solve_time, step)
 
       !write(6,'("tile_rro:",i3,4es25.18)') t,tile_rro,sum(chunk(level)%tiles(t)%field%vector_r**2), &
       !                                                sum(chunk(level)%tiles(t)%field%vector_z**2), &

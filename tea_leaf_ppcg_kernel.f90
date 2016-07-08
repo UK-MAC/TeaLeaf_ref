@@ -376,6 +376,7 @@ SUBROUTINE tea_leaf_ppcg_calc_zrnorm_kernel(x_min, &
 !$OMP END DO
   ENDIF
 !$OMP END PARALLEL
+!print*,"z.r=",sum(z*r)," r2=",sum(r**2)
 
 END SUBROUTINE tea_leaf_ppcg_calc_zrnorm_kernel
 
