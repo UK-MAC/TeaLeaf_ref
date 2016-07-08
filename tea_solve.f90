@@ -229,6 +229,28 @@ SUBROUTINE tea_leaf()
             WRITE(0, 100) eigmin,eigmax,cn,old_error
 !$        ENDIF
         ENDIF
+
+! need to re-initialise the CG iteration (with the PP applied - tl_ppcg_active=.true.)
+
+        ! All 3 of these solvers use the CG kernels
+        CALL tea_leaf_cg_init(level, ppcg_inner_iters, ch_alphas, ch_betas, theta, solve_time, rro)
+
+        ! and globally sum rro
+        IF (profiler_on) dot_product_time=timer()
+        CALL tea_allsum(rro)
+        IF (profiler_on) init_time = init_time + (timer()-dot_product_time)
+
+        ! need to update p when using CG due to matrix/vector multiplication
+        fields=0
+        fields(FIELD_U) = 1
+        fields(FIELD_P) = 1
+
+        IF (profiler_on) halo_time=timer()
+        CALL update_halo(level,fields,1)
+        IF (profiler_on) init_time=init_time+(timer()-halo_time)
+
+        fields=0
+        fields(FIELD_P) = 1
       ENDIF
 
       IF (tl_use_chebyshev) THEN

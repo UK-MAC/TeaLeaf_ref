@@ -172,6 +172,17 @@ SUBROUTINE tea_leaf_kernel_ppcg_inner(x_min,             &
 !$OMP DO
         DO k=y_min_bound,y_max_bound
           DO j=x_min_bound,x_max_bound
+            smvp = Di(j,k)*sd(j, k)                                 &
+              - ry*(Ky(j, k+1)*sd(j, k+1) + Ky(j, k)*sd(j, k-1))  &
+              - rx*(Kx(j+1, k)*sd(j+1, k) + Kx(j, k)*sd(j-1, k))
+!don't change r or u
+            r1(j, k) = r1(j, k) - smvp
+          ENDDO
+        ENDDO
+!$OMP END DO
+!$OMP DO
+        DO k=y_min_bound,y_max_bound
+          DO j=x_min_bound,x_max_bound
               sd(j, k) = alpha(inner_step)*sd(j, k) + beta(inner_step)*r1(j, k)
               y (j, k) = y (j, k) + sd(j, k)
           ENDDO
