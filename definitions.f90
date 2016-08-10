@@ -69,6 +69,7 @@ MODULE definitions_module
    LOGICAL      :: tl_use_cg
    LOGICAL      :: tl_use_ppcg
    LOGICAL      :: tl_use_jacobi
+   LOGICAL      :: tl_ppcg_active
    LOGICAL      :: verbose_on
    INTEGER      :: max_iters
    REAL(KIND=8) :: eps
@@ -128,9 +129,12 @@ MODULE definitions_module
      REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: u, u0
      REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: vector_p
      REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: vector_r
+     REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: vector_rstore
+     REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: vector_rtemp
      REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: vector_Mi
      REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: vector_w
      REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: vector_z
+     REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: vector_utemp
      REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: vector_Kx
      REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: vector_Ky
      REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: vector_sd

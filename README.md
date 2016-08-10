@@ -203,14 +203,13 @@ This keyword selects the Conjugate Gradient method to solve the linear system.
 
 `tl_use_ppcg`
 
-This keyword selects the Conjugate Gradient method to solve the linear system.
+This keyword selects the polynomial preconditioned Conjugate Gradient method to solve the linear system.
 
 `tl_use_chebyshev`
 
 This keyword selects the Chebyshev method to solve the linear system.
 
 `profiler_on`
-
 
 This option turns the code's coarse grained internal profiler end. Timing information is reported at the end of the simulation in the tea.out file. The default is no profiling.
 
@@ -226,11 +225,11 @@ This option provides an upper limit of the number of iterations used for the lin
 
 This option sets the convergence criteria for the selected solver. It uses a least squares measure of the residual. The default value is 1.0e-10.
 
-`tl_coefficient_density
+`tl_coefficient_density`
 
 This option uses the density as the conduction coefficient. This is the default option.
 
-`tl_coefficient_inverrse_density
+`tl_coefficient_inverrse_density`
 
 This option uses the inverse density as the conduction coefficient.
 

@@ -147,7 +147,7 @@ SUBROUTINE update_tile_boundary(fields, depth)
                                   chunk%tiles(up_idx)%field%energy1,        &
                                   chunk%tiles(up_idx)%field%u,              &
                                   chunk%tiles(up_idx)%field%vector_p,       &
-                                  chunk%tiles(up_idx)%field%vector_sd,      &
+                                  chunk%tiles(up_idx)%field%vector_sd,      &                                 
                                   halo_exchange_depth,          &
                                   fields,                         &
                                   depth                           )

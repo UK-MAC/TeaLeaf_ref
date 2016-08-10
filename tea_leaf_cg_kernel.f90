@@ -21,8 +21,9 @@
 
 MODULE tea_leaf_cg_kernel_module
 
-  USE tea_leaf_common_kernel_module
 
+  USE tea_leaf_common_kernel_module
+  USE definitions_module, only: tl_ppcg_active ! added for znorm
   IMPLICIT NONE
 
 CONTAINS
@@ -94,6 +95,7 @@ SUBROUTINE tea_leaf_cg_init_kernel(x_min,  &
             p(j, k) = r(j, k)
         ENDDO
     ENDDO
+
 !$OMP END DO NOWAIT
   ENDIF
 !$OMP DO REDUCTION(+:rro)
@@ -102,6 +104,7 @@ SUBROUTINE tea_leaf_cg_init_kernel(x_min,  &
       rro = rro + r(j, k)*p(j, k);
     ENDDO
   ENDDO
+
 !$OMP END DO NOWAIT
 !$OMP END PARALLEL
 
@@ -142,7 +145,8 @@ SUBROUTINE tea_leaf_cg_calc_w_kernel(x_min,             &
                 + rx*(Kx(j+1, k) + Kx(j, k)))*p(j, k)             &
                 - ry*(Ky(j, k+1)*p(j, k+1) + Ky(j, k)*p(j, k-1))  &
                 - rx*(Kx(j+1, k)*p(j+1, k) + Kx(j, k)*p(j-1, k))
-
+        ENDDO
+        DO j=x_min,x_max
             pw = pw + w(j, k)*p(j, k)
         ENDDO
     ENDDO
@@ -186,7 +190,9 @@ SUBROUTINE tea_leaf_cg_calc_ur_kernel(x_min,             &
 
   rrn = 0.0_8
 
-!$OMP PARALLEL
+!$OMP PARALLEL REDUCTION(+:rrn)
+
+  IF (preconditioner_type .NE. TL_PREC_NONE) THEN
 !$OMP DO
     DO k=y_min,y_max
         DO j=x_min,x_max
@@ -194,9 +200,6 @@ SUBROUTINE tea_leaf_cg_calc_ur_kernel(x_min,             &
         ENDDO
     ENDDO
 !$OMP END DO NOWAIT
-
-  IF (preconditioner_type .NE. TL_PREC_NONE) THEN
-
 !$OMP DO
     DO k=y_min, y_max
       DO j=x_min,x_max
@@ -213,7 +216,7 @@ SUBROUTINE tea_leaf_cg_calc_ur_kernel(x_min,             &
                              r, z, Mi, Kx, Ky, rx, ry)
     ENDIF
 
-!$OMP DO REDUCTION(+:rrn)
+!$OMP DO 
     DO k=y_min,y_max
         DO j=x_min,x_max
             rrn = rrn + r(j, k)*z(j, k)
@@ -221,13 +224,22 @@ SUBROUTINE tea_leaf_cg_calc_ur_kernel(x_min,             &
     ENDDO
 !$OMP END DO NOWAIT
   ELSE
-!$OMP DO REDUCTION(+:rrn)
+  !$OMP DO
+    DO k=y_min,y_max
+        DO j=x_min,x_max
+            u(j, k) = u(j, k) + alpha*p(j, k)
+        ENDDO
+    ENDDO
+
+!$OMP END DO NOWAIT
+!$OMP DO
     DO k=y_min,y_max
         DO j=x_min,x_max
             r(j, k) = r(j, k) - alpha*w(j, k)
             rrn = rrn + r(j, k)*r(j, k)
         ENDDO
     ENDDO
+
 !$OMP END DO NOWAIT
   ENDIF
 !$OMP END PARALLEL
@@ -256,7 +268,7 @@ SUBROUTINE tea_leaf_cg_calc_p_kernel(x_min,             &
   REAL(kind=8) :: beta
 
 !$OMP PARALLEL
-  IF (preconditioner_type .NE. TL_PREC_NONE) THEN
+  IF (preconditioner_type .NE. TL_PREC_NONE .or. tl_ppcg_active) THEN
 !$OMP DO
     DO k=y_min,y_max
         DO j=x_min,x_max

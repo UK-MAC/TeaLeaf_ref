@@ -27,7 +27,9 @@ tea_leaf_common.o :  \
 
 tea_leaf_cheby.o :  \
 	tea_leaf_cheby_kernel.o \
-	definitions.o
+	update_halo.o \
+	definitions.o \
+	tea_leaf_common.o 
 
 generate_chunk.o :  \
 	generate_chunk_kernel.o \
@@ -81,7 +83,8 @@ definitions.o :  \
 	data.o
 
 tea_leaf_cg_kernel.o :  \
-	tea_leaf_common_kernel.o
+	tea_leaf_common_kernel.o \
+	tea_leaf_ppcg.o
 
 start.o :  \
 	set_field.o \
@@ -113,7 +116,8 @@ tea.o :  \
 tea_leaf_ppcg.o :  \
 	tea_leaf_cheby.o \
 	tea_leaf_ppcg_kernel.o \
-	definitions.o
+	definitions.o \
+	update_halo.o 
 
 update_halo_kernel.o : 
 

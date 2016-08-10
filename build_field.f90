@@ -54,6 +54,12 @@ SUBROUTINE build_field()
     ALLOCATE(chunk%tiles(t)%field%vector_r (chunk%tiles(t)%field%x_min-halo_exchange_depth:chunk%tiles(t)%field%x_max&
          +halo_exchange_depth, &
          chunk%tiles(t)%field%y_min-halo_exchange_depth:chunk%tiles(t)%field%y_max+halo_exchange_depth))
+    ALLOCATE(chunk%tiles(t)%field%vector_rstore (chunk%tiles(t)%field%x_min-halo_exchange_depth:chunk%tiles(t)%field%x_max&
+         +halo_exchange_depth, &
+         chunk%tiles(t)%field%y_min-halo_exchange_depth:chunk%tiles(t)%field%y_max+halo_exchange_depth))
+    ALLOCATE(chunk%tiles(t)%field%vector_rtemp (chunk%tiles(t)%field%x_min-halo_exchange_depth:chunk%tiles(t)%field%x_max&
+         +halo_exchange_depth, &
+         chunk%tiles(t)%field%y_min-halo_exchange_depth:chunk%tiles(t)%field%y_max+halo_exchange_depth))    
     ALLOCATE(chunk%tiles(t)%field%vector_Mi(chunk%tiles(t)%field%x_min-halo_exchange_depth:chunk%tiles(t)%field%x_max&
          +halo_exchange_depth, &
          chunk%tiles(t)%field%y_min-halo_exchange_depth:chunk%tiles(t)%field%y_max+halo_exchange_depth))
@@ -61,6 +67,9 @@ SUBROUTINE build_field()
          +halo_exchange_depth, &
          chunk%tiles(t)%field%y_min-halo_exchange_depth:chunk%tiles(t)%field%y_max+halo_exchange_depth))
     ALLOCATE(chunk%tiles(t)%field%vector_z (chunk%tiles(t)%field%x_min-halo_exchange_depth:chunk%tiles(t)%field%x_max&
+         +halo_exchange_depth, &
+         chunk%tiles(t)%field%y_min-halo_exchange_depth:chunk%tiles(t)%field%y_max+halo_exchange_depth))
+    ALLOCATE(chunk%tiles(t)%field%vector_utemp (chunk%tiles(t)%field%x_min-halo_exchange_depth:chunk%tiles(t)%field%x_max&
          +halo_exchange_depth, &
          chunk%tiles(t)%field%y_min-halo_exchange_depth:chunk%tiles(t)%field%y_max+halo_exchange_depth))
     ALLOCATE(chunk%tiles(t)%field%vector_Kx(chunk%tiles(t)%field%x_min-halo_exchange_depth:chunk%tiles(t)%field%x_max&
@@ -112,9 +121,12 @@ SUBROUTINE build_field()
       chunk%tiles(t)%field%u0(j,k)=0.0
 
       chunk%tiles(t)%field%vector_r(j,k)=0.0
+      chunk%tiles(t)%field%vector_rstore(j,k)=0.0
+      chunk%tiles(t)%field%vector_rtemp(j,k)=0.0
       chunk%tiles(t)%field%vector_Mi(j,k)=0.0
       chunk%tiles(t)%field%vector_w(j,k)=0.0
       chunk%tiles(t)%field%vector_z(j,k)=0.0
+      chunk%tiles(t)%field%vector_utemp(j,k)=0.0
       chunk%tiles(t)%field%vector_Kx(j,k)=0.0
       chunk%tiles(t)%field%vector_Ky(j,k)=0.0
       chunk%tiles(t)%field%vector_p(j,k)=0.0
