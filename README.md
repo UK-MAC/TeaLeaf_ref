@@ -229,7 +229,7 @@ This option sets the convergence criteria for the selected solver. It uses a lea
 
 This option uses the density as the conduction coefficient. This is the default option.
 
-`tl_coefficient_inverrse_density`
+`tl_coefficient_inverse_density`
 
 This option uses the inverse density as the conduction coefficient.
 
