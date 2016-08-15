@@ -51,7 +51,7 @@ SUBROUTINE tea_leaf()
 
   ! For chebyshev solver and PPCG solver
   REAL(KIND=8), DIMENSION(max_iters) :: cg_alphas, cg_betas
-  REAL(KIND=8), DIMENSION(:), allocatable :: ch_alphas, ch_betas
+  REAL(KIND=8), DIMENSION(max_iters) :: ch_alphas, ch_betas
   REAL(KIND=8),SAVE :: eigmin, eigmax, theta, cn
   INTEGER :: est_itc, cheby_calc_steps, max_cheby_iters, info, ppcg_inner_iters
   LOGICAL :: ch_switch_check
@@ -188,9 +188,6 @@ SUBROUTINE tea_leaf()
 
         IF (tl_use_chebyshev) THEN
           ! calculate chebyshev coefficients
-          ! preallocate space for the coefficients
-          allocate(ch_alphas(tl_ppcg_inner_steps), ch_betas(tl_ppcg_inner_steps))
-          
           CALL tea_calc_ch_coefs(ch_alphas, ch_betas, eigmin, eigmax, &
               theta, max_cheby_iters)
 
@@ -200,9 +197,6 @@ SUBROUTINE tea_leaf()
           
         ELSE IF (tl_use_ppcg) THEN
           ! currently also calculate chebyshev coefficients
-                    ! preallocate space for the coefficients
-          allocate(ch_alphas(tl_ppcg_inner_steps), ch_betas(tl_ppcg_inner_steps))
-          
           CALL tea_calc_ls_coefs(ch_alphas, ch_betas, eigmin, eigmax, &
               theta, tl_ppcg_inner_steps)
           ! We have the eigenvalue estimates so turn on ppcg
@@ -443,8 +437,6 @@ SUBROUTINE tea_leaf()
 
   ! RESET
   IF (profiler_on) reset_time=timer()
-  
-  IF (allocated(ch_alphas)) deallocate(ch_alphas,ch_betas)
   
   CALL tea_leaf_finalise()
 
