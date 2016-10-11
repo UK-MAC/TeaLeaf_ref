@@ -75,8 +75,8 @@ SUBROUTINE tea_leaf_cg_init_kernel(x_min,  &
   !print*,step," r2=",sum(r**2)
   if (step == 1 .or. step ==3) rro = 0.0_8
 
-  if (step == 1) then
 !$OMP PARALLEL REDUCTION(+:rro)
+  if (step == 1) then
 !$OMP DO
   DO k=y_min,y_max
     DO j=x_min,x_max
@@ -86,7 +86,6 @@ SUBROUTINE tea_leaf_cg_init_kernel(x_min,  &
   ENDDO
 !$OMP END DO
   elseif (step == 3) then
-!$OMP PARALLEL REDUCTION(+:rro)
 !$OMP DO
   DO k=y_min,y_max
     DO j=x_min,x_max
