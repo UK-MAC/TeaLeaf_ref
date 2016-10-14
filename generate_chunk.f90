@@ -45,6 +45,8 @@ SUBROUTINE generate_chunk()
   ENDDO
 
   IF(use_fortran_kernels) THEN
+!$OMP PARALLEL
+!$OMP DO
     DO t=1,tiles_per_task
       CALL generate_chunk_kernel(chunk%tiles(t)%field%x_min,             &
                                  chunk%tiles(t)%field%x_max,             &
@@ -70,6 +72,8 @@ SUBROUTINE generate_chunk()
                                  g_circ,                                &
                                  g_point)
     ENDDO
+!$OMP END DO NOWAIT
+!$OMP END PARALLEL    
   ENDIF
 
 END SUBROUTINE generate_chunk

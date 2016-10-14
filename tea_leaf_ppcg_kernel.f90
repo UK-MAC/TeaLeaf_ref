@@ -1,3 +1,24 @@
+!Crown Copyright 2014 AWE.
+!
+! This file is part of TeaLeaf.
+!
+! TeaLeaf is free software: you can redistribute it and/or modify it under
+! the terms of the GNU General Public License as published by the
+! Free Software Foundation, either version 3 of the License, or (at your option)
+! any later version.
+!
+! TeaLeaf is distributed in the hope that it will be useful, but
+! WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+! FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+! details.
+!
+! You should have received a copy of the GNU General Public License along with
+! TeaLeaf. If not, see http://www.gnu.org/licenses/.
+
+!>  @brief Fortran heat conduction kernel
+!>  @author Michael Boulton, Wayne Gaudin, Douglas Shanks
+!>  @details Implicitly calculates the change in temperature using the PPCG method
+
 MODULE tea_leaf_ppcg_kernel_module
 
 USE tea_leaf_common_kernel_module
@@ -68,7 +89,6 @@ SUBROUTINE tea_leaf_kernel_ppcg_init_sd(x_min,             &
 
 END SUBROUTINE tea_leaf_kernel_ppcg_init_sd
 
-! PPCG kernel, this should be moved to the ppcg kernel
 
 SUBROUTINE tea_leaf_ppcg_init_kernel(x_min,  &
                            x_max,                  &
@@ -140,10 +160,10 @@ SUBROUTINE tea_leaf_ppcg_init_kernel(x_min,  &
     ! We don't apply the preconditioner on the final application of the polynomial acceleration   
     IF (step == 1 .OR. step == 2) THEN
       IF (preconditioner_type .EQ. TL_PREC_JAC_BLOCK) THEN
-	CALL tea_block_solve(x_min, x_max, y_min, y_max, halo_exchange_depth,             &
+        CALL tea_block_solve(x_min, x_max, y_min, y_max, halo_exchange_depth,             &
                              r, z, cp, bfp, Kx, Ky, rx, ry)
       ELSE IF (preconditioner_type .EQ. TL_PREC_JAC_DIAG) THEN
-	CALL tea_diag_solve(x_min, x_max, y_min, y_max, halo_exchange_depth,             &
+        CALL tea_diag_solve(x_min, x_max, y_min, y_max, halo_exchange_depth,             &
                              r, z, Mi, Kx, Ky, rx, ry)
       ENDIF        
     ENDIF
@@ -151,9 +171,9 @@ SUBROUTINE tea_leaf_ppcg_init_kernel(x_min,  &
     IF ( step == 1 .OR. step ==3 ) THEN  
 !$OMP DO
       DO k=y_min,y_max
-	  DO j=x_min,x_max
-	      p(j, k) = z(j, k)
-	  ENDDO
+          DO j=x_min,x_max
+              p(j, k) = z(j, k)
+          ENDDO
       ENDDO
 !$OMP END DO NOWAIT
     ENDIF    
@@ -161,9 +181,9 @@ SUBROUTINE tea_leaf_ppcg_init_kernel(x_min,  &
     IF (step == 1) THEN  
 !$OMP DO
       DO k=y_min,y_max
-	  DO j=x_min,x_max
-	      p(j, k) = r(j, k)
-	  ENDDO
+          DO j=x_min,x_max
+              p(j, k) = r(j, k)
+          ENDDO
       ENDDO
 !$OMP END DO NOWAIT
     ENDIF
@@ -172,7 +192,7 @@ SUBROUTINE tea_leaf_ppcg_init_kernel(x_min,  &
 !$OMP DO REDUCTION(+:rro)
     DO k=y_min,y_max
       DO j=x_min,x_max
-	rro = rro + r(j, k)*p(j, k);
+          rro = rro + r(j, k)*p(j, k);
       ENDDO
     ENDDO
 !$OMP END DO NOWAIT
@@ -197,12 +217,12 @@ SUBROUTINE tea_leaf_kernel_ppcg_inner(x_min,             &
                                       inner_step,       &
                                       u,                 &
                                       r,                 &
-                                      rtemp,		&
+                                      rtemp,          &
                                       Kx,                &
                                       Ky,                &
                                       sd,                &
                                       z,                &
-                                      utemp,		&
+                                      utemp,          &
                                       cp,                &
                                       bfp,                &
                                       Mi,                &
@@ -223,15 +243,15 @@ SUBROUTINE tea_leaf_kernel_ppcg_inner(x_min,             &
 !$OMP PARALLEL PRIVATE(smvp)
 !$OMP DO
       DO k=y_min_bound,y_max_bound
-	  DO j=x_min_bound,x_max_bound        
-	      smvp = (1.0_8                                           &
-		  + ry*(Ky(j, k+1) + Ky(j, k))                        &
-		  + rx*(Kx(j+1, k) + Kx(j, k)))*sd(j, k)              &
-		  - ry*(Ky(j, k+1)*sd(j, k+1) + Ky(j, k)*sd(j, k-1))  &
-		  - rx*(Kx(j+1, k)*sd(j+1, k) + Kx(j, k)*sd(j-1, k))
+          DO j=x_min_bound,x_max_bound        
+                  smvp = (1.0_8                                           &
+                  + ry*(Ky(j, k+1) + Ky(j, k))                        &
+                  + rx*(Kx(j+1, k) + Kx(j, k)))*sd(j, k)              &
+                  - ry*(Ky(j, k+1)*sd(j, k+1) + Ky(j, k)*sd(j, k-1))  &
+                  - rx*(Kx(j+1, k)*sd(j+1, k) + Kx(j, k)*sd(j-1, k))
 
-	      rtemp(j, k) = rtemp(j, k) - smvp
-	  ENDDO
+              rtemp(j, k) = rtemp(j, k) - smvp
+          ENDDO
       ENDDO
 !$OMP END DO
 
@@ -368,14 +388,14 @@ end SUBROUTINE tea_leaf_ppcg_store_r_kernel
 
 ! This does FCG(1) residual compute to minimise rounding error in ppcg
 
-SUBROUTINE tea_leaf_ppcg_calc_rrn_kernel(x_min, &
-					 x_max,             &
-                                         y_min,             &
-                                         y_max,             &
+SUBROUTINE tea_leaf_ppcg_calc_rrn_kernel(x_min,              &
+                                         x_max,              &
+                                         y_min,              &
+                                         y_max,              &
                                          halo_exchange_depth,&
-                                         r,               &
-                                         rstore,               &
-                                         z, 		&
+                                         r,                  &
+                                         rstore,             &
+                                         z,                  &
                                          rrn)
 
   IMPLICIT NONE
@@ -393,8 +413,7 @@ SUBROUTINE tea_leaf_ppcg_calc_rrn_kernel(x_min, &
 !$OMP DO REDUCTION(+:rrn)
     DO k=y_min,y_max
         DO j=x_min,x_max
-            rrn = rrn + (r(j, k)- rstore(j,k))*z(j, k)
-		  
+            rrn = rrn + (r(j, k)- rstore(j,k))*z(j, k)  
         ENDDO
     ENDDO
 !$OMP END DO

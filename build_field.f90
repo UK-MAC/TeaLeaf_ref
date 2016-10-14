@@ -28,7 +28,9 @@ SUBROUTINE build_field()
 
   INTEGER :: j,k
   INTEGER :: t
-
+  
+!$OMP PARALLEL
+!$OMP DO
   DO t=1,tiles_per_task
     chunk%tiles(t)%field%x_min=1
     chunk%tiles(t)%field%y_min=1
@@ -189,6 +191,8 @@ SUBROUTINE build_field()
 !$OMP END DO
 !$OMP END PARALLEL
   ENDDO
+!$OMP END DO
+!$OMP END PARALLEL
 
 END SUBROUTINE build_field
 

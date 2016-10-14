@@ -76,7 +76,7 @@ SUBROUTINE tea_leaf()
     CALL report_error('tea_leaf', 'unknown coefficient option')
   ENDIF
   
-  tl_ppcg_active = .false.	! Set to false until we have the eigenvalue estimates
+  tl_ppcg_active = .false.          ! Set to false until we have the eigenvalue estimates
   cheby_calc_steps = 0
   cg_calc_steps = 0
 
@@ -152,6 +152,10 @@ SUBROUTINE tea_leaf()
   DO n=1,max_iters
 
     iteration_time = timer()
+    
+!===================================================================================   
+!     Switch for the number of CG iterations for Chebyshev and PPCG.
+!=================================================================================== 
 
     IF (ch_switch_check .EQV. .FALSE.) THEN
       IF ((cheby_calc_steps .GT. 0)) THEN
@@ -168,7 +172,11 @@ SUBROUTINE tea_leaf()
         ch_switch_check = .FALSE.
       ENDIF
     ENDIF
-
+    
+!===================================================================================   
+!   If we use Chebyshev or PPCG we compute eigenvalue estimates
+!===================================================================================          
+  
     IF ((tl_use_chebyshev .OR. tl_use_ppcg) .AND. ch_switch_check) THEN
       ! on the first chebyshev steps, find the eigenvalues, coefficients,
       ! and expected number of iterations
@@ -214,9 +222,10 @@ SUBROUTINE tea_leaf()
             WRITE(0, 100) eigmin,eigmax,cn,old_error
 !$        ENDIF
         ENDIF
+!===================================================================================   
+!   Reinitialise CG with PPCG applied
+!===================================================================================          
 
-      ! Reinitialise CG with PPCG applied
-      
       ! Step 1: we reinitialise z if we precondition or else we just use r     
       CALL tea_leaf_ppcg_init(rro,ch_alphas,ch_betas,ppcg_inner_iters,theta,solve_time,2)
   
@@ -243,7 +252,12 @@ SUBROUTINE tea_leaf()
 
       fields=0
       fields(FIELD_P) = 1
-  end if    
+      
+  end if   
+  
+!===================================================================================   
+!                       Chebyshev Iteration
+!===================================================================================   
 
       IF (tl_use_chebyshev) THEN
         IF (cheby_calc_steps .EQ. 0) THEN
@@ -267,10 +281,14 @@ SUBROUTINE tea_leaf()
             IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
           ENDIF
         ENDIF
-        
-      ! PPCG iteration, first needs an estimate of the eigenvalues  
-      ! We are essentially doing PPFCG(1) here where the F denotes that CG is flexible.
-      ! This accoutns for rounding error arising from the polynomial preconditioning
+               
+!===================================================================================           
+!                      PPCG iteration, 
+! First one needs an estimate of the eigenvalues  from CG.
+! We are essentially doing PPFCG(1) here where the F denotes that CG is flexible.
+! This accounts for rounding error arising from the polynomial preconditioning     
+!===================================================================================   
+       
       ELSE IF (tl_use_ppcg) THEN
 
         ! w = Ap
@@ -287,8 +305,8 @@ SUBROUTINE tea_leaf()
         IF (profiler_on) dot_product_time=timer()
         CALL tea_allsum2(pw, rro)
         IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
-	
-	! alpha = z.r / (pw)
+    
+        ! alpha = z.r / (pw)
         alpha = rro/pw
 
         CALL tea_leaf_cg_calc_ur(alpha, rrn)
@@ -319,10 +337,13 @@ SUBROUTINE tea_leaf()
       ENDIF
 
       cheby_calc_steps = cheby_calc_steps + 1
-      
-    ! Either: -  CG iteration
-    ! 	       - Or if we choose Chebyshev or PPCG we need
-    !		 a few CG iterations to get an estimate of the eigenvalues
+   
+!===================================================================================   
+! Either: -  CG iteration
+!         - Or if we choose Chebyshev or PPCG we need
+!           a few CG iterations to get an estimate of the eigenvalues.
+!===================================================================================   
+
     ELSEIF (tl_use_cg .OR. tl_use_chebyshev .OR. tl_use_ppcg) THEN
 
       fields(FIELD_P) = 1
@@ -355,8 +376,11 @@ SUBROUTINE tea_leaf()
 
       error = rrn
       rro = rrn
-    
-    ! Jacobi iteration
+          
+!===================================================================================   
+!                           Jacobi iteration
+!===================================================================================   
+
     ELSEIF (tl_use_jacobi) THEN
       CALL tea_leaf_jacobi_solve(error)
 
@@ -385,7 +409,14 @@ SUBROUTINE tea_leaf()
         WRITE(g_out,*)"Residual ",error
 !$    ENDIF
     ENDIF
-
+        
+!===================================================================================   
+!                      Our exit criterion:      
+!
+!      || r_{n} ||_{2} / || r_{0} ||_{2} \leq \epsilon
+!
+!===================================================================================   
+    
     IF (ABS(error) .LT. eps*initial_residual) EXIT
 
     old_error = error

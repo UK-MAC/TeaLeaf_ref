@@ -43,7 +43,6 @@ SUBROUTINE tea_leaf_ppcg_init_sd(theta)
 END SUBROUTINE tea_leaf_ppcg_init_sd
 
 ! This routine is needed to initialise PPCG
-! Move this to the ppcg kernel!
 
 SUBROUTINE tea_leaf_ppcg_init(rro,ch_alphas,ch_betas,ppcg_inner_iters,theta,solve_time,step)
 
@@ -117,7 +116,6 @@ SUBROUTINE tea_calc_ls_coefs(ch_alphas, ch_betas, eigmin, eigmax, &
   REAL(KIND=8), DIMENSION(ppcg_inner_steps) :: ch_alphas, ch_betas
   REAL(KIND=8) :: eigmin, eigmax, theta
 
-  ! TODO. What is to do? JDS
   CALL tea_calc_ch_coefs(ch_alphas, ch_betas, eigmin, eigmax, &
                          theta, ppcg_inner_steps)
 
@@ -135,12 +133,12 @@ SUBROUTINE tea_leaf_ppcg_update_z()
 
 
       CALL tea_leaf_ppcg_update_z_kernel(chunk%tiles(t)%field%x_min, &
-					 chunk%tiles(t)%field%x_max, &
-					 chunk%tiles(t)%field%y_min, &
-					 chunk%tiles(t)%field%y_max, &
-					 halo_exchange_depth,        &
-					 chunk%tiles(t)%field%vector_z, &
-					 chunk%tiles(t)%field%vector_utemp)
+                                         chunk%tiles(t)%field%x_max, &
+                                         chunk%tiles(t)%field%y_min, &
+                                         chunk%tiles(t)%field%y_max, &
+                                         halo_exchange_depth,        &
+                                         chunk%tiles(t)%field%vector_z, &
+                                         chunk%tiles(t)%field%vector_utemp)
 
     ENDDO
   ENDIF
@@ -160,9 +158,6 @@ SUBROUTINE tea_leaf_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
   INTEGER :: t, inner_step, bounds_extra
   INTEGER :: x_min_bound, x_max_bound, y_min_bound, y_max_bound
   REAL(KIND=8), DIMENSION(:) :: ch_alphas, ch_betas
-
-
-  !INTEGER(KIND=4) :: inner_step, bounds_extra
 
   fields = 0
   fields(FIELD_U) = 1
@@ -265,13 +260,13 @@ SUBROUTINE tea_leaf_ppcg_store_r()
   IF (use_fortran_kernels) THEN
     DO t=1,tiles_per_task
 
-      CALL tea_leaf_ppcg_store_r_kernel(chunk%tiles(t)%field%x_min,	&
-					chunk%tiles(t)%field%x_max,	&
-					chunk%tiles(t)%field%y_min,	&
-					chunk%tiles(t)%field%y_max,	&
-					halo_exchange_depth,		&
-					chunk%tiles(t)%field%vector_r,	&
-					chunk%tiles(t)%field%vector_rstore)
+      CALL tea_leaf_ppcg_store_r_kernel(chunk%tiles(t)%field%x_min,     &
+                                        chunk%tiles(t)%field%x_max,     &
+                                        chunk%tiles(t)%field%y_min,     &
+                                        chunk%tiles(t)%field%y_max,     &
+                                        halo_exchange_depth,            &
+                                        chunk%tiles(t)%field%vector_r,  &
+                                        chunk%tiles(t)%field%vector_rstore)
 
     ENDDO
   ENDIF
@@ -295,15 +290,15 @@ SUBROUTINE tea_leaf_ppcg_calc_rrn(rrn)
     DO t=1,tiles_per_task
       tile_rrn = 0.0_8
 
-      CALL tea_leaf_ppcg_calc_rrn_kernel(chunk%tiles(t)%field%x_min,		&
-					    chunk%tiles(t)%field%x_max,         &
-					    chunk%tiles(t)%field%y_min,         &
-					    chunk%tiles(t)%field%y_max,         &
-					    halo_exchange_depth,                &
-					    chunk%tiles(t)%field%vector_r,      &
-					    chunk%tiles(t)%field%vector_rstore, &
-					    chunk%tiles(t)%field%vector_z,      &
-					    tile_rrn)
+      CALL tea_leaf_ppcg_calc_rrn_kernel(chunk%tiles(t)%field%x_min,         &
+                                         chunk%tiles(t)%field%x_max,         &
+                                         chunk%tiles(t)%field%y_min,         &
+                                         chunk%tiles(t)%field%y_max,         &
+                                         halo_exchange_depth,                &
+                                         chunk%tiles(t)%field%vector_r,      &
+                                         chunk%tiles(t)%field%vector_rstore, &
+                                         chunk%tiles(t)%field%vector_z,      &
+                                         tile_rrn)
 
       rrn = rrn + tile_rrn
     ENDDO

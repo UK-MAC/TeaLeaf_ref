@@ -61,7 +61,7 @@ SUBROUTINE tea_leaf_cg_init_kernel(x_min,  &
 
   rro = 0.0_8
 
-!$OMP PARALLEL
+!$OMP PARALLEL REDUCTION(+:rro)
 !$OMP DO
   DO k=y_min,y_max
     DO j=x_min,x_max
@@ -98,10 +98,10 @@ SUBROUTINE tea_leaf_cg_init_kernel(x_min,  &
 
 !$OMP END DO NOWAIT
   ENDIF
-!$OMP DO REDUCTION(+:rro)
+!$OMP DO 
   DO k=y_min,y_max
     DO j=x_min,x_max
-      rro = rro + r(j, k)*p(j, k);
+      rro = rro + r(j, k)*p(j, k)
     ENDDO
   ENDDO
 

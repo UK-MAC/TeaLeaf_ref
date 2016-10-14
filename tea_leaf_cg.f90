@@ -18,6 +18,7 @@ SUBROUTINE tea_leaf_cg_init(rro)
   rro = 0.0_8
 
   IF (use_fortran_kernels) THEN
+
     DO t=1,tiles_per_task
       tile_rro = 0.0_8
 
@@ -40,6 +41,7 @@ SUBROUTINE tea_leaf_cg_init(rro)
 
       rro = rro + tile_rro
     ENDDO
+
   ENDIF
 
 END SUBROUTINE tea_leaf_cg_init
@@ -51,9 +53,10 @@ SUBROUTINE tea_leaf_cg_calc_w(pw)
   INTEGER :: t
   REAL(KIND=8) :: pw, tile_pw
 
-  pw = 0.0_08
+  pw = 0.0_8
 
   IF (use_fortran_kernels) THEN
+
     DO t=1,tiles_per_task
       tile_pw = 0.0_8
 
@@ -72,6 +75,7 @@ SUBROUTINE tea_leaf_cg_calc_w(pw)
 
       pw = pw + tile_pw
     ENDDO
+   
   ENDIF
 
 END SUBROUTINE tea_leaf_cg_calc_w
@@ -86,6 +90,7 @@ SUBROUTINE tea_leaf_cg_calc_ur(alpha, rrn)
   rrn = 0.0_8
 
   IF (use_fortran_kernels) THEN
+
     DO t=1,tiles_per_task
       tile_rrn = 0.0_8
 
@@ -110,6 +115,7 @@ SUBROUTINE tea_leaf_cg_calc_ur(alpha, rrn)
 
       rrn = rrn + tile_rrn
     ENDDO
+  
   ENDIF
 
 END SUBROUTINE tea_leaf_cg_calc_ur
@@ -122,6 +128,7 @@ SUBROUTINE tea_leaf_cg_calc_p(beta)
   REAL(KIND=8) :: beta
 
   IF (use_fortran_kernels) THEN
+  
     DO t=1,tiles_per_task
       CALL tea_leaf_cg_calc_p_kernel(chunk%tiles(t)%field%x_min,&
           chunk%tiles(t)%field%x_max,                                         &
@@ -133,6 +140,7 @@ SUBROUTINE tea_leaf_cg_calc_p(beta)
           chunk%tiles(t)%field%vector_z,                                      &
           beta, tl_preconditioner_type)
     ENDDO
+  
   ENDIF
 
 END SUBROUTINE tea_leaf_cg_calc_p

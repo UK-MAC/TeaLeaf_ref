@@ -23,7 +23,7 @@ MODULE data_module
 
    IMPLICIT NONE
 
-   REAL(KIND=8), PARAMETER :: g_version=1.401
+   REAL(KIND=8), PARAMETER :: g_version=1.402
 
    INTEGER,      PARAMETER :: g_ibig=640000
 
@@ -48,7 +48,8 @@ MODULE data_module
                                 ,FIELD_P          = 5         &
                                 ,FIELD_SD         = 6         &
                                 ,FIELD_R          = 7         &
-                                ,NUM_FIELDS       = 7
+                                ,FIELD_Z          = 8         &
+                                ,NUM_FIELDS       = 8
 
    INTEGER,         PARAMETER :: CELL_DATA     = 1,        &
                                  VERTEX_DATA   = 2,        &

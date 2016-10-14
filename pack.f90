@@ -42,7 +42,9 @@ SUBROUTINE call_packing_functions(fields, depth, face, packing, mpi_buffer, offs
   REAL(KIND=8) :: mpi_buffer(:)
   INTEGER      :: face,t,tile_offset
   LOGICAL      :: packing
-
+  
+!$OMP PARALLEL PRIVATE(tile_offset)
+!$OMP DO
   DO t=1,tiles_per_task
     SELECT CASE (face)
     CASE (CHUNK_LEFT, CHUNK_RIGHT)
@@ -69,8 +71,8 @@ SUBROUTINE call_packing_functions(fields, depth, face, packing, mpi_buffer, offs
                   chunk%tiles(t)%field%u,              &
                   chunk%tiles(t)%field%vector_p,       &
                   chunk%tiles(t)%field%vector_sd,      &
-                  chunk%tiles(t)%field%vector_r,      &
-                  chunk%tiles(t)%field%vector_rtemp,      &                  
+                  chunk%tiles(t)%field%vector_r,      & 
+                  chunk%tiles(t)%field%vector_z,      &  
                   fields, &
                   depth, &
                   face, &
@@ -79,6 +81,8 @@ SUBROUTINE call_packing_functions(fields, depth, face, packing, mpi_buffer, offs
                   offsets, &
                   tile_offset)
   ENDDO
+!$OMP END DO NOWAIT
+!$OMP END PARALLEL
 
 END SUBROUTINE
 

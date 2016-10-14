@@ -18,6 +18,7 @@ SUBROUTINE tea_leaf_cheby_init(theta)
   REAL(KIND=8) :: theta
 
   IF (use_fortran_kernels) THEN
+
     DO t=1,tiles_per_task
       CALL tea_leaf_kernel_cheby_init(chunk%tiles(t)%field%x_min,&
             chunk%tiles(t)%field%x_max,                          &
@@ -39,6 +40,7 @@ SUBROUTINE tea_leaf_cheby_init(theta)
             chunk%tiles(t)%field%ry,    &
             theta, tl_preconditioner_type)
     ENDDO
+   
   ENDIF
 
 END SUBROUTINE tea_leaf_cheby_init
@@ -51,6 +53,7 @@ SUBROUTINE tea_leaf_cheby_iterate(ch_alphas, ch_betas, max_cheby_iters, cheby_ca
   REAL(KIND=8), DIMENSION(:) :: ch_alphas, ch_betas
 
   IF (use_fortran_kernels) THEN
+
     DO t=1,tiles_per_task
       CALL tea_leaf_kernel_cheby_iterate(chunk%tiles(t)%field%x_min,&
                   chunk%tiles(t)%field%x_max,                       &
@@ -73,6 +76,7 @@ SUBROUTINE tea_leaf_cheby_iterate(ch_alphas, ch_betas, max_cheby_iters, cheby_ca
                   chunk%tiles(t)%field%ry,  &
                   cheby_calc_steps, tl_preconditioner_type)
     ENDDO
+ 
   ENDIF
 
 END SUBROUTINE tea_leaf_cheby_iterate
@@ -231,8 +235,8 @@ SUBROUTINE tea_leaf_cheby_first_step(ch_alphas, ch_betas, fields, &
 
   IF (profiler_on) halo_time = timer()
   CALL update_halo(fields,1)
-  IF (profiler_on) solve_time = solve_time + (timer()-halo_time)
 
+  IF (profiler_on) solve_time = solve_time + (timer()-halo_time)
   CALL tea_leaf_cheby_iterate(ch_alphas, ch_betas, max_cheby_iters, 1)
 
   CALL tea_leaf_calc_2norm(1, error)
@@ -241,9 +245,9 @@ SUBROUTINE tea_leaf_cheby_first_step(ch_alphas, ch_betas, fields, &
   CALL tea_allsum(error)
   IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
 
-  it_alpha = eps*bb/(4.0_8*error)
+  it_alpha = eps/2.0_8*SQRT(bb/error)
   gamm = (SQRT(cn) - 1.0_8)/(SQRT(cn) + 1.0_8)
-  est_itc = NINT(LOG(it_alpha)/(2.0_8*LOG(gamm)))
+  est_itc = NINT(LOG(it_alpha)/(LOG(gamm)))
 
   IF (parallel%boss) THEN
       WRITE(g_out,'(a11)')"est itc"
@@ -256,3 +260,4 @@ END SUBROUTINE tea_leaf_cheby_first_step
 
 END MODULE tea_leaf_cheby_module
 
+! 
