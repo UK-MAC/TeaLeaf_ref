@@ -11,8 +11,8 @@ state 2 density=0.1 energy=25.0 geometry=rectangle xmin=0.0 xmax=1.0 ymin=1.0 ym
 state 3 density=0.1 energy=0.1 geometry=rectangle xmin=1.0 xmax=6.0 ymin=1.0 ymax=2.0               
 state 4 density=0.1 energy=0.1 geometry=rectangle xmin=5.0 xmax=6.0 ymin=1.0 ymax=8.0               
 state 5 density=0.1 energy=0.1 geometry=rectangle xmin=5.0 xmax=10.0 ymin=7.0 ymax=8.0              
-x_cells=10                                                                                          
-y_cells=10                                                                                          
+x_cells=250                                                                                         
+y_cells=250                                                                                         
 xmin=0.0                                                                                            
 ymin=0.0                                                                                            
 xmax=10.0                                                                                           
@@ -22,7 +22,7 @@ end_step=10
 tl_max_iters=10000                                                                                  
 tl_use_cg                                                                                           
 tl_eps 1.0e-15                                                                                      
-test_problem 1                                                                                      
+test_problem 2                                                                                      
 *endtea                                                                                             
  
  Initialising and generating
@@ -74,16 +74,16 @@ test_problem 1
                state ymin   0.7000E+01
                state ymax   0.8000E+01
  
-                   x_cells          10
-                   y_cells          10
+                   x_cells         250
+                   y_cells         250
                       xmin  0.0000E+00
                       ymin  0.0000E+00
                       xmax  0.1000E+02
                       ymax  0.1000E+02
          initial_timestep   0.4000E-02
                   end_step          10
-              test_problem           1
-       tl_ppcg_inner_steps          12
+              test_problem           2
+       tl_ppcg_inner_steps          60
            tiles per task            1
  
  Using Fortran Kernels
@@ -105,83 +105,83 @@ test_problem 1
  
  Time   0.000000000000000E+000
                                  Volume                      Mass                   Density                    Energy                         U
- step:      0   0.10000000000000000E+03   0.84016000000000022E+04   0.84016000000000020E+02   0.34899999999999891E+01   0.84265000000000001E+02
+ step:      0   0.99999999999990607E+02   0.84015999999965643E+04   0.84015999999973531E+02   0.34900000000004971E+01   0.84265000000001848E+02
  
  Starting the calculation
  Step       1 time   0.0000000 timestep   4.00E-03
-Conduction error  0.6392003E-15
-Iteration count       10
- Wall clock   5.984306335449219E-005
- Average time per cell   5.984306335449218E-007
- Step time per cell      6.103515625000000E-007
+Conduction error  0.9917184E-15
+Iteration count      228
+ Wall clock   6.773900985717773E-002
+ Average time per cell   1.083824157714844E-006
+ Step time per cell      1.083805084228516E-006
  Step       2 time   0.0040000 timestep   4.00E-03
-Conduction error  0.6682117E-15
-Iteration count       10
- Wall clock   8.988380432128906E-005
- Average time per cell   4.494190216064453E-007
- Step time per cell      2.193450927734375E-007
+Conduction error  0.9290535E-15
+Iteration count      242
+ Wall clock   0.139519214630127     
+ Average time per cell   1.116153717041016E-006
+ Step time per cell      1.148323059082031E-006
  Step       3 time   0.0080000 timestep   4.00E-03
-Conduction error  0.6987739E-15
-Iteration count       10
- Wall clock   1.158714294433594E-004
- Average time per cell   3.862380981445313E-007
- Step time per cell      2.002716064453125E-007
+Conduction error  0.8487204E-15
+Iteration count      244
+ Wall clock   0.211861133575439     
+ Average time per cell   1.129926045735677E-006
+ Step time per cell      1.157329559326172E-006
  Step       4 time   0.0120000 timestep   4.00E-03
-Conduction error  0.7304637E-15
-Iteration count       10
- Wall clock   1.409053802490234E-004
- Average time per cell   3.522634506225586E-007
- Step time per cell      2.002716064453125E-007
+Conduction error  0.8810895E-15
+Iteration count      238
+ Wall clock   0.282466173171997     
+ Average time per cell   1.129864692687988E-006
+ Step time per cell      1.129554748535156E-006
  Step       5 time   0.0160000 timestep   4.00E-03
-Conduction error  0.7627153E-15
-Iteration count       10
- Wall clock   1.649856567382812E-004
- Average time per cell   3.299713134765625E-007
- Step time per cell      1.907348632812500E-007
+Conduction error  0.8525121E-15
+Iteration count      231
+ Wall clock   0.351029157638550     
+ Average time per cell   1.123293304443359E-006
+ Step time per cell      1.096881866455078E-006
  Step       6 time   0.0200000 timestep   4.00E-03
-Conduction error  0.7948280E-15
-Iteration count       10
- Wall clock   1.950263977050781E-004
- Average time per cell   3.250439961751302E-007
- Step time per cell      2.002716064453125E-007
+Conduction error  0.9490522E-15
+Iteration count      222
+ Wall clock   0.416860103607178     
+ Average time per cell   1.111626942952474E-006
+ Step time per cell      1.053169250488281E-006
  Step       7 time   0.0240000 timestep   4.00E-03
-Conduction error  0.8259878E-15
-Iteration count       10
- Wall clock   2.188682556152344E-004
- Average time per cell   3.126689365931920E-007
- Step time per cell      1.883506774902344E-007
+Conduction error  0.8510830E-15
+Iteration count      215
+ Wall clock   0.480642080307007     
+ Average time per cell   1.098610469273159E-006
+ Step time per cell      1.020381927490234E-006
  Step       8 time   0.0280000 timestep   4.00E-03
-Conduction error  0.8553014E-15
-Iteration count       10
- Wall clock   2.429485321044922E-004
- Average time per cell   3.036856651306152E-007
- Step time per cell      1.907348632812500E-007
+Conduction error  0.8708525E-15
+Iteration count      208
+ Wall clock   0.542387008666992     
+ Average time per cell   1.084774017333984E-006
+ Step time per cell      9.877891540527343E-007
  Step       9 time   0.0320000 timestep   4.00E-03
-Conduction error  0.8818444E-15
-Iteration count       10
- Wall clock   2.670288085937500E-004
- Average time per cell   2.966986762152778E-007
- Step time per cell      1.907348632812500E-007
+Conduction error  0.9279658E-15
+Iteration count      202
+ Wall clock   0.602411031723022     
+ Average time per cell   1.070952945285373E-006
+ Step time per cell      9.602546691894530E-007
  Step      10 time   0.0360000 timestep   4.00E-03
-Conduction error  0.9047197E-15
-Iteration count       10
+Conduction error  0.9023073E-15
+Iteration count      197
  
  Time   4.000000000000001E-002
                                  Volume                      Mass                   Density                    Energy                         U
- step:     10   0.10000000000000000E+03   0.84016000000000022E+04   0.84016000000000020E+02   0.34899999999999944E+01   0.15755084183279294E+03
+ step:     10   0.99999999999990607E+02   0.84015999999965643E+04   0.84015999999973531E+02   0.34900000000002827E+01   0.10627221178648023E+03
  
- Wall clock   3.149509429931641E-004
- Average time per cell   3.149509429931641E-007
- Step time per cell      4.386901855468750E-007
+ Wall clock   0.661079168319702     
+ Average time per cell   1.057726669311523E-006
+ Step time per cell      9.385452270507813E-007
  
  Time   4.000000000000001E-002
                                  Volume                      Mass                   Density                    Energy                         U
- step:     10   0.10000000000000000E+03   0.84016000000000022E+04   0.84016000000000020E+02   0.34899999999999944E+01   0.15755084183279294E+03
+ step:     10   0.99999999999990607E+02   0.84015999999965643E+04   0.84015999999973531E+02   0.34900000000002827E+01   0.10627221178648023E+03
  
-Test problem   1 is within   0.0000000E+00% of the expected solution
+Test problem   2 is within   0.0000000E+00% of the expected solution
  This test is considered PASSED
  
  Calculation complete
  Tea is finishing
- First step overhead  3.886222839355469E-005
- Wall clock   3.428459167480469E-004
+ First step overhead -4.032373428344727E-003
+ Wall clock   0.661183118820190     
