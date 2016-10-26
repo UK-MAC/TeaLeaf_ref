@@ -15,10 +15,10 @@ SUBROUTINE tea_leaf_init_common()
 
   INTEGER :: t
 
-  LOGICAL :: zero_boundary(4)
+  INTEGER :: zero_boundary(4)
 
   IF (use_fortran_kernels) THEN
-!$OMP PARALLEL PRIVATE(zero_boundary)
+!$OMP PARALLEL 
 !$OMP DO  
     DO t=1,tiles_per_task
       chunk%tiles(t)%field%rx = dt/(chunk%tiles(t)%field%celldx(chunk%tiles(t)%field%x_min)**2)
