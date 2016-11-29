@@ -52,8 +52,8 @@ SUBROUTINE tea_leaf_jacobi_solve_kernel(x_min,       &
 
 !$OMP PARALLEL
 !$OMP DO
-    DO k=y_min, y_max
-      DO j=x_min, x_max
+    DO k=y_min-halo_exchange_depth, y_max+halo_exchange_depth
+      DO j=x_min-halo_exchange_depth, x_max+halo_exchange_depth
         un(j,k) = u1(j,k)
       ENDDO
     ENDDO
