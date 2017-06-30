@@ -147,8 +147,8 @@ SUBROUTINE diffuse
       WRITE(g_out,'(a23,2f16.4)')"Timestep              :",profiler%timestep,100.0*(profiler%timestep/wall_clock)
       WRITE(g_out,'(a23,2f16.4)')"MPI Halo Exchange     :",profiler%halo_exchange,100.0*(profiler%halo_exchange/wall_clock)
       WRITE(g_out,'(a23,2f16.4)')"Self Halo Update      :",profiler%halo_update,100.0*(profiler%halo_update/wall_clock)
-      WRITE(g_out,'(a23,2f16.4)')"Internal Halo Update  :",profiler%internal_halo_update,100.0* &
-                                                          (profiler%internal_halo_update/wall_clock)
+      WRITE(g_out,'(a23,2f16.4)')"Internal Halo Update  :",profiler%internal_halo_update,&
+        100.0*(profiler%internal_halo_update/wall_clock)
       WRITE(g_out,'(a23,2f16.4)')"Summary               :",profiler%summary,100.0*(profiler%summary/wall_clock)
       WRITE(g_out,'(a23,2f16.4)')"Visit                 :",profiler%visit,100.0*(profiler%visit/wall_clock)
       WRITE(g_out,'(a23,2f16.4)')"Tea Init              :",profiler%tea_init,100.0*(profiler%tea_init/wall_clock)

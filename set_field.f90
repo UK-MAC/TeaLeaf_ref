@@ -38,18 +38,18 @@ SUBROUTINE set_field()
 
   IF(use_fortran_kernels)THEN
 !$OMP PARALLEL
-!$OMP DO  
+!$OMP DO
     DO t=1,tiles_per_task
       CALL set_field_kernel(chunk%tiles(t)%field%x_min,     &
                             chunk%tiles(t)%field%x_max,     &
                             chunk%tiles(t)%field%y_min,     &
                             chunk%tiles(t)%field%y_max,     &
-                            halo_exchange_depth,     &
+                            chunk%halo_exchange_depth,      &
                             chunk%tiles(t)%field%energy0,   &
                             chunk%tiles(t)%field%energy1)
     ENDDO
 !$OMP END DO NOWAIT
-!$OMP END PARALLEL    
+!$OMP END PARALLEL
   ENDIF
 
   IF(profiler_on) profiler%set_field=profiler%set_field+(timer()-kernel_time)

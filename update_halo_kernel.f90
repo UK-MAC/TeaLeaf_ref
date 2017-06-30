@@ -26,19 +26,23 @@ MODULE update_halo_kernel_module
 
   ! These need to be kept consistent with the data module to avoid use statement
   INTEGER,private,PARAMETER :: CHUNK_LEFT   =1    &
-                            ,CHUNK_RIGHT  =2    &
-                            ,CHUNK_BOTTOM =3    &
-                            ,CHUNK_TOP    =4    &
-                            ,EXTERNAL_FACE=-1
+                              ,CHUNK_RIGHT  =2    &
+                              ,CHUNK_BOTTOM =3    &
+                              ,CHUNK_TOP    =4    &
+                              ,EXTERNAL_FACE=-1
 
-  INTEGER,private,PARAMETER :: FIELD_DENSITY    = 1         &
-                            ,FIELD_ENERGY0    = 2         &
-                            ,FIELD_ENERGY1    = 3         &
-                            ,FIELD_U          = 4         &
-                            ,FIELD_P          = 5         &
-                            ,FIELD_SD         = 6         &
-                            ,FIELD_R          = 7         &
-                            ,NUM_FIELDS       = 7
+  INTEGER,private,PARAMETER   :: FIELD_DENSITY    = 1         &
+                                ,FIELD_ENERGY0    = 2         &
+                                ,FIELD_ENERGY1    = 3         &
+                                ,FIELD_U          = 4         &
+                                ,FIELD_P          = 5         &
+                                ,FIELD_SD         = 6         &
+                                ,FIELD_R          = 7         &
+                                ,FIELD_Z          = 8         &
+                                ,FIELD_KX         = 9         &
+                                ,FIELD_KY         = 10        &
+                                ,FIELD_DI         = 11        &
+                                ,NUM_FIELDS       = 11
 
 CONTAINS
 
@@ -51,6 +55,11 @@ CONTAINS
                         u,                                                          &
                         p,                                                          &
                         sd,                                                         &
+                        r,                                                          &
+                        z,                                                          &
+                        kx,                                                         &
+                        ky,                                                         &
+                        di,                                                         &
                         fields,                                                     &
                         depth                                                       )
   IMPLICIT NONE
@@ -58,7 +67,7 @@ CONTAINS
   INTEGER :: x_min,x_max,y_min,y_max,halo_exchange_depth
   INTEGER, DIMENSION(4) :: chunk_neighbours, tile_neighbours
   REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) &
-                          :: density,energy0,energy1, u, sd, p
+                          :: density,energy0,energy1, u, sd, p, r, z, kx, ky, di
 
   INTEGER :: fields(NUM_FIELDS),depth
 
@@ -93,6 +102,31 @@ CONTAINS
   IF (fields(FIELD_sd).EQ.1) THEN
     CALL update_halo_cell(x_min, x_max, y_min, y_max, halo_exchange_depth,  &
       chunk_neighbours, tile_neighbours, sd, depth)
+  ENDIF
+
+  IF (fields(FIELD_r).EQ.1) THEN
+    CALL update_halo_cell(x_min, x_max, y_min, y_max, halo_exchange_depth,  &
+      chunk_neighbours, tile_neighbours, r, depth)
+  ENDIF
+
+  IF (fields(FIELD_z).EQ.1) THEN
+    CALL update_halo_cell(x_min, x_max, y_min, y_max, halo_exchange_depth,  &
+      chunk_neighbours, tile_neighbours, z, depth)
+  ENDIF
+
+  IF (fields(FIELD_kx).EQ.1) THEN
+    CALL update_halo_cell(x_min, x_max, y_min, y_max, halo_exchange_depth,  &
+      chunk_neighbours, tile_neighbours, kx, depth)
+  ENDIF
+
+  IF (fields(FIELD_ky).EQ.1) THEN
+    CALL update_halo_cell(x_min, x_max, y_min, y_max, halo_exchange_depth,  &
+      chunk_neighbours, tile_neighbours, ky, depth)
+  ENDIF
+
+  IF (fields(FIELD_di).EQ.1) THEN
+    CALL update_halo_cell(x_min, x_max, y_min, y_max, halo_exchange_depth,  &
+      chunk_neighbours, tile_neighbours, di, depth)
   ENDIF
 
 !$OMP END PARALLEL

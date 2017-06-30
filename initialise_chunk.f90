@@ -27,7 +27,7 @@ SUBROUTINE initialise_chunk()
 
   IMPLICIT NONE
 
-  INTEGER :: t
+  INTEGER      :: t
 
   REAL(KIND=8) :: xmin,ymin,dx,dy
 
@@ -36,7 +36,7 @@ SUBROUTINE initialise_chunk()
 
   IF(use_fortran_kernels) THEN
 !$OMP PARALLEL PRIVATE(xmin, ymin)
-!$OMP DO  
+!$OMP DO
     DO t=1,tiles_per_task
       xmin=grid%xmin + dx*REAL(chunk%tiles(t)%left-1)
 
@@ -60,7 +60,7 @@ SUBROUTINE initialise_chunk()
                                    chunk%tiles(t)%field%yarea     )
     ENDDO
 !$OMP END DO NOWAIT
-!$OMP END PARALLEL    
+!$OMP END PARALLEL
   ENDIF
 
 END SUBROUTINE initialise_chunk

@@ -51,26 +51,27 @@ SUBROUTINE tea_allsum(value)
 
 END SUBROUTINE tea_allsum
 
-SUBROUTINE tea_allsum2(value1, value2)
+SUBROUTINE tea_allsum2(value1,value2)
 
-  ! Global reduction for PCG solver
+  ! Global reduction for CG solver
 
   IMPLICIT NONE
 
-  REAL(KIND=8) :: value1, value2
-  REAL(KIND=8), DIMENSION(2) :: values, total
+  REAL(KIND=8) :: value1,value2
+  REAL(KIND=8), DIMENSION(2) :: values,totals
+
   REAL(KIND=8) :: dot_product_time, timer
 
   INTEGER :: err
-  values = (/ value1, value2 /)
-  total=values
+
+  values=(/ value1, value2 /)
+  totals=values
 
   IF (profiler_on) dot_product_time=timer()
-  CALL MPI_ALLREDUCE(values,total,2,MPI_DOUBLE_PRECISION,MPI_SUM,mpi_cart_comm,err)
+  CALL MPI_ALLREDUCE(values,totals,2,MPI_DOUBLE_PRECISION,MPI_SUM,mpi_cart_comm,err)
   IF (profiler_on) profiler%dot_product= profiler%dot_product+ (timer() - dot_product_time)
 
-  value1=total(1)
-  value2=total(2)
+  value1=totals(1); value2=totals(2)
 
 END SUBROUTINE tea_allsum2
 

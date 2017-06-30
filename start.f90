@@ -76,15 +76,33 @@ SUBROUTINE start
     chunk%tiles(t)%field%y_max = chunk%tiles(t)%y_cells
   ENDDO
 
+  IF (parallel%boss)THEN
+    WRITE(g_out,*)"Tile size ",chunk%tiles(1)%x_cells," by ",chunk%tiles(1)%y_cells," cells"
+  ENDIF
+
+  IF (parallel%boss)THEN
+    WRITE(g_out,*)"Sub-tile size ranges from ",floor  (chunk%tiles(tiles_per_task)%x_cells/ &
+                                               real(chunk%sub_tile_dims(1)))," by ", &
+                                               floor  (chunk%tiles(tiles_per_task)%y_cells/ &
+                                               real(chunk%sub_tile_dims(2)))," cells", &
+                                        " to ",ceiling(chunk%tiles(1)             %x_cells/ &
+                                               real(chunk%sub_tile_dims(1)))," by ", &
+                                               ceiling(chunk%tiles(1)             %y_cells/ &
+                                               real(chunk%sub_tile_dims(2)))," cells"
+  ENDIF
+
   CALL build_field()
 
   CALL tea_allocate_buffers()
 
   CALL initialise_chunk()
-
+  
   IF (parallel%boss)THEN
-    WRITE(g_out,*) 'Generating chunk'
+    WRITE(g_out,*) 'Generating chunk '
   ENDIF
+  
+  grid%x_cells=mpi_dims(1)*chunk%tile_dims(1)*chunk%sub_tile_dims(1)
+  grid%y_cells=mpi_dims(2)*chunk%tile_dims(2)*chunk%sub_tile_dims(2)
 
   CALL generate_chunk()
 
@@ -94,7 +112,7 @@ SUBROUTINE start
   fields(FIELD_ENERGY0)=1
   fields(FIELD_ENERGY1)=1
 
-  CALL update_halo(fields,halo_exchange_depth)
+  CALL update_halo(fields,chunk%halo_exchange_depth)
 
   IF (parallel%boss)THEN
     WRITE(g_out,*)

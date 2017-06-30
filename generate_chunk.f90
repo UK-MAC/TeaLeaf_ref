@@ -51,7 +51,8 @@ SUBROUTINE generate_chunk()
       CALL generate_chunk_kernel(chunk%tiles(t)%field%x_min,             &
                                  chunk%tiles(t)%field%x_max,             &
                                  chunk%tiles(t)%field%y_min,             &
-                                 chunk%tiles(t)%field%y_max,halo_exchange_depth,             &
+                                 chunk%tiles(t)%field%y_max,             &
+                                 chunk%halo_exchange_depth,              &
                                  chunk%tiles(t)%field%vertexx,           &
                                  chunk%tiles(t)%field%vertexy,           &
                                  chunk%tiles(t)%field%cellx,             &
@@ -73,7 +74,7 @@ SUBROUTINE generate_chunk()
                                  g_point)
     ENDDO
 !$OMP END DO NOWAIT
-!$OMP END PARALLEL    
+!$OMP END PARALLEL
   ENDIF
 
 END SUBROUTINE generate_chunk

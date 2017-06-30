@@ -23,7 +23,7 @@ MODULE data_module
 
    IMPLICIT NONE
 
-   REAL(KIND=8), PARAMETER :: g_version=1.402
+   REAL(KIND=8), PARAMETER :: g_version=1.403
 
    INTEGER,      PARAMETER :: g_ibig=640000
 
@@ -49,7 +49,10 @@ MODULE data_module
                                 ,FIELD_SD         = 6         &
                                 ,FIELD_R          = 7         &
                                 ,FIELD_Z          = 8         &
-                                ,NUM_FIELDS       = 8
+                                ,FIELD_KX         = 9         &
+                                ,FIELD_KY         = 10        &
+                                ,FIELD_DI         = 11        &
+                                ,NUM_FIELDS       = 11
 
    INTEGER,         PARAMETER :: CELL_DATA     = 1,        &
                                  VERTEX_DATA   = 2,        &
@@ -87,6 +90,7 @@ MODULE data_module
    INTEGER,        PARAMETER ::g_len_max=500
 
    INTEGER                   ::tiles_per_task
+   INTEGER                   ::sub_tiles_per_tile
 
    ! cartesian communicator
    INTEGER                   ::mpi_cart_comm
@@ -95,9 +99,5 @@ MODULE data_module
    ! this rank's coordinates
    INTEGER, dimension(2)     ::mpi_coords
 
-   ! depth of halo for matrix powers
-   INTEGER :: halo_exchange_depth
-
-   INTEGER                   ::lr_pack_buffer_size,bt_pack_buffer_size
-
 END MODULE data_module
+

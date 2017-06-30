@@ -5,7 +5,7 @@ MODULE tea_leaf_cheby_module
   USE definitions_module
   USE tea_leaf_common_module
   USE update_halo_module
-  
+
   IMPLICIT NONE
 
 CONTAINS
@@ -18,13 +18,14 @@ SUBROUTINE tea_leaf_cheby_init(theta)
   REAL(KIND=8) :: theta
 
   IF (use_fortran_kernels) THEN
-
+!$OMP PARALLEL
+!$OMP DO
     DO t=1,tiles_per_task
       CALL tea_leaf_kernel_cheby_init(chunk%tiles(t)%field%x_min,&
             chunk%tiles(t)%field%x_max,                          &
             chunk%tiles(t)%field%y_min,                          &
             chunk%tiles(t)%field%y_max,                          &
-            halo_exchange_depth,                          &
+            chunk%halo_exchange_depth,                           &
             chunk%tiles(t)%field%u,                              &
             chunk%tiles(t)%field%u0,                             &
             chunk%tiles(t)%field%vector_p,                       &
@@ -34,13 +35,15 @@ SUBROUTINE tea_leaf_cheby_init(theta)
             chunk%tiles(t)%field%vector_z,                       &
             chunk%tiles(t)%field%vector_Kx,                      &
             chunk%tiles(t)%field%vector_Ky,                      &
+            chunk%tiles(t)%field%vector_Di,                      &
             chunk%tiles(t)%field%tri_cp,   &
             chunk%tiles(t)%field%tri_bfp,    &
             chunk%tiles(t)%field%rx,    &
             chunk%tiles(t)%field%ry,    &
             theta, tl_preconditioner_type)
     ENDDO
-   
+!$OMP END DO NOWAIT
+!$OMP END PARALLEL
   ENDIF
 
 END SUBROUTINE tea_leaf_cheby_init
@@ -53,13 +56,14 @@ SUBROUTINE tea_leaf_cheby_iterate(ch_alphas, ch_betas, max_cheby_iters, cheby_ca
   REAL(KIND=8), DIMENSION(:) :: ch_alphas, ch_betas
 
   IF (use_fortran_kernels) THEN
-
+!$OMP PARALLEL
+!$OMP DO
     DO t=1,tiles_per_task
       CALL tea_leaf_kernel_cheby_iterate(chunk%tiles(t)%field%x_min,&
                   chunk%tiles(t)%field%x_max,                       &
                   chunk%tiles(t)%field%y_min,                       &
                   chunk%tiles(t)%field%y_max,                       &
-                  halo_exchange_depth,                       &
+                  chunk%halo_exchange_depth,                        &
                   chunk%tiles(t)%field%u,                           &
                   chunk%tiles(t)%field%u0,                          &
                   chunk%tiles(t)%field%vector_p,                    &
@@ -69,6 +73,7 @@ SUBROUTINE tea_leaf_cheby_iterate(ch_alphas, ch_betas, max_cheby_iters, cheby_ca
                   chunk%tiles(t)%field%vector_z,                    &
                   chunk%tiles(t)%field%vector_Kx,                   &
                   chunk%tiles(t)%field%vector_Ky,                   &
+                  chunk%tiles(t)%field%vector_Di,                   &
                   chunk%tiles(t)%field%tri_cp,   &
                   chunk%tiles(t)%field%tri_bfp,    &
                   ch_alphas, ch_betas, max_cheby_iters,        &
@@ -76,7 +81,8 @@ SUBROUTINE tea_leaf_cheby_iterate(ch_alphas, ch_betas, max_cheby_iters, cheby_ca
                   chunk%tiles(t)%field%ry,  &
                   cheby_calc_steps, tl_preconditioner_type)
     ENDDO
- 
+!$OMP END DO NOWAIT
+!$OMP END PARALLEL
   ENDIF
 
 END SUBROUTINE tea_leaf_cheby_iterate
@@ -160,23 +166,10 @@ SUBROUTINE tea_calc_eigenvalues(cg_alphas, cg_betas, eigmin, eigmax, &
   !CALL dsterf(tl_ch_cg_presteps, diag, offdiag, info)
 
   IF (info .NE. 0) RETURN
+  ! Removed bubble sort
 
-  ! bubble sort eigenvalues
-  DO
-    DO n=1,tl_ch_cg_presteps-1
-      IF (diag(n) .GE. diag(n+1)) THEN
-        tmp = diag(n)
-        diag(n) = diag(n+1)
-        diag(n+1) = tmp
-        swapped = .TRUE.
-      ENDIF
-    ENDDO
-    IF (.NOT. swapped) EXIT
-    swapped = .FALSE.
-  ENDDO
-
-  eigmin = diag(1)
-  eigmax = diag(tl_ch_cg_presteps)
+  eigmin = minval(diag)
+  eigmax = maxval(diag)
 
   IF (eigmin .LT. 0.0_8 .OR. eigmax .LT. 0.0_8) info = 1
 
@@ -225,7 +218,6 @@ SUBROUTINE tea_leaf_cheby_first_step(ch_alphas, ch_betas, fields, &
 
   ! calculate 2 norm of u0
   CALL tea_leaf_calc_2norm(0, bb)
-
   IF (profiler_on) dot_product_time=timer()
   CALL tea_allsum(bb)
   IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
@@ -235,8 +227,8 @@ SUBROUTINE tea_leaf_cheby_first_step(ch_alphas, ch_betas, fields, &
 
   IF (profiler_on) halo_time = timer()
   CALL update_halo(fields,1)
-
   IF (profiler_on) solve_time = solve_time + (timer()-halo_time)
+
   CALL tea_leaf_cheby_iterate(ch_alphas, ch_betas, max_cheby_iters, 1)
 
   CALL tea_leaf_calc_2norm(1, error)
@@ -245,6 +237,7 @@ SUBROUTINE tea_leaf_cheby_first_step(ch_alphas, ch_betas, fields, &
   CALL tea_allsum(error)
   IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
 
+!   ! Fixed
   it_alpha = eps/2.0_8*SQRT(bb/error)
   gamm = (SQRT(cn) - 1.0_8)/(SQRT(cn) + 1.0_8)
   est_itc = NINT(LOG(it_alpha)/(LOG(gamm)))
@@ -257,7 +250,5 @@ SUBROUTINE tea_leaf_cheby_first_step(ch_alphas, ch_betas, fields, &
   ENDIF
 
 END SUBROUTINE tea_leaf_cheby_first_step
-
 END MODULE tea_leaf_cheby_module
 
-! 

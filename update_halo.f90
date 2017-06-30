@@ -37,16 +37,16 @@ SUBROUTINE update_halo(fields,depth)
   REAL(KIND=8) :: timer,halo_time
 
   IF (profiler_on) halo_time=timer()
-  CALL tea_exchange(fields,depth)
+  CALL tea_exchange( fields, depth)
   IF (profiler_on) profiler%halo_exchange = profiler%halo_exchange + (timer() - halo_time)
 
-  CALL update_boundary(fields, depth)
+  CALL update_boundary( fields, depth)
 
-  CALL update_tile_boundary(fields, depth)
+  CALL update_tile_boundary( fields, depth)
 
 END SUBROUTINE update_halo
 
-SUBROUTINE update_boundary(fields,depth)
+SUBROUTINE update_boundary( fields,depth)
 
   IMPLICIT NONE
 
@@ -58,13 +58,13 @@ SUBROUTINE update_boundary(fields,depth)
   IF (reflective_boundary .EQV. .TRUE. .AND. ANY(chunk%chunk_neighbours .EQ. EXTERNAL_FACE)) THEN
     IF (use_fortran_kernels)THEN
 !$OMP PARALLEL
-!$OMP DO    
+!$OMP DO
       DO t=1,tiles_per_task
         CALL update_halo_kernel(chunk%tiles(t)%field%x_min,          &
                                 chunk%tiles(t)%field%x_max,          &
                                 chunk%tiles(t)%field%y_min,          &
                                 chunk%tiles(t)%field%y_max,          &
-                                halo_exchange_depth,          &
+                                chunk%halo_exchange_depth,           &
                                 chunk%chunk_neighbours,     &
                                 chunk%tiles(t)%tile_neighbours,     &
                                 chunk%tiles(t)%field%density,        &
@@ -73,11 +73,16 @@ SUBROUTINE update_boundary(fields,depth)
                                 chunk%tiles(t)%field%u,              &
                                 chunk%tiles(t)%field%vector_p,       &
                                 chunk%tiles(t)%field%vector_sd,      &
+                                chunk%tiles(t)%field%vector_rtemp,      &
+                                chunk%tiles(t)%field%vector_z,      &
+                                chunk%tiles(t)%field%vector_kx,     &
+                                chunk%tiles(t)%field%vector_ky,     &
+                                chunk%tiles(t)%field%vector_di,     &
                                 fields,                         &
                                 depth                           )
       ENDDO
 !$OMP END DO NOWAIT
-!$OMP END PARALLEL      
+!$OMP END PARALLEL
     ENDIF
   ENDIF
 
@@ -85,7 +90,7 @@ SUBROUTINE update_boundary(fields,depth)
 
 END SUBROUTINE update_boundary
 
-SUBROUTINE update_tile_boundary(fields, depth)
+SUBROUTINE update_tile_boundary( fields, depth)
 
   IMPLICIT NONE
 
@@ -97,7 +102,7 @@ SUBROUTINE update_tile_boundary(fields, depth)
   IF (tiles_per_task .GT. 1) THEN
     IF (use_fortran_kernels)THEN
 !$OMP PARALLEL PRIVATE(right_idx, up_idx)
-!$OMP DO    
+!$OMP DO
       DO t=1,tiles_per_task
         right_idx = chunk%tiles(t)%tile_neighbours(CHUNK_RIGHT)
 
@@ -113,6 +118,11 @@ SUBROUTINE update_tile_boundary(fields, depth)
                                   chunk%tiles(t)%field%u,              &
                                   chunk%tiles(t)%field%vector_p,       &
                                   chunk%tiles(t)%field%vector_sd,      &
+                                  chunk%tiles(t)%field%vector_rtemp,       &
+                                  chunk%tiles(t)%field%vector_z,       &
+                                  chunk%tiles(t)%field%vector_kx,      &
+                                  chunk%tiles(t)%field%vector_ky,      &
+                                  chunk%tiles(t)%field%vector_di,      &
                                   chunk%tiles(right_idx)%field%x_min,          &
                                   chunk%tiles(right_idx)%field%x_max,          &
                                   chunk%tiles(right_idx)%field%y_min,          &
@@ -123,7 +133,12 @@ SUBROUTINE update_tile_boundary(fields, depth)
                                   chunk%tiles(right_idx)%field%u,              &
                                   chunk%tiles(right_idx)%field%vector_p,       &
                                   chunk%tiles(right_idx)%field%vector_sd,      &
-                                  halo_exchange_depth,          &
+                                  chunk%tiles(right_idx)%field%vector_rtemp,       &
+                                  chunk%tiles(right_idx)%field%vector_z,       &
+                                  chunk%tiles(right_idx)%field%vector_kx,      &
+                                  chunk%tiles(right_idx)%field%vector_ky,      &
+                                  chunk%tiles(right_idx)%field%vector_di,      &
+                                  chunk%halo_exchange_depth,                   &
                                   fields,                         &
                                   depth                           )
         ENDIF
@@ -150,6 +165,11 @@ SUBROUTINE update_tile_boundary(fields, depth)
                                   chunk%tiles(t)%field%u,              &
                                   chunk%tiles(t)%field%vector_p,       &
                                   chunk%tiles(t)%field%vector_sd,      &
+                                  chunk%tiles(t)%field%vector_rtemp,      &
+                                  chunk%tiles(t)%field%vector_z,       &
+                                  chunk%tiles(t)%field%vector_kx,      &
+                                  chunk%tiles(t)%field%vector_ky,      &
+                                  chunk%tiles(t)%field%vector_di,      &
                                   chunk%tiles(up_idx)%field%x_min,          &
                                   chunk%tiles(up_idx)%field%x_max,          &
                                   chunk%tiles(up_idx)%field%y_min,          &
@@ -159,14 +179,19 @@ SUBROUTINE update_tile_boundary(fields, depth)
                                   chunk%tiles(up_idx)%field%energy1,        &
                                   chunk%tiles(up_idx)%field%u,              &
                                   chunk%tiles(up_idx)%field%vector_p,       &
-                                  chunk%tiles(up_idx)%field%vector_sd,      &                                 
-                                  halo_exchange_depth,          &
+                                  chunk%tiles(up_idx)%field%vector_sd,      &
+                                  chunk%tiles(up_idx)%field%vector_rtemp,      &
+                                  chunk%tiles(up_idx)%field%vector_z,       &
+                                  chunk%tiles(up_idx)%field%vector_kx,      &
+                                  chunk%tiles(up_idx)%field%vector_ky,      &
+                                  chunk%tiles(up_idx)%field%vector_di,      &
+                                  chunk%halo_exchange_depth,                &
                                   fields,                         &
                                   depth                           )
         ENDIF
       ENDDO
 !$OMP END DO NOWAIT
-!$OMP END PARALLEL      
+!$OMP END PARALLEL
     ENDIF
   ENDIF
 

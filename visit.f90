@@ -17,7 +17,7 @@
 
 !>  @brief Generates graphics output files.
 !>  @author David Beckingsale, Wayne Gaudin
-!>  @details The field data over all mesh chunk is written to a .vtk files and
+!>  @details The field data over all mesh chunks is written to a .vtk files and
 !>  the .visit file is written that defines the time for each set of vtk files.
 
 SUBROUTINE visit
@@ -38,7 +38,6 @@ SUBROUTINE visit
 
   REAL(KIND=8) :: kernel_time,timer
 
-! FIXME
   name = 'tea'
 
   IF(first_call) THEN
@@ -106,19 +105,21 @@ DO c = 1, tiles_per_task
   WRITE(u,'(a)')'FIELD FieldData 3'
   WRITE(u,'(a,i20,a)')'density 1 ',nxc*nyc,' double'
   DO k=chunk%tiles(c)%field%y_min,chunk%tiles(c)%field%y_max
-    WRITE(u,'(e12.4)')(chunk%tiles(c)%field%density(j,k),j=chunk%tiles(c)%field%x_min,chunk%tiles(c)%field%x_max)
+    WRITE(u,'(e12.4)')(chunk%tiles(c)%field%density(j,k), &
+      j=chunk%tiles(c)%field%x_min,chunk%tiles(c)%field%x_max)
   ENDDO
   WRITE(u,'(a,i20,a)')'energy 1 ',nxc*nyc,' double'
     DO k=chunk%tiles(c)%field%y_min,chunk%tiles(c)%field%y_max
-      WRITE(u,'(e12.4)')(chunk%tiles(c)%field%energy0(j,k),j=chunk%tiles(c)%field%x_min,chunk%tiles(c)%field%x_max)
+      WRITE(u,'(e12.4)')(chunk%tiles(c)%field%energy0(j,k), &
+        j=chunk%tiles(c)%field%x_min,chunk%tiles(c)%field%x_max)
     ENDDO
     WRITE(u,'(a,i20,a)')'temperature 1 ',nxc*nyc,' double'
     DO k=chunk%tiles(c)%field%y_min,chunk%tiles(c)%field%y_max
-      WRITE(u,'(e12.4)')(chunk%tiles(c)%field%u(j,k),j=chunk%tiles(c)%field%x_min,chunk%tiles(c)%field%x_max)
+      WRITE(u,'(e12.4)')(chunk%tiles(c)%field%u(j,k), &
+        j=chunk%tiles(c)%field%x_min,chunk%tiles(c)%field%x_max)
     ENDDO
     CLOSE(u)
   ENDDO
   IF(profiler_on) profiler%visit=profiler%visit+(timer()-kernel_time)
 
 END SUBROUTINE visit
-

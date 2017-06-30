@@ -3,19 +3,23 @@ MODULE update_internal_halo_kernel_module
 
   ! These need to be kept consistent with the data module to avoid use statement
   INTEGER,private,PARAMETER :: CHUNK_LEFT   =1    &
-                            ,CHUNK_RIGHT  =2    &
-                            ,CHUNK_BOTTOM =3    &
-                            ,CHUNK_TOP    =4    &
-                            ,EXTERNAL_FACE=-1
+                              ,CHUNK_RIGHT  =2    &
+                              ,CHUNK_BOTTOM =3    &
+                              ,CHUNK_TOP    =4    &
+                              ,EXTERNAL_FACE=-1
 
-  INTEGER,private,PARAMETER :: FIELD_DENSITY    = 1         &
-                            ,FIELD_ENERGY0    = 2         &
-                            ,FIELD_ENERGY1    = 3         &
-                            ,FIELD_U          = 4         &
-                            ,FIELD_P          = 5         &
-                            ,FIELD_SD         = 6         &
-                            ,FIELD_R          = 7         &
-                            ,NUM_FIELDS       = 7
+  INTEGER,private,PARAMETER   :: FIELD_DENSITY    = 1         &
+                                ,FIELD_ENERGY0    = 2         &
+                                ,FIELD_ENERGY1    = 3         &
+                                ,FIELD_U          = 4         &
+                                ,FIELD_P          = 5         &
+                                ,FIELD_SD         = 6         &
+                                ,FIELD_R          = 7         &
+                                ,FIELD_Z          = 8         &
+                                ,FIELD_KX         = 9         &
+                                ,FIELD_KY         = 10        &
+                                ,FIELD_DI         = 11        &
+                                ,NUM_FIELDS       = 11
 
 CONTAINS
 
@@ -27,6 +31,11 @@ CONTAINS
                           u,                                                          &
                           p,                                                          &
                           sd,                                                         &
+                          r,                                                          &
+                          z,                                                          &
+                          kx,                                                         &
+                          ky,                                                         &
+                          di,                                                         &
                           x_min_right,x_max_right,y_min_right,y_max_right,            &
                           density_right,                                              &
                           energy0_right,                                              &
@@ -34,6 +43,11 @@ CONTAINS
                           u_right,                                                    &
                           p_right,                                                    &
                           sd_right,                                                   &
+                          r_right,                                                    &
+                          z_right,                                                    &
+                          kx_right,                                                   &
+                          ky_right,                                                   &
+                          di_right,                                                   &
                           halo_exchange_depth,                                        &
                           fields,                                                     &
                           depth                                                       )
@@ -43,12 +57,15 @@ CONTAINS
     INTEGER :: fields(NUM_FIELDS),depth
 
     INTEGER :: x_min,x_max,y_min,y_max
-    REAL(KIND=8),DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth)&
-                           :: density,energy0,energy1, u, sd, p
+    REAL(KIND=8),DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,&
+                           y_min-halo_exchange_depth:y_max+halo_exchange_depth)&
+                           :: density,energy0,energy1, u, sd, p, r, z, kx, ky, di
 
     INTEGER :: x_min_right,x_max_right,y_min_right,y_max_right
     REAL(KIND=8),DIMENSION(x_min_right-halo_exchange_depth:x_max_right+halo_exchange_depth,y_min_right-halo_exchange_depth:&
-                           y_max_right+halo_exchange_depth) :: density_right,energy0_right,energy1_right,u_right,sd_right,p_right
+                           y_max_right+halo_exchange_depth) :: density_right,energy0_right,energy1_right, &
+                                                               u_right,sd_right,p_right,r_right,z_right, &
+                                                               kx_right,ky_right,di_right
 
 !$OMP PARALLEL
     IF (fields(FIELD_DENSITY).EQ.1) THEN
@@ -86,6 +103,36 @@ CONTAINS
         x_min_right, x_max_right, y_min_right, y_max_right, sd_right, &
         halo_exchange_depth, depth)
     ENDIF
+
+    IF (fields(FIELD_r).EQ.1) THEN
+      CALL update_internal_halo_cell_left_right(x_min, x_max, y_min, y_max, r, &
+        x_min_right, x_max_right, y_min_right, y_max_right, r_right, &
+        halo_exchange_depth, depth)
+    ENDIF
+
+    IF (fields(FIELD_z).EQ.1) THEN
+      CALL update_internal_halo_cell_left_right(x_min, x_max, y_min, y_max, z, &
+        x_min_right, x_max_right, y_min_right, y_max_right, z_right, &
+        halo_exchange_depth, depth)
+    ENDIF
+
+    IF (fields(FIELD_kx).EQ.1) THEN
+      CALL update_internal_halo_cell_left_right(x_min, x_max, y_min, y_max, kx, &
+        x_min_right, x_max_right, y_min_right, y_max_right, kx_right, &
+        halo_exchange_depth, depth)
+    ENDIF
+
+    IF (fields(FIELD_ky).EQ.1) THEN
+      CALL update_internal_halo_cell_left_right(x_min, x_max, y_min, y_max, ky, &
+        x_min_right, x_max_right, y_min_right, y_max_right, ky_right, &
+        halo_exchange_depth, depth)
+    ENDIF
+
+    IF (fields(FIELD_di).EQ.1) THEN
+      CALL update_internal_halo_cell_left_right(x_min, x_max, y_min, y_max, di, &
+        x_min_right, x_max_right, y_min_right, y_max_right, di_right, &
+        halo_exchange_depth, depth)
+    ENDIF
 !$OMP END PARALLEL
 
   END SUBROUTINE
@@ -112,7 +159,6 @@ CONTAINS
 
 !$OMP DO
     DO k=y_min_left-depth,y_max_left+depth
-!DIR$ IVDEP
       DO j=1,depth
         mesh_right(1-j,k)=mesh_left(x_max_left+1-j,k)
       ENDDO
@@ -120,7 +166,6 @@ CONTAINS
 !$OMP END DO NOWAIT
 !$OMP DO
     DO k=y_min_left-depth,y_max_left+depth
-!DIR$ IVDEP
       DO j=1,depth
         mesh_left(x_max_left+j,k)=mesh_right(0+j,k)
       ENDDO
@@ -137,6 +182,11 @@ CONTAINS
                           u,                                                          &
                           p,                                                          &
                           sd,                                                         &
+                          r,                                                          &
+                          z,                                                          &
+                          kx,                                                         &
+                          ky,                                                         &
+                          di,                                                         &
                           x_min_top,x_max_top,y_min_top,y_max_top,            &
                           density_top,                                              &
                           energy0_top,                                              &
@@ -144,6 +194,11 @@ CONTAINS
                           u_top,                                                    &
                           p_top,                                                    &
                           sd_top,                                                   &
+                          r_top,                                                    &
+                          z_top,                                                    &
+                          kx_top,                                                   &
+                          ky_top,                                                   &
+                          di_top,                                                   &
                           halo_exchange_depth,                                        &
                           fields,                                                     &
                           depth                                                       )
@@ -154,11 +209,12 @@ CONTAINS
 
     INTEGER :: x_min,x_max,y_min,y_max
     REAL(KIND=8),DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth)&
-                           :: density,energy0,energy1, u, sd, p
+                           :: density,energy0,energy1, u, sd, p, r, z, kx, ky, di
 
     INTEGER :: x_min_top,x_max_top,y_min_top,y_max_top
     REAL(KIND=8), DIMENSION(x_min_top-halo_exchange_depth:x_max_top+halo_exchange_depth,y_min_top-halo_exchange_depth:&
-                            y_max_top+halo_exchange_depth) :: density_top,energy0_top,energy1_top, u_top, sd_top, p_top
+                            y_max_top+halo_exchange_depth) :: density_top,energy0_top,energy1_top,&
+                                                              u_top, sd_top, p_top, r_top, z_top, kx_top, ky_top, di_top
 
 !$OMP PARALLEL
     IF (fields(FIELD_DENSITY).EQ.1) THEN
@@ -196,6 +252,36 @@ CONTAINS
         x_min_top, x_max_top, y_min_top, y_max_top, sd_top, &
         halo_exchange_depth, depth)
     ENDIF
+
+    IF (fields(FIELD_r).EQ.1) THEN
+      CALL update_internal_halo_cell_bottom_top(x_min, x_max, y_min, y_max, r, &
+        x_min_top, x_max_top, y_min_top, y_max_top, r_top, &
+        halo_exchange_depth, depth)
+    ENDIF
+
+    IF (fields(FIELD_z).EQ.1) THEN
+      CALL update_internal_halo_cell_bottom_top(x_min, x_max, y_min, y_max, z, &
+        x_min_top, x_max_top, y_min_top, y_max_top, z_top, &
+        halo_exchange_depth, depth)
+    ENDIF
+
+    IF (fields(FIELD_kx).EQ.1) THEN
+      CALL update_internal_halo_cell_bottom_top(x_min, x_max, y_min, y_max, kx, &
+        x_min_top, x_max_top, y_min_top, y_max_top, kx_top, &
+        halo_exchange_depth, depth)
+    ENDIF
+
+    IF (fields(FIELD_ky).EQ.1) THEN
+      CALL update_internal_halo_cell_bottom_top(x_min, x_max, y_min, y_max, ky, &
+        x_min_top, x_max_top, y_min_top, y_max_top, ky_top, &
+        halo_exchange_depth, depth)
+    ENDIF
+
+    IF (fields(FIELD_di).EQ.1) THEN
+      CALL update_internal_halo_cell_bottom_top(x_min, x_max, y_min, y_max, di, &
+        x_min_top, x_max_top, y_min_top, y_max_top, di_top, &
+        halo_exchange_depth, depth)
+    ENDIF
 !$OMP END PARALLEL
 
   END SUBROUTINE update_internal_halo_bottom_top_kernel
@@ -220,7 +306,6 @@ CONTAINS
 
 !$OMP DO
     DO k=1,depth
-!DIR$ IVDEP
       DO j=x_min_bottom-depth,x_max_bottom+depth
         mesh_top(j,1-k)=mesh_bottom(j,y_max_bottom+1-k)
       ENDDO
@@ -228,7 +313,6 @@ CONTAINS
 !$OMP END DO NOWAIT
 !$OMP DO
     DO k=1,depth
-!DIR$ IVDEP
       DO j=x_min_bottom-depth,x_max_bottom+depth
         mesh_bottom(j,y_max_bottom+k)=mesh_top(j,0+k)
       ENDDO

@@ -15,28 +15,27 @@ SUBROUTINE tea_leaf_init_common()
 
   INTEGER :: t
 
-  INTEGER :: zero_boundary(4)
+  LOGICAL :: zero_boundary(4)
 
   IF (use_fortran_kernels) THEN
-!$OMP PARALLEL 
-!$OMP DO  
+!$OMP PARALLEL PRIVATE(zero_boundary)
+!$OMP DO
     DO t=1,tiles_per_task
       chunk%tiles(t)%field%rx = dt/(chunk%tiles(t)%field%celldx(chunk%tiles(t)%field%x_min)**2)
       chunk%tiles(t)%field%ry = dt/(chunk%tiles(t)%field%celldy(chunk%tiles(t)%field%y_min)**2)
 
-      ! CG never needs matrix defined outside of boundaries, PPCG does
-      IF (tl_use_cg) THEN
-        zero_boundary = chunk%tiles(t)%tile_neighbours
-      ELSE
-        zero_boundary = chunk%chunk_neighbours
-      ENDIF
+      WHERE (chunk%tiles(t)%tile_neighbours .EQ. EXTERNAL_FACE .AND. &
+             chunk%chunk_neighbours .EQ. EXTERNAL_FACE)
+        zero_boundary = .TRUE.
+      ELSE WHERE
+        zero_boundary = .FALSE.
+      END WHERE
 
       CALL tea_leaf_common_init_kernel(chunk%tiles(t)%field%x_min, &
           chunk%tiles(t)%field%x_max,                                  &
           chunk%tiles(t)%field%y_min,                                  &
           chunk%tiles(t)%field%y_max,                                  &
-          halo_exchange_depth,                                  &
-          chunk%chunk_neighbours,                             &
+          chunk%halo_exchange_depth,                                   &
           zero_boundary,                               &
           reflective_boundary,                                    &
           chunk%tiles(t)%field%density,                                &
@@ -47,6 +46,7 @@ SUBROUTINE tea_leaf_init_common()
           chunk%tiles(t)%field%vector_w,                               &
           chunk%tiles(t)%field%vector_Kx,                              &
           chunk%tiles(t)%field%vector_Ky,                              &
+          chunk%tiles(t)%field%vector_Di,                              &
           chunk%tiles(t)%field%tri_cp,   &
           chunk%tiles(t)%field%tri_bfp,    &
           chunk%tiles(t)%field%vector_Mi,    &
@@ -55,7 +55,7 @@ SUBROUTINE tea_leaf_init_common()
           tl_preconditioner_type, coefficient)
     ENDDO
 !$OMP END DO
-!$OMP END PARALLEL    
+!$OMP END PARALLEL
   ENDIF
 
 END SUBROUTINE tea_leaf_init_common
@@ -68,23 +68,25 @@ SUBROUTINE tea_leaf_calc_residual()
 
   IF (use_fortran_kernels) THEN
 !$OMP PARALLEL
-!$OMP DO  
+!$OMP DO
     DO t=1,tiles_per_task
-      CALL tea_leaf_calc_residual_kernel(chunk%tiles(t)%field%x_min,&
+      CALL tea_leaf_calc_residual_kernel(                           &
+          chunk%tiles(t)%field%x_min,                        &
           chunk%tiles(t)%field%x_max,                        &
           chunk%tiles(t)%field%y_min,                        &
           chunk%tiles(t)%field%y_max,                        &
-          halo_exchange_depth,                        &
+          chunk%halo_exchange_depth,                         &
           chunk%tiles(t)%field%u,                            &
           chunk%tiles(t)%field%u0,                           &
           chunk%tiles(t)%field%vector_r,                     &
           chunk%tiles(t)%field%vector_Kx,                    &
           chunk%tiles(t)%field%vector_Ky,                    &
-          chunk%tiles(t)%field%rx,  &
+          chunk%tiles(t)%field%vector_Di,                    &
+          chunk%tiles(t)%field%rx,                           &
           chunk%tiles(t)%field%ry)
     ENDDO
 !$OMP END DO
-!$OMP END PARALLEL    
+!$OMP END PARALLEL
   ENDIF
 
 END SUBROUTINE
@@ -93,14 +95,14 @@ SUBROUTINE tea_leaf_calc_2norm(norm_array, norm)
 
   IMPLICIT NONE
 
-  INTEGER :: t, norm_array
+  INTEGER :: t, level, norm_array
   REAL(KIND=8) :: norm, tile_norm
 
   norm = 0.0_8
 
   IF (use_fortran_kernels) THEN
 !$OMP PARALLEL PRIVATE(tile_norm)
-!$OMP DO REDUCTION(+:norm)  
+!$OMP DO REDUCTION(+:norm)
     DO t=1,tiles_per_task
       tile_norm = 0.0_8
 
@@ -112,7 +114,7 @@ SUBROUTINE tea_leaf_calc_2norm(norm_array, norm)
             chunk%tiles(t)%field%x_max,                                    &
             chunk%tiles(t)%field%y_min,                                    &
             chunk%tiles(t)%field%y_max,                                    &
-            halo_exchange_depth,                                    &
+            chunk%halo_exchange_depth,                                     &
             chunk%tiles(t)%field%u0,                                 &
             tile_norm)
       ELSE IF (norm_array .EQ. 1) THEN
@@ -120,7 +122,7 @@ SUBROUTINE tea_leaf_calc_2norm(norm_array, norm)
             chunk%tiles(t)%field%x_max,                                    &
             chunk%tiles(t)%field%y_min,                                    &
             chunk%tiles(t)%field%y_max,                                    &
-            halo_exchange_depth,                                    &
+            chunk%halo_exchange_depth,                                     &
             chunk%tiles(t)%field%vector_r,                                 &
             tile_norm)
       ELSE
@@ -130,7 +132,7 @@ SUBROUTINE tea_leaf_calc_2norm(norm_array, norm)
       norm = norm + tile_norm
     ENDDO
 !$OMP END DO
-!$OMP END PARALLEL    
+!$OMP END PARALLEL
   ENDIF
 
 END SUBROUTINE
@@ -143,19 +145,19 @@ SUBROUTINE tea_leaf_finalise()
 
   IF (use_fortran_kernels) THEN
 !$OMP PARALLEL
-!$OMP DO  
+!$OMP DO
     DO t=1,tiles_per_task
       CALL tea_leaf_kernel_finalise(chunk%tiles(t)%field%x_min, &
           chunk%tiles(t)%field%x_max,                           &
           chunk%tiles(t)%field%y_min,                           &
           chunk%tiles(t)%field%y_max,                           &
-          halo_exchange_depth,                           &
+          chunk%halo_exchange_depth,                            &
           chunk%tiles(t)%field%energy1,                         &
           chunk%tiles(t)%field%density,                         &
           chunk%tiles(t)%field%u)
     ENDDO
 !$OMP END DO
-!$OMP END PARALLEL    
+!$OMP END PARALLEL
   ENDIF
 
 END SUBROUTINE tea_leaf_finalise

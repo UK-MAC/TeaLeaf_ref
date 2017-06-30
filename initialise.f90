@@ -69,7 +69,7 @@ SUBROUTINE initialise
 
   IF(parallel%boss)THEN
     uin=get_unit(dummy)
-    
+
     OPEN(FILE='tea.in',ACTION='READ',STATUS='OLD',UNIT=uin,IOSTAT=ios)
     IF(ios.NE.0) THEN
       out_unit=get_unit(dummy)

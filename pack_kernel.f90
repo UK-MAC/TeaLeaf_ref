@@ -23,20 +23,23 @@ MODULE pack_kernel_module
 
   ! These need to be kept consistent with the data module to avoid use statement
   INTEGER,private,PARAMETER :: CHUNK_LEFT   =1    &
-                            ,CHUNK_RIGHT  =2    &
-                            ,CHUNK_BOTTOM =3    &
-                            ,CHUNK_TOP    =4    &
-                            ,EXTERNAL_FACE=-1
+                              ,CHUNK_RIGHT  =2    &
+                              ,CHUNK_BOTTOM =3    &
+                              ,CHUNK_TOP    =4    &
+                              ,EXTERNAL_FACE=-1
 
-  INTEGER,private,PARAMETER :: FIELD_DENSITY    = 1         &
-                            ,FIELD_ENERGY0    = 2         &
-                            ,FIELD_ENERGY1    = 3         &
-                            ,FIELD_U          = 4         &
-                            ,FIELD_P          = 5         &
-                            ,FIELD_SD         = 6         &
-                            ,FIELD_R          = 7         &
-                            ,FIELD_Z          = 8         &
-                            ,NUM_FIELDS       = 8
+  INTEGER,private,PARAMETER   :: FIELD_DENSITY    = 1         &
+                                ,FIELD_ENERGY0    = 2         &
+                                ,FIELD_ENERGY1    = 3         &
+                                ,FIELD_U          = 4         &
+                                ,FIELD_P          = 5         &
+                                ,FIELD_SD         = 6         &
+                                ,FIELD_R          = 7         &
+                                ,FIELD_Z          = 8         &
+                                ,FIELD_KX         = 9         &
+                                ,FIELD_KY         = 10        &
+                                ,FIELD_DI         = 11        &
+                                ,NUM_FIELDS       = 11
 
    INTEGER,         PARAMETER :: CELL_DATA     = 1,        &
                                  VERTEX_DATA   = 2,        &
@@ -89,8 +92,11 @@ SUBROUTINE pack_all(x_min, x_max, y_min, y_max, halo_exchange_depth, &
     u,                                                          &
     p,                                                          &
     sd,                                                         &
-    r,                                                         &
-    z,	&
+    r,                                                          &
+    z,                                                          &
+    kx,                                                         &
+    ky,                                                         &
+    di,                                                         &
     fields, depth, face, packing, mpi_buffer, offsets, tile_offset)
 
   IMPLICIT NONE
@@ -117,8 +123,9 @@ SUBROUTINE pack_all(x_min, x_max, y_min, y_max, halo_exchange_depth, &
   INTEGER      :: depth,x_min,x_max,y_min,y_max, halo_exchange_depth, edge_minus, edge_plus
   INTEGER, DIMENSION(4) :: tile_neighbours
 
-  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth)&
-                        :: density,energy0,energy1, u, sd, p, r, z
+  REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,&
+                          y_min-halo_exchange_depth:y_max+halo_exchange_depth)&
+                        :: density,energy0,energy1, u, sd, p, r, z, kx, ky, di
 
   PROCEDURE(pack_or_unpack), POINTER :: pack_func => NULL()
 
@@ -210,18 +217,6 @@ SUBROUTINE pack_all(x_min, x_max, y_min, y_max, halo_exchange_depth, &
                      tile_offset + offsets(FIELD_ENERGY1),   &
                      edge_minus, edge_plus)
   ENDIF
-  IF (fields(FIELD_P).EQ.1) THEN
-      CALL pack_func(x_min,                    &
-                     x_max,                    &
-                     y_min,                    &
-                     y_max,                    &
-                     halo_exchange_depth,                    &
-                     p,                  &
-                     mpi_buffer,                &
-                     depth, xincs(CELL_DATA), yincs(CELL_DATA),   &
-                     tile_offset + offsets(FIELD_P),   &
-                     edge_minus, edge_plus)
-  ENDIF
   IF (fields(FIELD_U).EQ.1) THEN
       CALL pack_func(x_min,                    &
                      x_max,                    &
@@ -232,6 +227,18 @@ SUBROUTINE pack_all(x_min, x_max, y_min, y_max, halo_exchange_depth, &
                      mpi_buffer,                &
                      depth, xincs(CELL_DATA), yincs(CELL_DATA),   &
                      tile_offset + offsets(FIELD_U),   &
+                     edge_minus, edge_plus)
+  ENDIF
+  IF (fields(FIELD_P).EQ.1) THEN
+      CALL pack_func(x_min,                    &
+                     x_max,                    &
+                     y_min,                    &
+                     y_max,                    &
+                     halo_exchange_depth,                    &
+                     p,                  &
+                     mpi_buffer,                &
+                     depth, xincs(CELL_DATA), yincs(CELL_DATA),   &
+                     tile_offset + offsets(FIELD_P),   &
                      edge_minus, edge_plus)
   ENDIF
   IF (fields(FIELD_SD).EQ.1) THEN
@@ -258,7 +265,7 @@ SUBROUTINE pack_all(x_min, x_max, y_min, y_max, halo_exchange_depth, &
                      tile_offset + offsets(FIELD_R),   &
                      edge_minus, edge_plus)
   ENDIF
-  IF (fields(FIELD_Z).EQ.1) THEN
+  IF (fields(FIELD_z).EQ.1) THEN
       CALL pack_func(x_min,                    &
                      x_max,                    &
                      y_min,                    &
@@ -268,6 +275,44 @@ SUBROUTINE pack_all(x_min, x_max, y_min, y_max, halo_exchange_depth, &
                      mpi_buffer,                &
                      depth, xincs(CELL_DATA), yincs(CELL_DATA),   &
                      tile_offset + offsets(FIELD_z),   &
+                     edge_minus, edge_plus)
+  ENDIF
+  IF (fields(FIELD_kx).EQ.1) THEN
+      CALL pack_func(x_min,                    &
+                     x_max,                    &
+                     y_min,                    &
+                     y_max,                    &
+                     halo_exchange_depth,                    &
+                     kx,                  &
+                     mpi_buffer,                &
+                     depth, xincs(CELL_DATA), yincs(CELL_DATA),   &
+                     tile_offset + offsets(FIELD_kx),   &
+                     edge_minus, edge_plus)
+                     !depth, xincs(X_FACE_DATA), yincs(X_FACE_DATA),   &
+  ENDIF
+  IF (fields(FIELD_ky).EQ.1) THEN
+      CALL pack_func(x_min,                    &
+                     x_max,                    &
+                     y_min,                    &
+                     y_max,                    &
+                     halo_exchange_depth,                    &
+                     ky,                  &
+                     mpi_buffer,                &
+                     depth, xincs(CELL_DATA), yincs(CELL_DATA),   &
+                     tile_offset + offsets(FIELD_ky),   &
+                     edge_minus, edge_plus)
+                     !depth, xincs(Y_FACE_DATA), yincs(Y_FACE_DATA),   &
+  ENDIF
+  IF (fields(FIELD_di).EQ.1) THEN
+      CALL pack_func(x_min,                    &
+                     x_max,                    &
+                     y_min,                    &
+                     y_max,                    &
+                     halo_exchange_depth,                    &
+                     di,                  &
+                     mpi_buffer,                &
+                     depth, xincs(CELL_DATA), yincs(CELL_DATA),   &
+                     tile_offset + offsets(FIELD_di),   &
                      edge_minus, edge_plus)
   ENDIF
 !$OMP END PARALLEL
@@ -292,7 +337,7 @@ SUBROUTINE tea_pack_message_left(x_min,x_max,y_min,y_max,halo_exchange_depth,fie
 !$OMP DO
   DO k=y_min-edge_minus,y_max+y_inc+edge_plus
     DO j=1,depth
-      index=buffer_offset + j+(k+depth-1)*depth
+      index=buffer_offset + j + (k + depth - 1)*depth
       left_snd_buffer(index)=field(x_min+x_inc-1+j,k)
     ENDDO
   ENDDO
@@ -396,7 +441,7 @@ SUBROUTINE tea_pack_message_top(x_min,x_max,y_min,y_max,halo_exchange_depth,fiel
 !$OMP DO
   DO k=1,depth
     DO j=x_min-edge_minus,x_max+x_inc+edge_plus
-      index= buffer_offset + j+depth+(k-1)*(x_max+x_inc+(2*depth))
+      index= buffer_offset + j + edge_minus + (k - 1)*(x_max + x_inc + (edge_plus+edge_minus))
       top_snd_buffer(index)=field(j,y_max+1-k)
     ENDDO
   ENDDO
@@ -422,7 +467,7 @@ SUBROUTINE tea_unpack_message_top(x_min,x_max,y_min,y_max,halo_exchange_depth,fi
 !$OMP DO
   DO k=1,depth
     DO j=x_min-edge_minus,x_max+x_inc+edge_plus
-      index= buffer_offset + j + depth+(k-1)*(x_max+x_inc+(2*depth))
+      index= buffer_offset + j + edge_minus + (k - 1)*(x_max + x_inc + (edge_plus+edge_minus))
       field(j,y_max+y_inc+k)=top_rcv_buffer(index)
     ENDDO
   ENDDO
@@ -448,7 +493,7 @@ SUBROUTINE tea_pack_message_bottom(x_min,x_max,y_min,y_max,halo_exchange_depth,f
 !$OMP DO
   DO k=1,depth
     DO j=x_min-edge_minus,x_max+x_inc+edge_plus
-      index= buffer_offset + j+depth+(k-1)*(x_max+x_inc+(2*depth))
+      index= buffer_offset + j + edge_minus + (k - 1)*(x_max + x_inc + (edge_plus+edge_minus))
       bottom_snd_buffer(index)=field(j,y_min+y_inc-1+k)
     ENDDO
   ENDDO
@@ -474,7 +519,7 @@ SUBROUTINE tea_unpack_message_bottom(x_min,x_max,y_min,y_max,halo_exchange_depth
 !$OMP DO
   DO k=1,depth
     DO j=x_min-edge_minus,x_max+x_inc+edge_plus
-      index= buffer_offset + j+depth+(k-1)*(x_max+x_inc+(2*depth))
+      index= buffer_offset + j + edge_minus + (k - 1)*(x_max + x_inc + (edge_plus+edge_minus))
       field(j,y_min-k)=bottom_rcv_buffer(index)
     ENDDO
   ENDDO

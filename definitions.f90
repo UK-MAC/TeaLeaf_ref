@@ -68,6 +68,7 @@ MODULE definitions_module
    LOGICAL      :: tl_use_chebyshev
    LOGICAL      :: tl_use_cg
    LOGICAL      :: tl_use_ppcg
+   LOGICAL      :: tl_use_dpcg
    LOGICAL      :: tl_use_jacobi
    LOGICAL      :: tl_ppcg_active
    LOGICAL      :: verbose_on
@@ -81,8 +82,12 @@ MODULE definitions_module
    INTEGER      :: tl_ch_cg_presteps
    ! do b-Ax after finishing to make sure solver actually converged
    LOGICAL      :: tl_check_result
-   ! number of inner steps in ppcg solver
+   ! number of inner steps/max eigenvalue in ppcg solver
    INTEGER      :: tl_ppcg_inner_steps
+   REAL(KIND=8) :: tl_ppcg_steps_eigmin
+   ! number of inner steps/max eigenvalue in ppcg solver on the coarse grid
+   INTEGER      :: tl_ppcg_inner_coarse_steps
+   REAL(KIND=8) :: tl_ppcg_coarse_eigmin
 
    ! Reflective boundaries at edge of mesh
    LOGICAL      :: reflective_boundary
@@ -93,6 +98,11 @@ MODULE definitions_module
    LOGICAL      :: use_vector_loops ! Some loops work better in serial depending on the hardware
 
    LOGICAL      :: profiler_on ! Internal code profiler to make comparisons across systems easier
+
+   ! coarse solve convergence and solver options
+   INTEGER      :: coarse_solve_max_iters
+   REAL(KIND=8) :: coarse_solve_eps
+   LOGICAL      :: coarse_solve_ppcg
 
    TYPE profiler_type
      REAL(KIND=8)       :: timestep        &
@@ -129,16 +139,18 @@ MODULE definitions_module
      REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: u, u0
      REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: vector_p
      REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: vector_r
-     REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: vector_rstore
-     REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: vector_rtemp
+     REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: vector_r_store
      REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: vector_Mi
      REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: vector_w
      REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: vector_z
      REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: vector_utemp
+     REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: vector_rtemp
+     REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: vector_Di
      REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: vector_Kx
      REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: vector_Ky
      REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: vector_sd
      REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: tri_cp, tri_bfp
+     REAL(KIND=8),    DIMENSION(:,:), ALLOCATABLE :: row_sums
 
      REAL(KIND=8), DIMENSION(:),   ALLOCATABLE :: cellx    &
                                                  ,celly    &
@@ -174,6 +186,7 @@ MODULE definitions_module
 
      INTEGER         :: tile_neighbours(4)
      INTEGER         :: tile_coords(2)
+
    END TYPE tile_type
 
    TYPE chunk_type
@@ -207,10 +220,16 @@ MODULE definitions_module
      ! how tiles are arranged
      INTEGER,DIMENSION(2) :: tile_dims
 
+     ! how sub-tiles are arranged
+     INTEGER,DIMENSION(2) :: sub_tile_dims
+
+     ! depth of halo for matrix powers
+     INTEGER :: halo_exchange_depth
+
   END TYPE chunk_type
 
-  TYPE(chunk_type)                     :: chunk
+  TYPE(chunk_type):: chunk
 
-  TYPE(grid_type)                      :: grid
+  TYPE(grid_type):: grid
 
 END MODULE definitions_module

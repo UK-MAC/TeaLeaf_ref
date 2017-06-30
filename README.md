@@ -203,13 +203,14 @@ This keyword selects the Conjugate Gradient method to solve the linear system.
 
 `tl_use_ppcg`
 
-This keyword selects the polynomial preconditioned Conjugate Gradient method to solve the linear system.
+This keyword selects the Conjugate Gradient method to solve the linear system.
 
 `tl_use_chebyshev`
 
 This keyword selects the Chebyshev method to solve the linear system.
 
 `profiler_on`
+
 
 This option turns the code's coarse grained internal profiler end. Timing information is reported at the end of the simulation in the tea.out file. The default is no profiling.
 
@@ -225,11 +226,11 @@ This option provides an upper limit of the number of iterations used for the lin
 
 This option sets the convergence criteria for the selected solver. It uses a least squares measure of the residual. The default value is 1.0e-10.
 
-`tl_coefficient_density`
+`tl_coefficient_density
 
 This option uses the density as the conduction coefficient. This is the default option.
 
-`tl_coefficient_inverse_density`
+`tl_coefficient_inverrse_density
 
 This option uses the inverse density as the conduction coefficient.
 
@@ -237,5 +238,13 @@ This option uses the inverse density as the conduction coefficient.
 
 This keyword selects a standard test with a "known" solution. Test problem 1 is automatically generated if the tea.in file does not exist. Test problems 2-5 are shipped in the TeaLeaf repository. Note that the known solution for an iterative solver is not an analytic solution but is the solution for a single core simulation with IEEE options enabled with the Intel compiler and a strict convergence of 1.0e-15. The difference to the expected solution is reported at the end of the simulation in the tea.out file. There is no default value for this option.
 
+### Tiling support
 
+This version also contains some support for explicit tiling.
+This is activated through the two input deck parameters:
 
+* `tiles_per_chunk` To specify how many tiles per MPI ranks there are.
+* `tiles_per_problem` To specify how many global tiles there are, this is rounded down to be an even number per MPI rank.
+
+Tiles are the basic level of mesh decomposition, with the agglomerates used to form the coarse grid derived from further subdividing these tiles.
+Initially a 1-1 mapping between tiles and agglomerates was implemented, but this led to an excessive amount of a halo data especially for 2x2 tiles.

@@ -23,6 +23,7 @@ build_field.o :  \
 
 tea_leaf_common.o :  \
 	tea_leaf_common_kernel.o \
+	report.o \
 	definitions.o
 
 tea_leaf_cheby.o :  \
@@ -34,8 +35,6 @@ tea_leaf_cheby.o :  \
 generate_chunk.o :  \
 	generate_chunk_kernel.o \
 	tea.o
-
-calc_dt_kernel.o : 
 
 pack.o :  \
 	report.o \
@@ -84,7 +83,8 @@ definitions.o :  \
 
 tea_leaf_cg_kernel.o :  \
 	tea_leaf_common_kernel.o \
-	tea_leaf_ppcg.o
+        tea_leaf_ppcg.o \
+        definitions.o
 
 start.o :  \
 	set_field.o \
@@ -116,8 +116,8 @@ tea.o :  \
 tea_leaf_ppcg.o :  \
 	tea_leaf_cheby.o \
 	tea_leaf_ppcg_kernel.o \
-	definitions.o \
-	update_halo.o 
+        update_halo.o \
+	definitions.o
 
 update_halo_kernel.o : 
 

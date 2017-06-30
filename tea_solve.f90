@@ -49,7 +49,7 @@ SUBROUTINE tea_leaf()
   ! For CG solver
   REAL(KIND=8) :: rro, pw, rrn, alpha, beta
 
-  ! For chebyshev solver and PPCG solver
+  ! For chebyshev solver
   REAL(KIND=8), DIMENSION(max_iters) :: cg_alphas, cg_betas
   REAL(KIND=8), DIMENSION(max_iters) :: ch_alphas, ch_betas
   REAL(KIND=8),SAVE :: eigmin, eigmax, theta, cn
@@ -75,8 +75,9 @@ SUBROUTINE tea_leaf()
   IF (coefficient .NE. RECIP_CONDUCTIVITY .AND. coefficient .NE. conductivity) THEN
     CALL report_error('tea_leaf', 'unknown coefficient option')
   ENDIF
-  
-  tl_ppcg_active = .false.          ! Set to false until we have the eigenvalue estimates
+
+  tl_ppcg_active = .false. ! disable ppcg until we have the eigenvalue estimates
+                                                 
   cheby_calc_steps = 0
   cg_calc_steps = 0
 
@@ -90,7 +91,7 @@ SUBROUTINE tea_leaf()
   fields(FIELD_DENSITY) = 1
 
   IF (profiler_on) halo_time=timer()
-  CALL update_halo(fields,halo_exchange_depth)
+  CALL update_halo(fields,chunk%halo_exchange_depth)
   IF (profiler_on) init_time = init_time + (timer()-halo_time)
 
   CALL tea_leaf_init_common()
@@ -99,11 +100,11 @@ SUBROUTINE tea_leaf()
   fields(FIELD_U) = 1
 
   IF (profiler_on) halo_time=timer()
-  CALL update_halo(fields,1)
+  CALL update_halo( fields,1)
   IF (profiler_on) init_time = init_time + (timer()-halo_time)
 
   CALL tea_leaf_calc_residual()
-  CALL tea_leaf_calc_2norm(1, initial_residual)
+  CALL tea_leaf_calc_2norm( 1, initial_residual)
 
   IF (profiler_on) dot_product_time=timer()
   CALL tea_allsum(initial_residual)
@@ -120,15 +121,15 @@ SUBROUTINE tea_leaf()
   ENDIF
 
   IF (tl_use_cg .OR. tl_use_chebyshev .OR. tl_use_ppcg) THEN
-    ! All 3 of these solvers use the CG kernels to initialise
+    ! All 3 of these solvers use the CG kernels
     CALL tea_leaf_cg_init(rro)
 
     ! and globally sum rro
     IF (profiler_on) dot_product_time=timer()
     CALL tea_allsum(rro)
     IF (profiler_on) init_time = init_time + (timer()-dot_product_time)
-          
-    ! We need to update p when using CG due to matrix/vector multiplication
+
+    ! need to update p when using CG due to matrix/vector multiplication
     fields=0
     fields(FIELD_U) = 1
     fields(FIELD_P) = 1
@@ -139,7 +140,6 @@ SUBROUTINE tea_leaf()
 
     fields=0
     fields(FIELD_P) = 1
-     
   ELSEIF (tl_use_jacobi) THEN
     fields=0
     fields(FIELD_U) = 1
@@ -175,8 +175,8 @@ SUBROUTINE tea_leaf()
     
 !===================================================================================   
 !   If we use Chebyshev or PPCG we compute eigenvalue estimates
-!===================================================================================          
-  
+!===================================================================================   
+
     IF ((tl_use_chebyshev .OR. tl_use_ppcg) .AND. ch_switch_check) THEN
       ! on the first chebyshev steps, find the eigenvalues, coefficients,
       ! and expected number of iterations
@@ -202,13 +202,11 @@ SUBROUTINE tea_leaf()
           ! don't need to update p any more
           fields = 0
           fields(FIELD_U) = 1
-          
         ELSE IF (tl_use_ppcg) THEN
           ! currently also calculate chebyshev coefficients
           CALL tea_calc_ls_coefs(ch_alphas, ch_betas, eigmin, eigmax, &
               theta, tl_ppcg_inner_steps)
-          ! We have the eigenvalue estimates so turn on ppcg
-          tl_ppcg_active = .true.
+          tl_ppcg_active=.true.
         ENDIF
 
         cn = eigmax/eigmin
@@ -222,19 +220,22 @@ SUBROUTINE tea_leaf()
             WRITE(0, 100) eigmin,eigmax,cn,old_error
 !$        ENDIF
         ENDIF
+        
 !===================================================================================   
 !   Reinitialise CG with PPCG applied
 !===================================================================================          
 
-      ! Step 1: we reinitialise z if we precondition or else we just use r     
-      CALL tea_leaf_ppcg_init(rro,ch_alphas,ch_betas,ppcg_inner_iters,theta,solve_time,2)
-  
-      ! Step 2: compute a new z from r or previous z    
-      CALL tea_leaf_run_ppcg_inner_steps(ch_alphas, ch_betas, theta,tl_ppcg_inner_steps, solve_time)
+      ! Step 1: we reinitialise z if we precondition or else we just use r   
+      CALL tea_leaf_ppcg_init(ppcg_inner_iters, ch_alphas, ch_betas, theta, solve_time, 2, rro)
+        
+      ! Step 2: compute a new z from r or previous z     
+      CALL tea_leaf_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
+            tl_ppcg_inner_steps, solve_time)
+            
       ppcg_inner_iters = ppcg_inner_iters + tl_ppcg_inner_steps
-
+      
       ! Step 3: Recompute p after polynomial acceleration
-      CALL tea_leaf_ppcg_init(rro,ch_alphas,ch_betas,ppcg_inner_iters,theta,solve_time,3)
+      CALL tea_leaf_ppcg_init(ppcg_inner_iters, ch_alphas, ch_betas, theta, solve_time, 3, rro)
 
       ! and globally sum rro
       IF (profiler_on) dot_product_time=timer()
@@ -243,21 +244,17 @@ SUBROUTINE tea_leaf()
 
       ! need to update p when using CG due to matrix/vector multiplication
       fields=0
-      fields(FIELD_U) = 1
       fields(FIELD_P) = 1
 
       IF (profiler_on) halo_time=timer()
       CALL update_halo(fields,1)
       IF (profiler_on) init_time=init_time+(timer()-halo_time)
-
-      fields=0
-      fields(FIELD_P) = 1
       
-  end if   
+     ENDIF
   
 !===================================================================================   
 !                       Chebyshev Iteration
-!===================================================================================   
+!===================================================================================  
 
       IF (tl_use_chebyshev) THEN
         IF (cheby_calc_steps .EQ. 0) THEN
@@ -268,7 +265,7 @@ SUBROUTINE tea_leaf()
         ELSE
           CALL tea_leaf_cheby_iterate(ch_alphas, ch_betas, max_cheby_iters, cheby_calc_steps)
 
-          ! after an estimated number of iterations has passed, calc resid.
+          ! after estimated number of iterations has passed, calc resid.
           ! Leaving 10 iterations between each global reduction won't affect
           ! total time spent much if at all (number of steps spent in
           ! chebyshev is typically O(300+)) but will greatly reduce global
@@ -288,24 +285,24 @@ SUBROUTINE tea_leaf()
 ! We are essentially doing PPFCG(1) here where the F denotes that CG is flexible.
 ! This accounts for rounding error arising from the polynomial preconditioning     
 !===================================================================================   
-       
+          
       ELSE IF (tl_use_ppcg) THEN
 
         ! w = Ap
         ! pw = p.w
-
+      
         CALL tea_leaf_cg_calc_w(pw)
 
         ! Now need to store r
         CALL tea_leaf_ppcg_store_r()
-     
+
         ! Now compute r.z for alpha
         CALL tea_leaf_ppcg_calc_zrnorm(rro)
- 
+
         IF (profiler_on) dot_product_time=timer()
         CALL tea_allsum2(pw, rro)
         IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
-    
+        
         ! alpha = z.r / (pw)
         alpha = rro/pw
 
@@ -315,17 +312,15 @@ SUBROUTINE tea_leaf()
 
         CALL tea_leaf_run_ppcg_inner_steps(ch_alphas, ch_betas, theta, &
             tl_ppcg_inner_steps, solve_time)
+        ppcg_inner_iters = ppcg_inner_iters + tl_ppcg_inner_steps
 
-        ppcg_inner_iters = ppcg_inner_iters + tl_ppcg_inner_steps	
- 
-        ! We use flexible CG, FCG(1)
-        CALL tea_leaf_ppcg_calc_rrn(rrn)
+        ! We use flexible CG, FCG(1) to account for roundoff issues in the PP
+        CALL tea_leaf_ppcg_calc_rrn(rrn) 
 
- 
         IF (profiler_on) dot_product_time=timer()
         CALL tea_allsum(rrn)
         IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
-
+        
         ! beta = (r.z)_{k+1} / (r.z)_{k}
         beta = rrn/rro
 
@@ -333,7 +328,6 @@ SUBROUTINE tea_leaf()
 
         error = rrn
         rro = rrn
-
       ENDIF
 
       cheby_calc_steps = cheby_calc_steps + 1
@@ -345,14 +339,12 @@ SUBROUTINE tea_leaf()
 !===================================================================================   
 
     ELSEIF (tl_use_cg .OR. tl_use_chebyshev .OR. tl_use_ppcg) THEN
-
       fields(FIELD_P) = 1
       cg_calc_steps = cg_calc_steps + 1
 
       ! w = Ap
       ! pw = p.w
       CALL tea_leaf_cg_calc_w(pw)
-
       IF (profiler_on) dot_product_time=timer()
       CALL tea_allsum(pw)
       IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
@@ -363,7 +355,6 @@ SUBROUTINE tea_leaf()
       ! u = u + a*p
       ! r = r - a*w
       CALL tea_leaf_cg_calc_ur(alpha, rrn)
-
       IF (profiler_on) dot_product_time=timer()
       CALL tea_allsum(rrn)
       IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
@@ -380,10 +371,9 @@ SUBROUTINE tea_leaf()
 !===================================================================================   
 !                           Jacobi iteration
 !===================================================================================   
-
+      
     ELSEIF (tl_use_jacobi) THEN
       CALL tea_leaf_jacobi_solve(error)
-
       IF (profiler_on) dot_product_time=timer()
       CALL tea_allsum(error)
       IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
@@ -401,6 +391,13 @@ SUBROUTINE tea_leaf()
         cg_time=cg_time+(timer()-iteration_time)
       ENDIF
     ENDIF
+        
+!===================================================================================   
+!                      Our exit criterion:      
+!
+!      || r_{n} ||_{2} / || r_{0} ||_{2} \leq \epsilon
+!
+!===================================================================================   
 
     error=SQRT(abs(error))
 
@@ -409,13 +406,6 @@ SUBROUTINE tea_leaf()
         WRITE(g_out,*)"Residual ",error
 !$    ENDIF
     ENDIF
-        
-!===================================================================================   
-!                      Our exit criterion:      
-!
-!      || r_{n} ||_{2} / || r_{0} ||_{2} \leq \epsilon
-!
-!===================================================================================   
     
     IF (ABS(error) .LT. eps*initial_residual) EXIT
 
@@ -433,7 +423,6 @@ SUBROUTINE tea_leaf()
 
     CALL tea_leaf_calc_residual()
     CALL tea_leaf_calc_2norm(1, exact_error)
-
     IF (profiler_on) dot_product_time=timer()
     CALL tea_allsum(exact_error)
     IF (profiler_on) solve_time = solve_time + (timer()-dot_product_time)
@@ -468,7 +457,7 @@ SUBROUTINE tea_leaf()
 
   ! RESET
   IF (profiler_on) reset_time=timer()
-  
+
   CALL tea_leaf_finalise()
 
   fields=0

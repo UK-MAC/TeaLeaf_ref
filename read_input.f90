@@ -29,7 +29,8 @@ SUBROUTINE read_input()
 
   IMPLICIT NONE
 
-  INTEGER            :: state,stat,state_max,n
+  INTEGER            :: state,stat,state_max,n,tiles_per_problem
+!$ INTEGER            :: omp_get_num_threads
 
   REAL(KIND=8) :: dx,dy
 
@@ -73,8 +74,15 @@ SUBROUTINE read_input()
   profiler%tea_reset=0.0
   profiler%dot_product=0.0
 
-  ! Hardcoded for the moment
   tiles_per_task = 1
+  sub_tiles_per_tile = 1
+
+!$OMP PARALLEL
+!$OMP MASTER
+!$ tiles_per_task = omp_get_num_threads()
+!$OMP END MASTER
+!$OMP ENDPARALLEL
+
   tl_ch_cg_presteps = 25
   tl_ch_cg_epslim = 1.0
   tl_check_result = .FALSE.
@@ -90,7 +98,7 @@ SUBROUTINE read_input()
   tl_use_jacobi = .TRUE.
   verbose_on = .FALSE.
 
-  halo_exchange_depth=1
+  chunk%halo_exchange_depth=1
 
   IF(parallel%boss)WRITE(g_out,*) 'Reading input file'
   IF(parallel%boss)WRITE(g_out,*)
@@ -164,11 +172,31 @@ SUBROUTINE read_input()
       CASE('summary_frequency')
         summary_frequency=parse_getival(parse_getword(.TRUE.))
         IF(parallel%boss)WRITE(g_out,"(1x,a25,i12)")'summary_frequency',summary_frequency
+      CASE('tiles_per_task')
+        tiles_per_task=parse_getival(parse_getword(.TRUE.))
+        IF(parallel%boss)WRITE(g_out,"(1x,a25,i12)")'tiles_per_task',tiles_per_task
+      CASE('sub_tiles_per_tile')
+        sub_tiles_per_tile=parse_getival(parse_getword(.TRUE.))
+        IF(parallel%boss)WRITE(g_out,"(1x,a25,i12)")'sub_tiles_per_tile',sub_tiles_per_tile
+      CASE('tiles_per_problem')
+        tiles_per_problem=parse_getival(parse_getword(.TRUE.))
+        IF(parallel%boss)WRITE(g_out,"(1x,a25,i12)")'tiles_per_problem',tiles_per_problem
+        tiles_per_task=tiles_per_problem/parallel%max_task
+        IF(mod(tiles_per_problem,parallel%max_task) /= 0)THEN
+          tiles_per_problem=tiles_per_task*parallel%max_task
+          IF(parallel%boss)WRITE(g_out,"(1x,a92,i12)") &
+            'WARNING: tiles_per_problem should be divisible by the number of MPI ranks - value reset to ',tiles_per_problem
+          IF(tiles_per_task == 0)THEN
+            IF(parallel%boss)WRITE(g_out,"(1x,a80)") 'WARNING: tiles_per_task reset to 1 instead of 0'
+            tiles_per_task=1
+          ENDIF
+        ENDIF
       CASE('tl_ch_cg_presteps')
         tl_ch_cg_presteps=parse_getival(parse_getword(.TRUE.))
         IF(parallel%boss)WRITE(g_out,"(1x,a25,i12)")'tl_ch_cg_presteps',tl_ch_cg_presteps
       CASE('tl_ppcg_inner_steps')
         tl_ppcg_inner_steps=parse_getival(parse_getword(.TRUE.))
+        IF(parallel%boss)WRITE(g_out,"(1x,a25,i12)")'tl_ppcg_inner_steps',tl_ppcg_inner_steps
       CASE('tl_ch_cg_epslim')
         tl_ch_cg_epslim=parse_getrval(parse_getword(.TRUE.))
         IF(parallel%boss)WRITE(g_out,"(1x,a25,e12.4)")'tl_ch_cg_epslim',tl_ch_cg_epslim
@@ -197,22 +225,22 @@ SUBROUTINE read_input()
       CASE('tl_use_jacobi')
         tl_use_chebyshev = .FALSE.
         tl_use_cg = .FALSE.
-        tl_use_ppcg=.FALSE.
+        tl_use_ppcg=.FALSE.        
         tl_use_jacobi = .TRUE.
       CASE('tl_use_cg')
         tl_use_chebyshev = .FALSE.
         tl_use_cg = .TRUE.
-        tl_use_ppcg=.FALSE.
+        tl_use_ppcg=.FALSE.       
         tl_use_jacobi = .FALSE.
       CASE('tl_use_ppcg')
         tl_use_chebyshev = .FALSE.
         tl_use_cg = .FALSE.
-        tl_use_ppcg=.TRUE.
+        tl_use_ppcg=.TRUE.       
         tl_use_jacobi = .FALSE.
       CASE('tl_use_chebyshev')
         tl_use_chebyshev = .TRUE.
         tl_use_cg = .FALSE.
-        tl_use_ppcg=.FALSE.
+        tl_use_ppcg=.FALSE.    
         tl_use_jacobi = .FALSE.
       CASE('reflective_boundary')
         reflective_boundary=.TRUE.
@@ -220,9 +248,9 @@ SUBROUTINE read_input()
         profiler_on=.TRUE.
         IF(parallel%boss)WRITE(g_out,"(1x,a25)")'Profiler on'
       CASE('halo_depth')
-        halo_exchange_depth = parse_getival(parse_getword(.TRUE.))
-        IF(halo_exchange_depth .lt. 1) CALL report_error('read_input', 'Invalid halo exchange depth specified')
-        IF(parallel%boss)WRITE(g_out,"(1x,a25,i12)")'halo_depth',halo_exchange_depth
+        chunk%halo_exchange_depth = parse_getival(parse_getword(.TRUE.))
+        IF(chunk%halo_exchange_depth .lt. 1) CALL report_error('read_input', 'Invalid halo exchange depth specified')
+        IF(parallel%boss)WRITE(g_out,"(1x,a25,i12)")'halo_depth',chunk%halo_exchange_depth
       CASE('tl_max_iters')
         max_iters = parse_getival(parse_getword(.TRUE.))
       CASE('tl_eps')
@@ -293,12 +321,12 @@ SUBROUTINE read_input()
   ENDDO
 
   ! Simple guess - better than a default of 10
-  if (tl_ppcg_inner_steps .eq. -1) then
+  if (tl_ppcg_inner_steps .eq. -1 .and. tl_use_ppcg) then
     tl_ppcg_inner_steps = 4*INT(SQRT(SQRT(REAL(grid%x_cells*grid%y_cells))))
     IF(parallel%boss)WRITE(g_out,"(1x,a25,i12)")'tl_ppcg_inner_steps',tl_ppcg_inner_steps
   endif
 
-  if ((halo_exchange_depth .gt. 1) .and. (tl_preconditioner_type .eq. TL_PREC_JAC_BLOCK) .and. tl_use_ppcg) then
+  if ((chunk%halo_exchange_depth .gt. 1) .and. (tl_preconditioner_type .eq. TL_PREC_JAC_BLOCK)) then
     call report_error('read_input', 'Unable to use nonstandard halo depth with block jacobi preconditioner')
   endif
 
@@ -331,4 +359,3 @@ SUBROUTINE read_input()
   ENDDO
 
 END SUBROUTINE read_input
-

@@ -56,7 +56,6 @@ SUBROUTINE field_summary()
   IF(profiler_on) kernel_time=timer()
 
   IF(use_fortran_kernels)THEN
-  
 !$OMP PARALLEL PRIVATE(tile_vol,tile_mass,tile_ie,tile_temp)
 !$OMP DO REDUCTION(+ : vol,mass,ie,temp)
     DO t=1,tiles_per_task
@@ -69,7 +68,7 @@ SUBROUTINE field_summary()
                                 chunk%tiles(t)%field%x_max,                   &
                                 chunk%tiles(t)%field%y_min,                   &
                                 chunk%tiles(t)%field%y_max,                   &
-                                halo_exchange_depth,                          &
+                                chunk%halo_exchange_depth,                    &
                                 chunk%tiles(t)%field%volume,                  &
                                 chunk%tiles(t)%field%density,                 &
                                 chunk%tiles(t)%field%energy1,                 &
@@ -82,7 +81,7 @@ SUBROUTINE field_summary()
       temp = temp + tile_temp
     ENDDO
 !$OMP END DO NOWAIT
-!$OMP END PARALLEL    
+!$OMP END PARALLEL
   ENDIF
 
   ! For mpi I need a reduction here

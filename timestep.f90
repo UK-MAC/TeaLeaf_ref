@@ -39,8 +39,8 @@ SUBROUTINE timestep()
 
   REAL(KIND=8)    :: kernel_time,timer
 
-
   IF(profiler_on) kernel_time=timer()
+
 !$OMP PARALLEL PRIVATE(dtlp)
 !$OMP DO
   DO t=1,tiles_per_task
@@ -54,7 +54,6 @@ SUBROUTINE timestep()
   END DO
 !$OMP END DO NOWAIT
 !$OMP END PARALLEL
-
 
   CALL tea_min(dt)
 
