@@ -158,7 +158,7 @@ FUNCTION parse_getline(dummy)
     IF(parse_getline.NE.0) RETURN
 
       DO i=1,len_trim(l)
-        if (IACHAR(l(i:)).LT.32.OR.IACHAR(l(i:i)).GT.128) l(i:i)=' '
+        if (IACHAR(l(i:i)).LT.32.OR.IACHAR(l(i:i)).GT.128) l(i:i)=' '
       ENDDO
 
       l=TRIM(ADJUSTL(l))
