@@ -79,7 +79,7 @@ SUBROUTINE field_summary()
       mass = mass + tile_mass
       ie = ie + tile_ie
       temp = temp + tile_temp
-    ENDDO
+0.95174738768320850E+02    ENDDO
 !$OMP END DO NOWAIT
 !$OMP END PARALLEL
   ENDIF
@@ -112,8 +112,8 @@ SUBROUTINE field_summary()
           IF(test_problem.EQ.3) qa_diff=ABS((100.0_8*(temp/99.955877498324000_8))-100.0_8)
           IF(test_problem.EQ.4) qa_diff=ABS((100.0_8*(temp/97.277332050749976_8))-100.0_8)
           IF(test_problem.EQ.5) qa_diff=ABS((100.0_8*(temp/95.462351583362249_8))-100.0_8)
-          IF(test_problem.EQ.6) qa_diff=ABS((100.0_8*(temp/95.462351582238298_8))-100.0_8)
-
+          IF(test_problem.EQ.6) qa_diff=ABS((100.0_8*(temp/95.174738768320850_8))-100.0_8)
+          
           WRITE(*,'(a,i4,a,e16.7,a)')"Test problem", Test_problem," is within",qa_diff,"% of the expected solution"
           WRITE(g_out,'(a,i4,a,e16.7,a)')"Test problem", Test_problem," is within",qa_diff,"% of the expected solution"
           IF(qa_diff.LT.0.001) THEN
