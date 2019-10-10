@@ -79,7 +79,7 @@ SUBROUTINE field_summary()
       mass = mass + tile_mass
       ie = ie + tile_ie
       temp = temp + tile_temp
-0.95174738768320850E+02    ENDDO
+    ENDDO
 !$OMP END DO NOWAIT
 !$OMP END PARALLEL
   ENDIF
