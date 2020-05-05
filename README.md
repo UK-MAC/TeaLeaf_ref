@@ -1,8 +1,9 @@
 # TeaLeaf
 
-## Compling
+## Build Options
 
-In many cases just typing `make` in the required software version will work. This is the case when the mpif90 and mpicc scripts point to the correct compilers.
+### Makefile
+In many cases just typing `make` in the src folder will work. This is the case when the mpif90 and mpicc scripts point to the correct compilers.
 
 If the MPI compilers have different names then the build process needs to 
 notified of this by defining two environment variables, `MPI_COMPILER` and 
@@ -104,6 +105,15 @@ OpenMP, IEEE and AVX this would look like so:-
 
 make COMPILER=INTEL MPI_COMPILER=mpiifort C_MPI_COMPILER=mpiicc IEEE=1 \
 OPTIONS="-xavx" C_OPTIONS="-xavx"
+
+
+### CMake
+Optional CMake process (minimum requirement v3.10.0)
+
+`mkdir build && cd build`
+`CC=mpicc FC=mpif90 cmake ..`
+or for debug version
+`CC=mpicc FC=mpif90 cmake .. -DCMAKE_BUILD_TYPE=Debug`
 
 ### File Input
 
