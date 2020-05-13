@@ -38,6 +38,7 @@
 #  export COMPILER=PGI         # to select the PGI flags
 #  export COMPILER=PATHSCALE   # to select the Pathscale flags
 #  export COMPILER=XL          # to select the IBM Xlf flags
+#  export COMPILER=ARM         # to select the ARM flags
 
 # or this works as well:-
 #
@@ -48,6 +49,7 @@
 # make COMPILER=PGI
 # make COMPILER=PATHSCALE
 # make COMPILER=XL
+# make COMPILER=ARM
 #
 
 # Don't forget to set the number of threads you want to use, like so
@@ -80,7 +82,7 @@ FLAGS_PGI       = -fastsse -gopt -Mipa=fast -Mlist
 FLAGS_PATHSCALE = -O3
 FLAGS_XL       = -O5 -qipa=partition=large -g -qfullpath -Q -qsigtrap -qextname=flush:ideal_gas_kernel_c:viscosity_kernel_c:pdv_kernel_c:revert_kernel_c:accelerate_kernel_c:flux_calc_kernel_c:advec_cell_kernel_c:advec_mom_kernel_c:reset_field_kernel_c:timer_c:unpack_top_bottom_buffers_c:pack_top_bottom_buffers_c:unpack_left_right_buffers_c:pack_left_right_buffers_c:field_summary_kernel_c:update_halo_kernel_c:generate_chunk_kernel_c:initialise_chunk_kernel_c:calc_dt_kernel_c -qlistopt -qattr=full -qlist -qreport -qxref=full -qsource -qsuppress=1506-224:1500-036
 FLAGS_          = -O3
-FLAGS_ARM      = -cpp -O3 -ffp-contract=fast -march=armv8.1-a -mcpu=native
+FLAGS_ARM      = -cpp -O3 -ffp-contract=fast -march=native -mcpu=native
 
 CFLAGS_INTEL     = -O3 -no-prec-div -restrict -fno-alias
 CFLAGS_SUN       = -fast -xipo=2
@@ -89,7 +91,7 @@ CFLAGS_CRAY      = -em -h list=a
 CFLAGS_PGI       = -fastsse -gopt -Mipa=fast -Mlist
 CFLAGS_PATHSCALE = -O3
 CFLAGS_XL       = -O5 -qipa=partition=large -g -qfullpath -Q -qlistopt -qattr=full -qlist -qreport -qxref=full -qsource -qsuppress=1506-224:1500-036 -qsrcmsg
-CFLAGS_ARM       = -O3 -march=armv8.1-a -mcpu=native
+CFLAGS_ARM       = -O3 -march=native -mcpu=native
 CFLAGS_          = -O3
 
 ifdef DEBUG
