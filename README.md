@@ -246,5 +246,4 @@ This is activated through the two input deck parameters:
 * `tiles_per_chunk` To specify how many tiles per MPI ranks there are.
 * `tiles_per_problem` To specify how many global tiles there are, this is rounded down to be an even number per MPI rank.
 
-Tiles are the basic level of mesh decomposition, with the agglomerates used to form the coarse grid derived from further subdividing these tiles.
-Initially a 1-1 mapping between tiles and agglomerates was implemented, but this led to an excessive amount of a halo data especially for 2x2 tiles.
+Tiles are the basic level of mesh decomposition.
