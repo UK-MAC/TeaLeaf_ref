@@ -201,6 +201,8 @@ include makefile.deps
 	@true
 %.o: %.f90 Makefile makefile.deps
 	$(MPI_COMPILER) $(FLAGS) -c $< -o $@
+%.o: kernels/%.f90 Makefile makefile.deps
+	$(MPI_COMPILER) $(FLAGS) -c $< -o $@
 %.o: %.c Makefile makefile.deps
 	$(C_MPI_COMPILER) $(CFLAGS) -c $< -o $@
 
