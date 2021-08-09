@@ -25,6 +25,7 @@ SUBROUTINE diffuse
   USE tea_module
   USE timestep_module
   USE tea_leaf_module
+  USE caliscope_module
 
   IMPLICIT NONE
 
@@ -35,7 +36,9 @@ SUBROUTINE diffuse
   REAL(KIND=8)    :: step_time,step_grind
   REAL(KIND=8)    :: first_step,second_step
   REAL(KIND=8)    :: kernel_total,totals(parallel%max_task)
-
+  TYPE(SCOPE_TYPE):: caliprof
+ 
+  CALL caliprof%create("diffuse")
   timerstart = timer()
 
   second_step=0.0 ! In order to prevent unused error

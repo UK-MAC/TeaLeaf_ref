@@ -26,7 +26,8 @@ MODULE update_halo_module
   USE report_module
   USE update_halo_kernel_module
   USE update_internal_halo_kernel_module
-
+  USE caliscope_module
+ 
 CONTAINS
 
 SUBROUTINE update_halo(fields,depth)
@@ -35,6 +36,10 @@ SUBROUTINE update_halo(fields,depth)
 
   INTEGER :: fields(NUM_FIELDS),depth
   REAL(KIND=8) :: timer,halo_time
+
+  TYPE(SCOPE_TYPE):: caliprof
+
+  CALL caliprof%create("update_halo")
 
   IF (profiler_on) halo_time=timer()
   CALL tea_exchange( fields, depth)
@@ -52,6 +57,10 @@ SUBROUTINE update_boundary( fields,depth)
 
   INTEGER :: t,fields(NUM_FIELDS),depth
   REAL(KIND=8) :: timer,halo_time
+
+  TYPE(SCOPE_TYPE):: caliprof
+
+  CALL caliprof%create("update_boundary")
 
   IF (profiler_on) halo_time=timer()
 
@@ -96,6 +105,10 @@ SUBROUTINE update_tile_boundary( fields, depth)
 
   INTEGER :: t,fields(NUM_FIELDS),depth, right_idx, up_idx
   REAL(KIND=8) :: timer,halo_time
+
+  TYPE(SCOPE_TYPE):: caliprof
+
+  CALL caliprof%create("update_tile_boundary")
 
   IF (profiler_on) halo_time=timer()
 

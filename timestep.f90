@@ -30,6 +30,7 @@ SUBROUTINE timestep()
   USE update_halo_module
   USE calc_dt_module
   USE definitions_module
+  USE caliscope_module
 
   IMPLICIT NONE
 
@@ -38,6 +39,10 @@ SUBROUTINE timestep()
   REAL(KIND=8)    :: dtlp
 
   REAL(KIND=8)    :: kernel_time,timer
+
+  TYPE(SCOPE_TYPE):: caliprof
+ 
+  CALL caliprof%create("timestep")
 
   IF(profiler_on) kernel_time=timer()
 

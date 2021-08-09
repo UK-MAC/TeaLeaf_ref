@@ -29,6 +29,7 @@ MODULE tea_leaf_module
   USE tea_leaf_ppcg_module
   USE tea_leaf_jacobi_module
   USE update_halo_module
+  USE caliscope_module
 
   IMPLICIT NONE
 
@@ -61,6 +62,8 @@ SUBROUTINE tea_leaf()
 
   REAL(KIND=8) :: cg_time, ch_time, total_solve_time, ch_per_it, cg_per_it, iteration_time
 
+  TYPE(SCOPE_TYPE):: caliprof
+
   cg_time = 0.0_8
   ch_time = 0.0_8
   cg_calc_steps = 0
@@ -71,6 +74,8 @@ SUBROUTINE tea_leaf()
   init_time = 0.0_8
   halo_time = 0.0_8
   solve_time = 0.0_8
+
+  CALL caliprof%create("tea_leaf")
 
   IF (coefficient .NE. RECIP_CONDUCTIVITY .AND. coefficient .NE. conductivity) THEN
     CALL report_error('tea_leaf', 'unknown coefficient option')

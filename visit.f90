@@ -24,6 +24,7 @@ SUBROUTINE visit
 
   USE tea_module
   USE update_halo_module
+  USE caliscope_module
 
   IMPLICIT NONE
 
@@ -38,7 +39,11 @@ SUBROUTINE visit
 
   REAL(KIND=8) :: kernel_time,timer
 
+  TYPE(SCOPE_TYPE):: caliprof
+ 
   name = 'tea'
+
+  CALL caliprof%create("diffuse")
 
   IF(first_call) THEN
 

@@ -65,7 +65,7 @@ ifndef COMPILER
   MESSAGE=select a compiler to compile in OpenMP, e.g. make COMPILER=INTEL
 endif
 
-OOMP_INTEL     = -qopenmp -ip -g
+OMP_INTEL     = -qopenmp -ip -g
 OMP_SUN       = -xopenmp=parallel -vpara
 OMP_GNU       = -fopenmp
 OMP_CRAY      = -e Z
@@ -131,8 +131,13 @@ ifdef WITH_OMP4
 OMP4=-D WITH_OMP4
 endif
 
-FLAGS=$(FLAGS_$(COMPILER)) $(OMP_$(COMPILER)) $(I3E_$(COMPILER)) $(OPTIONS) $(OMP4)
-CFLAGS=$(CFLAGS_$(COMPILER)) $(OMP_$(COMPILER)) $(I3E_$(COMPILER)) $(C_OPTIONS) -c
+CALIPER_DIR=$(CALIPER_ROOT)
+CALIPER_F=-I$(CALIPER_DIR)/include/caliper/fortran
+CALIPER_C=-I$(CALIPER_DIR)/include
+LDLIBS=-L$(CALIPER_DIR)/lib -lcaliper -lstdc++ -lmpi_cxx
+
+FLAGS=$(FLAGS_$(COMPILER)) $(OMP_$(COMPILER)) $(I3E_$(COMPILER)) $(OPTIONS) $(OMP4) $(CALIPER_F)
+CFLAGS=$(CFLAGS_$(COMPILER)) $(OMP_$(COMPILER)) $(I3E_$(COMPILER)) $(C_OPTIONS) $(CALIPER_C) -c
 MPI_COMPILER=mpif90
 C_MPI_COMPILER=mpicc
 
@@ -140,6 +145,7 @@ C_FILES=\
 	timer_c.o
 
 FORTRAN_FILES=\
+	caliscope.o	\
 	data.o			\
 	definitions.o			\
 	pack.o			\
