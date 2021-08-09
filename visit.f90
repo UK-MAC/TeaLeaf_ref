@@ -43,7 +43,7 @@ SUBROUTINE visit
  
   name = 'tea'
 
-  CALL caliprof%create("diffuse")
+  CALL caliprof%create("visit")
 
   IF(first_call) THEN
 
