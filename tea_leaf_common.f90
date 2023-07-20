@@ -4,6 +4,7 @@ MODULE tea_leaf_common_module
   USE tea_leaf_common_kernel_module
   USE definitions_module
   USE report_module
+  USE caliscope_module
 
   IMPLICIT NONE
 
@@ -16,6 +17,10 @@ SUBROUTINE tea_leaf_init_common()
   INTEGER :: t
 
   LOGICAL :: zero_boundary(4)
+
+  TYPE(SCOPE_TYPE) :: caliprof
+
+  CALL caliprof%create("tea_leaf_init_common")
 
   IF (use_fortran_kernels) THEN
 !$OMP PARALLEL PRIVATE(zero_boundary)
@@ -66,6 +71,10 @@ SUBROUTINE tea_leaf_calc_residual()
 
   INTEGER :: t
 
+  TYPE(SCOPE_TYPE) :: caliprof
+
+  CALL caliprof%create("tea_leaf_calc_residual")
+
   IF (use_fortran_kernels) THEN
 !$OMP PARALLEL
 !$OMP DO
@@ -97,8 +106,10 @@ SUBROUTINE tea_leaf_calc_2norm(norm_array, norm)
 
   INTEGER :: t, level, norm_array
   REAL(KIND=8) :: norm, tile_norm
-
+  TYPE(SCOPE_TYPE) :: caliprof
   norm = 0.0_8
+
+  CALL caliprof%create("tea_leaf_calc_2norm")
 
   IF (use_fortran_kernels) THEN
 !$OMP PARALLEL PRIVATE(tile_norm)
@@ -142,6 +153,10 @@ SUBROUTINE tea_leaf_finalise()
   IMPLICIT NONE
 
   INTEGER :: t
+
+  TYPE(SCOPE_TYPE) :: caliprof
+
+  CALL caliprof%create("tea_leaf_finalise")
 
   IF (use_fortran_kernels) THEN
 !$OMP PARALLEL

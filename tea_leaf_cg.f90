@@ -3,6 +3,7 @@ MODULE tea_leaf_cg_module
 
   USE tea_leaf_cg_kernel_module
   USE definitions_module
+  USE caliscope_module
 
   IMPLICIT NONE
 
@@ -14,8 +15,11 @@ SUBROUTINE tea_leaf_cg_init(rro)
 
   INTEGER :: t
   REAL(KIND=8) :: rro,tile_rro
+  TYPE(SCOPE_TYPE):: caliprof
 
   rro = 0.0_8
+
+  CALL caliprof%create("tea_leaf_cg_init")
 
   IF (use_fortran_kernels) THEN
 !$OMP PARALLEL PRIVATE(tile_rro) REDUCTION(+:rro)
@@ -55,8 +59,11 @@ SUBROUTINE tea_leaf_cg_calc_w( pw)
 
   INTEGER :: t
   REAL(KIND=8) :: pw, tile_pw
+  TYPE(SCOPE_TYPE):: caliprof
 
   pw = 0.0_08
+
+  CALL caliprof%create("tea_leaf_cg_calc_w")
 
   IF (use_fortran_kernels) THEN
 !$OMP PARALLEL PRIVATE(tile_pw) REDUCTION(+:pw)
@@ -93,8 +100,11 @@ SUBROUTINE tea_leaf_cg_calc_ur( alpha, rrn)
   
   INTEGER :: t
   REAL(KIND=8) :: alpha, rrn, tile_rrn
+  TYPE(SCOPE_TYPE):: caliprof
 
   rrn = 0.0_8
+
+  CALL caliprof%create("tea_leaf_cg_calc_ur")
 
   IF (use_fortran_kernels) THEN
 !$OMP PARALLEL PRIVATE(tile_rrn) REDUCTION(+:rrn)
@@ -136,6 +146,9 @@ SUBROUTINE tea_leaf_cg_calc_p( beta)
 
   INTEGER :: t
   REAL(KIND=8) :: beta
+  TYPE(SCOPE_TYPE):: caliprof
+
+  CALL caliprof%create("tea_leaf_cg_calc_p")
 
   IF (use_fortran_kernels) THEN
 !$OMP PARALLEL
