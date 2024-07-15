@@ -76,7 +76,7 @@ OMP_ARM       = -fopenmp
 
 FLAGS_INTEL     = -O3 -no-prec-div -fpp -align array64byte
 FLAGS_SUN       = -fast -xipo=2 -Xlistv4
-FLAGS_GNU       = -O3 -march=native -funroll-loops -cpp -ffree-line-length-none
+FLAGS_GNU       = -O3 -march=native -funroll-loops -cpp -ffree-line-length-none -fallow-argument-mismatch
 FLAGS_CRAY      = -em -ra -h acc_model=fast_addr:no_deep_copy:auto_async_all
 FLAGS_PGI       = -fastsse -gopt -Mipa=fast -Mlist
 FLAGS_PATHSCALE = -O3
@@ -86,7 +86,7 @@ FLAGS_ARM      = -cpp -O3 -ffp-contract=fast -march=native -mcpu=native
 
 CFLAGS_INTEL     = -O3 -no-prec-div -restrict -fno-alias
 CFLAGS_SUN       = -fast -xipo=2
-CFLAGS_GNU       = -O3 -march=native -funroll-loops
+CFLAGS_GNU       = -O3 -march=native -funroll-loops 
 CFLAGS_CRAY      = -em -h list=a
 CFLAGS_PGI       = -fastsse -gopt -Mipa=fast -Mlist
 CFLAGS_PATHSCALE = -O3
@@ -97,7 +97,7 @@ CFLAGS_          = -O3
 ifdef DEBUG
   FLAGS_INTEL     = -O0 -g -debug all -check all -traceback -check noarg_temp_created
   FLAGS_SUN       = -g -xopenmp=noopt -stackvar -u -fpover=yes -C -ftrap=common
-  FLAGS_GNU       = -O0 -g -O -Wall -Wextra -fbounds-check
+  FLAGS_GNU       = -O0 -g -O -Wall -Wextra -fbounds-check -fallow-argument-mismatch
   FLAGS_CRAY      = -O0 -g -em -eD
   FLAGS_PGI       = -O0 -g -C -Mchkstk -Ktrap=fp -Mchkfpstk -Mchkptr
   FLAGS_PATHSCALE = -O0 -g
