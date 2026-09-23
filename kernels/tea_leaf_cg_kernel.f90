@@ -145,8 +145,6 @@ SUBROUTINE tea_leaf_cg_calc_w_kernel(x_min,             &
             w(j, k) = Di(j,k)*p(j, k)                             &
                 - ry*(Ky(j, k+1)*p(j, k+1) + Ky(j, k)*p(j, k-1))  &
                 - rx*(Kx(j+1, k)*p(j+1, k) + Kx(j, k)*p(j-1, k))
-        ENDDO
-        DO j=x_min,x_max
             pw = pw + w(j, k)*p(j, k)
         ENDDO
     ENDDO
